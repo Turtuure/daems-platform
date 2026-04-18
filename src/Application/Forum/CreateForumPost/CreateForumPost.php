@@ -4,14 +4,17 @@ declare(strict_types=1);
 
 namespace Daems\Application\Forum\CreateForumPost;
 
+use Daems\Application\Forum\Shared\ForumIdentityDeriver;
 use Daems\Domain\Forum\ForumPost;
 use Daems\Domain\Forum\ForumPostId;
 use Daems\Domain\Forum\ForumRepositoryInterface;
+use Daems\Domain\User\UserRepositoryInterface;
 
 final class CreateForumPost
 {
     public function __construct(
         private readonly ForumRepositoryInterface $forum,
+        private readonly UserRepositoryInterface $users,
     ) {}
 
     public function execute(CreateForumPostInput $input): CreateForumPostOutput
@@ -22,18 +25,19 @@ final class CreateForumPost
             return new CreateForumPostOutput(false, 'Thread not found.');
         }
 
+        $identity = ForumIdentityDeriver::derive($input->acting, $this->users);
         $now = date('Y-m-d H:i:s');
 
         $post = new ForumPost(
             ForumPostId::generate(),
             $topic->id()->value(),
-            $input->userId,
-            $input->authorName,
-            $input->avatarInitials,
-            $input->avatarColor,
-            $input->role,
-            $input->roleClass,
-            $input->joinedText,
+            $identity['user_id'],
+            $identity['author_name'],
+            $identity['avatar_initials'],
+            $identity['avatar_color'],
+            $identity['role'],
+            $identity['role_class'],
+            $identity['joined_text'],
             $input->content,
             0,
             $now,
@@ -41,7 +45,7 @@ final class CreateForumPost
         );
 
         $this->forum->savePost($post);
-        $this->forum->recordTopicReply($topic->id()->value(), $now, $input->authorName);
+        $this->forum->recordTopicReply($topic->id()->value(), $now, $identity['author_name']);
 
         return new CreateForumPostOutput(true, null, [
             'id'              => $post->id()->value(),

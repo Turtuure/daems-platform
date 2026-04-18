@@ -5,8 +5,6 @@ declare(strict_types=1);
 namespace Daems\Infrastructure\Adapter\Api\Controller;
 
 use Daems\Application\Project\AddProjectComment\AddProjectComment;
-use Daems\Application\Project\SubmitProjectProposal\SubmitProjectProposal;
-use Daems\Application\Project\SubmitProjectProposal\SubmitProjectProposalInput;
 use Daems\Application\Project\AddProjectComment\AddProjectCommentInput;
 use Daems\Application\Project\AddProjectUpdate\AddProjectUpdate;
 use Daems\Application\Project\AddProjectUpdate\AddProjectUpdateInput;
@@ -24,8 +22,11 @@ use Daems\Application\Project\LikeProjectComment\LikeProjectComment;
 use Daems\Application\Project\LikeProjectComment\LikeProjectCommentInput;
 use Daems\Application\Project\ListProjects\ListProjects;
 use Daems\Application\Project\ListProjects\ListProjectsInput;
+use Daems\Application\Project\SubmitProjectProposal\SubmitProjectProposal;
+use Daems\Application\Project\SubmitProjectProposal\SubmitProjectProposalInput;
 use Daems\Application\Project\UpdateProject\UpdateProject;
 use Daems\Application\Project\UpdateProject\UpdateProjectInput;
+use Daems\Domain\Auth\UnauthorizedException;
 use Daems\Infrastructure\Framework\Http\Request;
 use Daems\Infrastructure\Framework\Http\Response;
 
@@ -44,6 +45,15 @@ final class ProjectController
         private readonly AddProjectUpdate $addUpdate,
         private readonly SubmitProjectProposal $submitProposal,
     ) {}
+
+    private function requireActing(Request $request): \Daems\Domain\Auth\ActingUser
+    {
+        $acting = $request->actingUser();
+        if ($acting === null) {
+            throw new UnauthorizedException();
+        }
+        return $acting;
+    }
 
     public function index(Request $request): Response
     {
@@ -68,8 +78,10 @@ final class ProjectController
 
     public function create(Request $request): Response
     {
+        $acting = $this->requireActing($request);
         $body = $request->all();
         $output = $this->createProject->execute(new CreateProjectInput(
+            $acting,
             trim($body['title'] ?? ''),
             trim($body['category'] ?? ''),
             trim($body['icon'] ?? 'bi-folder'),
@@ -87,8 +99,10 @@ final class ProjectController
 
     public function update(Request $request, array $params): Response
     {
+        $acting = $this->requireActing($request);
         $body = $request->all();
         $output = $this->updateProject->execute(new UpdateProjectInput(
+            $acting,
             $params['slug'],
             trim($body['title'] ?? ''),
             trim($body['category'] ?? ''),
@@ -107,7 +121,8 @@ final class ProjectController
 
     public function archive(Request $request, array $params): Response
     {
-        $output = $this->archiveProject->execute(new ArchiveProjectInput($params['slug']));
+        $acting = $this->requireActing($request);
+        $output = $this->archiveProject->execute(new ArchiveProjectInput($acting, $params['slug']));
 
         if (!$output->success) {
             return Response::json(['error' => $output->error], 404);
@@ -118,13 +133,11 @@ final class ProjectController
 
     public function addComment(Request $request, array $params): Response
     {
+        $acting = $this->requireActing($request);
         $body = $request->all();
         $output = $this->addComment->execute(new AddProjectCommentInput(
+            $acting,
             $params['slug'],
-            trim($body['user_id'] ?? ''),
-            trim($body['author_name'] ?? ''),
-            trim($body['avatar_initials'] ?? ''),
-            trim($body['avatar_color'] ?? ''),
             trim($body['content'] ?? ''),
         ));
 
@@ -137,17 +150,15 @@ final class ProjectController
 
     public function likeComment(Request $request, array $params): Response
     {
-        $this->likeComment->execute(new LikeProjectCommentInput($params['id']));
+        $acting = $this->requireActing($request);
+        $this->likeComment->execute(new LikeProjectCommentInput($acting, $params['id']));
         return Response::json(['data' => ['ok' => true]]);
     }
 
     public function join(Request $request, array $params): Response
     {
-        $body   = $request->all();
-        $output = $this->joinProject->execute(new JoinProjectInput(
-            $params['slug'],
-            trim($body['user_id'] ?? ''),
-        ));
+        $acting = $this->requireActing($request);
+        $output = $this->joinProject->execute(new JoinProjectInput($acting, $params['slug']));
 
         if (!$output->success) {
             return Response::json(['error' => $output->error], 422);
@@ -158,11 +169,8 @@ final class ProjectController
 
     public function leave(Request $request, array $params): Response
     {
-        $body   = $request->all();
-        $output = $this->leaveProject->execute(new LeaveProjectInput(
-            $params['slug'],
-            trim($body['user_id'] ?? ''),
-        ));
+        $acting = $this->requireActing($request);
+        $output = $this->leaveProject->execute(new LeaveProjectInput($acting, $params['slug']));
 
         if (!$output->success) {
             return Response::json(['error' => $output->error], 422);
@@ -173,12 +181,13 @@ final class ProjectController
 
     public function addUpdate(Request $request, array $params): Response
     {
-        $body   = $request->all();
+        $acting = $this->requireActing($request);
+        $body = $request->all();
         $output = $this->addUpdate->execute(new AddProjectUpdateInput(
+            $acting,
             $params['slug'],
             trim($body['title'] ?? ''),
             trim($body['content'] ?? ''),
-            trim($body['author_name'] ?? ''),
         ));
 
         if (!$output->success) {
@@ -190,11 +199,10 @@ final class ProjectController
 
     public function propose(Request $request): Response
     {
-        $body   = $request->all();
+        $acting = $this->requireActing($request);
+        $body = $request->all();
         $output = $this->submitProposal->execute(new SubmitProjectProposalInput(
-            trim($body['user_id'] ?? ''),
-            trim($body['author_name'] ?? ''),
-            trim($body['author_email'] ?? ''),
+            $acting,
             trim($body['title'] ?? ''),
             trim($body['category'] ?? ''),
             trim($body['summary'] ?? ''),

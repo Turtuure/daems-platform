@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Daems\Application\Project\UpdateProject;
 
+use Daems\Domain\Auth\ForbiddenException;
 use Daems\Domain\Project\Project;
 use Daems\Domain\Project\ProjectRepositoryInterface;
 
@@ -18,6 +19,15 @@ final class UpdateProject
             return new UpdateProjectOutput(false, 'Project not found.');
         }
 
+        $ownerId = $existing->ownerId();
+        if ($ownerId === null) {
+            if (!$input->acting->isAdmin()) {
+                throw new ForbiddenException();
+            }
+        } elseif (!$input->acting->owns($ownerId) && !$input->acting->isAdmin()) {
+            throw new ForbiddenException();
+        }
+
         $updated = new Project(
             $existing->id(),
             $existing->slug(),
@@ -28,6 +38,7 @@ final class UpdateProject
             $input->description,
             $input->status,
             $existing->sortOrder(),
+            $existing->ownerId(),
         );
 
         $this->projects->save($updated);

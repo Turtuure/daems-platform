@@ -14,6 +14,7 @@ use Daems\Application\User\GetUserActivity\GetUserActivity;
 use Daems\Application\User\GetUserActivity\GetUserActivityInput;
 use Daems\Application\User\UpdateProfile\UpdateProfile;
 use Daems\Application\User\UpdateProfile\UpdateProfileInput;
+use Daems\Domain\Auth\UnauthorizedException;
 use Daems\Infrastructure\Framework\Http\Request;
 use Daems\Infrastructure\Framework\Http\Response;
 
@@ -33,8 +34,12 @@ final class UserController
         if ($id === '') {
             return Response::badRequest('User ID is required.');
         }
+        $acting = $request->actingUser();
+        if ($acting === null) {
+            throw new UnauthorizedException();
+        }
 
-        $output = $this->getProfile->execute(new GetProfileInput($id));
+        $output = $this->getProfile->execute(new GetProfileInput($acting, $id));
 
         if ($output->error !== null) {
             return Response::json(['error' => $output->error], 404);
@@ -49,10 +54,15 @@ final class UserController
         if ($id === '') {
             return Response::badRequest('User ID is required.');
         }
+        $acting = $request->actingUser();
+        if ($acting === null) {
+            throw new UnauthorizedException();
+        }
 
         $b = $request->all();
 
         $output = $this->updateProfile->execute(new UpdateProfileInput(
+            acting:         $acting,
             userId:         $id,
             firstName:      trim((string) ($b['first_name'] ?? '')),
             lastName:       trim((string) ($b['last_name'] ?? '')),
@@ -78,8 +88,12 @@ final class UserController
         if ($id === '') {
             return Response::badRequest('User ID is required.');
         }
+        $acting = $request->actingUser();
+        if ($acting === null) {
+            throw new UnauthorizedException();
+        }
 
-        $output = $this->deleteAccount->execute(new DeleteAccountInput($id));
+        $output = $this->deleteAccount->execute(new DeleteAccountInput($acting, $id));
 
         if (!$output->deleted) {
             return Response::json(['error' => $output->error], 404);
@@ -94,8 +108,12 @@ final class UserController
         if ($id === '') {
             return Response::badRequest('User ID is required.');
         }
+        $acting = $request->actingUser();
+        if ($acting === null) {
+            throw new UnauthorizedException();
+        }
 
-        $output = $this->getUserActivity->execute(new GetUserActivityInput($id));
+        $output = $this->getUserActivity->execute(new GetUserActivityInput($acting, $id));
         return Response::json(['data' => $output->data]);
     }
 
@@ -107,7 +125,7 @@ final class UserController
         }
         $acting = $request->actingUser();
         if ($acting === null) {
-            throw new \Daems\Domain\Auth\UnauthorizedException();
+            throw new UnauthorizedException();
         }
 
         $b = $request->all();

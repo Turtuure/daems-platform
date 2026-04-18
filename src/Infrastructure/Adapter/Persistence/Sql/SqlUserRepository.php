@@ -4,10 +4,12 @@ declare(strict_types=1);
 
 namespace Daems\Infrastructure\Adapter\Persistence\Sql;
 
+use Daems\Domain\Shared\ValidationException;
 use Daems\Domain\User\User;
 use Daems\Domain\User\UserId;
 use Daems\Domain\User\UserRepositoryInterface;
 use Daems\Infrastructure\Framework\Database\Connection;
+use PDOException;
 
 final class SqlUserRepository implements UserRepositoryInterface
 {
@@ -27,18 +29,25 @@ final class SqlUserRepository implements UserRepositoryInterface
 
     public function save(User $user): void
     {
-        $this->db->execute(
-            'INSERT INTO users (id, name, email, password_hash, date_of_birth, role)
-             VALUES (?, ?, ?, ?, ?, ?)',
-            [
-                $user->id()->value(),
-                $user->name(),
-                $user->email(),
-                $user->passwordHash(),
-                $user->dateOfBirth(),
-                $user->role(),
-            ],
-        );
+        try {
+            $this->db->execute(
+                'INSERT INTO users (id, name, email, password_hash, date_of_birth, role)
+                 VALUES (?, ?, ?, ?, ?, ?)',
+                [
+                    $user->id()->value(),
+                    $user->name(),
+                    $user->email(),
+                    $user->passwordHash(),
+                    $user->dateOfBirth(),
+                    $user->role(),
+                ],
+            );
+        } catch (PDOException $e) {
+            if (str_starts_with((string) $e->getCode(), '23')) {
+                throw new ValidationException('Invalid email.');
+            }
+            throw $e;
+        }
     }
 
     public function updateProfile(string $id, array $fields): void
@@ -57,7 +66,14 @@ final class SqlUserRepository implements UserRepositoryInterface
             return;
         }
         $params[] = $id;
-        $this->db->execute('UPDATE users SET ' . implode(', ', $set) . ' WHERE id = ?', $params);
+        try {
+            $this->db->execute('UPDATE users SET ' . implode(', ', $set) . ' WHERE id = ?', $params);
+        } catch (PDOException $e) {
+            if (str_starts_with((string) $e->getCode(), '23')) {
+                throw new ValidationException('Invalid email.');
+            }
+            throw $e;
+        }
     }
 
     public function updatePassword(string $id, string $newHash): void

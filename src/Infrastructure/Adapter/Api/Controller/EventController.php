@@ -12,6 +12,7 @@ use Daems\Application\Event\RegisterForEvent\RegisterForEvent;
 use Daems\Application\Event\RegisterForEvent\RegisterForEventInput;
 use Daems\Application\Event\UnregisterFromEvent\UnregisterFromEvent;
 use Daems\Application\Event\UnregisterFromEvent\UnregisterFromEventInput;
+use Daems\Domain\Auth\UnauthorizedException;
 use Daems\Infrastructure\Framework\Http\Request;
 use Daems\Infrastructure\Framework\Http\Response;
 
@@ -45,13 +46,13 @@ final class EventController
 
     public function register(Request $request, array $params): Response
     {
-        $userId = trim((string) $request->input('user_id'));
-        if ($userId === '') {
-            return Response::badRequest('user_id is required.');
+        $acting = $request->actingUser();
+        if ($acting === null) {
+            throw new UnauthorizedException();
         }
 
         $output = $this->registerForEvent->execute(
-            new RegisterForEventInput($params['slug'], $userId),
+            new RegisterForEventInput($acting, $params['slug']),
         );
 
         if ($output->error !== null && $output->error !== 'Already registered.') {
@@ -63,13 +64,13 @@ final class EventController
 
     public function unregister(Request $request, array $params): Response
     {
-        $userId = trim((string) $request->input('user_id'));
-        if ($userId === '') {
-            return Response::badRequest('user_id is required.');
+        $acting = $request->actingUser();
+        if ($acting === null) {
+            throw new UnauthorizedException();
         }
 
         $output = $this->unregisterFromEvent->execute(
-            new UnregisterFromEventInput($params['slug'], $userId),
+            new UnregisterFromEventInput($acting, $params['slug']),
         );
 
         if ($output->error !== null) {

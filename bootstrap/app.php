@@ -273,10 +273,16 @@ $container->bind(GetForumThread::class,
     static fn(Container $c) => new GetForumThread($c->make(ForumRepositoryInterface::class)),
 );
 $container->bind(CreateForumTopic::class,
-    static fn(Container $c) => new CreateForumTopic($c->make(ForumRepositoryInterface::class)),
+    static fn(Container $c) => new CreateForumTopic(
+        $c->make(ForumRepositoryInterface::class),
+        $c->make(UserRepositoryInterface::class),
+    ),
 );
 $container->bind(CreateForumPost::class,
-    static fn(Container $c) => new CreateForumPost($c->make(ForumRepositoryInterface::class)),
+    static fn(Container $c) => new CreateForumPost(
+        $c->make(ForumRepositoryInterface::class),
+        $c->make(UserRepositoryInterface::class),
+    ),
 );
 $container->bind(LikeForumPost::class,
     static fn(Container $c) => new LikeForumPost($c->make(ForumRepositoryInterface::class)),
@@ -316,7 +322,10 @@ $container->bind(ArchiveProject::class,
     static fn(Container $c) => new ArchiveProject($c->make(ProjectRepositoryInterface::class)),
 );
 $container->bind(AddProjectComment::class,
-    static fn(Container $c) => new AddProjectComment($c->make(ProjectRepositoryInterface::class)),
+    static fn(Container $c) => new AddProjectComment(
+        $c->make(ProjectRepositoryInterface::class),
+        $c->make(UserRepositoryInterface::class),
+    ),
 );
 $container->bind(LikeProjectComment::class,
     static fn(Container $c) => new LikeProjectComment($c->make(ProjectRepositoryInterface::class)),
@@ -328,13 +337,19 @@ $container->bind(LeaveProject::class,
     static fn(Container $c) => new LeaveProject($c->make(ProjectRepositoryInterface::class)),
 );
 $container->bind(AddProjectUpdate::class,
-    static fn(Container $c) => new AddProjectUpdate($c->make(ProjectRepositoryInterface::class)),
+    static fn(Container $c) => new AddProjectUpdate(
+        $c->make(ProjectRepositoryInterface::class),
+        $c->make(UserRepositoryInterface::class),
+    ),
 );
 $container->singleton(ProjectProposalRepositoryInterface::class,
     static fn(Container $c) => new SqlProjectProposalRepository($c->make(Connection::class)),
 );
 $container->bind(SubmitProjectProposal::class,
-    static fn(Container $c) => new SubmitProjectProposal($c->make(ProjectProposalRepositoryInterface::class)),
+    static fn(Container $c) => new SubmitProjectProposal(
+        $c->make(ProjectProposalRepositoryInterface::class),
+        $c->make(UserRepositoryInterface::class),
+    ),
 );
 $container->bind(ProjectController::class,
     static fn(Container $c) => new ProjectController(
