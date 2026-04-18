@@ -289,7 +289,7 @@ $container->bind(ProjectController::class,
 
 // Router
 $container->singleton(Router::class, static function () use ($container): Router {
-    $router = new Router();
+    $router = new Router(static fn(string $class): mixed => $container->make($class));
     (require dirname(__DIR__) . '/routes/api.php')($router, $container);
     return $router;
 });
