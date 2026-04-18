@@ -1,0 +1,297 @@
+<?php
+
+declare(strict_types=1);
+
+use Daems\Application\Event\GetEvent\GetEvent;
+use Daems\Application\Event\ListEvents\ListEvents;
+use Daems\Application\Forum\CreateForumPost\CreateForumPost;
+use Daems\Application\Forum\CreateForumTopic\CreateForumTopic;
+use Daems\Application\Forum\GetForumCategory\GetForumCategory;
+use Daems\Application\Forum\GetForumThread\GetForumThread;
+use Daems\Application\Forum\IncrementTopicView\IncrementTopicView;
+use Daems\Application\Forum\LikeForumPost\LikeForumPost;
+use Daems\Application\Forum\ListForumCategories\ListForumCategories;
+use Daems\Application\Insight\GetInsight\GetInsight;
+use Daems\Application\Insight\ListInsights\ListInsights;
+use Daems\Application\Auth\LoginUser\LoginUser;
+use Daems\Application\Auth\RegisterUser\RegisterUser;
+use Daems\Application\User\ChangePassword\ChangePassword;
+use Daems\Application\User\DeleteAccount\DeleteAccount;
+use Daems\Application\User\GetProfile\GetProfile;
+use Daems\Application\User\GetUserActivity\GetUserActivity;
+use Daems\Application\User\UpdateProfile\UpdateProfile;
+use Daems\Application\Event\RegisterForEvent\RegisterForEvent;
+use Daems\Application\Event\UnregisterFromEvent\UnregisterFromEvent;
+use Daems\Application\Membership\SubmitMemberApplication\SubmitMemberApplication;
+use Daems\Application\Membership\SubmitSupporterApplication\SubmitSupporterApplication;
+use Daems\Application\Project\AddProjectComment\AddProjectComment;
+use Daems\Application\Project\AddProjectUpdate\AddProjectUpdate;
+use Daems\Application\Project\ArchiveProject\ArchiveProject;
+use Daems\Application\Project\CreateProject\CreateProject;
+use Daems\Application\Project\GetProject\GetProject;
+use Daems\Application\Project\JoinProject\JoinProject;
+use Daems\Application\Project\LeaveProject\LeaveProject;
+use Daems\Application\Project\LikeProjectComment\LikeProjectComment;
+use Daems\Application\Project\ListProjects\ListProjects;
+use Daems\Application\Project\SubmitProjectProposal\SubmitProjectProposal;
+use Daems\Application\Project\UpdateProject\UpdateProject;
+use Daems\Domain\Event\EventRepositoryInterface;
+use Daems\Domain\Forum\ForumRepositoryInterface;
+use Daems\Domain\Insight\InsightRepositoryInterface;
+use Daems\Domain\Membership\MemberApplicationRepositoryInterface;
+use Daems\Domain\Membership\SupporterApplicationRepositoryInterface;
+use Daems\Domain\Project\ProjectProposalRepositoryInterface;
+use Daems\Domain\Project\ProjectRepositoryInterface;
+use Daems\Domain\User\UserRepositoryInterface;
+use Daems\Infrastructure\Adapter\Api\Controller\EventController;
+use Daems\Infrastructure\Adapter\Api\Controller\ForumController;
+use Daems\Infrastructure\Adapter\Api\Controller\InsightController;
+use Daems\Infrastructure\Adapter\Api\Controller\ApplicationController;
+use Daems\Infrastructure\Adapter\Api\Controller\AuthController;
+use Daems\Infrastructure\Adapter\Api\Controller\ProjectController;
+use Daems\Infrastructure\Adapter\Api\Controller\UserController;
+use Daems\Infrastructure\Adapter\Persistence\Sql\SqlEventRepository;
+use Daems\Infrastructure\Adapter\Persistence\Sql\SqlForumRepository;
+use Daems\Infrastructure\Adapter\Persistence\Sql\SqlInsightRepository;
+use Daems\Infrastructure\Adapter\Persistence\Sql\SqlMemberApplicationRepository;
+use Daems\Infrastructure\Adapter\Persistence\Sql\SqlProjectProposalRepository;
+use Daems\Infrastructure\Adapter\Persistence\Sql\SqlProjectRepository;
+use Daems\Infrastructure\Adapter\Persistence\Sql\SqlSupporterApplicationRepository;
+use Daems\Infrastructure\Adapter\Persistence\Sql\SqlUserRepository;
+use Daems\Infrastructure\Framework\Container\Container;
+use Daems\Infrastructure\Framework\Database\Connection;
+use Daems\Infrastructure\Framework\Http\Kernel;
+use Daems\Infrastructure\Framework\Http\Router;
+
+// Load .env
+(static function (): void {
+    $file = dirname(__DIR__) . '/.env';
+    if (!file_exists($file)) {
+        return;
+    }
+    foreach (file($file, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES) as $line) {
+        $line = trim($line);
+        if ($line === '' || str_starts_with($line, '#') || !str_contains($line, '=')) {
+            continue;
+        }
+        [$key, $val] = array_map('trim', explode('=', $line, 2));
+        if ($key !== '' && !array_key_exists($key, $_ENV)) {
+            $_ENV[$key] = $val;
+            putenv("{$key}={$val}");
+        }
+    }
+})();
+
+$container = new Container();
+
+// Database (lazy singleton — only connects when first used)
+$container->singleton(Connection::class, static function (): Connection {
+    return new Connection([
+        'host'     => $_ENV['DB_HOST']     ?? '127.0.0.1',
+        'port'     => $_ENV['DB_PORT']     ?? '3306',
+        'database' => $_ENV['DB_DATABASE'] ?? 'daems_db',
+        'username' => $_ENV['DB_USERNAME'] ?? 'root',
+        'password' => $_ENV['DB_PASSWORD'] ?? '',
+    ]);
+});
+
+// Events
+$container->singleton(EventRepositoryInterface::class,
+    static fn(Container $c) => new SqlEventRepository($c->make(Connection::class)),
+);
+$container->bind(ListEvents::class,
+    static fn(Container $c) => new ListEvents($c->make(EventRepositoryInterface::class)),
+);
+$container->bind(GetEvent::class,
+    static fn(Container $c) => new GetEvent($c->make(EventRepositoryInterface::class)),
+);
+$container->bind(RegisterForEvent::class,
+    static fn(Container $c) => new RegisterForEvent($c->make(EventRepositoryInterface::class)),
+);
+$container->bind(UnregisterFromEvent::class,
+    static fn(Container $c) => new UnregisterFromEvent($c->make(EventRepositoryInterface::class)),
+);
+$container->bind(EventController::class,
+    static fn(Container $c) => new EventController(
+        $c->make(ListEvents::class),
+        $c->make(GetEvent::class),
+        $c->make(RegisterForEvent::class),
+        $c->make(UnregisterFromEvent::class),
+    ),
+);
+
+// Insights
+$container->singleton(InsightRepositoryInterface::class,
+    static fn(Container $c) => new SqlInsightRepository($c->make(Connection::class)),
+);
+$container->bind(ListInsights::class,
+    static fn(Container $c) => new ListInsights($c->make(InsightRepositoryInterface::class)),
+);
+$container->bind(GetInsight::class,
+    static fn(Container $c) => new GetInsight($c->make(InsightRepositoryInterface::class)),
+);
+$container->bind(InsightController::class,
+    static fn(Container $c) => new InsightController($c->make(ListInsights::class), $c->make(GetInsight::class)),
+);
+
+// Membership applications
+$container->singleton(MemberApplicationRepositoryInterface::class,
+    static fn(Container $c) => new SqlMemberApplicationRepository($c->make(Connection::class)),
+);
+$container->singleton(SupporterApplicationRepositoryInterface::class,
+    static fn(Container $c) => new SqlSupporterApplicationRepository($c->make(Connection::class)),
+);
+$container->bind(SubmitMemberApplication::class,
+    static fn(Container $c) => new SubmitMemberApplication($c->make(MemberApplicationRepositoryInterface::class)),
+);
+$container->bind(SubmitSupporterApplication::class,
+    static fn(Container $c) => new SubmitSupporterApplication($c->make(SupporterApplicationRepositoryInterface::class)),
+);
+$container->bind(ApplicationController::class,
+    static fn(Container $c) => new ApplicationController($c->make(SubmitMemberApplication::class), $c->make(SubmitSupporterApplication::class)),
+);
+
+// Auth
+$container->singleton(UserRepositoryInterface::class,
+    static fn(Container $c) => new SqlUserRepository($c->make(Connection::class)),
+);
+$container->bind(LoginUser::class,
+    static fn(Container $c) => new LoginUser($c->make(UserRepositoryInterface::class)),
+);
+$container->bind(RegisterUser::class,
+    static fn(Container $c) => new RegisterUser($c->make(UserRepositoryInterface::class)),
+);
+$container->bind(AuthController::class,
+    static fn(Container $c) => new AuthController($c->make(RegisterUser::class), $c->make(LoginUser::class)),
+);
+
+// User profile
+$container->bind(GetProfile::class,
+    static fn(Container $c) => new GetProfile($c->make(UserRepositoryInterface::class)),
+);
+$container->bind(UpdateProfile::class,
+    static fn(Container $c) => new UpdateProfile($c->make(UserRepositoryInterface::class)),
+);
+$container->bind(ChangePassword::class,
+    static fn(Container $c) => new ChangePassword($c->make(UserRepositoryInterface::class)),
+);
+$container->bind(DeleteAccount::class,
+    static fn(Container $c) => new DeleteAccount($c->make(UserRepositoryInterface::class)),
+);
+$container->bind(GetUserActivity::class,
+    static fn(Container $c) => new GetUserActivity(
+        $c->make(ForumRepositoryInterface::class),
+        $c->make(EventRepositoryInterface::class),
+    ),
+);
+$container->bind(UserController::class,
+    static fn(Container $c) => new UserController(
+        $c->make(GetProfile::class),
+        $c->make(UpdateProfile::class),
+        $c->make(ChangePassword::class),
+        $c->make(GetUserActivity::class),
+        $c->make(DeleteAccount::class),
+    ),
+);
+
+// Forum
+$container->singleton(ForumRepositoryInterface::class,
+    static fn(Container $c) => new SqlForumRepository($c->make(Connection::class)),
+);
+$container->bind(ListForumCategories::class,
+    static fn(Container $c) => new ListForumCategories($c->make(ForumRepositoryInterface::class)),
+);
+$container->bind(GetForumCategory::class,
+    static fn(Container $c) => new GetForumCategory($c->make(ForumRepositoryInterface::class)),
+);
+$container->bind(GetForumThread::class,
+    static fn(Container $c) => new GetForumThread($c->make(ForumRepositoryInterface::class)),
+);
+$container->bind(CreateForumTopic::class,
+    static fn(Container $c) => new CreateForumTopic($c->make(ForumRepositoryInterface::class)),
+);
+$container->bind(CreateForumPost::class,
+    static fn(Container $c) => new CreateForumPost($c->make(ForumRepositoryInterface::class)),
+);
+$container->bind(LikeForumPost::class,
+    static fn(Container $c) => new LikeForumPost($c->make(ForumRepositoryInterface::class)),
+);
+$container->bind(IncrementTopicView::class,
+    static fn(Container $c) => new IncrementTopicView($c->make(ForumRepositoryInterface::class)),
+);
+$container->bind(ForumController::class,
+    static fn(Container $c) => new ForumController(
+        $c->make(ListForumCategories::class),
+        $c->make(GetForumCategory::class),
+        $c->make(GetForumThread::class),
+        $c->make(CreateForumTopic::class),
+        $c->make(CreateForumPost::class),
+        $c->make(LikeForumPost::class),
+        $c->make(IncrementTopicView::class),
+    ),
+);
+
+// Projects
+$container->singleton(ProjectRepositoryInterface::class,
+    static fn(Container $c) => new SqlProjectRepository($c->make(Connection::class)),
+);
+$container->bind(ListProjects::class,
+    static fn(Container $c) => new ListProjects($c->make(ProjectRepositoryInterface::class)),
+);
+$container->bind(GetProject::class,
+    static fn(Container $c) => new GetProject($c->make(ProjectRepositoryInterface::class)),
+);
+$container->bind(CreateProject::class,
+    static fn(Container $c) => new CreateProject($c->make(ProjectRepositoryInterface::class)),
+);
+$container->bind(UpdateProject::class,
+    static fn(Container $c) => new UpdateProject($c->make(ProjectRepositoryInterface::class)),
+);
+$container->bind(ArchiveProject::class,
+    static fn(Container $c) => new ArchiveProject($c->make(ProjectRepositoryInterface::class)),
+);
+$container->bind(AddProjectComment::class,
+    static fn(Container $c) => new AddProjectComment($c->make(ProjectRepositoryInterface::class)),
+);
+$container->bind(LikeProjectComment::class,
+    static fn(Container $c) => new LikeProjectComment($c->make(ProjectRepositoryInterface::class)),
+);
+$container->bind(JoinProject::class,
+    static fn(Container $c) => new JoinProject($c->make(ProjectRepositoryInterface::class)),
+);
+$container->bind(LeaveProject::class,
+    static fn(Container $c) => new LeaveProject($c->make(ProjectRepositoryInterface::class)),
+);
+$container->bind(AddProjectUpdate::class,
+    static fn(Container $c) => new AddProjectUpdate($c->make(ProjectRepositoryInterface::class)),
+);
+$container->singleton(ProjectProposalRepositoryInterface::class,
+    static fn(Container $c) => new SqlProjectProposalRepository($c->make(Connection::class)),
+);
+$container->bind(SubmitProjectProposal::class,
+    static fn(Container $c) => new SubmitProjectProposal($c->make(ProjectProposalRepositoryInterface::class)),
+);
+$container->bind(ProjectController::class,
+    static fn(Container $c) => new ProjectController(
+        $c->make(ListProjects::class),
+        $c->make(GetProject::class),
+        $c->make(CreateProject::class),
+        $c->make(UpdateProject::class),
+        $c->make(ArchiveProject::class),
+        $c->make(AddProjectComment::class),
+        $c->make(LikeProjectComment::class),
+        $c->make(JoinProject::class),
+        $c->make(LeaveProject::class),
+        $c->make(AddProjectUpdate::class),
+        $c->make(SubmitProjectProposal::class),
+    ),
+);
+
+// Router
+$container->singleton(Router::class, static function () use ($container): Router {
+    $router = new Router();
+    (require dirname(__DIR__) . '/routes/api.php')($router, $container);
+    return $router;
+});
+
+return new Kernel($container);

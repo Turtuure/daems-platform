@@ -1,0 +1,93 @@
+<?php
+
+declare(strict_types=1);
+
+namespace Daems\Infrastructure\Adapter\Persistence\Sql;
+
+use Daems\Domain\User\User;
+use Daems\Domain\User\UserId;
+use Daems\Domain\User\UserRepositoryInterface;
+use Daems\Infrastructure\Framework\Database\Connection;
+
+final class SqlUserRepository implements UserRepositoryInterface
+{
+    public function __construct(private readonly Connection $db) {}
+
+    public function findByEmail(string $email): ?User
+    {
+        $row = $this->db->queryOne('SELECT * FROM users WHERE email = ?', [$email]);
+        return $row !== null ? $this->hydrate($row) : null;
+    }
+
+    public function findById(string $id): ?User
+    {
+        $row = $this->db->queryOne('SELECT * FROM users WHERE id = ?', [$id]);
+        return $row !== null ? $this->hydrate($row) : null;
+    }
+
+    public function save(User $user): void
+    {
+        $this->db->execute(
+            'INSERT INTO users (id, name, email, password_hash, date_of_birth, role)
+             VALUES (?, ?, ?, ?, ?, ?)',
+            [
+                $user->id()->value(),
+                $user->name(),
+                $user->email(),
+                $user->passwordHash(),
+                $user->dateOfBirth(),
+                $user->role(),
+            ],
+        );
+    }
+
+    public function updateProfile(string $id, array $fields): void
+    {
+        $allowed = ['name', 'email', 'date_of_birth', 'country',
+                    'address_street', 'address_zip', 'address_city', 'address_country'];
+        $set = [];
+        $params = [];
+        foreach ($allowed as $col) {
+            if (array_key_exists($col, $fields)) {
+                $set[]    = "{$col} = ?";
+                $params[] = $fields[$col];
+            }
+        }
+        if (empty($set)) {
+            return;
+        }
+        $params[] = $id;
+        $this->db->execute('UPDATE users SET ' . implode(', ', $set) . ' WHERE id = ?', $params);
+    }
+
+    public function updatePassword(string $id, string $newHash): void
+    {
+        $this->db->execute('UPDATE users SET password_hash = ? WHERE id = ?', [$newHash, $id]);
+    }
+
+    public function deleteById(string $id): void
+    {
+        $this->db->execute('DELETE FROM users WHERE id = ?', [$id]);
+    }
+
+    private function hydrate(array $row): User
+    {
+        return new User(
+            UserId::fromString($row['id']),
+            $row['name'],
+            $row['email'],
+            $row['password_hash'],
+            $row['date_of_birth'],
+            $row['role'] ?? 'registered',
+            $row['country'] ?? '',
+            $row['address_street'] ?? '',
+            $row['address_zip'] ?? '',
+            $row['address_city'] ?? '',
+            $row['address_country'] ?? '',
+            $row['membership_type'] ?? 'individual',
+            $row['membership_status'] ?? 'active',
+            $row['member_number'] ?? null,
+            $row['created_at'] ?? '',
+        );
+    }
+}
