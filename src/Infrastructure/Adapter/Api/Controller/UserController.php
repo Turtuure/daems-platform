@@ -105,6 +105,10 @@ final class UserController
         if ($id === '') {
             return Response::badRequest('User ID is required.');
         }
+        $acting = $request->actingUser();
+        if ($acting === null) {
+            throw new \Daems\Domain\Auth\UnauthorizedException();
+        }
 
         $b = $request->all();
         $currentPassword = (string) ($b['current_password'] ?? '');
@@ -116,7 +120,7 @@ final class UserController
         }
 
         $output = $this->changePassword->execute(
-            new ChangePasswordInput($id, $currentPassword, $newPassword),
+            new ChangePasswordInput($acting, $id, $currentPassword, $newPassword),
         );
 
         if ($output->error !== null) {
