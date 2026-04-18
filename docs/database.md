@@ -27,6 +27,45 @@ Migrations live in `database/migrations/` and must be applied in numerical order
 | `011_extend_users_profile.sql`              | Adds address, membership, and member-number columns to `users` |
 | `012_create_event_registrations.sql`        | `event_registrations` table                          |
 | `013_add_user_id_to_forum.sql`              | Adds nullable `user_id` FK columns to `forum_topics` and `forum_posts` |
+| `014_create_auth_tokens.sql`                | `auth_tokens` table (opaque bearer tokens, SHA-256 hash)               |
+| `015_create_auth_login_attempts.sql`        | `auth_login_attempts` table (rate-limit counter)                       |
+| `016_add_owner_id_to_projects.sql`          | Adds nullable `owner_id` FK column to `projects`                       |
+
+### `auth_tokens`
+
+Stores one row per active or expired session.
+
+| Column         | Type           | Notes                                              |
+| -------------- | -------------- | -------------------------------------------------- |
+| `id`           | `CHAR(36)`     | UUIDv7                                             |
+| `token_hash`   | `CHAR(64)`     | SHA-256 hex of the raw token; **unique**           |
+| `user_id`      | `CHAR(36)`     | FK to `users.id`, `ON DELETE CASCADE`              |
+| `issued_at`    | `DATETIME`     | Creation time; hard cap = `issued_at + 30 days`    |
+| `last_used_at` | `DATETIME`     | Updated on every authenticated request             |
+| `expires_at`   | `DATETIME`     | `LEAST(last_used_at + 7d, issued_at + 30d)`        |
+| `revoked_at`   | `DATETIME`     | NULL while active; set on logout                   |
+| `user_agent`   | `VARCHAR(255)` | Optional, recorded on issue                        |
+| `ip`           | `VARCHAR(45)`  | Optional, recorded on issue                        |
+
+The raw token never leaves the issuing response body; only the SHA-256 hash is persisted.
+
+### `auth_login_attempts`
+
+Rolling log of login attempts for rate limiting.
+
+| Column         | Type           | Notes                                          |
+| -------------- | -------------- | ---------------------------------------------- |
+| `id`           | `BIGINT UNSIGNED` | `AUTO_INCREMENT`                            |
+| `ip`           | `VARCHAR(45)`  | `REMOTE_ADDR` at the time of the attempt       |
+| `email`        | `VARCHAR(255)` | Candidate email                                |
+| `attempted_at` | `DATETIME`     |                                                |
+| `success`      | `TINYINT(1)`   | 1 if authenticated, 0 otherwise                |
+
+Index on `(ip, email, attempted_at)` supports the rate-limit window query. Opportunistic cleanup (1-in-100 insert sweep) removes rows older than 24 hours.
+
+### `projects.owner_id`
+
+`owner_id CHAR(36) NULL` added after `id`, with FK to `users.id` `ON DELETE SET NULL`. New projects always receive the creating user's id. Rows predating migration 016 have `owner_id IS NULL` and are only mutable by admins.
 
 ---
 

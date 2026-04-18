@@ -10,7 +10,17 @@ All responses are `application/json; charset=utf-8`.
 
 ## Authentication
 
-Session-based. The API is consumed exclusively by the `daem-society` front-end application running on the same origin. There is no token header scheme. The `login` endpoint validates credentials and the calling application manages the resulting session. Endpoints that require an authenticated user receive the user ID as a request body field (`user_id`).
+**Opaque bearer tokens.** Login issues a 32-byte random token; the server stores only `SHA-256(token)`. Attach to every protected request:
+
+```
+Authorization: Bearer <token>
+```
+
+**Token lifetime.** 7-day sliding expiry with a 30-day hard cap. Every authenticated request advances `expires_at` to `LEAST(now + 7d, issued_at + 30d)`. Inactive sessions die in 7 days; active users stay logged in up to 30 days without re-authentication.
+
+**Logout.** `POST /api/v1/auth/logout` (authenticated) revokes the caller's token.
+
+**Login rate limit.** 5 failures per `(ip, email)` per 15 minutes triggers HTTP 429 + `Retry-After: 900`.
 
 ## Response envelope
 
@@ -28,16 +38,23 @@ Session-based. The API is consumed exclusively by the `daem-society` front-end a
 
 ## Status codes
 
-| Code | Meaning                        |
-| ---- | ------------------------------ |
-| 200  | OK                             |
-| 201  | Created                        |
-| 400  | Bad Request (validation failed) |
-| 401  | Unauthorized                   |
-| 404  | Not Found                      |
-| 409  | Conflict (duplicate)           |
-| 422  | Unprocessable Entity           |
-| 500  | Internal Server Error          |
+| Code | Meaning                              |
+| ---- | ------------------------------------ |
+| 200  | OK                                   |
+| 201  | Created                              |
+| 204  | No Content (logout)                  |
+| 400  | Bad Request (validation failed)      |
+| 401  | Unauthorized (missing/invalid token) |
+| 403  | Forbidden (policy violation)         |
+| 404  | Not Found                            |
+| 409  | Conflict (duplicate)                 |
+| 422  | Unprocessable Entity                 |
+| 429  | Too Many Requests (rate limit)       |
+| 500  | Internal Server Error                |
+
+## Error sanitisation
+
+500-class responses always return `{"error":"Internal server error."}`. Runtime exception details are logged via `LoggerInterface` but never surface to the HTTP client. Set `APP_DEBUG=true` to enable verbose 500 bodies during local development.
 
 ---
 
@@ -70,10 +87,10 @@ Register a new user account.
 
 | Field           | Type   | Required | Notes                    |
 | --------------- | ------ | -------- | ------------------------ |
-| `name`          | string | yes      | Full display name        |
-| `email`         | string | yes      | Must be a valid address  |
-| `password`      | string | yes      | Minimum 8 characters     |
-| `date_of_birth` | string | yes      | Format `YYYY-MM-DD`      |
+| `name`          | string | yes      | Full display name                    |
+| `email`         | string | yes      | Must be a valid address              |
+| `password`      | string | yes      | 8–72 bytes (bcrypt truncates beyond) |
+| `date_of_birth` | string | yes      | Format `YYYY-MM-DD`                  |
 
 ```json
 {
@@ -100,7 +117,8 @@ Register a new user account.
 | ------ | ---------------------------------------- |
 | 400    | Any required field is empty              |
 | 400    | Email format is invalid                  |
-| 400    | Password shorter than 8 characters       |
+| 400    | Password shorter than 8 bytes            |
+| 400    | Password longer than 72 bytes            |
 | 409    | Email address already registered         |
 
 ---
@@ -128,23 +146,37 @@ Authenticate an existing user.
 ```json
 {
   "data": {
-    "id": "01951234-abcd-7ef0-8abc-0123456789ab",
-    "name": "Ada Lovelace",
-    "email": "ada@example.com",
-    "role": "registered",
-    "membership_type": "individual",
-    "membership_status": "active",
-    "member_number": null
+    "user": {
+      "id": "01951234-abcd-7ef0-8abc-0123456789ab",
+      "name": "Ada Lovelace",
+      "email": "ada@example.com",
+      "role": "registered",
+      "membership_type": "individual",
+      "membership_status": "active",
+      "member_number": null
+    },
+    "token": "pGq7Kx-abc123...",
+    "expires_at": "2026-04-26T12:00:00+00:00"
   }
 }
 ```
 
 **Errors**
 
-| Status | Condition                      |
-| ------ | ------------------------------ |
-| 400    | Email or password is empty     |
-| 401    | Invalid credentials            |
+| Status | Condition                                                             |
+| ------ | --------------------------------------------------------------------- |
+| 400    | Email or password is empty                                            |
+| 401    | Invalid credentials                                                   |
+| 429    | Rate-limited after 5 failures per `(ip, email)` in 15 minutes         |
+
+---
+
+### POST /api/v1/auth/logout
+
+Revoke the caller's token. Requires `Authorization: Bearer <token>`.
+
+**Response 204:** empty body.
+**401** if the token is missing, malformed, revoked, or expired.
 
 ---
 
