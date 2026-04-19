@@ -47,6 +47,8 @@ Migrations live in `database/migrations/` and must be applied in numerical order
 | `031_add_tenant_id_to_project_extras.sql`   | Adds `tenant_id` to `project_comments`, `project_updates`, `project_participants`, `project_proposals` |
 | `032_add_tenant_id_to_event_registrations.sql`    | Adds `tenant_id` to `event_registrations`                        |
 | `033_add_tenant_id_to_member_register_audit.sql`  | Adds `tenant_id` to `member_register_audit`                      |
+| `034_add_decision_metadata_to_applications.sql` | Adds `decided_at`, `decided_by`, `decision_note` to `member_applications` and `supporter_applications` |
+| `035_create_member_status_audit.sql`            | Creates `member_status_audit` for user `membership_status` change history (distinct from application-scoped `member_register_audit`) |
 
 ### Multi-tenant data isolation (migrations 025–033)
 

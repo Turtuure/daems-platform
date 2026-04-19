@@ -1290,3 +1290,53 @@ Submit an organisational supporter application. **Requires authentication.**
 | 403  | `tenant_override_forbidden` | `X-Daems-Tenant` sent by a non-platform-admin |
 | 403  | `not_a_member` | Authenticated user has no active `user_tenants` row for the current tenant (raised by tenant-scoped use cases when they require membership) |
 | 403  | `insufficient_role` | Authenticated user is a member but lacks the specific role required (e.g. admin-only action as regular member) |
+
+## Backstage — admin endpoints
+
+All backstage endpoints require `TenantContextMiddleware` + `AuthMiddleware`. Use cases enforce authorization:
+- List / read / decide applications: `ActingUser::isAdminIn(activeTenant)` required
+- List / audit members: `ActingUser::isAdminIn(activeTenant)` required
+- **Change member status:** `ActingUser::isPlatformAdmin` required (GSA only)
+
+### GET /api/v1/backstage/applications/pending
+
+Query params: `limit` (default 200, max 500).
+
+Response 200:
+```json
+{"data": {"member": [...], "supporter": [...]}}
+```
+
+### POST /api/v1/backstage/applications/{type}/{id}/decision
+
+`type` ∈ `{member, supporter}`. Body: `{"decision": "approved"|"rejected", "note": "..."}`.
+
+Response 200: `{"data": {"success": true}}`
+403 `forbidden`, 404 `not_found`, 422 `validation_failed` on invalid decision.
+
+### GET /api/v1/backstage/members
+
+Query params: `status`, `type`, `q`, `sort` (`member_number|name|joined_at|status`), `dir` (`ASC|DESC`), `page`, `per_page` (max 200), `export=csv`.
+
+Response 200:
+```json
+{"data": [...], "meta": {"page": 1, "per_page": 50, "total": 127, "total_pages": 3}}
+```
+
+With `export=csv`: `Content-Type: text/csv; charset=utf-8`, `Content-Disposition: attachment; filename="members-<tenant>-<date>.csv"`.
+
+### POST /api/v1/backstage/members/{id}/status (GSA only)
+
+Body: `{"status": "active|inactive|suspended|cancelled", "reason": "..."}`.
+
+Response 200: `{"data": {"success": true}}`
+403 `forbidden` for non-GSA, 422 `validation_failed` on invalid status/empty reason.
+
+### GET /api/v1/backstage/members/{id}/audit
+
+Query: `limit` (default 25, max 500).
+
+Response 200:
+```json
+{"data": [{"id": "...", "previousStatus": "active", "newStatus": "suspended", "reason": "...", "performedByName": "...", "createdAt": "..."}]}
+```
