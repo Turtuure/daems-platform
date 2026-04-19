@@ -26,6 +26,10 @@ return static function (Router $router, Container $container): void {
         return $container->make(AdminController::class)->stats($req);
     });
 
+    $router->get('/api/v1/admin/member-growth', static function (Request $req) use ($container): Response {
+        return $container->make(AdminController::class)->memberGrowth($req);
+    });
+
     $router->get('/api/v1/events', static function (Request $req) use ($container): Response {
         return $container->make(EventController::class)->index($req);
     });

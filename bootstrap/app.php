@@ -107,7 +107,10 @@ $container->bind(GetAdminStats::class,
     static fn(Container $c) => new GetAdminStats($c->make(AdminStatsRepositoryInterface::class)),
 );
 $container->bind(AdminController::class,
-    static fn(Container $c) => new AdminController($c->make(GetAdminStats::class)),
+    static fn(Container $c) => new AdminController(
+        $c->make(GetAdminStats::class),
+        $c->make(AdminStatsRepositoryInterface::class),
+    ),
 );
 
 // Events

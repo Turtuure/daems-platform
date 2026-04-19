@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Daems\Infrastructure\Adapter\Api\Controller;
 
 use Daems\Application\Admin\GetAdminStats\GetAdminStats;
+use Daems\Domain\Admin\AdminStatsRepositoryInterface;
 use Daems\Infrastructure\Framework\Http\Request;
 use Daems\Infrastructure\Framework\Http\Response;
 
@@ -12,6 +13,7 @@ final class AdminController
 {
     public function __construct(
         private readonly GetAdminStats $getAdminStats,
+        private readonly AdminStatsRepositoryInterface $repo,
     ) {}
 
     public function stats(Request $request): Response
@@ -43,5 +45,15 @@ final class AdminController
                 'member_growth' => $output->memberGrowth,
             ],
         ]);
+    }
+
+    public function memberGrowth(Request $request): Response
+    {
+        $allowed = ['30d', '90d', '1y', 'all'];
+        $period  = in_array($request->query('period'), $allowed, true)
+            ? $request->query('period')
+            : '30d';
+
+        return Response::json(['data' => $this->repo->getMemberGrowth($period)]);
     }
 }

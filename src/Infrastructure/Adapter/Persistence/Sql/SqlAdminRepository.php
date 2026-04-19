@@ -87,8 +87,126 @@ final class SqlAdminRepository implements AdminStatsRepositoryInterface
                 "SELECT COUNT(*) AS n FROM projects WHERE created_at >= CURDATE() - INTERVAL 6 DAY AND status != 'archived'",
                 "SELECT COUNT(*) AS n FROM projects WHERE created_at >= CURDATE() - INTERVAL 13 DAY AND created_at < CURDATE() - INTERVAL 6 DAY AND status != 'archived'"
             ),
-            memberGrowth:          $this->memberGrowthSeries(30),
+            memberGrowth:          $this->getMemberGrowth('30d'),
         );
+    }
+
+    public function getMemberGrowth(string $period): array
+    {
+        return match ($period) {
+            '90d'   => $this->growthDaily(90),
+            '1y'    => $this->growthMonthly(12),
+            'all'   => $this->growthAllTime(),
+            default => $this->growthDaily(30),
+        };
+    }
+
+    /** Daily cumulative growth for the last $days days. */
+    private function growthDaily(int $days): array
+    {
+        $rows = $this->db->query(
+            "SELECT DATE(created_at) AS d, COUNT(*) AS n FROM users
+             WHERE created_at >= CURDATE() - INTERVAL :days DAY
+             GROUP BY DATE(created_at)
+             ORDER BY d ASC",
+            ['days' => $days - 1],
+        );
+
+        $byDate = [];
+        foreach ($rows as $row) {
+            $byDate[$row['d']] = (int) $row['n'];
+        }
+
+        $baseline = (int) ($this->db->queryOne(
+            'SELECT COUNT(*) AS n FROM users WHERE created_at < CURDATE() - INTERVAL :days DAY',
+            ['days' => $days - 1],
+        )['n'] ?? 0);
+
+        $labels  = [];
+        $series  = [];
+        $running = $baseline;
+
+        for ($i = $days - 1; $i >= 0; $i--) {
+            $date     = date('Y-m-d', strtotime("-{$i} days"));
+            $running += $byDate[$date] ?? 0;
+            $labels[] = date('j M', strtotime($date));
+            $series[] = $running;
+        }
+
+        return ['labels' => $labels, 'series' => $series];
+    }
+
+    /** Monthly cumulative growth for the last $months months. */
+    private function growthMonthly(int $months): array
+    {
+        $rows = $this->db->query(
+            "SELECT DATE_FORMAT(created_at, '%Y-%m') AS ym, COUNT(*) AS n FROM users
+             WHERE created_at >= DATE_SUB(DATE_FORMAT(NOW(), '%Y-%m-01'), INTERVAL :m MONTH)
+             GROUP BY DATE_FORMAT(created_at, '%Y-%m')
+             ORDER BY ym ASC",
+            ['m' => $months - 1],
+        );
+
+        $byMonth = [];
+        foreach ($rows as $row) {
+            $byMonth[$row['ym']] = (int) $row['n'];
+        }
+
+        $baseline = (int) ($this->db->queryOne(
+            "SELECT COUNT(*) AS n FROM users
+             WHERE created_at < DATE_SUB(DATE_FORMAT(NOW(), '%Y-%m-01'), INTERVAL :m MONTH)",
+            ['m' => $months - 1],
+        )['n'] ?? 0);
+
+        $labels  = [];
+        $series  = [];
+        $running = $baseline;
+
+        for ($i = $months - 1; $i >= 0; $i--) {
+            $ym       = date('Y-m', strtotime("first day of -$i months"));
+            $running += $byMonth[$ym] ?? 0;
+            $labels[] = date('M \'y', strtotime($ym . '-01'));
+            $series[] = $running;
+        }
+
+        return ['labels' => $labels, 'series' => $series];
+    }
+
+    /** Monthly cumulative growth from the first ever registered user to today. */
+    private function growthAllTime(): array
+    {
+        $first = $this->db->queryOne('SELECT MIN(created_at) AS d FROM users')['d'] ?? null;
+
+        if ($first === null) {
+            return ['labels' => [], 'series' => []];
+        }
+
+        $rows = $this->db->query(
+            "SELECT DATE_FORMAT(created_at, '%Y-%m') AS ym, COUNT(*) AS n
+             FROM users
+             GROUP BY DATE_FORMAT(created_at, '%Y-%m')
+             ORDER BY ym ASC",
+        );
+
+        $byMonth = [];
+        foreach ($rows as $row) {
+            $byMonth[$row['ym']] = (int) $row['n'];
+        }
+
+        $labels  = [];
+        $series  = [];
+        $running = 0;
+        $cursor  = date('Y-m', strtotime($first));
+        $today   = date('Y-m');
+
+        while ($cursor <= $today) {
+            $running += $byMonth[$cursor] ?? 0;
+            $labels[] = date('M \'y', strtotime($cursor . '-01'));
+            $series[] = $running;
+            $cursor   = date('Y-m', strtotime($cursor . '-01 +1 month'));
+        }
+
+        return ['labels' => $labels, 'series' => $series];
     }
 
     /** Returns a 7-element array of daily counts (oldest→newest, missing days = 0). */
@@ -106,48 +224,6 @@ final class SqlAdminRepository implements AdminStatsRepositoryInterface
         }
 
         return $result;
-    }
-
-    /**
-     * Cumulative member count per day for the last $days days.
-     * Returns { labels: ['1 Apr', ...], series: [N, N+x, ...] }.
-     *
-     * @return array{ labels: string[], series: int[] }
-     */
-    private function memberGrowthSeries(int $days): array
-    {
-        $rows = $this->db->query(
-            "SELECT DATE(created_at) AS d, COUNT(*) AS n FROM users
-             WHERE created_at >= CURDATE() - INTERVAL :days DAY
-             GROUP BY DATE(created_at)
-             ORDER BY d ASC",
-            ['days' => $days - 1],
-        );
-
-        $byDate = [];
-        foreach ($rows as $row) {
-            $byDate[$row['d']] = (int) $row['n'];
-        }
-
-        // Running total starting from members registered before the window
-        $baseline = (int) ($this->db->queryOne(
-            "SELECT COUNT(*) AS n FROM users
-             WHERE created_at < CURDATE() - INTERVAL :days DAY",
-            ['days' => $days - 1],
-        )['n'] ?? 0);
-
-        $labels  = [];
-        $series  = [];
-        $running = $baseline;
-
-        for ($i = $days - 1; $i >= 0; $i--) {
-            $date     = date('Y-m-d', strtotime("-{$i} days"));
-            $running += $byDate[$date] ?? 0;
-            $labels[] = date('j M', strtotime($date));
-            $series[] = $running;
-        }
-
-        return ['labels' => $labels, 'series' => $series];
     }
 
     /** Week-over-week % change: ((this_week - last_week) / last_week) * 100. */
