@@ -18,7 +18,7 @@ final class AdminController
 
     public function stats(Request $request): Response
     {
-        $output = $this->getAdminStats->execute();
+        $output = $this->getAdminStats->execute($request->requireActingUser()->activeTenant);
 
         return Response::json([
             'data' => [
@@ -55,11 +55,13 @@ final class AdminController
 
     public function memberGrowth(Request $request): Response
     {
+        $acting  = $request->requireActingUser();
         $allowed = ['30d', '90d', '1y', 'all'];
-        $period  = in_array($request->query('period'), $allowed, true)
-            ? $request->query('period')
+        $periodRaw = $request->query('period');
+        $period  = in_array($periodRaw, $allowed, true)
+            ? (string) $periodRaw
             : '30d';
 
-        return Response::json(['data' => $this->repo->getMemberGrowth($period)]);
+        return Response::json(['data' => $this->repo->getMemberGrowthForTenant($period, $acting->activeTenant)]);
     }
 }

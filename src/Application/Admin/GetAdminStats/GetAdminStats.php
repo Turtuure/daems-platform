@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Daems\Application\Admin\GetAdminStats;
 
 use Daems\Domain\Admin\AdminStatsRepositoryInterface;
+use Daems\Domain\Tenant\TenantId;
 
 final class GetAdminStats
 {
@@ -12,9 +13,9 @@ final class GetAdminStats
         private readonly AdminStatsRepositoryInterface $repo,
     ) {}
 
-    public function execute(): GetAdminStatsOutput
+    public function execute(TenantId $tenantId): GetAdminStatsOutput
     {
-        $stats = $this->repo->getStats();
+        $stats = $this->repo->getStatsForTenant($tenantId);
 
         return new GetAdminStatsOutput(
             members:               $stats->members,

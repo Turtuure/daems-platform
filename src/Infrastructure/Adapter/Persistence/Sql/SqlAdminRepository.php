@@ -6,32 +6,40 @@ namespace Daems\Infrastructure\Adapter\Persistence\Sql;
 
 use Daems\Domain\Admin\AdminStats;
 use Daems\Domain\Admin\AdminStatsRepositoryInterface;
+use Daems\Domain\Tenant\TenantId;
 use Daems\Infrastructure\Framework\Database\Connection;
 
 final class SqlAdminRepository implements AdminStatsRepositoryInterface
 {
     public function __construct(private readonly Connection $db) {}
 
-    public function getStats(): AdminStats
+    public function getStatsForTenant(TenantId $tenantId): AdminStats
     {
+        $tid = $tenantId->value();
+
         $members = $this->scalarInt($this->db->queryOne(
-            'SELECT COUNT(*) AS n FROM users',
+            'SELECT COUNT(DISTINCT user_id) AS n FROM user_tenants WHERE tenant_id = ? AND left_at IS NULL',
+            [$tid],
         ), 'n');
 
         $pendingMember = $this->scalarInt($this->db->queryOne(
-            "SELECT COUNT(*) AS n FROM member_applications WHERE status = 'pending'",
+            "SELECT COUNT(*) AS n FROM member_applications WHERE tenant_id = ? AND status = 'pending'",
+            [$tid],
         ), 'n');
 
         $pendingSupporter = $this->scalarInt($this->db->queryOne(
-            "SELECT COUNT(*) AS n FROM supporter_applications WHERE status = 'pending'",
+            "SELECT COUNT(*) AS n FROM supporter_applications WHERE tenant_id = ? AND status = 'pending'",
+            [$tid],
         ), 'n');
 
         $upcomingEvents = $this->scalarInt($this->db->queryOne(
-            'SELECT COUNT(*) AS n FROM events WHERE event_date >= CURDATE()',
+            'SELECT COUNT(*) AS n FROM events WHERE tenant_id = ? AND event_date >= CURDATE()',
+            [$tid],
         ), 'n');
 
         $activeProjects = $this->scalarInt($this->db->queryOne(
-            "SELECT COUNT(*) AS n FROM projects WHERE status != 'archived'",
+            "SELECT COUNT(*) AS n FROM projects WHERE tenant_id = ? AND status != 'archived'",
+            [$tid],
         ), 'n');
 
         return new AdminStats(
@@ -40,75 +48,85 @@ final class SqlAdminRepository implements AdminStatsRepositoryInterface
             upcomingEvents:        $upcomingEvents,
             activeProjects:        $activeProjects,
             membersSparkline:      $this->dailyCounts(
-                "SELECT DATE(created_at) AS d, COUNT(*) AS n FROM users
-                 WHERE created_at >= CURDATE() - INTERVAL 6 DAY
-                 GROUP BY DATE(created_at)"
+                "SELECT DATE(joined_at) AS d, COUNT(DISTINCT user_id) AS n FROM user_tenants
+                 WHERE tenant_id = ? AND joined_at >= CURDATE() - INTERVAL 6 DAY AND left_at IS NULL
+                 GROUP BY DATE(joined_at)",
+                [$tid],
             ),
             applicationsSparkline: $this->dailyCounts(
                 "SELECT DATE(created_at) AS d, COUNT(*) AS n
                  FROM (
-                     SELECT created_at FROM member_applications WHERE created_at >= CURDATE() - INTERVAL 6 DAY
+                     SELECT created_at FROM member_applications WHERE tenant_id = ? AND created_at >= CURDATE() - INTERVAL 6 DAY
                      UNION ALL
-                     SELECT created_at FROM supporter_applications WHERE created_at >= CURDATE() - INTERVAL 6 DAY
+                     SELECT created_at FROM supporter_applications WHERE tenant_id = ? AND created_at >= CURDATE() - INTERVAL 6 DAY
                  ) combined
-                 GROUP BY DATE(created_at)"
+                 GROUP BY DATE(created_at)",
+                [$tid, $tid],
             ),
             eventsSparkline:       $this->dailyCounts(
                 "SELECT DATE(created_at) AS d, COUNT(*) AS n FROM events
-                 WHERE created_at >= CURDATE() - INTERVAL 6 DAY
-                 GROUP BY DATE(created_at)"
+                 WHERE tenant_id = ? AND created_at >= CURDATE() - INTERVAL 6 DAY
+                 GROUP BY DATE(created_at)",
+                [$tid],
             ),
             projectsSparkline:     $this->dailyCounts(
                 "SELECT DATE(created_at) AS d, COUNT(*) AS n FROM projects
-                 WHERE created_at >= CURDATE() - INTERVAL 6 DAY
-                 GROUP BY DATE(created_at)"
+                 WHERE tenant_id = ? AND created_at >= CURDATE() - INTERVAL 6 DAY
+                 GROUP BY DATE(created_at)",
+                [$tid],
             ),
             forumSparkline:        $this->dailyCountsSafe(
                 "SELECT DATE(created_at) AS d, COUNT(*) AS n FROM forum_posts
-                 WHERE created_at >= CURDATE() - INTERVAL 6 DAY
-                 GROUP BY DATE(created_at)"
+                 WHERE tenant_id = ? AND created_at >= CURDATE() - INTERVAL 6 DAY
+                 GROUP BY DATE(created_at)",
+                [$tid],
             ),
             insightsSparkline:     $this->dailyCountsSafe(
                 "SELECT DATE(created_at) AS d, COUNT(*) AS n FROM insights
-                 WHERE created_at >= CURDATE() - INTERVAL 6 DAY
-                 GROUP BY DATE(created_at)"
+                 WHERE tenant_id = ? AND created_at >= CURDATE() - INTERVAL 6 DAY
+                 GROUP BY DATE(created_at)",
+                [$tid],
             ),
             membersChange:         $this->weekOverWeek(
-                'SELECT COUNT(*) AS n FROM users WHERE created_at >= CURDATE() - INTERVAL 6 DAY',
-                'SELECT COUNT(*) AS n FROM users WHERE created_at >= CURDATE() - INTERVAL 13 DAY AND created_at < CURDATE() - INTERVAL 6 DAY'
+                'SELECT COUNT(DISTINCT user_id) AS n FROM user_tenants WHERE tenant_id = ? AND joined_at >= CURDATE() - INTERVAL 6 DAY AND left_at IS NULL',
+                'SELECT COUNT(DISTINCT user_id) AS n FROM user_tenants WHERE tenant_id = ? AND joined_at >= CURDATE() - INTERVAL 13 DAY AND joined_at < CURDATE() - INTERVAL 6 DAY AND left_at IS NULL',
+                [$tid],
             ),
             applicationsChange:    $this->weekOverWeek(
                 "SELECT COUNT(*) AS n FROM (
-                     SELECT created_at FROM member_applications WHERE created_at >= CURDATE() - INTERVAL 6 DAY
+                     SELECT created_at FROM member_applications WHERE tenant_id = ? AND created_at >= CURDATE() - INTERVAL 6 DAY
                      UNION ALL
-                     SELECT created_at FROM supporter_applications WHERE created_at >= CURDATE() - INTERVAL 6 DAY
+                     SELECT created_at FROM supporter_applications WHERE tenant_id = ? AND created_at >= CURDATE() - INTERVAL 6 DAY
                  ) t",
                 "SELECT COUNT(*) AS n FROM (
-                     SELECT created_at FROM member_applications WHERE created_at >= CURDATE() - INTERVAL 13 DAY AND created_at < CURDATE() - INTERVAL 6 DAY
+                     SELECT created_at FROM member_applications WHERE tenant_id = ? AND created_at >= CURDATE() - INTERVAL 13 DAY AND created_at < CURDATE() - INTERVAL 6 DAY
                      UNION ALL
-                     SELECT created_at FROM supporter_applications WHERE created_at >= CURDATE() - INTERVAL 13 DAY AND created_at < CURDATE() - INTERVAL 6 DAY
-                 ) t"
+                     SELECT created_at FROM supporter_applications WHERE tenant_id = ? AND created_at >= CURDATE() - INTERVAL 13 DAY AND created_at < CURDATE() - INTERVAL 6 DAY
+                 ) t",
+                [$tid, $tid],
             ),
             eventsChange:          $this->weekOverWeek(
-                'SELECT COUNT(*) AS n FROM events WHERE created_at >= CURDATE() - INTERVAL 6 DAY',
-                'SELECT COUNT(*) AS n FROM events WHERE created_at >= CURDATE() - INTERVAL 13 DAY AND created_at < CURDATE() - INTERVAL 6 DAY'
+                'SELECT COUNT(*) AS n FROM events WHERE tenant_id = ? AND created_at >= CURDATE() - INTERVAL 6 DAY',
+                'SELECT COUNT(*) AS n FROM events WHERE tenant_id = ? AND created_at >= CURDATE() - INTERVAL 13 DAY AND created_at < CURDATE() - INTERVAL 6 DAY',
+                [$tid],
             ),
             projectsChange:        $this->weekOverWeek(
-                "SELECT COUNT(*) AS n FROM projects WHERE created_at >= CURDATE() - INTERVAL 6 DAY AND status != 'archived'",
-                "SELECT COUNT(*) AS n FROM projects WHERE created_at >= CURDATE() - INTERVAL 13 DAY AND created_at < CURDATE() - INTERVAL 6 DAY AND status != 'archived'"
+                "SELECT COUNT(*) AS n FROM projects WHERE tenant_id = ? AND created_at >= CURDATE() - INTERVAL 6 DAY AND status != 'archived'",
+                "SELECT COUNT(*) AS n FROM projects WHERE tenant_id = ? AND created_at >= CURDATE() - INTERVAL 13 DAY AND created_at < CURDATE() - INTERVAL 6 DAY AND status != 'archived'",
+                [$tid],
             ),
-            memberGrowth:          $this->getMemberGrowth('30d'),
+            memberGrowth:          $this->getMemberGrowthForTenant('30d', $tenantId),
         );
     }
 
     /** @return array{labels: array<string>, series: array<int>} */
-    public function getMemberGrowth(string $period): array
+    public function getMemberGrowthForTenant(string $period, TenantId $tenantId): array
     {
         return match ($period) {
-            '90d'   => $this->growthDaily(90),
-            '1y'    => $this->growthMonthly(12),
-            'all'   => $this->growthAllTime(),
-            default => $this->growthDaily(30),
+            '90d'   => $this->growthDaily(90, $tenantId),
+            '1y'    => $this->growthMonthly(12, $tenantId),
+            'all'   => $this->growthAllTime($tenantId),
+            default => $this->growthDaily(30, $tenantId),
         };
     }
 
@@ -117,14 +135,14 @@ final class SqlAdminRepository implements AdminStatsRepositoryInterface
      *
      * @return array{labels: array<string>, series: array<int>}
      */
-    private function growthDaily(int $days): array
+    private function growthDaily(int $days, TenantId $tenantId): array
     {
         $rows = $this->db->query(
-            "SELECT DATE(created_at) AS d, COUNT(*) AS n FROM users
-             WHERE created_at >= CURDATE() - INTERVAL :days DAY
-             GROUP BY DATE(created_at)
+            "SELECT DATE(joined_at) AS d, COUNT(DISTINCT user_id) AS n FROM user_tenants
+             WHERE tenant_id = :tid AND joined_at >= CURDATE() - INTERVAL :days DAY AND left_at IS NULL
+             GROUP BY DATE(joined_at)
              ORDER BY d ASC",
-            ['days' => $days - 1],
+            ['tid' => $tenantId->value(), 'days' => $days - 1],
         );
 
         $byDate = [];
@@ -134,8 +152,8 @@ final class SqlAdminRepository implements AdminStatsRepositoryInterface
         }
 
         $baseline = $this->scalarInt($this->db->queryOne(
-            'SELECT COUNT(*) AS n FROM users WHERE created_at < CURDATE() - INTERVAL :days DAY',
-            ['days' => $days - 1],
+            'SELECT COUNT(DISTINCT user_id) AS n FROM user_tenants WHERE tenant_id = :tid AND joined_at < CURDATE() - INTERVAL :days DAY AND left_at IS NULL',
+            ['tid' => $tenantId->value(), 'days' => $days - 1],
         ), 'n');
 
         $labels  = [];
@@ -157,14 +175,14 @@ final class SqlAdminRepository implements AdminStatsRepositoryInterface
      *
      * @return array{labels: array<string>, series: array<int>}
      */
-    private function growthMonthly(int $months): array
+    private function growthMonthly(int $months, TenantId $tenantId): array
     {
         $rows = $this->db->query(
-            "SELECT DATE_FORMAT(created_at, '%Y-%m') AS ym, COUNT(*) AS n FROM users
-             WHERE created_at >= DATE_SUB(DATE_FORMAT(NOW(), '%Y-%m-01'), INTERVAL :m MONTH)
-             GROUP BY DATE_FORMAT(created_at, '%Y-%m')
+            "SELECT DATE_FORMAT(joined_at, '%Y-%m') AS ym, COUNT(DISTINCT user_id) AS n FROM user_tenants
+             WHERE tenant_id = :tid AND joined_at >= DATE_SUB(DATE_FORMAT(NOW(), '%Y-%m-01'), INTERVAL :m MONTH) AND left_at IS NULL
+             GROUP BY DATE_FORMAT(joined_at, '%Y-%m')
              ORDER BY ym ASC",
-            ['m' => $months - 1],
+            ['tid' => $tenantId->value(), 'm' => $months - 1],
         );
 
         $byMonth = [];
@@ -174,9 +192,9 @@ final class SqlAdminRepository implements AdminStatsRepositoryInterface
         }
 
         $baseline = $this->scalarInt($this->db->queryOne(
-            "SELECT COUNT(*) AS n FROM users
-             WHERE created_at < DATE_SUB(DATE_FORMAT(NOW(), '%Y-%m-01'), INTERVAL :m MONTH)",
-            ['m' => $months - 1],
+            "SELECT COUNT(DISTINCT user_id) AS n FROM user_tenants
+             WHERE tenant_id = :tid AND joined_at < DATE_SUB(DATE_FORMAT(NOW(), '%Y-%m-01'), INTERVAL :m MONTH) AND left_at IS NULL",
+            ['tid' => $tenantId->value(), 'm' => $months - 1],
         ), 'n');
 
         $labels  = [];
@@ -194,13 +212,13 @@ final class SqlAdminRepository implements AdminStatsRepositoryInterface
     }
 
     /**
-     * Monthly cumulative growth from the first ever registered user to today.
+     * Monthly cumulative growth from the first ever joined user to today, within tenant.
      *
      * @return array{labels: array<string>, series: array<int>}
      */
-    private function growthAllTime(): array
+    private function growthAllTime(TenantId $tenantId): array
     {
-        $firstRow = $this->db->queryOne('SELECT MIN(created_at) AS d FROM users');
+        $firstRow = $this->db->queryOne('SELECT MIN(joined_at) AS d FROM user_tenants WHERE tenant_id = ? AND left_at IS NULL', [$tenantId->value()]);
         $firstRaw = $firstRow !== null ? ($firstRow['d'] ?? null) : null;
         $first    = is_string($firstRaw) ? $firstRaw : null;
 
@@ -209,10 +227,12 @@ final class SqlAdminRepository implements AdminStatsRepositoryInterface
         }
 
         $rows = $this->db->query(
-            "SELECT DATE_FORMAT(created_at, '%Y-%m') AS ym, COUNT(*) AS n
-             FROM users
-             GROUP BY DATE_FORMAT(created_at, '%Y-%m')
+            "SELECT DATE_FORMAT(joined_at, '%Y-%m') AS ym, COUNT(DISTINCT user_id) AS n
+             FROM user_tenants
+             WHERE tenant_id = ? AND left_at IS NULL
+             GROUP BY DATE_FORMAT(joined_at, '%Y-%m')
              ORDER BY ym ASC",
+            [$tenantId->value()],
         );
 
         $byMonth = [];
@@ -237,10 +257,14 @@ final class SqlAdminRepository implements AdminStatsRepositoryInterface
         return ['labels' => $labels, 'series' => $series];
     }
 
-    /** Returns a 7-element array of daily counts (oldest→newest, missing days = 0). */
-    private function dailyCounts(string $sql): array
+    /**
+     * Returns a 7-element array of daily counts (oldest→newest, missing days = 0).
+     *
+     * @param array<int, string|int> $params
+     */
+    private function dailyCounts(string $sql, array $params): array
     {
-        $rows   = $this->db->query($sql);
+        $rows   = $this->db->query($sql, $params);
         $byDate = [];
         foreach ($rows as $row) {
             $d = is_string($row['d'] ?? null) ? (string) $row['d'] : '';
@@ -256,13 +280,14 @@ final class SqlAdminRepository implements AdminStatsRepositoryInterface
     }
 
     /**
-     * Defensive wrapper for optional datasets: if a table is not present yet,
-     * keep dashboard stats available instead of failing the whole response.
+     * Defensive wrapper for optional datasets.
+     *
+     * @param array<int, string|int> $params
      */
-    private function dailyCountsSafe(string $sql): array
+    private function dailyCountsSafe(string $sql, array $params): array
     {
         try {
-            return $this->dailyCounts($sql);
+            return $this->dailyCounts($sql, $params);
         } catch (\Throwable) {
             return [0, 0, 0, 0, 0, 0, 0];
         }
@@ -285,11 +310,15 @@ final class SqlAdminRepository implements AdminStatsRepositoryInterface
         return 0;
     }
 
-    /** Week-over-week % change: ((this_week - last_week) / last_week) * 100. */
-    private function weekOverWeek(string $thisWeekSql, string $lastWeekSql): float
+    /**
+     * Week-over-week % change.
+     *
+     * @param array<int, string|int> $params
+     */
+    private function weekOverWeek(string $thisWeekSql, string $lastWeekSql, array $params): float
     {
-        $this_week = $this->scalarInt($this->db->queryOne($thisWeekSql), 'n');
-        $last_week = $this->scalarInt($this->db->queryOne($lastWeekSql), 'n');
+        $this_week = $this->scalarInt($this->db->queryOne($thisWeekSql, $params), 'n');
+        $last_week = $this->scalarInt($this->db->queryOne($lastWeekSql, $params), 'n');
 
         if ($last_week === 0) {
             return $this_week > 0 ? 100.0 : 0.0;
