@@ -15,7 +15,7 @@ final class ListForumCategories
 
     public function execute(ListForumCategoriesInput $input): ListForumCategoriesOutput
     {
-        $categories = $this->forum->findAllCategories();
+        $categories = $this->forum->findAllCategoriesForTenant($input->tenantId);
 
         return new ListForumCategoriesOutput(
             array_map(fn(ForumCategory $c) => [

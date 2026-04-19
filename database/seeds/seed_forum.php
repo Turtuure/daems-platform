@@ -26,6 +26,7 @@ use Daems\Domain\Forum\ForumPost;
 use Daems\Domain\Forum\ForumPostId;
 use Daems\Domain\Forum\ForumTopic;
 use Daems\Domain\Forum\ForumTopicId;
+use Daems\Domain\Tenant\TenantId;
 use Daems\Infrastructure\Adapter\Persistence\Sql\SqlForumRepository;
 use Daems\Infrastructure\Framework\Database\Connection;
 
@@ -38,6 +39,12 @@ $db = new Connection([
 ]);
 
 $repo = new SqlForumRepository($db);
+
+$daemsTenantIdRaw = $db->queryOne("SELECT id FROM tenants WHERE slug = 'daems'");
+if ($daemsTenantIdRaw === null || !is_string($daemsTenantIdRaw['id'] ?? null)) {
+    throw new RuntimeException("Tenant 'daems' not found — run migration 019 first.");
+}
+$t = TenantId::fromString($daemsTenantIdRaw['id']);
 
 // ─── Categories ───────────────────────────────────────────────────────────────
 
@@ -86,7 +93,7 @@ $categories = [
 
 foreach ($categories as $c) {
     $repo->saveCategory(new ForumCategory(
-        $c['id'], $c['slug'], $c['name'], $c['icon'], $c['description'], $c['sort_order'],
+        $c['id'], $t, $c['slug'], $c['name'], $c['icon'], $c['description'], $c['sort_order'],
     ));
     echo "Category: {$c['name']}\n";
 }
@@ -351,21 +358,23 @@ $topics = [
     ],
 ];
 
-foreach ($topics as $t) {
+foreach ($topics as $topic) {
     $repo->saveTopic(new ForumTopic(
-        ForumTopicId::fromString($t['id']),
-        $t['category_id'],
-        $t['slug'],
-        $t['title'],
-        $t['author_name'],
-        $t['avatar_initials'],
-        $t['avatar_color'],
-        $t['pinned'],
-        $t['reply_count'],
-        $t['view_count'],
-        $t['last_activity_at'],
-        $t['last_activity_by'],
-        $t['created_at'],
+        ForumTopicId::fromString($topic['id']),
+        $t,
+        $topic['category_id'],
+        null,
+        $topic['slug'],
+        $topic['title'],
+        $topic['author_name'],
+        $topic['avatar_initials'],
+        $topic['avatar_color'],
+        $topic['pinned'],
+        $topic['reply_count'],
+        $topic['view_count'],
+        $topic['last_activity_at'],
+        $topic['last_activity_by'],
+        $topic['created_at'],
     ));
     echo "Topic: {$t['title']}\n";
 }
@@ -450,7 +459,9 @@ $posts = [
 foreach ($posts as $p) {
     $repo->savePost(new ForumPost(
         ForumPostId::fromString($p['id']),
+        $t,
         $p['topic_id'],
+        null,
         $p['author_name'],
         $p['avatar_initials'],
         $p['avatar_color'],

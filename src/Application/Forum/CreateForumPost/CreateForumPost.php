@@ -19,7 +19,7 @@ final class CreateForumPost
 
     public function execute(CreateForumPostInput $input): CreateForumPostOutput
     {
-        $topic = $this->forum->findTopicBySlug($input->topicSlug);
+        $topic = $this->forum->findTopicBySlugForTenant($input->topicSlug, $input->acting->activeTenant);
 
         if ($topic === null) {
             return new CreateForumPostOutput(false, 'Thread not found.');
@@ -30,6 +30,7 @@ final class CreateForumPost
 
         $post = new ForumPost(
             ForumPostId::generate(),
+            $input->acting->activeTenant,
             $topic->id()->value(),
             $identity['user_id'],
             $identity['author_name'],

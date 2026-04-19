@@ -15,7 +15,7 @@ final class GetForumCategory
 
     public function execute(GetForumCategoryInput $input): GetForumCategoryOutput
     {
-        $category = $this->forum->findCategoryBySlug($input->slug);
+        $category = $this->forum->findCategoryBySlugForTenant($input->slug, $input->tenantId);
 
         if ($category === null) {
             return new GetForumCategoryOutput(null);

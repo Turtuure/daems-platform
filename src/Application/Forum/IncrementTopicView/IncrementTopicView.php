@@ -14,7 +14,7 @@ final class IncrementTopicView
 
     public function execute(IncrementTopicViewInput $input): void
     {
-        $topic = $this->forum->findTopicBySlug($input->topicSlug);
+        $topic = $this->forum->findTopicBySlugForTenant($input->topicSlug, $input->tenantId);
 
         if ($topic !== null) {
             $this->forum->incrementTopicViews($topic->id()->value());

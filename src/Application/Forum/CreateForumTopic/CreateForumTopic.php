@@ -21,7 +21,7 @@ final class CreateForumTopic
 
     public function execute(CreateForumTopicInput $input): CreateForumTopicOutput
     {
-        $category = $this->forum->findCategoryBySlug($input->categorySlug);
+        $category = $this->forum->findCategoryBySlugForTenant($input->categorySlug, $input->acting->activeTenant);
 
         if ($category === null) {
             return new CreateForumTopicOutput(null, 'Category not found.');
@@ -34,6 +34,7 @@ final class CreateForumTopic
 
         $topic = new ForumTopic(
             ForumTopicId::generate(),
+            $input->acting->activeTenant,
             $category->id()->value(),
             $identity['user_id'],
             $slug,
@@ -53,6 +54,7 @@ final class CreateForumTopic
 
         $post = new ForumPost(
             ForumPostId::generate(),
+            $input->acting->activeTenant,
             $topic->id()->value(),
             $identity['user_id'],
             $identity['author_name'],

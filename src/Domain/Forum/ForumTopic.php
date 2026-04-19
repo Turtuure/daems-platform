@@ -4,10 +4,13 @@ declare(strict_types=1);
 
 namespace Daems\Domain\Forum;
 
+use Daems\Domain\Tenant\TenantId;
+
 final class ForumTopic
 {
     public function __construct(
         private readonly ForumTopicId $id,
+        private readonly TenantId $tenantId,
         private readonly string $categoryId,
         private readonly ?string $userId,
         private readonly string $slug,
@@ -24,6 +27,7 @@ final class ForumTopic
     ) {}
 
     public function id(): ForumTopicId { return $this->id; }
+    public function tenantId(): TenantId { return $this->tenantId; }
     public function categoryId(): string { return $this->categoryId; }
     public function userId(): ?string { return $this->userId; }
     public function slug(): string { return $this->slug; }

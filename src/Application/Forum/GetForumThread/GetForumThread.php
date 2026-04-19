@@ -15,14 +15,15 @@ final class GetForumThread
 
     public function execute(GetForumThreadInput $input): GetForumThreadOutput
     {
-        $topic = $this->forum->findTopicBySlug($input->topicSlug);
+        $topic = $this->forum->findTopicBySlugForTenant($input->topicSlug, $input->tenantId);
 
         if ($topic === null) {
             return new GetForumThreadOutput(null);
         }
 
-        $category = $this->forum->findCategoryBySlug(
+        $category = $this->forum->findCategoryBySlugForTenant(
             $this->forum->findCategorySlugById($topic->categoryId()),
+            $input->tenantId,
         );
 
         $posts = $this->forum->findPostsByTopic($topic->id()->value());

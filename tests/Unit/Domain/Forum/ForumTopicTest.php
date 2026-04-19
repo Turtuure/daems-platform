@@ -6,6 +6,7 @@ namespace Daems\Tests\Unit\Domain\Forum;
 
 use Daems\Domain\Forum\ForumTopic;
 use Daems\Domain\Forum\ForumTopicId;
+use Daems\Domain\Tenant\TenantId;
 use PHPUnit\Framework\TestCase;
 
 final class ForumTopicTest extends TestCase
@@ -14,6 +15,7 @@ final class ForumTopicTest extends TestCase
     {
         return new ForumTopic(
             $overrides['id']             ?? ForumTopicId::generate(),
+            $overrides['tenantId']       ?? TenantId::fromString('01958000-0000-7000-8000-000000000001'),
             $overrides['categoryId']     ?? 'cat-uuid-0001',
             $overrides['userId']         ?? 'user-uuid-0001',
             $overrides['slug']           ?? 'hello-world-abc123',
@@ -61,6 +63,7 @@ final class ForumTopicTest extends TestCase
     {
         $topic = new ForumTopic(
             ForumTopicId::generate(),
+            TenantId::fromString('01958000-0000-7000-8000-000000000001'),
             'cat-uuid-0001',
             null,
             'hello-world-abc123',
@@ -83,6 +86,7 @@ final class ForumTopicTest extends TestCase
     {
         $topic = new ForumTopic(
             ForumTopicId::generate(),
+            TenantId::fromString('01958000-0000-7000-8000-000000000001'),
             'cat-uuid-0001',
             'user-uuid-0001',
             'hello-world-abc123',

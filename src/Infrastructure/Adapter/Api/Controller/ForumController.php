@@ -18,6 +18,8 @@ use Daems\Application\Forum\LikeForumPost\LikeForumPost;
 use Daems\Application\Forum\LikeForumPost\LikeForumPostInput;
 use Daems\Application\Forum\ListForumCategories\ListForumCategories;
 use Daems\Application\Forum\ListForumCategories\ListForumCategoriesInput;
+use Daems\Domain\Shared\NotFoundException;
+use Daems\Domain\Tenant\Tenant;
 use Daems\Infrastructure\Framework\Http\Request;
 use Daems\Infrastructure\Framework\Http\Response;
 
@@ -35,13 +37,15 @@ final class ForumController
 
     public function index(Request $request): Response
     {
-        $output = $this->listCategories->execute(new ListForumCategoriesInput());
+        $tenantId = $this->requireTenant($request)->id;
+        $output = $this->listCategories->execute(new ListForumCategoriesInput($tenantId));
         return Response::json(['data' => $output->categories]);
     }
 
     public function category(Request $request, array $params): Response
     {
-        $output = $this->getCategory->execute(new GetForumCategoryInput($params['slug']));
+        $tenantId = $this->requireTenant($request)->id;
+        $output = $this->getCategory->execute(new GetForumCategoryInput($tenantId, $params['slug']));
 
         if ($output->data === null) {
             return Response::notFound('Category not found');
@@ -52,13 +56,23 @@ final class ForumController
 
     public function thread(Request $request, array $params): Response
     {
-        $output = $this->getThread->execute(new GetForumThreadInput($params['slug']));
+        $tenantId = $this->requireTenant($request)->id;
+        $output = $this->getThread->execute(new GetForumThreadInput($tenantId, $params['slug']));
 
         if ($output->data === null) {
             return Response::notFound('Thread not found');
         }
 
         return Response::json(['data' => $output->data]);
+    }
+
+    private function requireTenant(Request $request): Tenant
+    {
+        $tenant = $request->attribute('tenant');
+        if (!$tenant instanceof Tenant) {
+            throw new NotFoundException('unknown_tenant');
+        }
+        return $tenant;
     }
 
     public function createTopic(Request $request, array $params): Response
@@ -116,7 +130,8 @@ final class ForumController
 
     public function incrementView(Request $request, array $params): Response
     {
-        $this->incrementViewUseCase->execute(new IncrementTopicViewInput($params['slug']));
+        $tenantId = $this->requireTenant($request)->id;
+        $this->incrementViewUseCase->execute(new IncrementTopicViewInput($tenantId, $params['slug']));
         return Response::json(['data' => ['ok' => true]]);
     }
 }

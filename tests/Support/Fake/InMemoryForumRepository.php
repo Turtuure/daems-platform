@@ -8,6 +8,7 @@ use Daems\Domain\Forum\ForumCategory;
 use Daems\Domain\Forum\ForumPost;
 use Daems\Domain\Forum\ForumRepositoryInterface;
 use Daems\Domain\Forum\ForumTopic;
+use Daems\Domain\Tenant\TenantId;
 
 final class InMemoryForumRepository implements ForumRepositoryInterface
 {
@@ -20,40 +21,50 @@ final class InMemoryForumRepository implements ForumRepositoryInterface
     /** @var list<ForumPost> */
     public array $posts = [];
 
-    /** Test helper: the most recently saved post, or null if none. */
     public function lastPost(): ?ForumPost
     {
         return $this->posts === [] ? null : $this->posts[array_key_last($this->posts)];
     }
 
-    public function findAllCategories(): array
+    public function findAllCategoriesForTenant(TenantId $tenantId): array
     {
-        return array_values($this->categoriesBySlug);
+        return array_values(array_filter(
+            $this->categoriesBySlug,
+            static fn(ForumCategory $c): bool => $c->tenantId()->equals($tenantId),
+        ));
     }
 
-    public function findCategoryBySlug(string $slug): ?ForumCategory
+    public function findCategoryBySlugForTenant(string $slug, TenantId $tenantId): ?ForumCategory
     {
-        return $this->categoriesBySlug[$slug] ?? null;
+        $c = $this->categoriesBySlug[$slug] ?? null;
+        if ($c === null) {
+            return null;
+        }
+        return $c->tenantId()->equals($tenantId) ? $c : null;
     }
 
     public function findTopicsByCategory(string $categoryId): array
     {
         return array_values(array_filter(
             $this->topicsBySlug,
-            fn(ForumTopic $t) => $t->categoryId() === $categoryId,
+            static fn(ForumTopic $t): bool => $t->categoryId() === $categoryId,
         ));
     }
 
-    public function findTopicBySlug(string $slug): ?ForumTopic
+    public function findTopicBySlugForTenant(string $slug, TenantId $tenantId): ?ForumTopic
     {
-        return $this->topicsBySlug[$slug] ?? null;
+        $t = $this->topicsBySlug[$slug] ?? null;
+        if ($t === null) {
+            return null;
+        }
+        return $t->tenantId()->equals($tenantId) ? $t : null;
     }
 
     public function findPostsByTopic(string $topicId): array
     {
         return array_values(array_filter(
             $this->posts,
-            fn(ForumPost $p) => $p->topicId() === $topicId,
+            static fn(ForumPost $p): bool => $p->topicId() === $topicId,
         ));
     }
 
@@ -99,7 +110,7 @@ final class InMemoryForumRepository implements ForumRepositoryInterface
 
     public function findPostsByUserId(string $userId, int $limit = 5): array
     {
-        $posts = array_values(array_filter($this->posts, fn(ForumPost $p) => $p->userId() === $userId));
+        $posts = array_values(array_filter($this->posts, static fn(ForumPost $p): bool => $p->userId() === $userId));
         return ['total' => count($posts), 'posts' => array_slice($posts, 0, $limit)];
     }
 }

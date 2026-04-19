@@ -4,17 +4,19 @@ declare(strict_types=1);
 
 namespace Daems\Domain\Forum;
 
+use Daems\Domain\Tenant\TenantId;
+
 interface ForumRepositoryInterface
 {
     /** @return ForumCategory[] with topicCount and postCount */
-    public function findAllCategories(): array;
+    public function findAllCategoriesForTenant(TenantId $tenantId): array;
 
-    public function findCategoryBySlug(string $slug): ?ForumCategory;
+    public function findCategoryBySlugForTenant(string $slug, TenantId $tenantId): ?ForumCategory;
 
     /** @return ForumTopic[] ordered by pinned DESC, last_activity_at DESC */
     public function findTopicsByCategory(string $categoryId): array;
 
-    public function findTopicBySlug(string $slug): ?ForumTopic;
+    public function findTopicBySlugForTenant(string $slug, TenantId $tenantId): ?ForumTopic;
 
     /** @return ForumPost[] ordered by sort_order ASC */
     public function findPostsByTopic(string $topicId): array;

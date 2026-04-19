@@ -11,36 +11,39 @@ use Daems\Domain\Forum\ForumPostId;
 use Daems\Domain\Forum\ForumRepositoryInterface;
 use Daems\Domain\Forum\ForumTopic;
 use Daems\Domain\Forum\ForumTopicId;
+use Daems\Domain\Tenant\TenantId;
 use Daems\Infrastructure\Framework\Database\Connection;
 
 final class SqlForumRepository implements ForumRepositoryInterface
 {
     public function __construct(private readonly Connection $db) {}
 
-    public function findAllCategories(): array
+    public function findAllCategoriesForTenant(TenantId $tenantId): array
     {
         $rows = $this->db->query(
             'SELECT c.*, COUNT(DISTINCT t.id) AS topic_count, COUNT(DISTINCT p.id) AS post_count
              FROM forum_categories c
              LEFT JOIN forum_topics t ON t.category_id = c.id
              LEFT JOIN forum_posts p ON p.topic_id = t.id
+             WHERE c.tenant_id = ?
              GROUP BY c.id
              ORDER BY c.sort_order ASC',
+            [$tenantId->value()],
         );
 
         return array_map($this->hydrateCategory(...), $rows);
     }
 
-    public function findCategoryBySlug(string $slug): ?ForumCategory
+    public function findCategoryBySlugForTenant(string $slug, TenantId $tenantId): ?ForumCategory
     {
         $row = $this->db->queryOne(
             'SELECT c.*, COUNT(DISTINCT t.id) AS topic_count, COUNT(DISTINCT p.id) AS post_count
              FROM forum_categories c
              LEFT JOIN forum_topics t ON t.category_id = c.id
              LEFT JOIN forum_posts p ON p.topic_id = t.id
-             WHERE c.slug = ?
+             WHERE c.slug = ? AND c.tenant_id = ?
              GROUP BY c.id',
-            [$slug],
+            [$slug, $tenantId->value()],
         );
 
         return $row !== null ? $this->hydrateCategory($row) : null;
@@ -67,11 +70,11 @@ final class SqlForumRepository implements ForumRepositoryInterface
         return array_map($this->hydrateTopic(...), $rows);
     }
 
-    public function findTopicBySlug(string $slug): ?ForumTopic
+    public function findTopicBySlugForTenant(string $slug, TenantId $tenantId): ?ForumTopic
     {
         $row = $this->db->queryOne(
-            'SELECT * FROM forum_topics WHERE slug = ?',
-            [$slug],
+            'SELECT * FROM forum_topics WHERE slug = ? AND tenant_id = ?',
+            [$slug, $tenantId->value()],
         );
 
         return $row !== null ? $this->hydrateTopic($row) : null;
@@ -90,8 +93,8 @@ final class SqlForumRepository implements ForumRepositoryInterface
     public function saveCategory(ForumCategory $category): void
     {
         $this->db->execute(
-            'INSERT INTO forum_categories (id, slug, name, icon, description, sort_order)
-             VALUES (?, ?, ?, ?, ?, ?)
+            'INSERT INTO forum_categories (id, tenant_id, slug, name, icon, description, sort_order)
+             VALUES (?, ?, ?, ?, ?, ?, ?)
              ON DUPLICATE KEY UPDATE
                 name        = VALUES(name),
                 icon        = VALUES(icon),
@@ -99,6 +102,7 @@ final class SqlForumRepository implements ForumRepositoryInterface
                 sort_order  = VALUES(sort_order)',
             [
                 $category->id()->value(),
+                $category->tenantId()->value(),
                 $category->slug(),
                 $category->name(),
                 $category->icon(),
@@ -112,9 +116,9 @@ final class SqlForumRepository implements ForumRepositoryInterface
     {
         $this->db->execute(
             'INSERT INTO forum_topics
-                (id, category_id, user_id, slug, title, author_name, avatar_initials, avatar_color,
+                (id, tenant_id, category_id, user_id, slug, title, author_name, avatar_initials, avatar_color,
                  pinned, reply_count, view_count, last_activity_at, last_activity_by, created_at)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
              ON DUPLICATE KEY UPDATE
                 title            = VALUES(title),
                 author_name      = VALUES(author_name),
@@ -127,6 +131,7 @@ final class SqlForumRepository implements ForumRepositoryInterface
                 last_activity_by = VALUES(last_activity_by)',
             [
                 $topic->id()->value(),
+                $topic->tenantId()->value(),
                 $topic->categoryId(),
                 $topic->userId(),
                 $topic->slug(),
@@ -148,14 +153,15 @@ final class SqlForumRepository implements ForumRepositoryInterface
     {
         $this->db->execute(
             'INSERT INTO forum_posts
-                (id, topic_id, user_id, author_name, avatar_initials, avatar_color,
+                (id, tenant_id, topic_id, user_id, author_name, avatar_initials, avatar_color,
                  role, role_class, joined_text, content, likes, created_at, sort_order)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
              ON DUPLICATE KEY UPDATE
                 content    = VALUES(content),
                 likes      = VALUES(likes)',
             [
                 $post->id()->value(),
+                $post->tenantId()->value(),
                 $post->topicId(),
                 $post->userId(),
                 $post->authorName(),
@@ -200,37 +206,41 @@ final class SqlForumRepository implements ForumRepositoryInterface
         );
     }
 
+    /** @param array<string, mixed> $row */
     private function hydrateCategory(array $row): ForumCategory
     {
         return new ForumCategory(
-            ForumCategoryId::fromString($row['id']),
-            $row['slug'],
-            $row['name'],
-            $row['icon'],
-            $row['description'],
-            (int) $row['sort_order'],
-            (int) ($row['topic_count'] ?? 0),
-            (int) ($row['post_count'] ?? 0),
+            ForumCategoryId::fromString(self::str($row, 'id')),
+            TenantId::fromString(self::str($row, 'tenant_id')),
+            self::str($row, 'slug'),
+            self::str($row, 'name'),
+            self::str($row, 'icon'),
+            self::str($row, 'description'),
+            self::intOf($row, 'sort_order'),
+            self::intOf($row, 'topic_count'),
+            self::intOf($row, 'post_count'),
         );
     }
 
+    /** @param array<string, mixed> $row */
     private function hydrateTopic(array $row): ForumTopic
     {
         return new ForumTopic(
-            ForumTopicId::fromString($row['id']),
-            $row['category_id'],
-            $row['user_id'] ?? null,
-            $row['slug'],
-            $row['title'],
-            $row['author_name'],
-            $row['avatar_initials'],
-            $row['avatar_color'] ?? null,
-            (bool) $row['pinned'],
-            (int) $row['reply_count'],
-            (int) $row['view_count'],
-            $row['last_activity_at'],
-            $row['last_activity_by'],
-            $row['created_at'],
+            ForumTopicId::fromString(self::str($row, 'id')),
+            TenantId::fromString(self::str($row, 'tenant_id')),
+            self::str($row, 'category_id'),
+            self::strOrNull($row, 'user_id'),
+            self::str($row, 'slug'),
+            self::str($row, 'title'),
+            self::str($row, 'author_name'),
+            self::str($row, 'avatar_initials'),
+            self::strOrNull($row, 'avatar_color'),
+            (bool) ($row['pinned'] ?? false),
+            self::intOf($row, 'reply_count'),
+            self::intOf($row, 'view_count'),
+            self::str($row, 'last_activity_at'),
+            self::str($row, 'last_activity_by'),
+            self::str($row, 'created_at'),
         );
     }
 
@@ -272,22 +282,54 @@ final class SqlForumRepository implements ForumRepositoryInterface
         return ['total' => $total, 'posts' => $posts];
     }
 
+    /** @param array<string, mixed> $row */
     private function hydratePost(array $row): ForumPost
     {
         return new ForumPost(
-            ForumPostId::fromString($row['id']),
-            $row['topic_id'],
-            $row['user_id'] ?? null,
-            $row['author_name'],
-            $row['avatar_initials'],
-            $row['avatar_color'] ?? null,
-            $row['role'],
-            $row['role_class'],
-            $row['joined_text'],
-            $row['content'],
-            (int) $row['likes'],
-            $row['created_at'],
-            (int) $row['sort_order'],
+            ForumPostId::fromString(self::str($row, 'id')),
+            TenantId::fromString(self::str($row, 'tenant_id')),
+            self::str($row, 'topic_id'),
+            self::strOrNull($row, 'user_id'),
+            self::str($row, 'author_name'),
+            self::str($row, 'avatar_initials'),
+            self::strOrNull($row, 'avatar_color'),
+            self::str($row, 'role'),
+            self::str($row, 'role_class'),
+            self::str($row, 'joined_text'),
+            self::str($row, 'content'),
+            self::intOf($row, 'likes'),
+            self::str($row, 'created_at'),
+            self::intOf($row, 'sort_order'),
         );
+    }
+
+    /** @param array<string, mixed> $row */
+    private static function str(array $row, string $key): string
+    {
+        $v = $row[$key] ?? null;
+        if (is_string($v)) {
+            return $v;
+        }
+        throw new \DomainException("Missing or non-string column: {$key}");
+    }
+
+    /** @param array<string, mixed> $row */
+    private static function strOrNull(array $row, string $key): ?string
+    {
+        $v = $row[$key] ?? null;
+        return is_string($v) ? $v : null;
+    }
+
+    /** @param array<string, mixed> $row */
+    private static function intOf(array $row, string $key): int
+    {
+        $v = $row[$key] ?? null;
+        if (is_int($v)) {
+            return $v;
+        }
+        if (is_string($v) && is_numeric($v)) {
+            return (int) $v;
+        }
+        return 0;
     }
 }

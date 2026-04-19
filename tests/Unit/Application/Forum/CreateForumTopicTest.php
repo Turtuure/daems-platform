@@ -24,6 +24,7 @@ final class CreateForumTopicTest extends TestCase
     {
         return new ForumCategory(
             ForumCategoryId::generate(),
+            TenantId::fromString('01958000-0000-7000-8000-000000000001'),
             'general',
             'General Discussion',
             'chat',
@@ -83,7 +84,7 @@ final class CreateForumTopicTest extends TestCase
     public function testReturnsSlugOnSuccess(): void
     {
         $repo = $this->createMock(ForumRepositoryInterface::class);
-        $repo->method('findCategoryBySlug')->willReturn($this->makeCategory());
+        $repo->method('findCategoryBySlugForTenant')->willReturn($this->makeCategory());
 
         $out = (new CreateForumTopic($repo, $this->users()))->execute($this->input());
 
@@ -94,7 +95,7 @@ final class CreateForumTopicTest extends TestCase
     public function testReturnsErrorWhenCategoryNotFound(): void
     {
         $repo = $this->createMock(ForumRepositoryInterface::class);
-        $repo->method('findCategoryBySlug')->willReturn(null);
+        $repo->method('findCategoryBySlugForTenant')->willReturn(null);
         $repo->expects($this->never())->method('saveTopic');
         $repo->expects($this->never())->method('savePost');
 
@@ -108,7 +109,7 @@ final class CreateForumTopicTest extends TestCase
     public function testSavesTopicAndPost(): void
     {
         $repo = $this->createMock(ForumRepositoryInterface::class);
-        $repo->method('findCategoryBySlug')->willReturn($this->makeCategory());
+        $repo->method('findCategoryBySlugForTenant')->willReturn($this->makeCategory());
         $repo->expects($this->once())->method('saveTopic');
         $repo->expects($this->once())->method('savePost');
 
@@ -118,7 +119,7 @@ final class CreateForumTopicTest extends TestCase
     public function testSlugIsDerivedFromTitle(): void
     {
         $repo = $this->createMock(ForumRepositoryInterface::class);
-        $repo->method('findCategoryBySlug')->willReturn($this->makeCategory());
+        $repo->method('findCategoryBySlugForTenant')->willReturn($this->makeCategory());
 
         $out = (new CreateForumTopic($repo, $this->users()))
             ->execute($this->input(['title' => 'Hello World Test']));
@@ -130,7 +131,7 @@ final class CreateForumTopicTest extends TestCase
     {
         $capturedPost = null;
         $repo = $this->createMock(ForumRepositoryInterface::class);
-        $repo->method('findCategoryBySlug')->willReturn($this->makeCategory());
+        $repo->method('findCategoryBySlugForTenant')->willReturn($this->makeCategory());
         $repo->method('savePost')->willReturnCallback(
             function (ForumPost $p) use (&$capturedPost): void {
                 $capturedPost = $p;
@@ -149,7 +150,7 @@ final class CreateForumTopicTest extends TestCase
     {
         $capturedPost = null;
         $repo = $this->createMock(ForumRepositoryInterface::class);
-        $repo->method('findCategoryBySlug')->willReturn($this->makeCategory());
+        $repo->method('findCategoryBySlugForTenant')->willReturn($this->makeCategory());
         $repo->method('savePost')->willReturnCallback(
             function (ForumPost $p) use (&$capturedPost): void {
                 $capturedPost = $p;

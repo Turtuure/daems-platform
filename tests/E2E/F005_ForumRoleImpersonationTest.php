@@ -19,11 +19,12 @@ final class F005_ForumRoleImpersonationTest extends TestCase
     protected function setUp(): void
     {
         $this->h = new KernelHarness(FrozenClock::at('2026-04-19T12:00:00Z'));
-        $cat = new ForumCategory(ForumCategoryId::generate(), 'general', 'General', 'chat', 'desc', 1);
+        $cat = new ForumCategory(ForumCategoryId::generate(), $this->h->testTenantId, 'general', 'General', 'chat', 'desc', 1);
         $this->h->forum->saveCategory($cat);
 
         $topic = new ForumTopic(
             ForumTopicId::generate(),
+            $this->h->testTenantId,
             $cat->id()->value(),
             null,
             'existing-topic',
