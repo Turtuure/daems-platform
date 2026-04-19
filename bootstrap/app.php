@@ -70,15 +70,22 @@ use Daems\Domain\Auth\AuthTokenRepositoryInterface;
 use Daems\Domain\Shared\Clock;
 use Daems\Infrastructure\Adapter\Persistence\Sql\SqlAuthLoginAttemptRepository;
 use Daems\Infrastructure\Adapter\Persistence\Sql\SqlAuthTokenRepository;
+use Daems\Infrastructure\Adapter\Persistence\Sql\SqlTenantRepository;
+use Daems\Infrastructure\Adapter\Persistence\Sql\SqlUserTenantRepository;
 use Daems\Infrastructure\Framework\Clock\SystemClock;
 use Daems\Infrastructure\Framework\Container\Container;
 use Daems\Infrastructure\Framework\Database\Connection;
 use Daems\Infrastructure\Framework\Http\Kernel;
 use Daems\Infrastructure\Framework\Http\Middleware\AuthMiddleware;
 use Daems\Infrastructure\Framework\Http\Middleware\RateLimitLoginMiddleware;
+use Daems\Infrastructure\Framework\Http\Middleware\TenantContextMiddleware;
 use Daems\Infrastructure\Framework\Http\Router;
 use Daems\Infrastructure\Framework\Logging\ErrorLogLogger;
 use Daems\Infrastructure\Framework\Logging\LoggerInterface;
+use Daems\Infrastructure\Tenant\HostTenantResolver;
+use Daems\Infrastructure\Tenant\TenantResolverInterface;
+use Daems\Domain\Tenant\TenantRepositoryInterface;
+use Daems\Domain\Tenant\UserTenantRepositoryInterface;
 
 // Load .env
 (static function (): void {
@@ -222,8 +229,32 @@ $container->bind(LogoutUser::class,
         $c->make(Clock::class),
     ),
 );
+// Tenant infrastructure
+$container->singleton(TenantRepositoryInterface::class,
+    static fn(Container $c) => new SqlTenantRepository($c->make(Connection::class)->pdo()),
+);
+$container->singleton(UserTenantRepositoryInterface::class,
+    static fn(Container $c) => new SqlUserTenantRepository($c->make(Connection::class)->pdo()),
+);
+$container->singleton(HostTenantResolver::class,
+    static fn(Container $c) => new HostTenantResolver(
+        $c->make(TenantRepositoryInterface::class),
+        (array) (require dirname(__DIR__) . '/config/tenant-fallback.php'),
+    ),
+);
+$container->singleton(TenantResolverInterface::class,
+    static fn(Container $c) => $c->make(HostTenantResolver::class),
+);
+$container->bind(TenantContextMiddleware::class,
+    static fn(Container $c) => new TenantContextMiddleware($c->make(TenantResolverInterface::class)),
+);
+
 $container->bind(AuthMiddleware::class,
-    static fn(Container $c) => new AuthMiddleware($c->make(AuthenticateToken::class)),
+    static fn(Container $c) => new AuthMiddleware(
+        $c->make(AuthenticateToken::class),
+        $c->make(TenantRepositoryInterface::class),
+        $c->make(UserTenantRepositoryInterface::class),
+    ),
 );
 $container->bind(RateLimitLoginMiddleware::class,
     static fn(Container $c) => new RateLimitLoginMiddleware(
