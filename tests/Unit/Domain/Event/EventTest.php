@@ -6,6 +6,7 @@ namespace Daems\Tests\Unit\Domain\Event;
 
 use Daems\Domain\Event\Event;
 use Daems\Domain\Event\EventId;
+use Daems\Domain\Tenant\TenantId;
 use PHPUnit\Framework\TestCase;
 
 final class EventTest extends TestCase
@@ -14,6 +15,7 @@ final class EventTest extends TestCase
     {
         return new Event(
             $overrides['id']          ?? EventId::generate(),
+            $overrides['tenantId']    ?? TenantId::fromString('01958000-0000-7000-8000-000000000001'),
             $overrides['slug']        ?? 'annual-meeting-2025',
             $overrides['title']       ?? 'Annual Meeting',
             $overrides['type']        ?? 'general',
@@ -50,6 +52,7 @@ final class EventTest extends TestCase
     {
         $event = new Event(
             EventId::generate(),
+            TenantId::fromString('01958000-0000-7000-8000-000000000001'),
             'no-optionals',
             'No Optionals',
             'general',

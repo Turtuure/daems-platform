@@ -16,7 +16,7 @@ final class RegisterForEvent
 
     public function execute(RegisterForEventInput $input): RegisterForEventOutput
     {
-        $event = $this->events->findBySlug($input->slug);
+        $event = $this->events->findBySlugForTenant($input->slug, $input->acting->activeTenant);
         if ($event === null) {
             return new RegisterForEventOutput(0, 'Event not found.');
         }

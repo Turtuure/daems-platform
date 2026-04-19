@@ -15,7 +15,7 @@ final class GetEvent
 
     public function execute(GetEventInput $input): GetEventOutput
     {
-        $event = $this->events->findBySlug($input->slug);
+        $event = $this->events->findBySlugForTenant($input->slug, $input->tenantId);
 
         if ($event === null) {
             return new GetEventOutput(null);

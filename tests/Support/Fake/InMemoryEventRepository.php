@@ -7,6 +7,7 @@ namespace Daems\Tests\Support\Fake;
 use Daems\Domain\Event\Event;
 use Daems\Domain\Event\EventRegistration;
 use Daems\Domain\Event\EventRepositoryInterface;
+use Daems\Domain\Tenant\TenantId;
 
 final class InMemoryEventRepository implements EventRepositoryInterface
 {
@@ -16,14 +17,21 @@ final class InMemoryEventRepository implements EventRepositoryInterface
     /** @var list<EventRegistration> */
     public array $registrations = [];
 
-    public function findAll(?string $type = null): array
+    public function listForTenant(TenantId $tenantId, ?string $type = null): array
     {
-        return array_values($this->bySlug);
+        return array_values(array_filter(
+            $this->bySlug,
+            static fn(Event $e): bool => $e->tenantId()->equals($tenantId),
+        ));
     }
 
-    public function findBySlug(string $slug): ?Event
+    public function findBySlugForTenant(string $slug, TenantId $tenantId): ?Event
     {
-        return $this->bySlug[$slug] ?? null;
+        $event = $this->bySlug[$slug] ?? null;
+        if ($event === null) {
+            return null;
+        }
+        return $event->tenantId()->equals($tenantId) ? $event : null;
     }
 
     public function save(Event $event): void
@@ -40,7 +48,7 @@ final class InMemoryEventRepository implements EventRepositoryInterface
     {
         $this->registrations = array_values(array_filter(
             $this->registrations,
-            fn(EventRegistration $r) => !($r->eventId() === $eventId && $r->userId() === $userId),
+            static fn(EventRegistration $r): bool => !($r->eventId() === $eventId && $r->userId() === $userId),
         ));
     }
 

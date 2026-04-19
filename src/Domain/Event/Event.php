@@ -4,10 +4,13 @@ declare(strict_types=1);
 
 namespace Daems\Domain\Event;
 
+use Daems\Domain\Tenant\TenantId;
+
 final class Event
 {
     public function __construct(
         private readonly EventId $id,
+        private readonly TenantId $tenantId,
         private readonly string $slug,
         private readonly string $title,
         private readonly string $type,
@@ -21,6 +24,7 @@ final class Event
     ) {}
 
     public function id(): EventId { return $this->id; }
+    public function tenantId(): TenantId { return $this->tenantId; }
     public function slug(): string { return $this->slug; }
     public function title(): string { return $this->title; }
     public function type(): string { return $this->type; }

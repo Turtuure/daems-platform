@@ -14,7 +14,7 @@ final class UnregisterFromEvent
 
     public function execute(UnregisterFromEventInput $input): UnregisterFromEventOutput
     {
-        $event = $this->events->findBySlug($input->slug);
+        $event = $this->events->findBySlugForTenant($input->slug, $input->acting->activeTenant);
         if ($event === null) {
             return new UnregisterFromEventOutput(0, 'Event not found.');
         }

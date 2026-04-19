@@ -8,31 +8,35 @@ use Daems\Domain\Event\Event;
 use Daems\Domain\Event\EventId;
 use Daems\Domain\Event\EventRegistration;
 use Daems\Domain\Event\EventRepositoryInterface;
+use Daems\Domain\Tenant\TenantId;
 use Daems\Infrastructure\Framework\Database\Connection;
 
 final class SqlEventRepository implements EventRepositoryInterface
 {
     public function __construct(private readonly Connection $db) {}
 
-    public function findAll(?string $type = null): array
+    public function listForTenant(TenantId $tenantId, ?string $type = null): array
     {
         if ($type !== null) {
             $rows = $this->db->query(
-                'SELECT * FROM events WHERE type = ? ORDER BY event_date ASC',
-                [$type],
+                'SELECT * FROM events WHERE tenant_id = ? AND type = ? ORDER BY event_date ASC',
+                [$tenantId->value(), $type],
             );
         } else {
-            $rows = $this->db->query('SELECT * FROM events ORDER BY event_date ASC');
+            $rows = $this->db->query(
+                'SELECT * FROM events WHERE tenant_id = ? ORDER BY event_date ASC',
+                [$tenantId->value()],
+            );
         }
 
         return array_map($this->hydrate(...), $rows);
     }
 
-    public function findBySlug(string $slug): ?Event
+    public function findBySlugForTenant(string $slug, TenantId $tenantId): ?Event
     {
         $row = $this->db->queryOne(
-            'SELECT * FROM events WHERE slug = ?',
-            [$slug],
+            'SELECT * FROM events WHERE slug = ? AND tenant_id = ?',
+            [$slug, $tenantId->value()],
         );
 
         return $row !== null ? $this->hydrate($row) : null;
@@ -42,8 +46,8 @@ final class SqlEventRepository implements EventRepositoryInterface
     {
         $this->db->execute(
             'INSERT INTO events
-                (id, slug, title, type, event_date, event_time, location, is_online, description, hero_image, gallery_json)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                (id, tenant_id, slug, title, type, event_date, event_time, location, is_online, description, hero_image, gallery_json)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
              ON DUPLICATE KEY UPDATE
                 title = VALUES(title),
                 type = VALUES(type),
@@ -56,6 +60,7 @@ final class SqlEventRepository implements EventRepositoryInterface
                 gallery_json = VALUES(gallery_json)',
             [
                 $event->id()->value(),
+                $event->tenantId()->value(),
                 $event->slug(),
                 $event->title(),
                 $event->type(),
@@ -73,8 +78,15 @@ final class SqlEventRepository implements EventRepositoryInterface
     public function register(EventRegistration $registration): void
     {
         $this->db->execute(
-            'INSERT IGNORE INTO event_registrations (id, event_id, user_id, registered_at) VALUES (?, ?, ?, ?)',
-            [$registration->id(), $registration->eventId(), $registration->userId(), $registration->registeredAt()],
+            'INSERT IGNORE INTO event_registrations (id, tenant_id, event_id, user_id, registered_at)
+             VALUES (?, (SELECT tenant_id FROM events WHERE id = ?), ?, ?, ?)',
+            [
+                $registration->id(),
+                $registration->eventId(),
+                $registration->eventId(),
+                $registration->userId(),
+                $registration->registeredAt(),
+            ],
         );
     }
 
@@ -121,6 +133,7 @@ final class SqlEventRepository implements EventRepositoryInterface
         return $rows;
     }
 
+    /** @param array<string, mixed> $row */
     private function hydrate(array $row): Event
     {
         $galleryRaw = $row['gallery_json'] ?? null;
@@ -130,6 +143,7 @@ final class SqlEventRepository implements EventRepositoryInterface
 
         return new Event(
             EventId::fromString(self::str($row, 'id')),
+            TenantId::fromString(self::str($row, 'tenant_id')),
             self::str($row, 'slug'),
             self::str($row, 'title'),
             self::str($row, 'type'),

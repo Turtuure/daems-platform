@@ -21,6 +21,7 @@ final class RegisterForEventTest extends TestCase
     {
         return new Event(
             EventId::generate(),
+            TenantId::fromString('01958000-0000-7000-8000-000000000001'),
             'annual-meeting-2025',
             'Annual Meeting 2025',
             'general',
@@ -51,7 +52,7 @@ final class RegisterForEventTest extends TestCase
         $event = $this->makeEvent();
 
         $repo = $this->createMock(EventRepositoryInterface::class);
-        $repo->method('findBySlug')->willReturn($event);
+        $repo->method('findBySlugForTenant')->willReturn($event);
         $repo->method('isRegistered')->willReturn(false);
         $repo->method('countRegistrations')->willReturn(1);
         $repo->expects($this->once())->method('register');
@@ -67,7 +68,7 @@ final class RegisterForEventTest extends TestCase
     public function testReturnsErrorWhenEventNotFound(): void
     {
         $repo = $this->createMock(EventRepositoryInterface::class);
-        $repo->method('findBySlug')->willReturn(null);
+        $repo->method('findBySlugForTenant')->willReturn(null);
         $repo->expects($this->never())->method('register');
 
         $out = (new RegisterForEvent($repo))->execute(
@@ -83,7 +84,7 @@ final class RegisterForEventTest extends TestCase
         $event = $this->makeEvent();
 
         $repo = $this->createMock(EventRepositoryInterface::class);
-        $repo->method('findBySlug')->willReturn($event);
+        $repo->method('findBySlugForTenant')->willReturn($event);
         $repo->method('isRegistered')->willReturn(true);
         $repo->method('countRegistrations')->willReturn(5);
         $repo->expects($this->never())->method('register');
@@ -102,7 +103,7 @@ final class RegisterForEventTest extends TestCase
         $eventId = $event->id()->value();
 
         $repo = $this->createMock(EventRepositoryInterface::class);
-        $repo->method('findBySlug')->willReturn($event);
+        $repo->method('findBySlugForTenant')->willReturn($event);
         $repo->method('isRegistered')->willReturn(false);
         $repo->method('countRegistrations')->willReturn(2);
 
@@ -128,7 +129,7 @@ final class RegisterForEventTest extends TestCase
         );
 
         $repo = $this->createMock(EventRepositoryInterface::class);
-        $repo->method('findBySlug')->willReturn($event);
+        $repo->method('findBySlugForTenant')->willReturn($event);
         $repo->method('isRegistered')->willReturn(false);
         $repo->method('countRegistrations')->willReturn(1);
 

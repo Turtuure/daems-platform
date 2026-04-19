@@ -15,7 +15,7 @@ final class ListEvents
 
     public function execute(ListEventsInput $input): ListEventsOutput
     {
-        $events = $this->events->findAll($input->type);
+        $events = $this->events->listForTenant($input->tenantId, $input->type);
 
         return new ListEventsOutput(
             array_map(fn(Event $e) => $this->toArray($e), $events),

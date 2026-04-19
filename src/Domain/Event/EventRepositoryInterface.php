@@ -4,12 +4,14 @@ declare(strict_types=1);
 
 namespace Daems\Domain\Event;
 
+use Daems\Domain\Tenant\TenantId;
+
 interface EventRepositoryInterface
 {
     /** @return Event[] */
-    public function findAll(?string $type = null): array;
+    public function listForTenant(TenantId $tenantId, ?string $type = null): array;
 
-    public function findBySlug(string $slug): ?Event;
+    public function findBySlugForTenant(string $slug, TenantId $tenantId): ?Event;
 
     public function save(Event $event): void;
 
