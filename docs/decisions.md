@@ -231,3 +231,27 @@ Reject passwords where `strlen($pw) > 72` at the application layer in `RegisterU
 **Consequences:**
 - No user-visible behaviour change for passwords under 72 bytes (typical range: 8–50 bytes).
 - Argon2id migration is explicitly out of scope — would force a global re-login event, disproportionate for a Low-severity finding.
+
+---
+
+## ADR-015: PHPStan Level 9 Baseline
+
+**Status:** Accepted (2026-04-19)
+
+**Context:**
+The project was at PHPStan level 6 — enforcing type hints on parameters, return types, and properties, but not null-safety (level 8) or strict `mixed` handling (level 9). As the codebase grew, null-chain bugs (chained method calls on `?Entity` without null checks) and untyped `mixed` usage from superglobals (`$_POST`, `$_GET`, `$_SESSION`, `json_decode()`) became recurring defect sources. These are exactly the categories of bug that static analysis catches for free.
+
+**Decision:**
+Raise the PHPStan baseline to **level 9** across the entire codebase. End state: 0 errors at level 9 with no `phpstan-baseline.neon` file.
+
+Supporting changes:
+- `Request::string()`/`int()`/`bool()`/`arrayValue()` — typed accessors that narrow `mixed` body/query values at the read site.
+- `SessionInterface` + production `Session` + `ArraySession` test double — typed `$_SESSION` wrapper with the same accessor shape.
+- Per-repository private hydration helpers (`str()`, `intCol()`, `boolCol()`) — narrow `array<string, mixed>` PDO rows to strongly-typed values, throwing `DomainException` on corrupt rows.
+- Null-safety: `?? throw new <DomainException>()` pattern at lookup sites; `assert($x !== null, 'invariant …')` where a null is logically impossible but PHPStan cannot prove it.
+
+**Consequences:**
+- Static analysis catches null-chain bugs and mixed-shape misuse before runtime.
+- All reads from superglobals / JSON payloads / DB rows now go through typed accessors or explicit narrowing.
+- New code must be level-9 clean from the start — this is enforced automatically by the CI `PHPStan` step (reads `phpstan.neon`, now `level: 9`).
+- Minimal behavior change: fixes preserve existing runtime behavior (e.g., `$req->string('key', '')` falls back to empty string exactly as `$req->input('key')` did when the key was missing).
