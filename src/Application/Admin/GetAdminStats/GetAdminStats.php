@@ -29,6 +29,7 @@ final class GetAdminStats
             applicationsChange:    $stats->applicationsChange,
             eventsChange:          $stats->eventsChange,
             projectsChange:        $stats->projectsChange,
+            memberGrowth:          $stats->memberGrowth,
         );
     }
 }

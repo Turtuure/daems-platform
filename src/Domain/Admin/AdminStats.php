@@ -23,5 +23,7 @@ final class AdminStats
         public readonly float $applicationsChange = 0.0,
         public readonly float $eventsChange = 0.0,
         public readonly float $projectsChange = 0.0,
+        /** @var array{ labels: string[], series: int[] } */
+        public readonly array $memberGrowth = ['labels' => [], 'series' => []],
     ) {}
 }

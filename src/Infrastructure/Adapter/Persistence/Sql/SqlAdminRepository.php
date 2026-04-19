@@ -87,6 +87,7 @@ final class SqlAdminRepository implements AdminStatsRepositoryInterface
                 "SELECT COUNT(*) AS n FROM projects WHERE created_at >= CURDATE() - INTERVAL 6 DAY AND status != 'archived'",
                 "SELECT COUNT(*) AS n FROM projects WHERE created_at >= CURDATE() - INTERVAL 13 DAY AND created_at < CURDATE() - INTERVAL 6 DAY AND status != 'archived'"
             ),
+            memberGrowth:          $this->memberGrowthSeries(30),
         );
     }
 
@@ -105,6 +106,48 @@ final class SqlAdminRepository implements AdminStatsRepositoryInterface
         }
 
         return $result;
+    }
+
+    /**
+     * Cumulative member count per day for the last $days days.
+     * Returns { labels: ['1 Apr', ...], series: [N, N+x, ...] }.
+     *
+     * @return array{ labels: string[], series: int[] }
+     */
+    private function memberGrowthSeries(int $days): array
+    {
+        $rows = $this->db->query(
+            "SELECT DATE(created_at) AS d, COUNT(*) AS n FROM users
+             WHERE created_at >= CURDATE() - INTERVAL :days DAY
+             GROUP BY DATE(created_at)
+             ORDER BY d ASC",
+            ['days' => $days - 1],
+        );
+
+        $byDate = [];
+        foreach ($rows as $row) {
+            $byDate[$row['d']] = (int) $row['n'];
+        }
+
+        // Running total starting from members registered before the window
+        $baseline = (int) ($this->db->queryOne(
+            "SELECT COUNT(*) AS n FROM users
+             WHERE created_at < CURDATE() - INTERVAL :days DAY",
+            ['days' => $days - 1],
+        )['n'] ?? 0);
+
+        $labels  = [];
+        $series  = [];
+        $running = $baseline;
+
+        for ($i = $days - 1; $i >= 0; $i--) {
+            $date     = date('Y-m-d', strtotime("-{$i} days"));
+            $running += $byDate[$date] ?? 0;
+            $labels[] = date('j M', strtotime($date));
+            $series[] = $running;
+        }
+
+        return ['labels' => $labels, 'series' => $series];
     }
 
     /** Week-over-week % change: ((this_week - last_week) / last_week) * 100. */

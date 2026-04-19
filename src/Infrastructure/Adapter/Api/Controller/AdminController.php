@@ -40,6 +40,7 @@ final class AdminController
                     'change'    => $output->projectsChange,
                     'sparkline' => $output->projectsSparkline,
                 ],
+                'member_growth' => $output->memberGrowth,
             ],
         ]);
     }
