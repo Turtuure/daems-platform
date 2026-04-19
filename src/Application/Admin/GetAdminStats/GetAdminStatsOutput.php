@@ -11,5 +11,13 @@ final class GetAdminStatsOutput
         public readonly int $pendingApplications,
         public readonly int $upcomingEvents,
         public readonly int $activeProjects,
+        /** @var int[] */
+        public readonly array $membersSparkline = [],
+        /** @var int[] */
+        public readonly array $applicationsSparkline = [],
+        /** @var int[] */
+        public readonly array $eventsSparkline = [],
+        /** @var int[] */
+        public readonly array $projectsSparkline = [],
     ) {}
 }

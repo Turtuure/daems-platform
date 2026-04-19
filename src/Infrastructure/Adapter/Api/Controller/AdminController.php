@@ -20,10 +20,22 @@ final class AdminController
 
         return Response::json([
             'data' => [
-                'members'              => $output->members,
-                'pending_applications' => $output->pendingApplications,
-                'upcoming_events'      => $output->upcomingEvents,
-                'active_projects'      => $output->activeProjects,
+                'members' => [
+                    'value'     => $output->members,
+                    'sparkline' => $output->membersSparkline,
+                ],
+                'pending_applications' => [
+                    'value'     => $output->pendingApplications,
+                    'sparkline' => $output->applicationsSparkline,
+                ],
+                'upcoming_events' => [
+                    'value'     => $output->upcomingEvents,
+                    'sparkline' => $output->eventsSparkline,
+                ],
+                'active_projects' => [
+                    'value'     => $output->activeProjects,
+                    'sparkline' => $output->projectsSparkline,
+                ],
             ],
         ]);
     }

@@ -17,10 +17,14 @@ final class GetAdminStats
         $stats = $this->repo->getStats();
 
         return new GetAdminStatsOutput(
-            members:             $stats->members,
-            pendingApplications: $stats->pendingApplications,
-            upcomingEvents:      $stats->upcomingEvents,
-            activeProjects:      $stats->activeProjects,
+            members:               $stats->members,
+            pendingApplications:   $stats->pendingApplications,
+            upcomingEvents:        $stats->upcomingEvents,
+            activeProjects:        $stats->activeProjects,
+            membersSparkline:      $stats->membersSparkline,
+            applicationsSparkline: $stats->applicationsSparkline,
+            eventsSparkline:       $stats->eventsSparkline,
+            projectsSparkline:     $stats->projectsSparkline,
         );
     }
 }
