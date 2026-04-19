@@ -63,6 +63,16 @@ final class SqlAdminRepository implements AdminStatsRepositoryInterface
                  WHERE created_at >= CURDATE() - INTERVAL 6 DAY
                  GROUP BY DATE(created_at)"
             ),
+            forumSparkline:        $this->dailyCountsSafe(
+                "SELECT DATE(created_at) AS d, COUNT(*) AS n FROM forum_posts
+                 WHERE created_at >= CURDATE() - INTERVAL 6 DAY
+                 GROUP BY DATE(created_at)"
+            ),
+            insightsSparkline:     $this->dailyCountsSafe(
+                "SELECT DATE(created_at) AS d, COUNT(*) AS n FROM insights
+                 WHERE created_at >= CURDATE() - INTERVAL 6 DAY
+                 GROUP BY DATE(created_at)"
+            ),
             membersChange:         $this->weekOverWeek(
                 'SELECT COUNT(*) AS n FROM users WHERE created_at >= CURDATE() - INTERVAL 6 DAY',
                 'SELECT COUNT(*) AS n FROM users WHERE created_at >= CURDATE() - INTERVAL 13 DAY AND created_at < CURDATE() - INTERVAL 6 DAY'
@@ -224,6 +234,19 @@ final class SqlAdminRepository implements AdminStatsRepositoryInterface
         }
 
         return $result;
+    }
+
+    /**
+     * Defensive wrapper for optional datasets: if a table is not present yet,
+     * keep dashboard stats available instead of failing the whole response.
+     */
+    private function dailyCountsSafe(string $sql): array
+    {
+        try {
+            return $this->dailyCounts($sql);
+        } catch (\Throwable) {
+            return [0, 0, 0, 0, 0, 0, 0];
+        }
     }
 
     /** Week-over-week % change: ((this_week - last_week) / last_week) * 100. */

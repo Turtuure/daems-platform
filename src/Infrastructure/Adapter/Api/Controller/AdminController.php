@@ -42,6 +42,12 @@ final class AdminController
                     'change'    => $output->projectsChange,
                     'sparkline' => $output->projectsSparkline,
                 ],
+                'forum_activity' => [
+                    'sparkline' => $output->forumSparkline,
+                ],
+                'insights_activity' => [
+                    'sparkline' => $output->insightsSparkline,
+                ],
                 'member_growth' => $output->memberGrowth,
             ],
         ]);

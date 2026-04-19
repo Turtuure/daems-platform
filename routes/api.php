@@ -28,7 +28,16 @@ return static function (Router $router, Container $container): void {
         return $container->make(AdminController::class)->stats($req);
     });
 
+    // Backstage aliases (preferred naming in frontend)
+    $router->get('/api/v1/backstage/stats', static function (Request $req) use ($container): Response {
+        return $container->make(AdminController::class)->stats($req);
+    });
+
     $router->get('/api/v1/admin/member-growth', static function (Request $req) use ($container): Response {
+        return $container->make(AdminController::class)->memberGrowth($req);
+    });
+
+    $router->get('/api/v1/backstage/member-growth', static function (Request $req) use ($container): Response {
         return $container->make(AdminController::class)->memberGrowth($req);
     });
 
