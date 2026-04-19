@@ -70,6 +70,64 @@ final class Request
         return $this->body[$key] ?? $default;
     }
 
+    public function string(string $key, ?string $default = null): ?string
+    {
+        $v = $this->body[$key] ?? $this->query[$key] ?? null;
+        if ($v === null) {
+            return $default;
+        }
+        if (is_scalar($v)) {
+            return (string) $v;
+        }
+        return $default;
+    }
+
+    public function int(string $key, ?int $default = null): ?int
+    {
+        $v = $this->body[$key] ?? $this->query[$key] ?? null;
+        if ($v === null) {
+            return $default;
+        }
+        if (is_int($v)) {
+            return $v;
+        }
+        if (is_string($v) && is_numeric($v)) {
+            return (int) $v;
+        }
+        return $default;
+    }
+
+    public function bool(string $key, ?bool $default = null): ?bool
+    {
+        $v = $this->body[$key] ?? $this->query[$key] ?? null;
+        if ($v === null) {
+            return $default;
+        }
+        if (is_bool($v)) {
+            return $v;
+        }
+        if (is_int($v)) {
+            return $v !== 0;
+        }
+        if (is_string($v)) {
+            return match (strtolower($v)) {
+                '1', 'true', 'on', 'yes' => true,
+                '0', 'false', 'off', 'no', '' => false,
+                default => $default,
+            };
+        }
+        return $default;
+    }
+
+    /**
+     * @return array<array-key, mixed>|null
+     */
+    public function arrayValue(string $key): ?array
+    {
+        $v = $this->body[$key] ?? $this->query[$key] ?? null;
+        return is_array($v) ? $v : null;
+    }
+
     public function all(): array
     {
         return $this->body;
