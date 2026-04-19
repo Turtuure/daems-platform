@@ -14,25 +14,25 @@ final class SqlAdminRepository implements AdminStatsRepositoryInterface
 
     public function getStats(): AdminStats
     {
-        $members = (int) ($this->db->queryOne(
+        $members = $this->scalarInt($this->db->queryOne(
             'SELECT COUNT(*) AS n FROM users',
-        )['n'] ?? 0);
+        ), 'n');
 
-        $pendingMember = (int) ($this->db->queryOne(
+        $pendingMember = $this->scalarInt($this->db->queryOne(
             "SELECT COUNT(*) AS n FROM member_applications WHERE status = 'pending'",
-        )['n'] ?? 0);
+        ), 'n');
 
-        $pendingSupporter = (int) ($this->db->queryOne(
+        $pendingSupporter = $this->scalarInt($this->db->queryOne(
             "SELECT COUNT(*) AS n FROM supporter_applications WHERE status = 'pending'",
-        )['n'] ?? 0);
+        ), 'n');
 
-        $upcomingEvents = (int) ($this->db->queryOne(
+        $upcomingEvents = $this->scalarInt($this->db->queryOne(
             'SELECT COUNT(*) AS n FROM events WHERE event_date >= CURDATE()',
-        )['n'] ?? 0);
+        ), 'n');
 
-        $activeProjects = (int) ($this->db->queryOne(
+        $activeProjects = $this->scalarInt($this->db->queryOne(
             "SELECT COUNT(*) AS n FROM projects WHERE status != 'archived'",
-        )['n'] ?? 0);
+        ), 'n');
 
         return new AdminStats(
             members:               $members,
@@ -129,13 +129,14 @@ final class SqlAdminRepository implements AdminStatsRepositoryInterface
 
         $byDate = [];
         foreach ($rows as $row) {
-            $byDate[$row['d']] = (int) $row['n'];
+            $d = is_string($row['d'] ?? null) ? (string) $row['d'] : '';
+            $byDate[$d] = $this->intVal($row['n'] ?? null);
         }
 
-        $baseline = (int) ($this->db->queryOne(
+        $baseline = $this->scalarInt($this->db->queryOne(
             'SELECT COUNT(*) AS n FROM users WHERE created_at < CURDATE() - INTERVAL :days DAY',
             ['days' => $days - 1],
-        )['n'] ?? 0);
+        ), 'n');
 
         $labels  = [];
         $series  = [];
@@ -168,14 +169,15 @@ final class SqlAdminRepository implements AdminStatsRepositoryInterface
 
         $byMonth = [];
         foreach ($rows as $row) {
-            $byMonth[$row['ym']] = (int) $row['n'];
+            $ym = is_string($row['ym'] ?? null) ? (string) $row['ym'] : '';
+            $byMonth[$ym] = $this->intVal($row['n'] ?? null);
         }
 
-        $baseline = (int) ($this->db->queryOne(
+        $baseline = $this->scalarInt($this->db->queryOne(
             "SELECT COUNT(*) AS n FROM users
              WHERE created_at < DATE_SUB(DATE_FORMAT(NOW(), '%Y-%m-01'), INTERVAL :m MONTH)",
             ['m' => $months - 1],
-        )['n'] ?? 0);
+        ), 'n');
 
         $labels  = [];
         $series  = [];
@@ -198,7 +200,9 @@ final class SqlAdminRepository implements AdminStatsRepositoryInterface
      */
     private function growthAllTime(): array
     {
-        $first = $this->db->queryOne('SELECT MIN(created_at) AS d FROM users')['d'] ?? null;
+        $firstRow = $this->db->queryOne('SELECT MIN(created_at) AS d FROM users');
+        $firstRaw = $firstRow !== null ? ($firstRow['d'] ?? null) : null;
+        $first    = is_string($firstRaw) ? $firstRaw : null;
 
         if ($first === null) {
             return ['labels' => [], 'series' => []];
@@ -213,7 +217,8 @@ final class SqlAdminRepository implements AdminStatsRepositoryInterface
 
         $byMonth = [];
         foreach ($rows as $row) {
-            $byMonth[$row['ym']] = (int) $row['n'];
+            $ym = is_string($row['ym'] ?? null) ? (string) $row['ym'] : '';
+            $byMonth[$ym] = $this->intVal($row['n'] ?? null);
         }
 
         $labels  = [];
@@ -238,7 +243,8 @@ final class SqlAdminRepository implements AdminStatsRepositoryInterface
         $rows   = $this->db->query($sql);
         $byDate = [];
         foreach ($rows as $row) {
-            $byDate[$row['d']] = (int) $row['n'];
+            $d = is_string($row['d'] ?? null) ? (string) $row['d'] : '';
+            $byDate[$d] = $this->intVal($row['n'] ?? null);
         }
 
         $result = [];
@@ -262,11 +268,28 @@ final class SqlAdminRepository implements AdminStatsRepositoryInterface
         }
     }
 
+    /** @param array<string, mixed>|null $row */
+    private function scalarInt(?array $row, string $key): int
+    {
+        return $this->intVal($row[$key] ?? null);
+    }
+
+    private function intVal(mixed $v): int
+    {
+        if (is_int($v)) {
+            return $v;
+        }
+        if (is_string($v) && is_numeric($v)) {
+            return (int) $v;
+        }
+        return 0;
+    }
+
     /** Week-over-week % change: ((this_week - last_week) / last_week) * 100. */
     private function weekOverWeek(string $thisWeekSql, string $lastWeekSql): float
     {
-        $this_week = (int) ($this->db->queryOne($thisWeekSql)['n'] ?? 0);
-        $last_week = (int) ($this->db->queryOne($lastWeekSql)['n'] ?? 0);
+        $this_week = $this->scalarInt($this->db->queryOne($thisWeekSql), 'n');
+        $last_week = $this->scalarInt($this->db->queryOne($lastWeekSql), 'n');
 
         if ($last_week === 0) {
             return $this_week > 0 ? 100.0 : 0.0;

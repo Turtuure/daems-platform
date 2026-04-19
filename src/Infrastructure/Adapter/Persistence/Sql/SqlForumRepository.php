@@ -53,7 +53,8 @@ final class SqlForumRepository implements ForumRepositoryInterface
             [$categoryId],
         );
 
-        return $row['slug'] ?? '';
+        $slug = $row['slug'] ?? null;
+        return is_string($slug) ? $slug : '';
     }
 
     public function findTopicsByCategory(string $categoryId): array
@@ -239,7 +240,8 @@ final class SqlForumRepository implements ForumRepositoryInterface
             'SELECT COUNT(*) AS cnt FROM forum_posts WHERE user_id = ?',
             [$userId],
         );
-        $total = (int) ($countRow['cnt'] ?? 0);
+        $cnt   = $countRow['cnt'] ?? null;
+        $total = is_int($cnt) ? $cnt : (is_string($cnt) && is_numeric($cnt) ? (int) $cnt : 0);
 
         $rows = $this->db->query(
             'SELECT fp.id, fp.content, fp.created_at,
@@ -254,14 +256,18 @@ final class SqlForumRepository implements ForumRepositoryInterface
             [$userId, $limit],
         );
 
-        $posts = array_map(static fn(array $r) => [
-            'slug'     => $r['topic_slug'],
-            'cat_slug' => $r['cat_slug'],
-            'thread'   => $r['thread'],
-            'category' => $r['category'],
-            'excerpt'  => mb_strimwidth($r['content'], 0, 120, '…'),
-            'date'     => date('M j, Y', strtotime($r['created_at'])),
-        ], $rows);
+        $posts = array_map(static function (array $r): array {
+            $content   = is_string($r['content'] ?? null) ? (string) $r['content'] : '';
+            $createdAt = is_string($r['created_at'] ?? null) ? (string) $r['created_at'] : '';
+            return [
+                'slug'     => is_string($r['topic_slug'] ?? null) ? $r['topic_slug'] : '',
+                'cat_slug' => is_string($r['cat_slug'] ?? null) ? $r['cat_slug'] : '',
+                'thread'   => is_string($r['thread'] ?? null) ? $r['thread'] : '',
+                'category' => is_string($r['category'] ?? null) ? $r['category'] : '',
+                'excerpt'  => mb_strimwidth($content, 0, 120, '…'),
+                'date'     => date('M j, Y', strtotime($createdAt) ?: 0),
+            ];
+        }, $rows);
 
         return ['total' => $total, 'posts' => $posts];
     }

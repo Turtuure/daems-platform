@@ -76,20 +76,55 @@ final class SqlInsightRepository implements InsightRepositoryInterface
 
     private function hydrate(array $row): Insight
     {
+        $tagsRaw  = $row['tags_json'] ?? null;
+        $tagsJson = is_string($tagsRaw) ? $tagsRaw : '[]';
+        $tags     = json_decode($tagsJson, true);
+        $tags     = is_array($tags) ? $tags : [];
+
         return new Insight(
-            InsightId::fromString($row['id']),
-            $row['slug'],
-            $row['title'],
-            $row['category'],
-            $row['category_label'],
-            (bool) $row['featured'],
-            $row['published_date'],
-            $row['author'],
-            (int) $row['reading_time'],
-            $row['excerpt'],
-            $row['hero_image'],
-            json_decode($row['tags_json'] ?? '[]', true) ?: [],
-            $row['content'],
+            InsightId::fromString(self::str($row, 'id')),
+            self::str($row, 'slug'),
+            self::str($row, 'title'),
+            self::str($row, 'category'),
+            self::str($row, 'category_label'),
+            (bool) ($row['featured'] ?? false),
+            self::str($row, 'published_date'),
+            self::str($row, 'author'),
+            self::intCol($row, 'reading_time'),
+            self::str($row, 'excerpt'),
+            self::strOrNull($row, 'hero_image'),
+            $tags,
+            self::str($row, 'content'),
         );
+    }
+
+    /** @param array<string, mixed> $row */
+    private static function str(array $row, string $key): string
+    {
+        $v = $row[$key] ?? null;
+        if (is_string($v)) {
+            return $v;
+        }
+        throw new \DomainException("Missing or non-string column: {$key}");
+    }
+
+    /** @param array<string, mixed> $row */
+    private static function strOrNull(array $row, string $key): ?string
+    {
+        $v = $row[$key] ?? null;
+        return is_string($v) ? $v : null;
+    }
+
+    /** @param array<string, mixed> $row */
+    private static function intCol(array $row, string $key): int
+    {
+        $v = $row[$key] ?? null;
+        if (is_int($v)) {
+            return $v;
+        }
+        if (is_string($v) && is_numeric($v)) {
+            return (int) $v;
+        }
+        throw new \DomainException("Missing or non-int column: {$key}");
     }
 }

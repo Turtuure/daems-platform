@@ -42,7 +42,7 @@ final class RateLimitLoginMiddleware implements MiddlewareInterface
             return $next($request);
         }
 
-        $email = trim((string) $request->input('email'));
+        $email = trim($request->string('email') ?? '');
         if ($email === '') {
             // Empty email is rejected upstream as a 400 validation error.
             // Counting it here would let attackers poison the counter with

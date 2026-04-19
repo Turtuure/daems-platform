@@ -20,7 +20,7 @@ final class InsightController
 
     public function index(Request $request): Response
     {
-        $category = $request->query('category');
+        $category = $request->string('category');
         $output = $this->listInsights->execute(new ListInsightsInput($category ?: null));
         return Response::json(['data' => $output->insights]);
     }

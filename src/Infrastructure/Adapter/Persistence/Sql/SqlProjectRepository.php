@@ -98,7 +98,8 @@ final class SqlProjectRepository implements ProjectRepositoryInterface
             'SELECT COUNT(*) AS cnt FROM project_participants WHERE project_id = ?',
             [$projectId],
         );
-        return (int) ($row['cnt'] ?? 0);
+        $cnt = $row['cnt'] ?? null;
+        return is_int($cnt) ? $cnt : (is_string($cnt) && is_numeric($cnt) ? (int) $cnt : 0);
     }
 
     public function isParticipant(string $projectId, string $userId): bool

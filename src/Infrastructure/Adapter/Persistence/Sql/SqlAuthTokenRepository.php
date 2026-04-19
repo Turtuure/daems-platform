@@ -71,6 +71,18 @@ final class SqlAuthTokenRepository implements AuthTokenRepositoryInterface
 
     /**
      * @param array<string, mixed> $row
+     */
+    private static function str(array $row, string $key): string
+    {
+        $v = $row[$key] ?? null;
+        if (is_string($v)) {
+            return $v;
+        }
+        throw new \DomainException("Missing or non-string column: {$key}");
+    }
+
+    /**
+     * @param array<string, mixed> $row
      *
      * We require every schema column to be present in the row. `array_key_exists`
      * catches schema drift (column renamed or dropped) at the earliest possible
@@ -85,15 +97,15 @@ final class SqlAuthTokenRepository implements AuthTokenRepositoryInterface
         }
 
         return AuthToken::fromPersistence(
-            AuthTokenId::fromString((string) $row['id']),
-            (string) $row['token_hash'],
-            UserId::fromString((string) $row['user_id']),
-            new DateTimeImmutable((string) $row['issued_at']),
-            new DateTimeImmutable((string) $row['last_used_at']),
-            new DateTimeImmutable((string) $row['expires_at']),
-            $row['revoked_at'] !== null ? new DateTimeImmutable((string) $row['revoked_at']) : null,
-            $row['user_agent'] !== null ? (string) $row['user_agent'] : null,
-            $row['ip'] !== null ? (string) $row['ip'] : null,
+            AuthTokenId::fromString(self::str($row, 'id')),
+            self::str($row, 'token_hash'),
+            UserId::fromString(self::str($row, 'user_id')),
+            new DateTimeImmutable(self::str($row, 'issued_at')),
+            new DateTimeImmutable(self::str($row, 'last_used_at')),
+            new DateTimeImmutable(self::str($row, 'expires_at')),
+            $row['revoked_at'] !== null ? new DateTimeImmutable(self::str($row, 'revoked_at')) : null,
+            $row['user_agent'] !== null ? self::str($row, 'user_agent') : null,
+            $row['ip'] !== null ? self::str($row, 'ip') : null,
         );
     }
 }

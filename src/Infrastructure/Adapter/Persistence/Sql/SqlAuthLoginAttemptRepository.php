@@ -47,7 +47,8 @@ final class SqlAuthLoginAttemptRepository implements AuthLoginAttemptRepositoryI
              WHERE ip = ? AND email = ? AND success = 0 AND attempted_at >= ?',
             [$ip, $email, $since->format('Y-m-d H:i:s')],
         );
-        return (int) ($row['n'] ?? 0);
+        $n = $row['n'] ?? null;
+        return is_int($n) ? $n : (is_string($n) && is_numeric($n) ? (int) $n : 0);
     }
 
     public function countFailuresByIpSince(string $ip, DateTimeImmutable $since): int
@@ -57,6 +58,7 @@ final class SqlAuthLoginAttemptRepository implements AuthLoginAttemptRepositoryI
              WHERE ip = ? AND success = 0 AND attempted_at >= ?',
             [$ip, $since->format('Y-m-d H:i:s')],
         );
-        return (int) ($row['n'] ?? 0);
+        $n = $row['n'] ?? null;
+        return is_int($n) ? $n : (is_string($n) && is_numeric($n) ? (int) $n : 0);
     }
 }

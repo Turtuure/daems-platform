@@ -64,8 +64,8 @@ final class ForumController
     public function createTopic(Request $request, array $params): Response
     {
         $acting = $request->requireActingUser();
-        $title   = trim((string) $request->input('title'));
-        $content = trim((string) $request->input('content'));
+        $title   = trim($request->string('title') ?? '');
+        $content = trim($request->string('content') ?? '');
 
         if ($title === '' || $content === '') {
             return Response::badRequest('Title and content are required.');
@@ -88,7 +88,7 @@ final class ForumController
     public function createPost(Request $request, array $params): Response
     {
         $acting = $request->requireActingUser();
-        $content = trim((string) $request->input('content'));
+        $content = trim($request->string('content') ?? '');
 
         if ($content === '') {
             return Response::badRequest('Content is required.');

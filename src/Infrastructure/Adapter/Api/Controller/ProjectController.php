@@ -47,16 +47,16 @@ final class ProjectController
 
     public function index(Request $request): Response
     {
-        $category = $request->query('category') ?: null;
-        $status   = $request->query('status') ?: null;
-        $search   = $request->query('search') ?: null;
+        $category = $request->string('category') ?: null;
+        $status   = $request->string('status') ?: null;
+        $search   = $request->string('search') ?: null;
         $output   = $this->listProjects->execute(new ListProjectsInput($category, $status, $search));
         return Response::json(['data' => $output->projects]);
     }
 
     public function show(Request $request, array $params): Response
     {
-        $userId = $request->query('user_id') ?: null;
+        $userId = $request->string('user_id') ?: null;
         $output = $this->getProject->execute(new GetProjectInput($params['slug'], $userId));
 
         if ($output->project === null) {

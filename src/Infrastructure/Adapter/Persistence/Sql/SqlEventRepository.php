@@ -101,7 +101,8 @@ final class SqlEventRepository implements EventRepositoryInterface
             'SELECT COUNT(*) AS cnt FROM event_registrations WHERE event_id = ?',
             [$eventId],
         );
-        return (int) ($row['cnt'] ?? 0);
+        $cnt = $row['cnt'] ?? null;
+        return is_int($cnt) ? $cnt : (is_string($cnt) && is_numeric($cnt) ? (int) $cnt : 0);
     }
 
     /** @return array<array{event_id: string, slug: string, title: string, type: string, date: string}> */
@@ -122,18 +123,40 @@ final class SqlEventRepository implements EventRepositoryInterface
 
     private function hydrate(array $row): Event
     {
+        $galleryRaw = $row['gallery_json'] ?? null;
+        $galleryJson = is_string($galleryRaw) ? $galleryRaw : '[]';
+        $gallery = json_decode($galleryJson, true);
+        $gallery = is_array($gallery) ? $gallery : [];
+
         return new Event(
-            EventId::fromString($row['id']),
-            $row['slug'],
-            $row['title'],
-            $row['type'],
-            $row['event_date'],
-            $row['event_time'],
-            $row['location'],
-            (bool) $row['is_online'],
-            $row['description'],
-            $row['hero_image'],
-            json_decode($row['gallery_json'] ?? '[]', true) ?: [],
+            EventId::fromString(self::str($row, 'id')),
+            self::str($row, 'slug'),
+            self::str($row, 'title'),
+            self::str($row, 'type'),
+            self::str($row, 'event_date'),
+            self::strOrNull($row, 'event_time'),
+            self::strOrNull($row, 'location'),
+            (bool) ($row['is_online'] ?? false),
+            self::strOrNull($row, 'description'),
+            self::strOrNull($row, 'hero_image'),
+            $gallery,
         );
+    }
+
+    /** @param array<string, mixed> $row */
+    private static function str(array $row, string $key): string
+    {
+        $v = $row[$key] ?? null;
+        if (is_string($v)) {
+            return $v;
+        }
+        throw new \DomainException("Missing or non-string column: {$key}");
+    }
+
+    /** @param array<string, mixed> $row */
+    private static function strOrNull(array $row, string $key): ?string
+    {
+        $v = $row[$key] ?? null;
+        return is_string($v) ? $v : null;
     }
 }

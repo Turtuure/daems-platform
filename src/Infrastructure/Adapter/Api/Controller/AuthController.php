@@ -27,8 +27,8 @@ final class AuthController
 
     public function login(Request $request): Response
     {
-        $email    = trim((string) $request->input('email'));
-        $password = (string) $request->input('password');
+        $email    = trim($request->string('email') ?? '');
+        $password = $request->string('password') ?? '';
 
         if ($email === '' || $password === '') {
             return Response::badRequest('Email and password are required.');
@@ -59,10 +59,10 @@ final class AuthController
 
     public function register(Request $request): Response
     {
-        $name     = trim((string) $request->input('name'));
-        $email    = trim((string) $request->input('email'));
-        $password = (string) $request->input('password');
-        $dob      = trim((string) $request->input('date_of_birth'));
+        $name     = trim($request->string('name') ?? '');
+        $email    = trim($request->string('email') ?? '');
+        $password = $request->string('password') ?? '';
+        $dob      = trim($request->string('date_of_birth') ?? '');
 
         if ($name === '' || $email === '' || $password === '' || $dob === '') {
             return Response::badRequest('Name, email, password and date of birth are required.');

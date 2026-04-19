@@ -24,7 +24,9 @@ final class Kernel
     public function handle(Request $request): Response
     {
         try {
-            return $this->container->make(Router::class)->dispatch($request);
+            $router = $this->container->make(Router::class);
+            assert($router instanceof Router);
+            return $router->dispatch($request);
         } catch (UnauthorizedException $e) {
             return Response::unauthorized($e->getMessage());
         } catch (ForbiddenException $e) {

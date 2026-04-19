@@ -39,7 +39,11 @@ class Connection
         $stmt = $this->pdo->prepare($sql);
         $stmt->execute($params);
         $row = $stmt->fetch();
-        return $row !== false ? $row : null;
+        if (!is_array($row)) {
+            return null;
+        }
+        /** @var array<string, mixed> $row */
+        return $row;
     }
 
     public function execute(string $sql, array $params = []): int

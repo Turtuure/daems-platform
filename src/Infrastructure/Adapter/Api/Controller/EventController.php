@@ -26,14 +26,14 @@ final class EventController
 
     public function index(Request $request): Response
     {
-        $type = $request->query('type');
+        $type = $request->string('type');
         $output = $this->listEvents->execute(new ListEventsInput($type ?: null));
         return Response::json(['data' => $output->events]);
     }
 
     public function show(Request $request, array $params): Response
     {
-        $userId = $request->query('user_id') ?: null;
+        $userId = $request->string('user_id') ?: null;
         $output = $this->getEvent->execute(new GetEventInput($params['slug'], $userId));
 
         if ($output->event === null) {

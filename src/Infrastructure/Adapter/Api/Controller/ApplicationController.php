@@ -22,12 +22,12 @@ final class ApplicationController
     {
         $acting = $request->requireActingUser();
 
-        $name        = trim((string) $request->input('name'));
-        $email       = trim((string) $request->input('email'));
-        $dob         = trim((string) $request->input('date_of_birth'));
-        $country     = trim((string) $request->input('country')) ?: null;
-        $motivation  = trim((string) $request->input('motivation'));
-        $howHeard    = trim((string) $request->input('how_heard')) ?: null;
+        $name        = trim($request->string('name') ?? '');
+        $email       = trim($request->string('email') ?? '');
+        $dob         = trim($request->string('date_of_birth') ?? '');
+        $country     = trim($request->string('country') ?? '') ?: null;
+        $motivation  = trim($request->string('motivation') ?? '');
+        $howHeard    = trim($request->string('how_heard') ?? '') ?: null;
 
         if ($name === '' || $email === '' || $dob === '' || $motivation === '') {
             return Response::badRequest('Name, email, date of birth and motivation are required.');
@@ -48,13 +48,13 @@ final class ApplicationController
     {
         $acting = $request->requireActingUser();
 
-        $orgName       = trim((string) $request->input('org_name'));
-        $contactPerson = trim((string) $request->input('contact_person'));
-        $regNo         = trim((string) $request->input('reg_no')) ?: null;
-        $email         = trim((string) $request->input('email'));
-        $country       = trim((string) $request->input('country')) ?: null;
-        $motivation    = trim((string) $request->input('motivation'));
-        $howHeard      = trim((string) $request->input('how_heard')) ?: null;
+        $orgName       = trim($request->string('org_name') ?? '');
+        $contactPerson = trim($request->string('contact_person') ?? '');
+        $regNo         = trim($request->string('reg_no') ?? '') ?: null;
+        $email         = trim($request->string('email') ?? '');
+        $country       = trim($request->string('country') ?? '') ?: null;
+        $motivation    = trim($request->string('motivation') ?? '');
+        $howHeard      = trim($request->string('how_heard') ?? '') ?: null;
 
         if ($orgName === '' || $contactPerson === '' || $email === '' || $motivation === '') {
             return Response::badRequest('Organisation name, contact person, email and motivation are required.');
