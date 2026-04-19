@@ -50,7 +50,7 @@ Three sub-namespaces:
 
 | Sub-namespace                                   | Contents                                            |
 | ----------------------------------------------- | --------------------------------------------------- |
-| `Daems\Infrastructure\Framework\`               | HTTP kernel, router, request, response, DI container, PDO connection |
+| `Daems\Infrastructure\Framework\`               | HTTP kernel, router, request, response, DI container, PDO connection, middleware pipeline (`TenantContextMiddleware`, `AuthMiddleware`) |
 | `Daems\Infrastructure\Adapter\Api\Controller\`  | HTTP controllers — translate HTTP ↔ use-case DTOs   |
 | `Daems\Infrastructure\Adapter\Persistence\Sql\` | SQL repository implementations (raw PDO, no ORM)    |
 
@@ -94,19 +94,32 @@ public/index.php
        └─ Container::make(Router)       → Router singleton (routes already loaded)
        └─ Router::dispatch(Request)
             └─ match route pattern
-            └─ call handler closure
-                 └─ Container::make(Controller)
-                      └─ Controller::action(Request, params)
-                           └─ validate input
-                           └─ build Input DTO
-                           └─ UseCase::execute(Input)
-                                └─ Repository::method(...)   [SQL via PDO]
-                                └─ return Output DTO
-                           └─ Response::json([...])
+            └─ middleware pipeline (every route)
+                 └─ TenantContextMiddleware
+                 |    └─ reads Host header (or X-Daems-Tenant for platform admins)
+                 |    └─ HostTenantResolver: DB lookup → tenant-fallback.php fallback
+                 |    └─ attaches resolved Tenant to Request; returns 404 if unknown
+                 └─ AuthMiddleware  (protected routes)
+                 |    └─ validates Bearer token (hash lookup, expiry, revocation)
+                 |    └─ loads user's role from user_tenants for the active tenant
+                 |    └─ builds ActingUser(id, email, isPlatformAdmin,
+                 |                        activeTenant, roleInActiveTenant)
+                 |    └─ attaches ActingUser to Request
+                 └─ handler closure
+                      └─ Container::make(Controller)
+                           └─ Controller::action(Request, params)
+                                └─ validate input
+                                └─ build Input DTO
+                                └─ UseCase::execute(Input)
+                                     └─ Repository::method(...)   [SQL via PDO]
+                                     └─ return Output DTO
+                                └─ Response::json([...])
   └─ Kernel::send(Response)             → http_response_code() + echo
 ```
 
 Exceptions thrown anywhere inside `Kernel::handle()` are caught and converted to `500 Internal Server Error` JSON responses.
+
+**Tenant override.** A platform admin (`users.is_platform_admin = TRUE`) may include `X-Daems-Tenant: <slug>` on any request. `TenantContextMiddleware` detects the header, resolves the named slug instead of the `Host`, and proceeds normally. Non-admins sending the header receive `403 tenant_override_forbidden`.
 
 ## Namespace structure
 
@@ -115,6 +128,9 @@ Daems\
   Domain\
     Shared\ValueObject\Uuid7
     User\           User, UserId, UserRepositoryInterface
+    Tenant\         TenantId, TenantSlug, TenantDomain, Tenant,
+                    UserTenantRole, TenantRepositoryInterface,
+                    UserTenantRepositoryInterface
     Event\          Event, EventId, EventRegistration, EventRepositoryInterface
     Project\        Project, ProjectId, ProjectComment, ProjectParticipant,
                     ProjectUpdate, ProjectProposal, ProjectRepositoryInterface,

@@ -30,6 +30,14 @@ Migrations live in `database/migrations/` and must be applied in numerical order
 | `014_create_auth_tokens.sql`                | `auth_tokens` table (opaque bearer tokens, SHA-256 hash)               |
 | `015_create_auth_login_attempts.sql`        | `auth_login_attempts` table (rate-limit counter)                       |
 | `016_add_owner_id_to_projects.sql`          | Adds nullable `owner_id` FK column to `projects`                       |
+| `017_create_tenants_table.sql`              | `tenants` table (master tenant registry)                               |
+| `018_create_tenant_domains_table.sql`       | `tenant_domains` table (Host → tenant mapping)                         |
+| `019_seed_tenants.sql`                      | Seeds `daems` and `sahegroup` tenants and their domains                |
+| `020_create_user_tenants_table.sql`         | `user_tenants` pivot (per-tenant membership and role)                  |
+| `021_add_is_platform_admin_to_users.sql`    | Adds `is_platform_admin BOOLEAN` to `users`                            |
+| `022_create_platform_admin_audit_table.sql` | `platform_admin_audit` table + trigger                                 |
+| `023_backfill_user_tenants.sql`             | Backfills `user_tenants` from legacy `users.role` values (tenant `daems`) |
+| `024_drop_role_from_users.sql`              | Drops `users.role` column                                              |
 
 ### `auth_tokens`
 
@@ -214,25 +222,27 @@ Community-submitted project proposals awaiting review.
 
 ### `users`
 
-Registered user accounts. Schema built across migrations 006, 008, and 011.
+Registered user accounts. Schema built across migrations 006, 011, 021, and 024.
 
-| Column             | Type           | Nullable | Default        | Notes                     |
-| ------------------ | -------------- | -------- | -------------- | ------------------------- |
-| `id`               | `CHAR(36)`     | no       |                | UUID7 PK                  |
-| `name`             | `VARCHAR(255)` | no       |                |                           |
-| `email`            | `VARCHAR(255)` | no       |                | UNIQUE                    |
-| `password_hash`    | `VARCHAR(255)` | no       |                | bcrypt / password_hash()  |
-| `date_of_birth`    | `DATE`         | no       |                |                           |
-| `role`             | `VARCHAR(30)`  | no       | `'registered'` | Added by migration 008    |
-| `country`          | `VARCHAR(100)` | no       | `''`           | Added by migration 011    |
-| `address_street`   | `VARCHAR(200)` | no       | `''`           | Added by migration 011    |
-| `address_zip`      | `VARCHAR(20)`  | no       | `''`           | Added by migration 011    |
-| `address_city`     | `VARCHAR(100)` | no       | `''`           | Added by migration 011    |
-| `address_country`  | `VARCHAR(100)` | no       | `''`           | Added by migration 011    |
-| `membership_type`  | `VARCHAR(30)`  | no       | `'individual'` | Added by migration 011    |
-| `membership_status`| `VARCHAR(30)`  | no       | `'active'`     | Added by migration 011    |
-| `member_number`    | `VARCHAR(30)`  | yes      | `NULL`         | Added by migration 011    |
-| `created_at`       | `DATETIME`     | no       | `CURRENT_TIMESTAMP` |                      |
+Per-tenant roles are stored in `user_tenants`, not here. `role` was dropped in migration 024.
+
+| Column               | Type           | Nullable | Default        | Notes                          |
+| -------------------- | -------------- | -------- | -------------- | ------------------------------ |
+| `id`                 | `CHAR(36)`     | no       |                | UUID7 PK                       |
+| `name`               | `VARCHAR(255)` | no       |                |                                |
+| `email`              | `VARCHAR(255)` | no       |                | UNIQUE                         |
+| `password_hash`      | `VARCHAR(255)` | no       |                | bcrypt / password_hash()       |
+| `date_of_birth`      | `DATE`         | no       |                |                                |
+| `is_platform_admin`  | `BOOLEAN`      | no       | `FALSE`        | Added by migration 021; every change is logged in `platform_admin_audit` |
+| `country`            | `VARCHAR(100)` | no       | `''`           | Added by migration 011         |
+| `address_street`     | `VARCHAR(200)` | no       | `''`           | Added by migration 011         |
+| `address_zip`        | `VARCHAR(20)`  | no       | `''`           | Added by migration 011         |
+| `address_city`       | `VARCHAR(100)` | no       | `''`           | Added by migration 011         |
+| `address_country`    | `VARCHAR(100)` | no       | `''`           | Added by migration 011         |
+| `membership_type`    | `VARCHAR(30)`  | no       | `'individual'` | Added by migration 011         |
+| `membership_status`  | `VARCHAR(30)`  | no       | `'active'`     | Added by migration 011         |
+| `member_number`      | `VARCHAR(30)`  | yes      | `NULL`         | Added by migration 011         |
+| `created_at`         | `DATETIME`     | no       | `CURRENT_TIMESTAMP` |                           |
 
 ---
 
@@ -333,10 +343,79 @@ Organisational supporter applications pending admin review.
 
 ---
 
+### `tenants`
+
+Master registry of organisations served by the platform. One row per tenant.
+
+| Column | Type | Notes |
+| ------ | ---- | ----- |
+| `id` | `CHAR(36)` | UUIDv7, primary key |
+| `slug` | `VARCHAR(64)` | globally unique; stable URL-safe identifier |
+| `name` | `VARCHAR(255)` | human-readable tenant name |
+| `created_at`, `updated_at` | `DATETIME` | standard timestamps |
+
+Seed values: `daems` (Daems Society) and `sahegroup` (Sahe Group).
+
+---
+
+### `tenant_domains`
+
+Host → tenant mapping. One row per domain. One tenant may own many domains (apex + www + local dev variants).
+
+| Column | Type | Notes |
+| ------ | ---- | ----- |
+| `domain` | `VARCHAR(255)` | primary key; always lowercase |
+| `tenant_id` | `CHAR(36)` | FK → `tenants(id)` ON DELETE RESTRICT |
+| `is_primary` | `BOOLEAN` | marks canonical domain for display |
+| `created_at` | `DATETIME` | |
+
+Dev-only domains (e.g., `daem-society.local`, `localhost`) are kept OUT of this table and supplied via `config/tenant-fallback.php` instead.
+
+---
+
+### `user_tenants`
+
+Pivot table recording per-tenant membership for users. Composite primary key `(user_id, tenant_id)`. A user may have zero, one, or many rows.
+
+| Column | Type | Notes |
+| ------ | ---- | ----- |
+| `user_id` | `CHAR(36)` | FK → `users(id)` ON DELETE CASCADE |
+| `tenant_id` | `CHAR(36)` | FK → `tenants(id)` ON DELETE RESTRICT |
+| `role` | `ENUM` | `admin`, `moderator`, `member`, `supporter`, `registered` |
+| `joined_at` | `DATETIME` | |
+| `left_at` | `DATETIME NULL` | NULL means active membership; setting a timestamp is a soft-departure |
+
+GSA users have `users.is_platform_admin = TRUE` — they don't need a `user_tenants` row to cross tenants. They usually have one as a regular member somewhere (e.g. in `daems`) but platform-admin privileges are independent.
+
+---
+
+### `platform_admin_audit`
+
+Audit log for changes to `users.is_platform_admin`. Populated automatically by the `trg_users_platform_admin_audit` trigger.
+
+| Column | Type | Notes |
+| ------ | ---- | ----- |
+| `id` | `CHAR(36)` | |
+| `user_id` | `CHAR(36)` | whose flag changed |
+| `action` | `ENUM('granted','revoked')` | |
+| `changed_by` | `CHAR(36) NULL` | set by application via `SET @app_actor_user_id = '...'` before the UPDATE |
+| `reason` | `VARCHAR(500) NULL` | |
+| `created_at` | `DATETIME` | |
+
+---
+
 ## Entity Relationship Diagram
 
 ```
+tenants
+  |
+  |--< tenant_domains
+  |
+  |--< user_tenants >-- users
+  |
 users
+  |
+  |--< platform_admin_audit (via trigger on is_platform_admin)
   |
   |--< event_registrations >-- events
   |
@@ -366,6 +445,8 @@ insights   (standalone, no FK relationships)
 
 | Relationship                              | Type   |
 | ----------------------------------------- | ------ |
+| tenant → tenant_domains                   | 1 : N  |
+| tenant ↔ user (via user_tenants)          | M : N  |
 | user → event_registrations                | 1 : N  |
 | event → event_registrations               | 1 : N  |
 | user ↔ project (via project_participants) | M : N  |

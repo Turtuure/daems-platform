@@ -22,6 +22,23 @@ Authorization: Bearer <token>
 
 **Login rate limit.** 5 failures per `(ip, email)` per 15 minutes triggers HTTP 429 + `Retry-After: 900`.
 
+### X-Daems-Tenant header
+
+Platform administrators can override the active tenant context on any authenticated request by sending `X-Daems-Tenant: <tenant-slug>`. The API then treats the request as if it came from the override tenant's domain.
+
+- Sent by non-platform-admin: `403 Forbidden` with `{"error": "tenant_override_forbidden"}`
+- Sent with an unknown slug: `404 Not Found` with `{"error": "unknown_tenant"}`
+- Omitted: tenant is resolved from the `Host` header (normal case)
+
+Example:
+```http
+GET /api/v1/backstage/stats HTTP/1.1
+Host: daems.fi
+Authorization: Bearer <gsa-token>
+X-Daems-Tenant: sahegroup
+```
+Response contains `sahegroup`-scoped stats.
+
 ## Response envelope
 
 **Success**
@@ -177,6 +194,45 @@ Revoke the caller's token. Requires `Authorization: Bearer <token>`.
 
 **Response 204:** empty body.
 **401** if the token is missing, malformed, revoked, or expired.
+
+---
+
+### GET /api/v1/auth/me
+
+Returns the authenticated user's identity, their active tenant, their role in that tenant, and the bearer token's expiry. Used by frontend clients to validate tokens on load and to drive tenant-scoped UI.
+
+**Headers:**
+- `Authorization: Bearer <token>` (required)
+- `X-Daems-Tenant: <slug>` (optional, platform admins only)
+
+**Response 200**
+
+```json
+{
+    "data": {
+        "user": {
+            "id": "01958000-...",
+            "name": "Sam",
+            "email": "sam@example.com",
+            "is_platform_admin": false
+        },
+        "tenant": {
+            "slug": "daems",
+            "name": "Daems Society"
+        },
+        "role_in_tenant": "admin",
+        "token_expires_at": "2026-04-26T10:00:00+00:00"
+    }
+}
+```
+
+**Errors**
+
+| Status | Condition |
+| ------ | --------- |
+| 401    | Missing or invalid token |
+| 404    | `Host` doesn't match any tenant |
+| 403    | `X-Daems-Tenant` set by non-platform-admin |
 
 ---
 
@@ -1219,3 +1275,16 @@ Submit an organisational supporter application. **Requires authentication.**
 ```json
 { "data": { "ok": true } }
 ```
+
+---
+
+## Error codes
+
+| HTTP | Error key | When |
+| ---- | --------- | ---- |
+| 404  | `unknown_tenant` | `Host` doesn't match a registered tenant, or `X-Daems-Tenant` names a slug that doesn't exist |
+| 401  | `missing_token` | No `Authorization: Bearer ...` header |
+| 401  | `invalid_token` | Token not found, expired, or revoked |
+| 403  | `tenant_override_forbidden` | `X-Daems-Tenant` sent by a non-platform-admin |
+| 403  | `not_a_member` | Authenticated user has no active `user_tenants` row for the current tenant (raised by tenant-scoped use cases when they require membership) |
+| 403  | `insufficient_role` | Authenticated user is a member but lacks the specific role required (e.g. admin-only action as regular member) |

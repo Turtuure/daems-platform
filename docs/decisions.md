@@ -234,6 +234,31 @@ Reject passwords where `strlen($pw) > 72` at the application layer in `RegisterU
 
 ---
 
+## ADR-014: Multi-Tenant Data Isolation via Domain-Derived Tenant Context + Pivot Membership
+
+**Status:** Accepted (2026-04-19)
+
+**Context:**
+The platform must support multiple tenants (`daems`, `sahegroup`, and future domains) sharing one codebase and one database. Users should be global identities but have tenant-scoped memberships and roles. The previous design had `users.role` as a single global role, which conflated tenant-admin (scoped to one tenant) with platform-admin (global, cross-tenant). Multi-tenancy requires separating these concepts.
+
+**Decision:**
+- Tenants and their domains are stored in `tenants` and `tenant_domains` tables.
+- `HostTenantResolver` (DB primary, `config/tenant-fallback.php` secondary) maps the HTTP `Host` header to a Tenant.
+- `user_tenants` pivot table stores the per-tenant role for each user (`admin`, `moderator`, `member`, `supporter`, `registered`). A user may belong to 0, 1, or many tenants.
+- GSA (Global System Administrator) is represented as `users.is_platform_admin BOOLEAN`, not a tenant role. A trigger logs every change to this flag into `platform_admin_audit`.
+- `TenantContextMiddleware` runs on every route and attaches the resolved Tenant to the request.
+- `AuthMiddleware` reads the request's tenant, resolves the Bearer token, loads the user's role from `user_tenants`, and constructs `ActingUser(id, email, isPlatformAdmin, activeTenant, roleInActiveTenant)`.
+- A platform admin may send `X-Daems-Tenant: <slug>` on any request to operate in a different tenant's scope. Non-admins sending the header receive 403.
+
+**Consequences:**
+- Every tenant-scoped repository method requires a `TenantId` parameter (enforced by interface contracts). Cross-tenant methods must be named explicitly (e.g., `*ForPlatformAdmin` or `*AllTenants`).
+- A user can be member of multiple tenants with different roles per tenant.
+- Onboarding a new tenant is three steps: INSERT into `tenants`, INSERT into `tenant_domains`, configure the web server to point the new domain at this platform.
+- The `users.role` column has been dropped (migration 024); legacy values were backfilled into `user_tenants` (tenant `daems`) and `is_platform_admin` (for GSA users).
+- The database-level isolation (tenant_id FK columns on per-tenant aggregates) is a FOLLOW-UP spec (PR 3) — this ADR covers only the user/role/tenant structure and the middleware pipeline.
+
+---
+
 ## ADR-015: PHPStan Level 9 Baseline
 
 **Status:** Accepted (2026-04-19)
