@@ -17,6 +17,8 @@ final class Request
         private readonly array $headers,
         private readonly array $server,
         private readonly ?ActingUser $actingUser = null,
+        /** @var array<string, mixed> */
+        private readonly array $attributes = [],
     ) {}
 
     public static function fromGlobals(): self
@@ -104,6 +106,26 @@ final class Request
             $this->headers,
             $this->server,
             $user,
+            $this->attributes,
+        );
+    }
+
+    public function attribute(string $key): mixed
+    {
+        return $this->attributes[$key] ?? null;
+    }
+
+    public function withAttribute(string $key, mixed $value): self
+    {
+        return new self(
+            $this->method,
+            $this->uri,
+            $this->query,
+            $this->body,
+            $this->headers,
+            $this->server,
+            $this->actingUser,
+            [...$this->attributes, $key => $value],
         );
     }
 
