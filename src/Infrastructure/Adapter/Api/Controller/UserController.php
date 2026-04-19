@@ -33,8 +33,9 @@ final class UserController
         if ($id === '') {
             return Response::badRequest('User ID is required.');
         }
+        $acting = $request->requireActingUser();
 
-        $output = $this->getProfile->execute(new GetProfileInput($id));
+        $output = $this->getProfile->execute(new GetProfileInput($acting, $id));
 
         if ($output->error !== null) {
             return Response::json(['error' => $output->error], 404);
@@ -49,20 +50,23 @@ final class UserController
         if ($id === '') {
             return Response::badRequest('User ID is required.');
         }
+        $acting = $request->requireActingUser();
 
         $b = $request->all();
+        $pick = static fn(string $key): ?string => array_key_exists($key, $b) ? trim((string) $b[$key]) : null;
 
         $output = $this->updateProfile->execute(new UpdateProfileInput(
+            acting:         $acting,
             userId:         $id,
-            firstName:      trim((string) ($b['first_name'] ?? '')),
-            lastName:       trim((string) ($b['last_name'] ?? '')),
-            email:          trim((string) ($b['email'] ?? '')),
-            dob:            trim((string) ($b['dob'] ?? '')),
-            country:        trim((string) ($b['country'] ?? '')),
-            addressStreet:  trim((string) ($b['address_street'] ?? '')),
-            addressZip:     trim((string) ($b['address_zip'] ?? '')),
-            addressCity:    trim((string) ($b['address_city'] ?? '')),
-            addressCountry: trim((string) ($b['address_country'] ?? '')),
+            firstName:      $pick('first_name'),
+            lastName:       $pick('last_name'),
+            email:          $pick('email'),
+            dob:            $pick('dob'),
+            country:        $pick('country'),
+            addressStreet:  $pick('address_street'),
+            addressZip:     $pick('address_zip'),
+            addressCity:    $pick('address_city'),
+            addressCountry: $pick('address_country'),
         ));
 
         if ($output->error !== null) {
@@ -78,8 +82,9 @@ final class UserController
         if ($id === '') {
             return Response::badRequest('User ID is required.');
         }
+        $acting = $request->requireActingUser();
 
-        $output = $this->deleteAccount->execute(new DeleteAccountInput($id));
+        $output = $this->deleteAccount->execute(new DeleteAccountInput($acting, $id));
 
         if (!$output->deleted) {
             return Response::json(['error' => $output->error], 404);
@@ -94,8 +99,9 @@ final class UserController
         if ($id === '') {
             return Response::badRequest('User ID is required.');
         }
+        $acting = $request->requireActingUser();
 
-        $output = $this->getUserActivity->execute(new GetUserActivityInput($id));
+        $output = $this->getUserActivity->execute(new GetUserActivityInput($acting, $id));
         return Response::json(['data' => $output->data]);
     }
 
@@ -105,6 +111,7 @@ final class UserController
         if ($id === '') {
             return Response::badRequest('User ID is required.');
         }
+        $acting = $request->requireActingUser();
 
         $b = $request->all();
         $currentPassword = (string) ($b['current_password'] ?? '');
@@ -116,7 +123,7 @@ final class UserController
         }
 
         $output = $this->changePassword->execute(
-            new ChangePasswordInput($id, $currentPassword, $newPassword),
+            new ChangePasswordInput($acting, $id, $currentPassword, $newPassword),
         );
 
         if ($output->error !== null) {

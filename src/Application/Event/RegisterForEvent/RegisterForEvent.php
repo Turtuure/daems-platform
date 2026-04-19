@@ -22,15 +22,16 @@ final class RegisterForEvent
         }
 
         $eventId = $event->id()->value();
+        $userId = $input->acting->id->value();
 
-        if ($this->events->isRegistered($eventId, $input->userId)) {
+        if ($this->events->isRegistered($eventId, $userId)) {
             return new RegisterForEventOutput($this->events->countRegistrations($eventId), 'Already registered.');
         }
 
         $this->events->register(new EventRegistration(
             Uuid7::generate()->value(),
             $eventId,
-            $input->userId,
+            $userId,
             date('Y-m-d H:i:s'),
         ));
 

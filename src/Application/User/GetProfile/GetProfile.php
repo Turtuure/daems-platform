@@ -20,6 +20,15 @@ final class GetProfile
             return new GetProfileOutput(null, 'User not found.');
         }
 
+        $isSelfOrAdmin = $input->acting->owns($user->id()) || $input->acting->isAdmin();
+
+        if (!$isSelfOrAdmin) {
+            return new GetProfileOutput([
+                'id'   => $user->id()->value(),
+                'name' => $user->name(),
+            ]);
+        }
+
         $nameParts = explode(' ', $user->name(), 2);
 
         return new GetProfileOutput([

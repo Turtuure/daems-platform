@@ -86,3 +86,148 @@ Use PDO with parameterised raw SQL statements. The `Connection` class (`src/Infr
 - No query builder or migration runner is provided — migrations are plain `.sql` files applied manually.
 - Type mapping from database rows to domain objects is done by hand in each repository. Adding new columns requires updating the repository mapping code in addition to the migration.
 - Switching to a different RDBMS would require rewriting the repository SQL but would not affect Domain or Application code.
+
+---
+
+## ADR-006: Opaque bearer tokens hashed in DB (supersedes ADR-004)
+
+**Status:** Accepted (2026-04-19)
+**Supersedes:** ADR-004
+
+**Context:**
+SAST findings F-001..F-008 exploited the absence of any authentication abstraction. ADR-004's implicit session model had not been implemented — login returned user data but issued nothing the client could attach to subsequent requests.
+
+**Decision:**
+Issue opaque 32-byte random bearer tokens on login. Transport: `Authorization: Bearer <token>`. Storage: a new `auth_tokens` table; only `SHA-256(token)` is persisted. On each authenticated request, middleware hashes the incoming token, looks it up, checks expiry and revocation, and attaches an `ActingUser` to the `Request`.
+
+**Consequences:**
+- Revocation is a single `UPDATE` on `revoked_at` — no blocklist or crypto gymnastics.
+- One extra primary-key SELECT per authenticated request. Acceptable.
+- Tokens leaked through logs never reveal the server-side identifier.
+- JWT/PASETO explicitly rejected: adds a crypto library dependency and makes revocation an architectural burden.
+
+---
+
+## ADR-007: Middleware pipeline on `Router`
+
+**Status:** Accepted (2026-04-19)
+
+**Context:**
+The original `Router` was a bare `preg_match` dispatcher. Cross-cutting concerns (auth, rate-limiting, CSRF, CORS) had no hook point.
+
+**Decision:**
+Extend `Router::get` and `Router::post` to accept an optional middleware list. `Router::dispatch` composes middleware around the handler via `array_reduce`. Each middleware implements `MiddlewareInterface::process(Request, callable $next): Response` and may short-circuit by returning a Response or throwing a domain exception.
+
+**Consequences:**
+- Every protected route declares its middleware in `routes/api.php` — auth status is visible at registration time.
+- Additional cross-cutting concerns (CORS, CSRF) can be added without touching the Kernel.
+- Middleware resolution depends on the DI container; tests pass a trivial resolver.
+
+---
+
+## ADR-008: Authorization in Application use cases via `ActingUser`
+
+**Status:** Accepted (2026-04-19)
+
+**Context:**
+Findings F-001, F-002, F-004, F-007 all failed the same way: business rules about *who can do what* were absent from the Application layer. Controllers called use cases with attacker-supplied identity fields.
+
+**Decision:**
+Every protected use case's `Input` DTO carries an `ActingUser` (UserId + role) as its first positional argument. The use case enforces ownership/role policy internally and throws `ForbiddenException` on mismatch. Kernel translates to HTTP 403. Policy lives in the Application layer, not in controllers or policy objects — this mirrors the existing pattern where `LoginUser` enforces password verification in the use case.
+
+**Exception vs. Output DTO convention:**
+- Business validation errors (e.g., invalid input, duplicate email) continue to use `Output.error` string.
+- Authorization violations throw `ForbiddenException` and short-circuit execution.
+
+**Consequences:**
+- Every policy is unit-testable without HTTP.
+- Request DTOs that used to accept `user_id`/`author_name`/`author_email` from the request body lose those fields — identity is derived server-side from the acting user's `users` row.
+- Input DTOs grow by one field (`ActingUser $acting`).
+
+---
+
+## ADR-009: 7-day sliding expiry with 30-day hard cap
+
+**Status:** Accepted (2026-04-19)
+
+**Context:**
+Token lifetime must balance security (inactive sessions should die) and UX (active users should not re-login constantly).
+
+**Decision:**
+On each authenticated request, update `last_used_at = NOW()` and `expires_at = LEAST(NOW() + INTERVAL 7 DAY, issued_at + INTERVAL 30 DAY)`. `POST /api/v1/auth/logout` sets `revoked_at = NOW()`.
+
+**Consequences:**
+- One `UPDATE` per authenticated request — primary-key lookup, negligible cost.
+- Inactive sessions expire in 7 days; active users stay logged in up to 30 days without re-authentication.
+- No refresh-token flow needed.
+
+---
+
+## ADR-010: DB-based fixed-window login rate limit
+
+**Status:** Accepted (2026-04-19)
+
+**Context:**
+F-009: `/auth/login` had no throttle. No Redis in the stack. Credential-stuffing is the realistic attack.
+
+**Decision:**
+A new `auth_login_attempts` table with `id BIGINT AUTO_INCREMENT` as primary key and a secondary index on `(ip, email, attempted_at)` to support window queries. Middleware counts failures within a 15-minute window and returns HTTP 429 + `Retry-After: 900` after 5 failures for a given `(ip, email)` pair. Indexing on `(ip, email)` — not `email` alone — prevents an attacker from DoS-ing arbitrary accounts by typing the wrong password from any IP. A secondary per-IP budget (default 20 failures / 15 min) catches credential-stuffing that sprays many distinct emails from one source. Opportunistic cleanup (1-in-100 sweep of rows older than 24 h) avoids cron.
+
+**Consequences:**
+- Works on any MySQL install without new infrastructure.
+- Observable: operators can query `auth_login_attempts` to see attack patterns.
+- Sliding window could be added later if needed.
+- Reverse-proxy deployments without a trusted-proxy allowlist see the proxy IP for every user — limitation documented.
+
+---
+
+## ADR-011: Sanitise Kernel error bodies
+
+**Status:** Accepted (2026-04-19)
+
+**Context:**
+F-006: `Kernel::handle` caught every `Throwable` and passed `$e->getMessage()` unfiltered into the 500 response body. `PDOException` messages leaked SQL state and attacker-controlled input back to the caller, creating an email-enumeration oracle.
+
+**Decision:**
+`Kernel::handle` dispatches by exception family: `UnauthorizedException` → 401, `ForbiddenException` → 403, `NotFoundException` → 404, `ValidationException` → 400 (message we authored), `TooManyRequestsException` → 429 + `Retry-After`, any other `Throwable` → 500 with the literal string `"Internal server error."` Unhandled exceptions are logged via `LoggerInterface`. Dev override: `APP_DEBUG=true` re-enables verbose bodies during local development.
+
+**Consequences:**
+- Runtime exception details never surface to HTTP clients in production.
+- Operators retain observability via `error_log` (default `LoggerInterface` adapter).
+- Duplicate-key `PDOException` (SQLSTATE 23000) is caught in repositories and rethrown as `ValidationException('Invalid email.')` — same message whether syntactically bad or already taken, closing the enumeration oracle.
+
+---
+
+## ADR-012: Strip attacker-controlled identity fields from Input DTOs
+
+**Status:** Accepted (2026-04-19)
+
+**Context:**
+F-005, F-007: forum and project DTOs accepted `user_id`, `author_name`, `author_email`, `role`, `role_class`, `joined_text` from the request body and persisted them verbatim. This enabled role-badge impersonation (post as "Administrator") and identity spoofing across comments, proposals, joins and leaves.
+
+**Decision:**
+Delete these fields from the Input DTOs. Derive server-side from the acting user's `users` row:
+- `role`/`role_class`/`joined_text` from `users.role` and `users.created_at` via a shared `ForumIdentityDeriver`.
+- `user_id`/`author_name`/`author_email` from `acting.id` and a `UserRepositoryInterface` lookup.
+
+Database columns are unchanged (legacy rows retain their values).
+
+**Consequences:**
+- Compile-time guarantee that attacker input cannot impersonate another user.
+- Input DTOs shrink from 10+ fields to 3–4.
+
+---
+
+## ADR-013: 72-byte password cap
+
+**Status:** Accepted (2026-04-19)
+
+**Context:**
+F-010: bcrypt silently truncates inputs longer than 72 bytes. Two passwords sharing the first 72 bytes authenticate identically.
+
+**Decision:**
+Reject passwords where `strlen($pw) > 72` at the application layer in `RegisterUser`, `ChangePassword`, and `LoginUser` (the login rejection is to prevent confused logins after legacy rows were created by some other tool).
+
+**Consequences:**
+- No user-visible behaviour change for passwords under 72 bytes (typical range: 8–50 bytes).
+- Argon2id migration is explicitly out of scope — would force a global re-login event, disproportionate for a Low-severity finding.

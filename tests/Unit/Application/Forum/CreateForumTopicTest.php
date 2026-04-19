@@ -6,9 +6,14 @@ namespace Daems\Tests\Unit\Application\Forum;
 
 use Daems\Application\Forum\CreateForumTopic\CreateForumTopic;
 use Daems\Application\Forum\CreateForumTopic\CreateForumTopicInput;
+use Daems\Domain\Auth\ActingUser;
 use Daems\Domain\Forum\ForumCategory;
 use Daems\Domain\Forum\ForumCategoryId;
+use Daems\Domain\Forum\ForumPost;
 use Daems\Domain\Forum\ForumRepositoryInterface;
+use Daems\Domain\User\User;
+use Daems\Domain\User\UserId;
+use Daems\Tests\Support\Fake\InMemoryUserRepository;
 use PHPUnit\Framework\TestCase;
 
 final class CreateForumTopicTest extends TestCase
@@ -25,30 +30,53 @@ final class CreateForumTopicTest extends TestCase
         );
     }
 
-    private function makeInput(array $overrides = []): CreateForumTopicInput
+    private function users(string $role = 'registered', string $name = 'Jane Doe'): InMemoryUserRepository
+    {
+        $repo = new InMemoryUserRepository();
+        $repo->save(new User(
+            UserId::fromString($this->actingId),
+            $name,
+            'jane@x.com',
+            password_hash('p', PASSWORD_BCRYPT),
+            '1990-01-01',
+            $role,
+            '', '', '', '', '',
+            'individual',
+            'active',
+            null,
+            '2024-01-15 12:00:00',
+        ));
+        return $repo;
+    }
+
+    private string $actingId;
+
+    protected function setUp(): void
+    {
+        $this->actingId = UserId::generate()->value();
+    }
+
+    private function acting(string $role = 'registered'): ActingUser
+    {
+        return new ActingUser(UserId::fromString($this->actingId), $role);
+    }
+
+    private function input(array $overrides = []): CreateForumTopicInput
     {
         return new CreateForumTopicInput(
-            $overrides['categorySlug']    ?? 'general',
-            $overrides['title']           ?? 'My First Topic',
-            $overrides['content']         ?? 'This is the opening post.',
-            $overrides['userId']          ?? 'user-uuid-0001',
-            $overrides['authorName']      ?? 'Jane Doe',
-            $overrides['avatarInitials']  ?? 'JD',
-            $overrides['avatarColor']     ?? '#ff5733',
-            $overrides['role']            ?? 'Member',
-            $overrides['roleClass']       ?? 'member',
-            $overrides['joinedText']      ?? 'Joined Jan 2024',
+            $overrides['acting']       ?? $this->acting(),
+            $overrides['categorySlug'] ?? 'general',
+            $overrides['title']        ?? 'My First Topic',
+            $overrides['content']      ?? 'This is the opening post.',
         );
     }
 
     public function testReturnsSlugOnSuccess(): void
     {
-        $category = $this->makeCategory();
-
         $repo = $this->createMock(ForumRepositoryInterface::class);
-        $repo->method('findCategoryBySlug')->willReturn($category);
+        $repo->method('findCategoryBySlug')->willReturn($this->makeCategory());
 
-        $out = (new CreateForumTopic($repo))->execute($this->makeInput());
+        $out = (new CreateForumTopic($repo, $this->users()))->execute($this->input());
 
         $this->assertNull($out->error);
         $this->assertNotNull($out->topicSlug);
@@ -61,7 +89,8 @@ final class CreateForumTopicTest extends TestCase
         $repo->expects($this->never())->method('saveTopic');
         $repo->expects($this->never())->method('savePost');
 
-        $out = (new CreateForumTopic($repo))->execute($this->makeInput(['categorySlug' => 'nonexistent']));
+        $out = (new CreateForumTopic($repo, $this->users()))
+            ->execute($this->input(['categorySlug' => 'nonexistent']));
 
         $this->assertNull($out->topicSlug);
         $this->assertNotNull($out->error);
@@ -69,38 +98,60 @@ final class CreateForumTopicTest extends TestCase
 
     public function testSavesTopicAndPost(): void
     {
-        $category = $this->makeCategory();
-
         $repo = $this->createMock(ForumRepositoryInterface::class);
-        $repo->method('findCategoryBySlug')->willReturn($category);
+        $repo->method('findCategoryBySlug')->willReturn($this->makeCategory());
         $repo->expects($this->once())->method('saveTopic');
         $repo->expects($this->once())->method('savePost');
 
-        (new CreateForumTopic($repo))->execute($this->makeInput());
+        (new CreateForumTopic($repo, $this->users()))->execute($this->input());
     }
 
     public function testSlugIsDerivedFromTitle(): void
     {
-        $category = $this->makeCategory();
-
         $repo = $this->createMock(ForumRepositoryInterface::class);
-        $repo->method('findCategoryBySlug')->willReturn($category);
+        $repo->method('findCategoryBySlug')->willReturn($this->makeCategory());
 
-        $out = (new CreateForumTopic($repo))->execute($this->makeInput(['title' => 'Hello World Test']));
+        $out = (new CreateForumTopic($repo, $this->users()))
+            ->execute($this->input(['title' => 'Hello World Test']));
 
-        $this->assertStringContainsString('hello-world-test', $out->topicSlug);
+        $this->assertStringContainsString('hello-world-test', (string) $out->topicSlug);
     }
 
-    public function testNullUserIdIsAccepted(): void
+    public function testNonAdminCannotPostAsAdministrator(): void
     {
-        $category = $this->makeCategory();
-
+        $capturedPost = null;
         $repo = $this->createMock(ForumRepositoryInterface::class);
-        $repo->method('findCategoryBySlug')->willReturn($category);
+        $repo->method('findCategoryBySlug')->willReturn($this->makeCategory());
+        $repo->method('savePost')->willReturnCallback(
+            function (ForumPost $p) use (&$capturedPost): void {
+                $capturedPost = $p;
+            },
+        );
 
-        $out = (new CreateForumTopic($repo))->execute($this->makeInput(['userId' => null]));
+        (new CreateForumTopic($repo, $this->users(role: 'registered')))
+            ->execute($this->input());
 
-        $this->assertNull($out->error);
-        $this->assertNotNull($out->topicSlug);
+        $this->assertNotNull($capturedPost);
+        $this->assertNotSame('Administrator', $capturedPost->role());
+        $this->assertNotSame('role-admin', $capturedPost->roleClass());
+    }
+
+    public function testAdminUserBadgeIsAdministrator(): void
+    {
+        $capturedPost = null;
+        $repo = $this->createMock(ForumRepositoryInterface::class);
+        $repo->method('findCategoryBySlug')->willReturn($this->makeCategory());
+        $repo->method('savePost')->willReturnCallback(
+            function (ForumPost $p) use (&$capturedPost): void {
+                $capturedPost = $p;
+            },
+        );
+
+        (new CreateForumTopic($repo, $this->users(role: 'admin')))
+            ->execute($this->input(['acting' => $this->acting('admin')]));
+
+        $this->assertNotNull($capturedPost);
+        $this->assertSame('Administrator', $capturedPost->role());
+        $this->assertSame('role-admin', $capturedPost->roleClass());
     }
 }

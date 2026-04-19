@@ -29,8 +29,8 @@ final class ForumController
         private readonly GetForumThread $getThread,
         private readonly CreateForumTopic $createTopic,
         private readonly CreateForumPost $createPost,
-        private readonly LikeForumPost $likePost,
-        private readonly IncrementTopicView $incrementView,
+        private readonly LikeForumPost $likePostUseCase,
+        private readonly IncrementTopicView $incrementViewUseCase,
     ) {}
 
     public function index(Request $request): Response
@@ -63,25 +63,19 @@ final class ForumController
 
     public function createTopic(Request $request, array $params): Response
     {
-        $title      = trim((string) $request->input('title'));
-        $content    = trim((string) $request->input('content'));
-        $authorName = trim((string) $request->input('author_name'));
+        $acting = $request->requireActingUser();
+        $title   = trim((string) $request->input('title'));
+        $content = trim((string) $request->input('content'));
 
-        if ($title === '' || $content === '' || $authorName === '') {
-            return Response::badRequest('Title, content and author_name are required.');
+        if ($title === '' || $content === '') {
+            return Response::badRequest('Title and content are required.');
         }
 
         $output = $this->createTopic->execute(new CreateForumTopicInput(
+            $acting,
             $params['slug'],
             $title,
             $content,
-            $request->input('user_id') ?: null,
-            $authorName,
-            trim((string) $request->input('avatar_initials')),
-            $request->input('avatar_color') ?: null,
-            (string) ($request->input('role') ?: 'Member'),
-            (string) ($request->input('role_class') ?: 'role-member'),
-            (string) ($request->input('joined_text') ?: ''),
         ));
 
         if ($output->error !== null) {
@@ -93,23 +87,17 @@ final class ForumController
 
     public function createPost(Request $request, array $params): Response
     {
-        $content    = trim((string) $request->input('content'));
-        $authorName = trim((string) $request->input('author_name'));
+        $acting = $request->requireActingUser();
+        $content = trim((string) $request->input('content'));
 
-        if ($content === '' || $authorName === '') {
-            return Response::badRequest('Content and author_name are required.');
+        if ($content === '') {
+            return Response::badRequest('Content is required.');
         }
 
         $output = $this->createPost->execute(new CreateForumPostInput(
+            $acting,
             $params['slug'],
             $content,
-            $request->input('user_id') ?: null,
-            $authorName,
-            trim((string) $request->input('avatar_initials')),
-            $request->input('avatar_color') ?: null,
-            (string) ($request->input('role') ?: 'Member'),
-            (string) ($request->input('role_class') ?: 'role-member'),
-            (string) ($request->input('joined_text') ?: ''),
         ));
 
         if (!$output->success) {
@@ -121,13 +109,14 @@ final class ForumController
 
     public function likePost(Request $request, array $params): Response
     {
-        $this->likePost->execute(new LikeForumPostInput($params['id']));
+        $acting = $request->requireActingUser();
+        $this->likePostUseCase->execute(new LikeForumPostInput($acting, $params['id']));
         return Response::json(['data' => ['ok' => true]]);
     }
 
     public function incrementView(Request $request, array $params): Response
     {
-        $this->incrementView->execute(new IncrementTopicViewInput($params['slug']));
+        $this->incrementViewUseCase->execute(new IncrementTopicViewInput($params['slug']));
         return Response::json(['data' => ['ok' => true]]);
     }
 }

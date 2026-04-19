@@ -6,9 +6,11 @@ namespace Daems\Tests\Unit\Application\Event;
 
 use Daems\Application\Event\RegisterForEvent\RegisterForEvent;
 use Daems\Application\Event\RegisterForEvent\RegisterForEventInput;
+use Daems\Domain\Auth\ActingUser;
 use Daems\Domain\Event\Event;
 use Daems\Domain\Event\EventId;
 use Daems\Domain\Event\EventRepositoryInterface;
+use Daems\Domain\User\UserId;
 use PHPUnit\Framework\TestCase;
 
 final class RegisterForEventTest extends TestCase
@@ -30,6 +32,11 @@ final class RegisterForEventTest extends TestCase
         );
     }
 
+    private function acting(): ActingUser
+    {
+        return new ActingUser(UserId::generate(), 'registered');
+    }
+
     public function testReturnsParticipantCountOnSuccessfulRegistration(): void
     {
         $event = $this->makeEvent();
@@ -41,7 +48,7 @@ final class RegisterForEventTest extends TestCase
         $repo->expects($this->once())->method('register');
 
         $out = (new RegisterForEvent($repo))->execute(
-            new RegisterForEventInput('annual-meeting-2025', 'user-uuid-0001'),
+            new RegisterForEventInput($this->acting(), 'annual-meeting-2025'),
         );
 
         $this->assertNull($out->error);
@@ -55,7 +62,7 @@ final class RegisterForEventTest extends TestCase
         $repo->expects($this->never())->method('register');
 
         $out = (new RegisterForEvent($repo))->execute(
-            new RegisterForEventInput('nonexistent-event', 'user-uuid-0001'),
+            new RegisterForEventInput($this->acting(), 'nonexistent-event'),
         );
 
         $this->assertNotNull($out->error);
@@ -73,7 +80,7 @@ final class RegisterForEventTest extends TestCase
         $repo->expects($this->never())->method('register');
 
         $out = (new RegisterForEvent($repo))->execute(
-            new RegisterForEventInput('annual-meeting-2025', 'user-uuid-0001'),
+            new RegisterForEventInput($this->acting(), 'annual-meeting-2025'),
         );
 
         $this->assertNotNull($out->error);
@@ -95,7 +102,32 @@ final class RegisterForEventTest extends TestCase
         );
 
         (new RegisterForEvent($repo))->execute(
-            new RegisterForEventInput('annual-meeting-2025', 'user-uuid-0001'),
+            new RegisterForEventInput($this->acting(), 'annual-meeting-2025'),
         );
+    }
+
+    public function testRegistrationUsesActingUserId(): void
+    {
+        $event = $this->makeEvent();
+        $acting = new ActingUser(UserId::generate(), 'registered');
+
+        $repo = $this->createMock(EventRepositoryInterface::class);
+        $repo->method('findBySlug')->willReturn($event);
+        $repo->method('isRegistered')->willReturn(false);
+        $repo->method('countRegistrations')->willReturn(1);
+
+        $capturedUserId = null;
+        $repo->expects($this->once())->method('register')->with(
+            $this->callback(function ($reg) use (&$capturedUserId): bool {
+                $capturedUserId = $reg->userId();
+                return true;
+            }),
+        );
+
+        (new RegisterForEvent($repo))->execute(
+            new RegisterForEventInput($acting, 'annual-meeting-2025'),
+        );
+
+        $this->assertSame($acting->id->value(), $capturedUserId);
     }
 }

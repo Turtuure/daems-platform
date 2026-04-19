@@ -13,6 +13,7 @@ use Daems\Domain\Project\ProjectParticipantId;
 use Daems\Domain\Project\ProjectRepositoryInterface;
 use Daems\Domain\Project\ProjectUpdate;
 use Daems\Domain\Project\ProjectUpdateId;
+use Daems\Domain\User\UserId;
 use Daems\Infrastructure\Framework\Database\Connection;
 
 final class SqlProjectRepository implements ProjectRepositoryInterface
@@ -60,9 +61,10 @@ final class SqlProjectRepository implements ProjectRepositoryInterface
     {
         $this->db->execute(
             'INSERT INTO projects
-                (id, slug, title, category, icon, summary, description, status, sort_order)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                (id, owner_id, slug, title, category, icon, summary, description, status, sort_order)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
              ON DUPLICATE KEY UPDATE
+                owner_id    = VALUES(owner_id),
                 title       = VALUES(title),
                 category    = VALUES(category),
                 icon        = VALUES(icon),
@@ -72,6 +74,7 @@ final class SqlProjectRepository implements ProjectRepositoryInterface
                 sort_order  = VALUES(sort_order)',
             [
                 $project->id()->value(),
+                $project->ownerId()?->value(),
                 $project->slug(),
                 $project->title(),
                 $project->category(),
@@ -203,6 +206,7 @@ final class SqlProjectRepository implements ProjectRepositoryInterface
             $row['description'],
             $row['status'],
             (int) $row['sort_order'],
+            isset($row['owner_id']) && $row['owner_id'] !== null ? UserId::fromString($row['owner_id']) : null,
         );
     }
 

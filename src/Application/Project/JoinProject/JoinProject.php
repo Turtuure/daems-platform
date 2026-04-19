@@ -19,14 +19,16 @@ final class JoinProject
             return new JoinProjectOutput(false, 'Project not found.');
         }
 
-        if ($this->projects->isParticipant($project->id()->value(), $input->userId)) {
+        $userId = $input->acting->id->value();
+
+        if ($this->projects->isParticipant($project->id()->value(), $userId)) {
             return new JoinProjectOutput(false, 'Already a participant.');
         }
 
         $participant = new ProjectParticipant(
             ProjectParticipantId::generate(),
             $project->id()->value(),
-            $input->userId,
+            $userId,
             date('Y-m-d H:i:s'),
         );
 

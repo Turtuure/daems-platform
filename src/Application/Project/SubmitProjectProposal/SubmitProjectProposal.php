@@ -7,11 +7,13 @@ namespace Daems\Application\Project\SubmitProjectProposal;
 use Daems\Domain\Project\ProjectProposal;
 use Daems\Domain\Project\ProjectProposalId;
 use Daems\Domain\Project\ProjectProposalRepositoryInterface;
+use Daems\Domain\User\UserRepositoryInterface;
 
 final class SubmitProjectProposal
 {
     public function __construct(
         private readonly ProjectProposalRepositoryInterface $proposals,
+        private readonly UserRepositoryInterface $users,
     ) {}
 
     public function execute(SubmitProjectProposalInput $input): SubmitProjectProposalOutput
@@ -20,11 +22,15 @@ final class SubmitProjectProposal
             return new SubmitProjectProposalOutput(false, 'Title and description are required.');
         }
 
+        $user = $this->users->findById($input->acting->id->value());
+        $authorName = $user !== null ? $user->name() : 'Unknown';
+        $authorEmail = $user !== null ? $user->email() : '';
+
         $proposal = new ProjectProposal(
             ProjectProposalId::generate(),
-            $input->userId,
-            $input->authorName,
-            $input->authorEmail,
+            $input->acting->id->value(),
+            $authorName,
+            $authorEmail,
             trim($input->title),
             trim($input->category),
             trim($input->summary),

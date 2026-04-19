@@ -17,7 +17,7 @@ final class LeaveProject
             return new LeaveProjectOutput(false, 'Project not found.');
         }
 
-        $this->projects->removeParticipant($project->id()->value(), $input->userId);
+        $this->projects->removeParticipant($project->id()->value(), $input->acting->id->value());
         return new LeaveProjectOutput(true);
     }
 }

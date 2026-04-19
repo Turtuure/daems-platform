@@ -45,13 +45,10 @@ final class EventController
 
     public function register(Request $request, array $params): Response
     {
-        $userId = trim((string) $request->input('user_id'));
-        if ($userId === '') {
-            return Response::badRequest('user_id is required.');
-        }
+        $acting = $request->requireActingUser();
 
         $output = $this->registerForEvent->execute(
-            new RegisterForEventInput($params['slug'], $userId),
+            new RegisterForEventInput($acting, $params['slug']),
         );
 
         if ($output->error !== null && $output->error !== 'Already registered.') {
@@ -63,13 +60,10 @@ final class EventController
 
     public function unregister(Request $request, array $params): Response
     {
-        $userId = trim((string) $request->input('user_id'));
-        if ($userId === '') {
-            return Response::badRequest('user_id is required.');
-        }
+        $acting = $request->requireActingUser();
 
         $output = $this->unregisterFromEvent->execute(
-            new UnregisterFromEventInput($params['slug'], $userId),
+            new UnregisterFromEventInput($acting, $params['slug']),
         );
 
         if ($output->error !== null) {

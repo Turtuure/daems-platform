@@ -8,3 +8,5 @@
 .vscode/
 .DS_Store
 Thumbs.db
+/.worktrees/
+/build/

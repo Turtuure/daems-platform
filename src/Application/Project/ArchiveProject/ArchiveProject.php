@@ -18,6 +18,8 @@ final class ArchiveProject
             return new ArchiveProjectOutput(false, 'Project not found.');
         }
 
+        $existing->assertMutableBy($input->acting);
+
         $archived = new Project(
             $existing->id(),
             $existing->slug(),
@@ -28,6 +30,7 @@ final class ArchiveProject
             $existing->description(),
             'archived',
             $existing->sortOrder(),
+            $existing->ownerId(),
         );
 
         $this->projects->save($archived);

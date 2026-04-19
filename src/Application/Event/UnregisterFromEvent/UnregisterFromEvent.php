@@ -20,7 +20,7 @@ final class UnregisterFromEvent
         }
 
         $eventId = $event->id()->value();
-        $this->events->unregister($eventId, $input->userId);
+        $this->events->unregister($eventId, $input->acting->id->value());
 
         return new UnregisterFromEventOutput($this->events->countRegistrations($eventId));
     }
