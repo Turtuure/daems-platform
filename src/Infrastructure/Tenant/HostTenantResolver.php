@@ -7,7 +7,7 @@ namespace Daems\Infrastructure\Tenant;
 use Daems\Domain\Tenant\Tenant;
 use Daems\Domain\Tenant\TenantRepositoryInterface;
 
-final class HostTenantResolver
+final class HostTenantResolver implements TenantResolverInterface
 {
     /**
      * @param array<string, string> $fallbackMap host => slug
