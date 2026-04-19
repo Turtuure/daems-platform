@@ -18,6 +18,7 @@ final class SubmitMemberApplication
     {
         $application = new MemberApplication(
             MemberApplicationId::generate(),
+            $input->acting->activeTenant,
             $input->name,
             $input->email,
             $input->dateOfBirth,

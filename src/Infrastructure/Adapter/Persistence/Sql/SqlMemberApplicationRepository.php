@@ -17,10 +17,11 @@ final class SqlMemberApplicationRepository implements MemberApplicationRepositor
     {
         $this->db->execute(
             'INSERT INTO member_applications
-                (id, name, email, date_of_birth, country, motivation, how_heard, status)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+                (id, tenant_id, name, email, date_of_birth, country, motivation, how_heard, status)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
             [
                 $app->id()->value(),
+                $app->tenantId()->value(),
                 $app->name(),
                 $app->email(),
                 $app->dateOfBirth(),

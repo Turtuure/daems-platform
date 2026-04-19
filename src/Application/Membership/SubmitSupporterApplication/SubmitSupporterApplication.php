@@ -18,6 +18,7 @@ final class SubmitSupporterApplication
     {
         $application = new SupporterApplication(
             SupporterApplicationId::generate(),
+            $input->acting->activeTenant,
             $input->orgName,
             $input->contactPerson,
             $input->regNo,

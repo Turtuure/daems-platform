@@ -17,10 +17,11 @@ final class SqlSupporterApplicationRepository implements SupporterApplicationRep
     {
         $this->db->execute(
             'INSERT INTO supporter_applications
-                (id, org_name, contact_person, reg_no, email, country, motivation, how_heard, status)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
+                (id, tenant_id, org_name, contact_person, reg_no, email, country, motivation, how_heard, status)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
             [
                 $app->id()->value(),
+                $app->tenantId()->value(),
                 $app->orgName(),
                 $app->contactPerson(),
                 $app->regNo(),

@@ -4,10 +4,13 @@ declare(strict_types=1);
 
 namespace Daems\Domain\Membership;
 
+use Daems\Domain\Tenant\TenantId;
+
 final class SupporterApplication
 {
     public function __construct(
         private readonly SupporterApplicationId $id,
+        private readonly TenantId $tenantId,
         private readonly string $orgName,
         private readonly string $contactPerson,
         private readonly ?string $regNo,
@@ -19,6 +22,7 @@ final class SupporterApplication
     ) {}
 
     public function id(): SupporterApplicationId { return $this->id; }
+    public function tenantId(): TenantId { return $this->tenantId; }
     public function orgName(): string { return $this->orgName; }
     public function contactPerson(): string { return $this->contactPerson; }
     public function regNo(): ?string { return $this->regNo; }
