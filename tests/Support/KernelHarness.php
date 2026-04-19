@@ -51,8 +51,14 @@ use Daems\Domain\Membership\SupporterApplicationRepositoryInterface;
 use Daems\Domain\Project\ProjectProposalRepositoryInterface;
 use Daems\Domain\Project\ProjectRepositoryInterface;
 use Daems\Domain\Shared\Clock;
+use Daems\Domain\Tenant\Tenant;
+use Daems\Domain\Tenant\TenantId;
 use Daems\Domain\Tenant\TenantRepositoryInterface;
+use Daems\Domain\Tenant\TenantSlug;
 use Daems\Domain\Tenant\UserTenantRepositoryInterface;
+use Daems\Infrastructure\Framework\Http\Middleware\TenantContextMiddleware;
+use Daems\Infrastructure\Tenant\TenantResolverInterface;
+use DateTimeImmutable;
 use Daems\Domain\User\User;
 use Daems\Domain\User\UserId;
 use Daems\Domain\User\UserRepositoryInterface;
@@ -297,6 +303,26 @@ final class KernelHarness
             5,
             15,
             900,
+        ));
+
+        // TenantContextMiddleware requires a resolver. In the test harness all
+        // requests are tenant-agnostic, so we wire a stub resolver that always
+        // returns a fixed test tenant — ensuring the middleware passes through
+        // without a real Host header or database lookup.
+        $stubTenant = new Tenant(
+            TenantId::generate(),
+            TenantSlug::fromString('test-tenant'),
+            'Test Tenant',
+            new DateTimeImmutable('2024-01-01'),
+        );
+        $container->bind(TenantContextMiddleware::class, static fn() => new TenantContextMiddleware(
+            new class ($stubTenant) implements TenantResolverInterface {
+                public function __construct(private readonly Tenant $tenant) {}
+                public function resolve(string $host): ?Tenant
+                {
+                    return $this->tenant;
+                }
+            },
         ));
 
         $container->singleton(Router::class, static function () use ($container): Router {
