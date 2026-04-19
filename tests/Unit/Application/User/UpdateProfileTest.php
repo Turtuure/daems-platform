@@ -38,7 +38,6 @@ final class UpdateProfileTest extends TestCase
             $email,
             password_hash('p', PASSWORD_BCRYPT),
             '1990-01-01',
-            'registered',
             'US',
             'Street 1',
             '00100',

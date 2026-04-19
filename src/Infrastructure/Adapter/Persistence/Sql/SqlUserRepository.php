@@ -31,15 +31,14 @@ final class SqlUserRepository implements UserRepositoryInterface
     {
         try {
             $this->db->execute(
-                'INSERT INTO users (id, name, email, password_hash, date_of_birth, role)
-                 VALUES (?, ?, ?, ?, ?, ?)',
+                'INSERT INTO users (id, name, email, password_hash, date_of_birth)
+                 VALUES (?, ?, ?, ?, ?)',
                 [
                     $user->id()->value(),
                     $user->name(),
                     $user->email(),
                     $user->passwordHash(),
                     $user->dateOfBirth(),
-                    $user->role(),
                 ],
             );
         } catch (PDOException $e) {
@@ -105,22 +104,21 @@ final class SqlUserRepository implements UserRepositoryInterface
     private function hydrate(array $row): User
     {
         return new User(
-            UserId::fromString($row['id']),
-            $row['name'],
-            $row['email'],
-            $row['password_hash'],
-            $row['date_of_birth'],
-            $row['role'] ?? 'registered',
-            $row['country'] ?? '',
-            $row['address_street'] ?? '',
-            $row['address_zip'] ?? '',
-            $row['address_city'] ?? '',
-            $row['address_country'] ?? '',
-            $row['membership_type'] ?? 'individual',
-            $row['membership_status'] ?? 'active',
-            $row['member_number'] ?? null,
-            $row['created_at'] ?? '',
-            (bool) ($row['is_platform_admin'] ?? false),
+            id:              UserId::fromString($row['id']),
+            name:            $row['name'],
+            email:           $row['email'],
+            passwordHash:    $row['password_hash'],
+            dateOfBirth:     $row['date_of_birth'],
+            country:         $row['country'] ?? '',
+            addressStreet:   $row['address_street'] ?? '',
+            addressZip:      $row['address_zip'] ?? '',
+            addressCity:     $row['address_city'] ?? '',
+            addressCountry:  $row['address_country'] ?? '',
+            membershipType:  $row['membership_type'] ?? 'individual',
+            membershipStatus: $row['membership_status'] ?? 'active',
+            memberNumber:    $row['member_number'] ?? null,
+            createdAt:       $row['created_at'] ?? '',
+            isPlatformAdmin: (bool) ($row['is_platform_admin'] ?? false),
         );
     }
 }

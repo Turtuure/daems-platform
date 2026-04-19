@@ -12,7 +12,6 @@ final class User
         private readonly string $email,
         private readonly string $passwordHash,
         private readonly string $dateOfBirth,
-        private readonly string $role = 'registered',
         private readonly string $country = '',
         private readonly string $addressStreet = '',
         private readonly string $addressZip = '',
@@ -30,7 +29,6 @@ final class User
     public function email(): string { return $this->email; }
     public function passwordHash(): string { return $this->passwordHash; }
     public function dateOfBirth(): string { return $this->dateOfBirth; }
-    public function role(): string { return $this->role; }
     public function country(): string { return $this->country; }
     public function addressStreet(): string { return $this->addressStreet; }
     public function addressZip(): string { return $this->addressZip; }

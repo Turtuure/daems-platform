@@ -51,6 +51,8 @@ use Daems\Domain\Membership\SupporterApplicationRepositoryInterface;
 use Daems\Domain\Project\ProjectProposalRepositoryInterface;
 use Daems\Domain\Project\ProjectRepositoryInterface;
 use Daems\Domain\Shared\Clock;
+use Daems\Domain\Tenant\TenantRepositoryInterface;
+use Daems\Domain\Tenant\UserTenantRepositoryInterface;
 use Daems\Domain\User\User;
 use Daems\Domain\User\UserId;
 use Daems\Domain\User\UserRepositoryInterface;
@@ -79,6 +81,7 @@ use Daems\Tests\Support\Fake\InMemoryProjectProposalRepository;
 use Daems\Tests\Support\Fake\InMemoryProjectRepository;
 use Daems\Tests\Support\Fake\InMemorySupporterApplicationRepository;
 use Daems\Tests\Support\Fake\InMemoryUserRepository;
+use Daems\Tests\Support\Fake\InMemoryUserTenantRepository;
 
 final class KernelHarness
 {
@@ -86,6 +89,7 @@ final class KernelHarness
     public Kernel $kernel;
 
     public InMemoryUserRepository $users;
+    public InMemoryUserTenantRepository $userTenants;
     public InMemoryAuthTokenRepository $tokens;
     public InMemoryAuthLoginAttemptRepository $attempts;
     public InMemoryProjectRepository $projects;
@@ -104,6 +108,7 @@ final class KernelHarness
     {
         $this->clock = $clock;
         $this->users = new InMemoryUserRepository();
+        $this->userTenants = new InMemoryUserTenantRepository();
         $this->tokens = new InMemoryAuthTokenRepository();
         $this->attempts = new InMemoryAuthLoginAttemptRepository();
         $this->projects = new InMemoryProjectRepository();
@@ -130,6 +135,14 @@ final class KernelHarness
         $container->singleton(LoggerInterface::class, static fn(): LoggerInterface => $logger);
         $container->singleton(Clock::class, fn(): Clock => $this->clock);
         $container->singleton(UserRepositoryInterface::class, fn() => $this->users);
+        $container->singleton(UserTenantRepositoryInterface::class, fn() => $this->userTenants);
+        $container->singleton(TenantRepositoryInterface::class, fn() => new class implements TenantRepositoryInterface {
+            public function findById(\Daems\Domain\Tenant\TenantId $id): ?\Daems\Domain\Tenant\Tenant { return null; }
+            public function findBySlug(string $slug): ?\Daems\Domain\Tenant\Tenant { return null; }
+            public function findByDomain(string $domain): ?\Daems\Domain\Tenant\Tenant { return null; }
+            /** @return list<\Daems\Domain\Tenant\Tenant> */
+            public function findAll(): array { return []; }
+        });
         $container->singleton(AuthTokenRepositoryInterface::class, fn() => $this->tokens);
         $container->singleton(AuthLoginAttemptRepositoryInterface::class, fn() => $this->attempts);
         $container->singleton(ProjectRepositoryInterface::class, fn() => $this->projects);
@@ -164,7 +177,10 @@ final class KernelHarness
             $c->make(UserRepositoryInterface::class),
         ));
 
-        $container->bind(GetProfile::class, static fn(Container $c) => new GetProfile($c->make(UserRepositoryInterface::class)));
+        $container->bind(GetProfile::class, static fn(Container $c) => new GetProfile(
+            $c->make(UserRepositoryInterface::class),
+            $c->make(UserTenantRepositoryInterface::class),
+        ));
         $container->bind(UpdateProfile::class, static fn(Container $c) => new UpdateProfile($c->make(UserRepositoryInterface::class)));
         $container->bind(ChangePassword::class, static fn(Container $c) => new ChangePassword($c->make(UserRepositoryInterface::class)));
         $container->bind(DeleteAccount::class, static fn(Container $c) => new DeleteAccount($c->make(UserRepositoryInterface::class)));
@@ -270,7 +286,11 @@ final class KernelHarness
             $c->make(SubmitSupporterApplication::class),
         ));
 
-        $container->bind(AuthMiddleware::class, static fn(Container $c) => new AuthMiddleware($c->make(AuthenticateToken::class)));
+        $container->bind(AuthMiddleware::class, static fn(Container $c) => new AuthMiddleware(
+            $c->make(AuthenticateToken::class),
+            $c->make(TenantRepositoryInterface::class),
+            $c->make(UserTenantRepositoryInterface::class),
+        ));
         $container->bind(RateLimitLoginMiddleware::class, static fn(Container $c) => new RateLimitLoginMiddleware(
             $c->make(AuthLoginAttemptRepositoryInterface::class),
             $c->make(Clock::class),
@@ -288,7 +308,7 @@ final class KernelHarness
         $this->kernel = new Kernel($container, $logger, $debug);
     }
 
-    public function seedUser(string $email = 'user@x.com', string $password = 'pass1234', string $role = 'registered'): User
+    public function seedUser(string $email = 'user@x.com', string $password = 'pass1234'): User
     {
         $u = new User(
             UserId::generate(),
@@ -296,7 +316,6 @@ final class KernelHarness
             $email,
             password_hash($password, PASSWORD_BCRYPT),
             '1990-01-01',
-            $role,
         );
         $this->users->save($u);
         return $u;

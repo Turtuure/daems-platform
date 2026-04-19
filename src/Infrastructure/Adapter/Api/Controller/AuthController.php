@@ -107,7 +107,6 @@ final class AuthController
             'name'              => $u->name(),
             'email'             => $u->email(),
             'dob'               => $u->dateOfBirth(),
-            'role'              => $u->role(),
             'country'           => $u->country(),
             'address_street'    => $u->addressStreet(),
             'address_zip'       => $u->addressZip(),

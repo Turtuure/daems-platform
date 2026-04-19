@@ -30,7 +30,7 @@ final class DeleteAccountTest extends TestCase
         );
     }
 
-    private function seed(InMemoryUserRepository $repo, string $role = 'registered'): User
+    private function seed(InMemoryUserRepository $repo): User
     {
         $u = new User(
             UserId::generate(),
@@ -38,7 +38,6 @@ final class DeleteAccountTest extends TestCase
             'n' . uniqid() . '@x.com',
             password_hash('p', PASSWORD_BCRYPT),
             '1990-01-01',
-            $role,
         );
         $repo->save($u);
         return $u;

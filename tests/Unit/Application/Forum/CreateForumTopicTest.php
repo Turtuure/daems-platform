@@ -32,7 +32,7 @@ final class CreateForumTopicTest extends TestCase
         );
     }
 
-    private function users(string $role = 'registered', string $name = 'Jane Doe'): InMemoryUserRepository
+    private function users(string $name = 'Jane Doe'): InMemoryUserRepository
     {
         $repo = new InMemoryUserRepository();
         $repo->save(new User(
@@ -41,7 +41,6 @@ final class CreateForumTopicTest extends TestCase
             'jane@x.com',
             password_hash('p', PASSWORD_BCRYPT),
             '1990-01-01',
-            $role,
             '', '', '', '', '',
             'individual',
             'active',
@@ -138,7 +137,7 @@ final class CreateForumTopicTest extends TestCase
             },
         );
 
-        (new CreateForumTopic($repo, $this->users(role: 'registered')))
+        (new CreateForumTopic($repo, $this->users()))
             ->execute($this->input());
 
         $this->assertNotNull($capturedPost);
@@ -157,7 +156,7 @@ final class CreateForumTopicTest extends TestCase
             },
         );
 
-        (new CreateForumTopic($repo, $this->users(role: 'admin')))
+        (new CreateForumTopic($repo, $this->users()))
             ->execute($this->input(['acting' => $this->acting('admin')]));
 
         $this->assertNotNull($capturedPost);

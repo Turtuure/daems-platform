@@ -45,13 +45,6 @@ final class UserTest extends TestCase
         $this->assertSame('1985-06-15', $user->dateOfBirth());
     }
 
-    public function testDefaultRoleIsRegistered(): void
-    {
-        $user = $this->makeUser();
-
-        $this->assertSame('registered', $user->role());
-    }
-
     public function testDefaultMembershipTypeIsIndividual(): void
     {
         $user = $this->makeUser();

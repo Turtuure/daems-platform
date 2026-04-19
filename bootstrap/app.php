@@ -288,7 +288,10 @@ $container->bind(AuthController::class,
 
 // User profile
 $container->bind(GetProfile::class,
-    static fn(Container $c) => new GetProfile($c->make(UserRepositoryInterface::class)),
+    static fn(Container $c) => new GetProfile(
+        $c->make(UserRepositoryInterface::class),
+        $c->make(UserTenantRepositoryInterface::class),
+    ),
 );
 $container->bind(UpdateProfile::class,
     static fn(Container $c) => new UpdateProfile($c->make(UserRepositoryInterface::class)),

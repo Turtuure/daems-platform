@@ -8,6 +8,7 @@ use Daems\Application\User\GetProfile\GetProfile;
 use Daems\Application\User\GetProfile\GetProfileInput;
 use Daems\Domain\Auth\ActingUser;
 use Daems\Domain\Tenant\TenantId;
+use Daems\Domain\Tenant\UserTenantRepositoryInterface;
 use Daems\Domain\Tenant\UserTenantRole;
 use Daems\Domain\User\User;
 use Daems\Domain\User\UserId;
@@ -16,7 +17,13 @@ use PHPUnit\Framework\TestCase;
 
 final class GetProfileTest extends TestCase
 {
-    // TEMP: PR 2 Task 17/18 will supply real tenant context.
+    private TenantId $tenantId;
+
+    protected function setUp(): void
+    {
+        $this->tenantId = TenantId::fromString('01958000-0000-7000-8000-000000000001');
+    }
+
     private function acting(UserId $id, string $role = 'registered'): ActingUser
     {
         $tenantRole = UserTenantRole::tryFrom($role) ?? UserTenantRole::Registered;
@@ -24,7 +31,7 @@ final class GetProfileTest extends TestCase
             id:                 $id,
             email:              'test@daems.fi',
             isPlatformAdmin:    false,
-            activeTenant:       TenantId::fromString('01958000-0000-7000-8000-000000000001'),
+            activeTenant:       $this->tenantId,
             roleInActiveTenant: $tenantRole,
         );
     }
@@ -45,6 +52,21 @@ final class GetProfileTest extends TestCase
         return $this->acting($id);
     }
 
+    private function noopUserTenants(?UserTenantRole $role = null): UserTenantRepositoryInterface
+    {
+        $stub = $this->createMock(UserTenantRepositoryInterface::class);
+        $stub->method('findRole')->willReturn($role);
+        return $stub;
+    }
+
+    private function getProfile(?UserTenantRole $targetRole = null): GetProfile
+    {
+        return new GetProfile(
+            $this->createMock(UserRepositoryInterface::class),
+            $this->noopUserTenants($targetRole),
+        );
+    }
+
     public function testReturnsProfileDataWhenSelf(): void
     {
         $id = UserId::generate();
@@ -53,7 +75,8 @@ final class GetProfileTest extends TestCase
         $repo = $this->createMock(UserRepositoryInterface::class);
         $repo->method('findById')->willReturn($user);
 
-        $out = (new GetProfile($repo))->execute(new GetProfileInput($this->self($id), $id->value()));
+        $out = (new GetProfile($repo, $this->noopUserTenants()))
+            ->execute(new GetProfileInput($this->self($id), $id->value()));
 
         $this->assertNull($out->error);
         $this->assertIsArray($out->profile);
@@ -65,7 +88,8 @@ final class GetProfileTest extends TestCase
         $repo = $this->createMock(UserRepositoryInterface::class);
         $repo->method('findById')->willReturn(null);
 
-        $out = (new GetProfile($repo))->execute(new GetProfileInput($this->self(UserId::generate()), 'nonexistent-id'));
+        $out = (new GetProfile($repo, $this->noopUserTenants()))
+            ->execute(new GetProfileInput($this->self(UserId::generate()), 'nonexistent-id'));
 
         $this->assertNull($out->profile);
         $this->assertNotNull($out->error);
@@ -79,7 +103,8 @@ final class GetProfileTest extends TestCase
         $repo = $this->createMock(UserRepositoryInterface::class);
         $repo->method('findById')->willReturn($user);
 
-        $out = (new GetProfile($repo))->execute(new GetProfileInput($this->self($id), $id->value()));
+        $out = (new GetProfile($repo, $this->noopUserTenants()))
+            ->execute(new GetProfileInput($this->self($id), $id->value()));
 
         $this->assertSame('Alice', $out->profile['first_name']);
         $this->assertSame('Smith', $out->profile['last_name']);
@@ -93,7 +118,8 @@ final class GetProfileTest extends TestCase
         $repo = $this->createMock(UserRepositoryInterface::class);
         $repo->method('findById')->willReturn($user);
 
-        $out = (new GetProfile($repo))->execute(new GetProfileInput($this->self($id), $id->value()));
+        $out = (new GetProfile($repo, $this->noopUserTenants()))
+            ->execute(new GetProfileInput($this->self($id), $id->value()));
 
         $expectedKeys = [
             'id', 'name', 'first_name', 'last_name', 'email', 'dob',
@@ -105,6 +131,34 @@ final class GetProfileTest extends TestCase
         }
     }
 
+    public function testRoleInProfileSourcedFromUserTenants(): void
+    {
+        $id = UserId::generate();
+        $user = $this->makeUser('Jane Doe', $id);
+
+        $repo = $this->createMock(UserRepositoryInterface::class);
+        $repo->method('findById')->willReturn($user);
+
+        $out = (new GetProfile($repo, $this->noopUserTenants(UserTenantRole::Admin)))
+            ->execute(new GetProfileInput($this->self($id), $id->value()));
+
+        $this->assertSame('admin', $out->profile['role']);
+    }
+
+    public function testRoleIsEmptyStringWhenUserNotInTenant(): void
+    {
+        $id = UserId::generate();
+        $user = $this->makeUser('Jane Doe', $id);
+
+        $repo = $this->createMock(UserRepositoryInterface::class);
+        $repo->method('findById')->willReturn($user);
+
+        $out = (new GetProfile($repo, $this->noopUserTenants(null)))
+            ->execute(new GetProfileInput($this->self($id), $id->value()));
+
+        $this->assertSame('', $out->profile['role']);
+    }
+
     public function testAdminSeesFullProfileOfOtherUser(): void
     {
         $user = $this->makeUser('Jane Doe');
@@ -113,7 +167,8 @@ final class GetProfileTest extends TestCase
         $repo->method('findById')->willReturn($user);
 
         $admin = $this->acting(UserId::generate(), 'admin');
-        $out = (new GetProfile($repo))->execute(new GetProfileInput($admin, $user->id()->value()));
+        $out = (new GetProfile($repo, $this->noopUserTenants()))
+            ->execute(new GetProfileInput($admin, $user->id()->value()));
 
         $this->assertArrayHasKey('dob', $out->profile);
         $this->assertArrayHasKey('address_street', $out->profile);
@@ -127,7 +182,8 @@ final class GetProfileTest extends TestCase
         $repo->method('findById')->willReturn($user);
 
         $other = $this->acting(UserId::generate());
-        $out = (new GetProfile($repo))->execute(new GetProfileInput($other, $user->id()->value()));
+        $out = (new GetProfile($repo, $this->noopUserTenants()))
+            ->execute(new GetProfileInput($other, $user->id()->value()));
 
         $this->assertNull($out->error);
         $this->assertSame(['id', 'name'], array_keys($out->profile));

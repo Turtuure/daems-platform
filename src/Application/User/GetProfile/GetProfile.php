@@ -4,12 +4,14 @@ declare(strict_types=1);
 
 namespace Daems\Application\User\GetProfile;
 
+use Daems\Domain\Tenant\UserTenantRepositoryInterface;
 use Daems\Domain\User\UserRepositoryInterface;
 
 final class GetProfile
 {
     public function __construct(
         private readonly UserRepositoryInterface $users,
+        private readonly UserTenantRepositoryInterface $userTenants,
     ) {}
 
     public function execute(GetProfileInput $input): GetProfileOutput
@@ -31,6 +33,10 @@ final class GetProfile
 
         $nameParts = explode(' ', $user->name(), 2);
 
+        // Look up the target user's role in the acting user's active tenant.
+        $tenantRole = $this->userTenants->findRole($user->id(), $input->acting->activeTenant);
+        $roleLabel  = $tenantRole?->value ?? '';
+
         return new GetProfileOutput([
             'id'               => $user->id()->value(),
             'name'             => $user->name(),
@@ -38,7 +44,7 @@ final class GetProfile
             'last_name'        => $nameParts[1] ?? '',
             'email'            => $user->email(),
             'dob'              => $user->dateOfBirth(),
-            'role'             => $user->role(),
+            'role'             => $roleLabel,
             'country'          => $user->country(),
             'address_street'   => $user->addressStreet(),
             'address_zip'      => $user->addressZip(),
