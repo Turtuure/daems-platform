@@ -171,3 +171,24 @@ The migrations use `CREATE TABLE IF NOT EXISTS`, so re-running them is safe. `AL
 ### PHPStan reports type errors
 
 Run `composer dump-autoload` first. If errors persist, check that the PHPStan `phpstan.neon` `paths:` setting includes `src/`.
+
+---
+
+## Test database
+
+Integration and migration tests use `daems_db_test` — a separate schema from `daems_db`. The `MigrationTestCase` base class (`tests/Integration/MigrationTestCase.php`) drops all tables and triggers between tests.
+
+Create it once per dev machine (already done on this machine):
+
+```bash
+mysql -u root -p -e "CREATE DATABASE IF NOT EXISTS daems_db_test CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
+```
+
+Credentials are read from env vars with fallbacks:
+
+| Var | Fallback |
+|------|----------|
+| `TEST_DB_HOST` | `127.0.0.1` |
+| `TEST_DB_NAME` | `daems_db_test` |
+| `TEST_DB_USER` | `root` |
+| `TEST_DB_PASS` | `salasana` |
