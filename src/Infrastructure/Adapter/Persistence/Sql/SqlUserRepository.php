@@ -43,7 +43,7 @@ final class SqlUserRepository implements UserRepositoryInterface
             );
         } catch (PDOException $e) {
             if (self::isDuplicateEmail($e)) {
-                throw new ValidationException(['email' => 'invalid_email']);
+                throw new ValidationException('Invalid email.');
             }
             throw $e;
         }
@@ -69,7 +69,7 @@ final class SqlUserRepository implements UserRepositoryInterface
             $this->db->execute('UPDATE users SET ' . implode(', ', $set) . ' WHERE id = ?', $params);
         } catch (PDOException $e) {
             if (self::isDuplicateEmail($e)) {
-                throw new ValidationException(['email' => 'invalid_email']);
+                throw new ValidationException('Invalid email.');
             }
             throw $e;
         }

@@ -8,10 +8,19 @@ use Exception;
 
 final class ValidationException extends Exception
 {
-    /** @param array<string, string> $fields */
-    public function __construct(private readonly array $fields)
+    /** @var array<string, string> */
+    private readonly array $fields;
+
+    /** @param array<string, string>|string $fieldsOrMessage */
+    public function __construct(array|string $fieldsOrMessage)
     {
-        parent::__construct('validation_failed');
+        if (is_string($fieldsOrMessage)) {
+            $this->fields = [];
+            parent::__construct($fieldsOrMessage);
+        } else {
+            $this->fields = $fieldsOrMessage;
+            parent::__construct('validation_failed');
+        }
     }
 
     /** @return array<string, string> */
