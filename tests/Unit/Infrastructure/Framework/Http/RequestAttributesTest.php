@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace Daems\Tests\Unit\Infrastructure\Framework\Http;
 
 use Daems\Domain\Auth\ActingUser;
+use Daems\Domain\Tenant\TenantId;
+use Daems\Domain\Tenant\UserTenantRole;
 use Daems\Domain\User\UserId;
 use Daems\Infrastructure\Framework\Http\Request;
 use PHPUnit\Framework\TestCase;
@@ -47,7 +49,14 @@ final class RequestAttributesTest extends TestCase
 
     public function testWithActingUserPreservesAttributes(): void
     {
-        $actingUser = new ActingUser(UserId::generate(), 'registered');
+        // TEMP: PR 2 Task 17/18 will supply real tenant context.
+        $actingUser = new ActingUser(
+            id:                 UserId::generate(),
+            email:              'test@daems.fi',
+            isPlatformAdmin:    false,
+            activeTenant:       TenantId::fromString('01958000-0000-7000-8000-000000000001'),
+            roleInActiveTenant: UserTenantRole::Registered,
+        );
 
         $req = Request::forTesting('GET', '/test')
             ->withAttribute('tenant', 'daems')

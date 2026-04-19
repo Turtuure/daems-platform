@@ -22,6 +22,7 @@ final class User
         private readonly string $membershipStatus = 'active',
         private readonly ?string $memberNumber = null,
         private readonly string $createdAt = '',
+        private readonly bool $isPlatformAdmin = false,
     ) {}
 
     public function id(): UserId { return $this->id; }
@@ -39,4 +40,5 @@ final class User
     public function membershipStatus(): string { return $this->membershipStatus; }
     public function memberNumber(): ?string { return $this->memberNumber; }
     public function createdAt(): string { return $this->createdAt; }
+    public function isPlatformAdmin(): bool { return $this->isPlatformAdmin; }
 }

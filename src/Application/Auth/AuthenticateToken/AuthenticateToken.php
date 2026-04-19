@@ -7,6 +7,7 @@ namespace Daems\Application\Auth\AuthenticateToken;
 use Daems\Domain\Auth\ActingUser;
 use Daems\Domain\Auth\AuthTokenRepositoryInterface;
 use Daems\Domain\Shared\Clock;
+use Daems\Domain\Tenant\TenantId;
 use Daems\Domain\User\UserRepositoryInterface;
 use Daems\Infrastructure\Framework\Logging\LoggerInterface;
 use Throwable;
@@ -55,8 +56,15 @@ final class AuthenticateToken
             $this->logger->error('touchLastUsed failed', ['exception' => $e, 'token_id' => $token->id()->value()]);
         }
 
+        // TEMP: PR 2 Task 18 will wire activeTenant and roleInActiveTenant properly.
         return AuthenticateTokenOutput::success(
-            new ActingUser($user->id(), $user->role()),
+            new ActingUser(
+                id:                 $user->id(),
+                email:              $user->email(),
+                isPlatformAdmin:    $user->isPlatformAdmin(),
+                activeTenant:       TenantId::fromString('01958000-0000-7000-8000-000000000001'),
+                roleInActiveTenant: null,
+            ),
             $token->id(),
         );
     }

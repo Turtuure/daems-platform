@@ -8,6 +8,8 @@ use Daems\Application\User\UpdateProfile\UpdateProfile;
 use Daems\Application\User\UpdateProfile\UpdateProfileInput;
 use Daems\Domain\Auth\ActingUser;
 use Daems\Domain\Auth\ForbiddenException;
+use Daems\Domain\Tenant\TenantId;
+use Daems\Domain\Tenant\UserTenantRole;
 use Daems\Domain\User\User;
 use Daems\Domain\User\UserId;
 use Daems\Tests\Support\Fake\InMemoryUserRepository;
@@ -15,6 +17,19 @@ use PHPUnit\Framework\TestCase;
 
 final class UpdateProfileTest extends TestCase
 {
+    // TEMP: PR 2 Task 17/18 will supply real tenant context.
+    private function acting(UserId $id, string $role = 'registered'): ActingUser
+    {
+        $tenantRole = UserTenantRole::tryFrom($role) ?? UserTenantRole::Registered;
+        return new ActingUser(
+            id:                 $id,
+            email:              'test@daems.fi',
+            isPlatformAdmin:    false,
+            activeTenant:       TenantId::fromString('01958000-0000-7000-8000-000000000001'),
+            roleInActiveTenant: $tenantRole,
+        );
+    }
+
     private function seed(InMemoryUserRepository $repo, string $email = 'jane@x.com'): User
     {
         $u = new User(
@@ -56,7 +71,7 @@ final class UpdateProfileTest extends TestCase
         $repo = new InMemoryUserRepository();
         $u = $this->seed($repo);
         $out = (new UpdateProfile($repo))
-            ->execute($this->input(new ActingUser($u->id(), 'registered'), $u->id()->value()));
+            ->execute($this->input($this->acting($u->id()), $u->id()->value()));
         $this->assertNull($out->error);
     }
 
@@ -66,7 +81,7 @@ final class UpdateProfileTest extends TestCase
         $repo = new InMemoryUserRepository();
         $u = $this->seed($repo);
         (new UpdateProfile($repo))
-            ->execute($this->input(new ActingUser(UserId::generate(), 'registered'), $u->id()->value()));
+            ->execute($this->input($this->acting(UserId::generate()), $u->id()->value()));
     }
 
     public function testAdminCanUpdateAnyone(): void
@@ -74,7 +89,7 @@ final class UpdateProfileTest extends TestCase
         $repo = new InMemoryUserRepository();
         $u = $this->seed($repo);
         $out = (new UpdateProfile($repo))
-            ->execute($this->input(new ActingUser(UserId::generate(), 'admin'), $u->id()->value()));
+            ->execute($this->input($this->acting(UserId::generate(), 'admin'), $u->id()->value()));
         $this->assertNull($out->error);
     }
 
@@ -83,7 +98,7 @@ final class UpdateProfileTest extends TestCase
         $repo = new InMemoryUserRepository();
         $u = $this->seed($repo);
         $out = (new UpdateProfile($repo))
-            ->execute($this->input(new ActingUser($u->id(), 'registered'), $u->id()->value(), firstName: ''));
+            ->execute($this->input($this->acting($u->id()), $u->id()->value(), firstName: ''));
         $this->assertNotNull($out->error);
     }
 
@@ -92,7 +107,7 @@ final class UpdateProfileTest extends TestCase
         $repo = new InMemoryUserRepository();
         $u = $this->seed($repo);
         $out = (new UpdateProfile($repo))
-            ->execute($this->input(new ActingUser($u->id(), 'registered'), $u->id()->value(), email: 'not-an-email'));
+            ->execute($this->input($this->acting($u->id()), $u->id()->value(), email: 'not-an-email'));
         $this->assertNotNull($out->error);
     }
 
@@ -104,7 +119,7 @@ final class UpdateProfileTest extends TestCase
 
         $out = (new UpdateProfile($repo))
             ->execute($this->input(
-                new ActingUser($target->id(), 'registered'),
+                $this->acting($target->id()),
                 $target->id()->value(),
                 email: 'other@x.com',
             ));
@@ -125,7 +140,7 @@ final class UpdateProfileTest extends TestCase
         $u = $this->seed($repo);
 
         $out = (new UpdateProfile($repo))->execute(new UpdateProfileInput(
-            acting: new ActingUser($u->id(), 'registered'),
+            acting: $this->acting($u->id()),
             userId: $u->id()->value(),
             firstName: 'Alex',
         ));
@@ -148,7 +163,7 @@ final class UpdateProfileTest extends TestCase
         $u = $this->seed($repo);
 
         $out = (new UpdateProfile($repo))->execute(new UpdateProfileInput(
-            acting: new ActingUser($u->id(), 'registered'),
+            acting: $this->acting($u->id()),
             userId: $u->id()->value(),
             addressStreet: '',
         ));
@@ -162,7 +177,7 @@ final class UpdateProfileTest extends TestCase
         $u = $this->seed($repo);
 
         $out = (new UpdateProfile($repo))->execute(new UpdateProfileInput(
-            acting: new ActingUser($u->id(), 'registered'),
+            acting: $this->acting($u->id()),
             userId: $u->id()->value(),
         ));
         $this->assertNull($out->error);

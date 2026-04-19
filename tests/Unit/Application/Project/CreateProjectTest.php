@@ -9,6 +9,8 @@ use Daems\Application\Project\CreateProject\CreateProjectInput;
 use Daems\Domain\Auth\ActingUser;
 use Daems\Domain\Project\Project;
 use Daems\Domain\Project\ProjectRepositoryInterface;
+use Daems\Domain\Tenant\TenantId;
+use Daems\Domain\Tenant\UserTenantRole;
 use Daems\Domain\User\UserId;
 use PHPUnit\Framework\TestCase;
 
@@ -17,7 +19,14 @@ final class CreateProjectTest extends TestCase
     public function testSetsOwnerIdFromActingUser(): void
     {
         $ownerId = UserId::generate();
-        $acting = new ActingUser($ownerId, 'registered');
+        // TEMP: PR 2 Task 17/18 will supply real tenant context.
+        $acting = new ActingUser(
+            id:                 $ownerId,
+            email:              'test@daems.fi',
+            isPlatformAdmin:    false,
+            activeTenant:       TenantId::fromString('01958000-0000-7000-8000-000000000001'),
+            roleInActiveTenant: UserTenantRole::Registered,
+        );
 
         $captured = null;
         $repo = $this->createMock(ProjectRepositoryInterface::class);

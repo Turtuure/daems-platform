@@ -8,6 +8,8 @@ use Daems\Application\User\ChangePassword\ChangePassword;
 use Daems\Application\User\ChangePassword\ChangePasswordInput;
 use Daems\Domain\Auth\ActingUser;
 use Daems\Domain\Auth\ForbiddenException;
+use Daems\Domain\Tenant\TenantId;
+use Daems\Domain\Tenant\UserTenantRole;
 use Daems\Domain\User\User;
 use Daems\Domain\User\UserId;
 use Daems\Domain\User\UserRepositoryInterface;
@@ -15,6 +17,19 @@ use PHPUnit\Framework\TestCase;
 
 final class ChangePasswordTest extends TestCase
 {
+    // TEMP: PR 2 Task 17/18 will supply real tenant context.
+    private function acting(UserId $id, string $role = 'registered'): ActingUser
+    {
+        $tenantRole = UserTenantRole::tryFrom($role) ?? UserTenantRole::Registered;
+        return new ActingUser(
+            id:                 $id,
+            email:              'test@daems.fi',
+            isPlatformAdmin:    false,
+            activeTenant:       TenantId::fromString('01958000-0000-7000-8000-000000000001'),
+            roleInActiveTenant: $tenantRole,
+        );
+    }
+
     private function makeUser(string $plainPassword, ?UserId $id = null): User
     {
         return new User(
@@ -36,7 +51,7 @@ final class ChangePasswordTest extends TestCase
         $repo->expects($this->once())->method('updatePassword');
 
         $out = (new ChangePassword($repo))->execute(
-            new ChangePasswordInput(new ActingUser($id, 'registered'), $id->value(), 'OldPass1!', 'NewPass2@'),
+            new ChangePasswordInput($this->acting($id), $id->value(), 'OldPass1!', 'NewPass2@'),
         );
 
         $this->assertNull($out->error);
@@ -50,7 +65,7 @@ final class ChangePasswordTest extends TestCase
         $repo->expects($this->never())->method('updatePassword');
 
         $out = (new ChangePassword($repo))->execute(
-            new ChangePasswordInput(new ActingUser($id, 'registered'), $id->value(), 'OldPass1!', 'short'),
+            new ChangePasswordInput($this->acting($id), $id->value(), 'OldPass1!', 'short'),
         );
 
         $this->assertNotNull($out->error);
@@ -64,7 +79,7 @@ final class ChangePasswordTest extends TestCase
         $repo->expects($this->never())->method('updatePassword');
 
         $out = (new ChangePassword($repo))->execute(
-            new ChangePasswordInput(new ActingUser($id, 'registered'), $id->value(), 'OldPass1!', 'NewPass2@'),
+            new ChangePasswordInput($this->acting($id), $id->value(), 'OldPass1!', 'NewPass2@'),
         );
 
         $this->assertNotNull($out->error);
@@ -80,7 +95,7 @@ final class ChangePasswordTest extends TestCase
         $repo->expects($this->never())->method('updatePassword');
 
         $out = (new ChangePassword($repo))->execute(
-            new ChangePasswordInput(new ActingUser($id, 'registered'), $id->value(), 'WrongPass!', 'NewPass2@'),
+            new ChangePasswordInput($this->acting($id), $id->value(), 'WrongPass!', 'NewPass2@'),
         );
 
         $this->assertNotNull($out->error);
@@ -102,7 +117,7 @@ final class ChangePasswordTest extends TestCase
         );
 
         (new ChangePassword($repo))->execute(
-            new ChangePasswordInput(new ActingUser($id, 'registered'), $id->value(), 'OldPass1!', $newPass),
+            new ChangePasswordInput($this->acting($id), $id->value(), 'OldPass1!', $newPass),
         );
 
         $this->assertNotNull($capturedHash);
@@ -116,7 +131,7 @@ final class ChangePasswordTest extends TestCase
 
         (new ChangePassword($repo))->execute(
             new ChangePasswordInput(
-                new ActingUser(UserId::generate(), 'registered'),
+                $this->acting(UserId::generate()),
                 UserId::generate()->value(),
                 'OldPass1!',
                 'NewPass2@',
@@ -140,7 +155,7 @@ final class ChangePasswordTest extends TestCase
         // but Forbidden must short-circuit first.
         try {
             (new ChangePassword($repo))->execute(new ChangePasswordInput(
-                new ActingUser(UserId::generate(), 'registered'),
+                $this->acting(UserId::generate()),
                 UserId::generate()->value(),
                 'OldPass1!',
                 'x',
@@ -154,7 +169,7 @@ final class ChangePasswordTest extends TestCase
         // but Forbidden must short-circuit first.
         try {
             (new ChangePassword($repo))->execute(new ChangePasswordInput(
-                new ActingUser(UserId::generate(), 'registered'),
+                $this->acting(UserId::generate()),
                 UserId::generate()->value(),
                 'OldPass1!',
                 str_repeat('a', 73),
@@ -172,7 +187,7 @@ final class ChangePasswordTest extends TestCase
 
         (new ChangePassword($repo))->execute(
             new ChangePasswordInput(
-                new ActingUser(UserId::generate(), 'admin'),
+                $this->acting(UserId::generate(), 'admin'),
                 UserId::generate()->value(),
                 'OldPass1!',
                 'NewPass2@',
@@ -185,7 +200,7 @@ final class ChangePasswordTest extends TestCase
         $id = UserId::generate();
         $repo = $this->createMock(UserRepositoryInterface::class);
         $out = (new ChangePassword($repo))->execute(
-            new ChangePasswordInput(new ActingUser($id, 'registered'), $id->value(), 'x', str_repeat('a', 73)),
+            new ChangePasswordInput($this->acting($id), $id->value(), 'x', str_repeat('a', 73)),
         );
         $this->assertNotNull($out->error);
     }

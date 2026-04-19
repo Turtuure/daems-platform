@@ -120,6 +120,7 @@ final class SqlUserRepository implements UserRepositoryInterface
             $row['membership_status'] ?? 'active',
             $row['member_number'] ?? null,
             $row['created_at'] ?? '',
+            (bool) ($row['is_platform_admin'] ?? false),
         );
     }
 }

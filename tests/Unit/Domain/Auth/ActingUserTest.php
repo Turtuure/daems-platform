@@ -5,60 +5,77 @@ declare(strict_types=1);
 namespace Daems\Tests\Unit\Domain\Auth;
 
 use Daems\Domain\Auth\ActingUser;
-use Daems\Domain\User\Role;
+use Daems\Domain\Tenant\TenantId;
+use Daems\Domain\Tenant\UserTenantRole;
 use Daems\Domain\User\UserId;
-use InvalidArgumentException;
 use PHPUnit\Framework\TestCase;
 
 final class ActingUserTest extends TestCase
 {
-    public function testIsAdminTrueForAdminRole(): void
-    {
-        $a = new ActingUser(UserId::generate(), Role::Admin);
-        $this->assertTrue($a->isAdmin());
+    private function make(
+        bool $isPlatformAdmin = false,
+        ?UserTenantRole $role = null,
+    ): ActingUser {
+        return new ActingUser(
+            id:                 UserId::fromString('01958000-0000-7000-8000-000000000011'),
+            email:              'sam@test.fi',
+            isPlatformAdmin:    $isPlatformAdmin,
+            activeTenant:       TenantId::fromString('01958000-0000-7000-8000-000000000001'),
+            roleInActiveTenant: $role,
+        );
     }
 
-    public function testIsAdminFalseForOtherRoles(): void
+    public function testPlatformAdminFlag(): void
     {
-        foreach ([Role::Registered, Role::Member, Role::Supporter, Role::Moderator] as $role) {
-            $this->assertFalse((new ActingUser(UserId::generate(), $role))->isAdmin(), $role->value);
-        }
+        $this->assertTrue($this->make(isPlatformAdmin: true)->isPlatformAdmin());
+        $this->assertFalse($this->make()->isPlatformAdmin());
+    }
+
+    public function testRoleInReturnsRoleForActiveTenant(): void
+    {
+        $u = $this->make(role: UserTenantRole::Admin);
+        $active = TenantId::fromString('01958000-0000-7000-8000-000000000001');
+        $this->assertSame(UserTenantRole::Admin, $u->roleIn($active));
+    }
+
+    public function testRoleInReturnsNullForOtherTenant(): void
+    {
+        $u = $this->make(role: UserTenantRole::Admin);
+        $other = TenantId::fromString('01958000-0000-7000-8000-000000000002');
+        $this->assertNull($u->roleIn($other));
+    }
+
+    public function testIsAdminInTrueForPlatformAdminEverywhere(): void
+    {
+        $u = $this->make(isPlatformAdmin: true);
+        $anyTenant = TenantId::fromString('01958000-0000-7000-8000-999999999999');
+        $this->assertTrue($u->isAdminIn($anyTenant));
+    }
+
+    public function testIsAdminInTrueForAdminInActiveTenant(): void
+    {
+        $u = $this->make(role: UserTenantRole::Admin);
+        $active = TenantId::fromString('01958000-0000-7000-8000-000000000001');
+        $this->assertTrue($u->isAdminIn($active));
+    }
+
+    public function testIsAdminInFalseForMember(): void
+    {
+        $u = $this->make(role: UserTenantRole::Member);
+        $active = TenantId::fromString('01958000-0000-7000-8000-000000000001');
+        $this->assertFalse($u->isAdminIn($active));
     }
 
     public function testOwnsReturnsTrueForSameId(): void
     {
-        $id = UserId::generate();
-        $a = new ActingUser($id, Role::Registered);
-        $this->assertTrue($a->owns($id));
+        $id = UserId::fromString('01958000-0000-7000-8000-000000000011');
+        $u = $this->make();
+        $this->assertTrue($u->owns($id));
     }
 
     public function testOwnsReturnsFalseForDifferentId(): void
     {
-        $a = new ActingUser(UserId::generate(), Role::Registered);
-        $this->assertFalse($a->owns(UserId::generate()));
-    }
-
-    public function testAcceptsStringRoleViaLoosenedCtor(): void
-    {
-        $a = new ActingUser(UserId::generate(), 'admin');
-        $this->assertTrue($a->isAdmin());
-        $this->assertSame(Role::Admin, $a->role);
-    }
-
-    /**
-     * The security-critical behaviour this type exists to enforce:
-     * a typo like 'Admin' or 'adminstrator' must NOT silently demote
-     * the caller to a non-admin — it must fail loudly.
-     */
-    public function testRejectsUnknownRoleStringWithException(): void
-    {
-        $this->expectException(InvalidArgumentException::class);
-        new ActingUser(UserId::generate(), 'Admin'); // capital-A typo
-    }
-
-    public function testRejectsArbitraryGarbageStringWithException(): void
-    {
-        $this->expectException(InvalidArgumentException::class);
-        new ActingUser(UserId::generate(), 'superadmin');
+        $u = $this->make();
+        $this->assertFalse($u->owns(UserId::generate()));
     }
 }

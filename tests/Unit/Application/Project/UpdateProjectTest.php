@@ -11,11 +11,26 @@ use Daems\Domain\Auth\ForbiddenException;
 use Daems\Domain\Project\Project;
 use Daems\Domain\Project\ProjectId;
 use Daems\Domain\Project\ProjectRepositoryInterface;
+use Daems\Domain\Tenant\TenantId;
+use Daems\Domain\Tenant\UserTenantRole;
 use Daems\Domain\User\UserId;
 use PHPUnit\Framework\TestCase;
 
 final class UpdateProjectTest extends TestCase
 {
+    // TEMP: PR 2 Task 17/18 will supply real tenant context.
+    private function acting(UserId $id, string $role = 'registered'): ActingUser
+    {
+        $tenantRole = UserTenantRole::tryFrom($role) ?? UserTenantRole::Registered;
+        return new ActingUser(
+            id:                 $id,
+            email:              'test@daems.fi',
+            isPlatformAdmin:    false,
+            activeTenant:       TenantId::fromString('01958000-0000-7000-8000-000000000001'),
+            roleInActiveTenant: $tenantRole,
+        );
+    }
+
     private function project(?UserId $ownerId = null): Project
     {
         return new Project(
@@ -46,7 +61,7 @@ final class UpdateProjectTest extends TestCase
         $repo->method('findBySlug')->willReturn($project);
         $repo->expects($this->once())->method('save');
 
-        (new UpdateProject($repo))->execute($this->input(new ActingUser($ownerId, 'registered')));
+        (new UpdateProject($repo))->execute($this->input($this->acting($ownerId)));
     }
 
     public function testNonOwnerForbidden(): void
@@ -57,7 +72,7 @@ final class UpdateProjectTest extends TestCase
         $repo = $this->createMock(ProjectRepositoryInterface::class);
         $repo->method('findBySlug')->willReturn($project);
 
-        (new UpdateProject($repo))->execute($this->input(new ActingUser(UserId::generate(), 'registered')));
+        (new UpdateProject($repo))->execute($this->input($this->acting(UserId::generate())));
     }
 
     public function testAdminCanUpdateAnyProject(): void
@@ -68,7 +83,7 @@ final class UpdateProjectTest extends TestCase
         $repo->method('findBySlug')->willReturn($project);
         $repo->expects($this->once())->method('save');
 
-        (new UpdateProject($repo))->execute($this->input(new ActingUser(UserId::generate(), 'admin')));
+        (new UpdateProject($repo))->execute($this->input($this->acting(UserId::generate(), 'admin')));
     }
 
     public function testLegacyNullOwnerForbiddenForNonAdmin(): void
@@ -79,7 +94,7 @@ final class UpdateProjectTest extends TestCase
         $repo = $this->createMock(ProjectRepositoryInterface::class);
         $repo->method('findBySlug')->willReturn($project);
 
-        (new UpdateProject($repo))->execute($this->input(new ActingUser(UserId::generate(), 'registered')));
+        (new UpdateProject($repo))->execute($this->input($this->acting(UserId::generate())));
     }
 
     public function testLegacyNullOwnerAllowedForAdmin(): void
@@ -90,7 +105,7 @@ final class UpdateProjectTest extends TestCase
         $repo->method('findBySlug')->willReturn($project);
         $repo->expects($this->once())->method('save');
 
-        (new UpdateProject($repo))->execute($this->input(new ActingUser(UserId::generate(), 'admin')));
+        (new UpdateProject($repo))->execute($this->input($this->acting(UserId::generate(), 'admin')));
     }
 
     public function testProjectNotFoundReturnsError(): void
@@ -98,7 +113,7 @@ final class UpdateProjectTest extends TestCase
         $repo = $this->createMock(ProjectRepositoryInterface::class);
         $repo->method('findBySlug')->willReturn(null);
 
-        $out = (new UpdateProject($repo))->execute($this->input(new ActingUser(UserId::generate(), 'admin')));
+        $out = (new UpdateProject($repo))->execute($this->input($this->acting(UserId::generate(), 'admin')));
         $this->assertFalse($out->success);
         $this->assertNotNull($out->error);
     }

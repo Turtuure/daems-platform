@@ -15,6 +15,7 @@ use Daems\Tests\Support\Fake\InMemoryUserRepository;
 use Daems\Tests\Support\FrozenClock;
 use DateTimeImmutable;
 use PHPUnit\Framework\TestCase;
+use Daems\Domain\Tenant\TenantId;
 
 final class AuthenticateTokenTest extends TestCase
 {
@@ -57,7 +58,9 @@ final class AuthenticateTokenTest extends TestCase
         $this->assertNull($out->error);
         $this->assertNotNull($out->actingUser);
         $this->assertSame($u->id()->value(), $out->actingUser->id->value());
-        $this->assertSame(\Daems\Domain\User\Role::Registered, $out->actingUser->role);
+        // TEMP: PR 2 Task 18 will wire roleInActiveTenant; until then it is null.
+        $this->assertNull($out->actingUser->roleInActiveTenant);
+        $this->assertFalse($out->actingUser->isPlatformAdmin);
     }
 
     public function testRejectsMissingToken(): void
@@ -187,6 +190,9 @@ final class AuthenticateTokenTest extends TestCase
         $out = (new AuthenticateToken($tokens, $users, $clock, new \Daems\Tests\Support\NullLogger()))
             ->execute(new AuthenticateTokenInput('secret'));
 
-        $this->assertTrue($out->actingUser?->isAdmin());
+        // TEMP: PR 2 Task 18 will wire roleInActiveTenant from user_tenants; until then
+        // AuthenticateToken cannot convey tenant-scoped admin role. Assert TEMP state.
+        $this->assertNull($out->actingUser?->roleInActiveTenant);
+        $this->assertFalse($out->actingUser?->isPlatformAdmin);
     }
 }

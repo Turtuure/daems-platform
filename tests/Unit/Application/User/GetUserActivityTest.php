@@ -10,11 +10,26 @@ use Daems\Domain\Auth\ActingUser;
 use Daems\Domain\Auth\ForbiddenException;
 use Daems\Domain\Event\EventRepositoryInterface;
 use Daems\Domain\Forum\ForumRepositoryInterface;
+use Daems\Domain\Tenant\TenantId;
+use Daems\Domain\Tenant\UserTenantRole;
 use Daems\Domain\User\UserId;
 use PHPUnit\Framework\TestCase;
 
 final class GetUserActivityTest extends TestCase
 {
+    // TEMP: PR 2 Task 17/18 will supply real tenant context.
+    private function acting(UserId $id, string $role = 'registered'): ActingUser
+    {
+        $tenantRole = UserTenantRole::tryFrom($role) ?? UserTenantRole::Registered;
+        return new ActingUser(
+            id:                 $id,
+            email:              'test@daems.fi',
+            isPlatformAdmin:    false,
+            activeTenant:       TenantId::fromString('01958000-0000-7000-8000-000000000001'),
+            roleInActiveTenant: $tenantRole,
+        );
+    }
+
     private function uc(): GetUserActivity
     {
         $forum = $this->createStub(ForumRepositoryInterface::class);
@@ -27,19 +42,19 @@ final class GetUserActivityTest extends TestCase
     public function testSelfReturnsData(): void
     {
         $id = UserId::generate();
-        $out = $this->uc()->execute(new GetUserActivityInput(new ActingUser($id, 'registered'), $id->value()));
+        $out = $this->uc()->execute(new GetUserActivityInput($this->acting($id), $id->value()));
         $this->assertSame(0, $out->data['forum_posts']);
     }
 
     public function testAdminCanViewAnyone(): void
     {
-        $out = $this->uc()->execute(new GetUserActivityInput(new ActingUser(UserId::generate(), 'admin'), UserId::generate()->value()));
+        $out = $this->uc()->execute(new GetUserActivityInput($this->acting(UserId::generate(), 'admin'), UserId::generate()->value()));
         $this->assertSame(0, $out->data['forum_posts']);
     }
 
     public function testOtherUserForbidden(): void
     {
         $this->expectException(ForbiddenException::class);
-        $this->uc()->execute(new GetUserActivityInput(new ActingUser(UserId::generate(), 'registered'), UserId::generate()->value()));
+        $this->uc()->execute(new GetUserActivityInput($this->acting(UserId::generate()), UserId::generate()->value()));
     }
 }

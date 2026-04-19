@@ -8,6 +8,8 @@ use Daems\Application\User\DeleteAccount\DeleteAccount;
 use Daems\Application\User\DeleteAccount\DeleteAccountInput;
 use Daems\Domain\Auth\ActingUser;
 use Daems\Domain\Auth\ForbiddenException;
+use Daems\Domain\Tenant\TenantId;
+use Daems\Domain\Tenant\UserTenantRole;
 use Daems\Domain\User\User;
 use Daems\Domain\User\UserId;
 use Daems\Tests\Support\Fake\InMemoryUserRepository;
@@ -15,6 +17,19 @@ use PHPUnit\Framework\TestCase;
 
 final class DeleteAccountTest extends TestCase
 {
+    // TEMP: PR 2 Task 17/18 will supply real tenant context.
+    private function acting(UserId $id, string $role = 'registered'): ActingUser
+    {
+        $tenantRole = UserTenantRole::tryFrom($role) ?? UserTenantRole::Registered;
+        return new ActingUser(
+            id:                 $id,
+            email:              'test@daems.fi',
+            isPlatformAdmin:    false,
+            activeTenant:       TenantId::fromString('01958000-0000-7000-8000-000000000001'),
+            roleInActiveTenant: $tenantRole,
+        );
+    }
+
     private function seed(InMemoryUserRepository $repo, string $role = 'registered'): User
     {
         $u = new User(
@@ -33,7 +48,7 @@ final class DeleteAccountTest extends TestCase
     {
         $repo = new InMemoryUserRepository();
         $victim = $this->seed($repo);
-        $acting = new ActingUser($victim->id(), 'registered');
+        $acting = $this->acting($victim->id());
 
         $out = (new DeleteAccount($repo))->execute(new DeleteAccountInput($acting, $victim->id()->value()));
 
@@ -46,7 +61,7 @@ final class DeleteAccountTest extends TestCase
         $this->expectException(ForbiddenException::class);
         $repo = new InMemoryUserRepository();
         $victim = $this->seed($repo);
-        $attacker = new ActingUser(UserId::generate(), 'registered');
+        $attacker = $this->acting(UserId::generate());
 
         (new DeleteAccount($repo))->execute(new DeleteAccountInput($attacker, $victim->id()->value()));
     }
@@ -55,7 +70,7 @@ final class DeleteAccountTest extends TestCase
     {
         $repo = new InMemoryUserRepository();
         $victim = $this->seed($repo);
-        $admin = new ActingUser(UserId::generate(), 'admin');
+        $admin = $this->acting(UserId::generate(), 'admin');
 
         $out = (new DeleteAccount($repo))->execute(new DeleteAccountInput($admin, $victim->id()->value()));
 
@@ -65,7 +80,7 @@ final class DeleteAccountTest extends TestCase
     public function testTargetUserNotFoundReturnsErrorOutput(): void
     {
         $repo = new InMemoryUserRepository();
-        $acting = new ActingUser(UserId::generate(), 'admin');
+        $acting = $this->acting(UserId::generate(), 'admin');
 
         $out = (new DeleteAccount($repo))->execute(new DeleteAccountInput($acting, UserId::generate()->value()));
 

@@ -11,6 +11,8 @@ use Daems\Domain\Forum\ForumCategory;
 use Daems\Domain\Forum\ForumCategoryId;
 use Daems\Domain\Forum\ForumPost;
 use Daems\Domain\Forum\ForumRepositoryInterface;
+use Daems\Domain\Tenant\TenantId;
+use Daems\Domain\Tenant\UserTenantRole;
 use Daems\Domain\User\User;
 use Daems\Domain\User\UserId;
 use Daems\Tests\Support\Fake\InMemoryUserRepository;
@@ -58,7 +60,15 @@ final class CreateForumTopicTest extends TestCase
 
     private function acting(string $role = 'registered'): ActingUser
     {
-        return new ActingUser(UserId::fromString($this->actingId), $role);
+        // TEMP: PR 2 Task 17/18 will supply real tenant context.
+        $tenantRole = UserTenantRole::tryFrom($role) ?? UserTenantRole::Registered;
+        return new ActingUser(
+            id:                 UserId::fromString($this->actingId),
+            email:              'test@daems.fi',
+            isPlatformAdmin:    false,
+            activeTenant:       TenantId::fromString('01958000-0000-7000-8000-000000000001'),
+            roleInActiveTenant: $tenantRole,
+        );
     }
 
     private function input(array $overrides = []): CreateForumTopicInput

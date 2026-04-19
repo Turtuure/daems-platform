@@ -7,6 +7,8 @@ namespace Daems\Tests\Unit\Application\User;
 use Daems\Application\User\GetProfile\GetProfile;
 use Daems\Application\User\GetProfile\GetProfileInput;
 use Daems\Domain\Auth\ActingUser;
+use Daems\Domain\Tenant\TenantId;
+use Daems\Domain\Tenant\UserTenantRole;
 use Daems\Domain\User\User;
 use Daems\Domain\User\UserId;
 use Daems\Domain\User\UserRepositoryInterface;
@@ -14,6 +16,19 @@ use PHPUnit\Framework\TestCase;
 
 final class GetProfileTest extends TestCase
 {
+    // TEMP: PR 2 Task 17/18 will supply real tenant context.
+    private function acting(UserId $id, string $role = 'registered'): ActingUser
+    {
+        $tenantRole = UserTenantRole::tryFrom($role) ?? UserTenantRole::Registered;
+        return new ActingUser(
+            id:                 $id,
+            email:              'test@daems.fi',
+            isPlatformAdmin:    false,
+            activeTenant:       TenantId::fromString('01958000-0000-7000-8000-000000000001'),
+            roleInActiveTenant: $tenantRole,
+        );
+    }
+
     private function makeUser(string $name = 'Jane Doe', ?UserId $id = null): User
     {
         return new User(
@@ -27,7 +42,7 @@ final class GetProfileTest extends TestCase
 
     private function self(UserId $id): ActingUser
     {
-        return new ActingUser($id, 'registered');
+        return $this->acting($id);
     }
 
     public function testReturnsProfileDataWhenSelf(): void
@@ -97,7 +112,7 @@ final class GetProfileTest extends TestCase
         $repo = $this->createMock(UserRepositoryInterface::class);
         $repo->method('findById')->willReturn($user);
 
-        $admin = new ActingUser(UserId::generate(), 'admin');
+        $admin = $this->acting(UserId::generate(), 'admin');
         $out = (new GetProfile($repo))->execute(new GetProfileInput($admin, $user->id()->value()));
 
         $this->assertArrayHasKey('dob', $out->profile);
@@ -111,7 +126,7 @@ final class GetProfileTest extends TestCase
         $repo = $this->createMock(UserRepositoryInterface::class);
         $repo->method('findById')->willReturn($user);
 
-        $other = new ActingUser(UserId::generate(), 'registered');
+        $other = $this->acting(UserId::generate());
         $out = (new GetProfile($repo))->execute(new GetProfileInput($other, $user->id()->value()));
 
         $this->assertNull($out->error);

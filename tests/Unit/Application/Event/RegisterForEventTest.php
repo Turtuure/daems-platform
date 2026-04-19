@@ -10,6 +10,8 @@ use Daems\Domain\Auth\ActingUser;
 use Daems\Domain\Event\Event;
 use Daems\Domain\Event\EventId;
 use Daems\Domain\Event\EventRepositoryInterface;
+use Daems\Domain\Tenant\TenantId;
+use Daems\Domain\Tenant\UserTenantRole;
 use Daems\Domain\User\UserId;
 use PHPUnit\Framework\TestCase;
 
@@ -34,7 +36,14 @@ final class RegisterForEventTest extends TestCase
 
     private function acting(): ActingUser
     {
-        return new ActingUser(UserId::generate(), 'registered');
+        // TEMP: PR 2 Task 17/18 will supply real tenant context.
+        return new ActingUser(
+            id:                 UserId::generate(),
+            email:              'test@daems.fi',
+            isPlatformAdmin:    false,
+            activeTenant:       TenantId::fromString('01958000-0000-7000-8000-000000000001'),
+            roleInActiveTenant: UserTenantRole::Registered,
+        );
     }
 
     public function testReturnsParticipantCountOnSuccessfulRegistration(): void
@@ -109,7 +118,14 @@ final class RegisterForEventTest extends TestCase
     public function testRegistrationUsesActingUserId(): void
     {
         $event = $this->makeEvent();
-        $acting = new ActingUser(UserId::generate(), 'registered');
+        // TEMP: PR 2 Task 17/18 will supply real tenant context.
+        $acting = new ActingUser(
+            id:                 UserId::generate(),
+            email:              'test@daems.fi',
+            isPlatformAdmin:    false,
+            activeTenant:       TenantId::fromString('01958000-0000-7000-8000-000000000001'),
+            roleInActiveTenant: UserTenantRole::Registered,
+        );
 
         $repo = $this->createMock(EventRepositoryInterface::class);
         $repo->method('findBySlug')->willReturn($event);
