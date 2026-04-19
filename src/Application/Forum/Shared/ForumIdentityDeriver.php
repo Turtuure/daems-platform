@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Daems\Application\Forum\Shared;
 
 use Daems\Domain\Auth\ActingUser;
-use Daems\Domain\User\Role;
+use Daems\Domain\Tenant\UserTenantRole;
 use Daems\Domain\User\UserRepositoryInterface;
 
 final class ForumIdentityDeriver
@@ -17,7 +17,8 @@ final class ForumIdentityDeriver
     {
         $user = $users->findById($acting->id->value());
         $name = $user !== null ? $user->name() : 'Unknown';
-        $role = $user !== null ? Role::fromStringOrRegistered($user->role()) : Role::Registered;
+        // TEMP: PR 2 Task 18 will wire roleInActiveTenant properly; until then fall back to Registered.
+        $role = $acting->roleInActiveTenant ?? UserTenantRole::Registered;
         $createdAt = $user !== null ? $user->createdAt() : '';
 
         return [
