@@ -10,3 +10,6 @@
 Thumbs.db
 /.worktrees/
 /build/
+
+# Local planning docs
+docs/planning/
