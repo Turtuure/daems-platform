@@ -214,6 +214,7 @@ $container->bind(RateLimitLoginMiddleware::class,
         (int) ($_ENV['AUTH_RATE_LIMIT_MAX_FAILS'] ?? 5),
         (int) ($_ENV['AUTH_RATE_LIMIT_WINDOW_MIN'] ?? 15),
         (int) ($_ENV['AUTH_RATE_LIMIT_LOCKOUT_MIN'] ?? 15) * 60,
+        (int) ($_ENV['AUTH_RATE_LIMIT_MAX_FAILS_PER_IP'] ?? 20),
     ),
 );
 

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Daems\Application\Forum\Shared;
 
 use Daems\Domain\Auth\ActingUser;
+use Daems\Domain\User\Role;
 use Daems\Domain\User\UserRepositoryInterface;
 
 final class ForumIdentityDeriver
@@ -16,7 +17,7 @@ final class ForumIdentityDeriver
     {
         $user = $users->findById($acting->id->value());
         $name = $user !== null ? $user->name() : 'Unknown';
-        $role = $user !== null ? $user->role() : 'registered';
+        $role = $user !== null ? Role::fromStringOrRegistered($user->role()) : Role::Registered;
         $createdAt = $user !== null ? $user->createdAt() : '';
 
         return [
@@ -24,24 +25,13 @@ final class ForumIdentityDeriver
             'author_name'     => $name,
             'avatar_initials' => self::initials($name),
             'avatar_color'    => '#64748b',
-            'role'            => self::roleLabel($role),
-            'role_class'      => 'role-' . strtolower($role),
+            'role'            => $role->label(),
+            'role_class'      => 'role-' . $role->value,
             'joined_text'     => $createdAt !== '' ? 'Joined ' . substr($createdAt, 0, 10) : '',
         ];
     }
 
-    private static function roleLabel(string $role): string
-    {
-        return match ($role) {
-            'admin'      => 'Administrator',
-            'moderator'  => 'Moderator',
-            'member'     => 'Member',
-            'supporter'  => 'Supporter',
-            default      => 'Member',
-        };
-    }
-
-    private static function initials(string $name): string
+    public static function initials(string $name): string
     {
         $parts = preg_split('/\s+/', trim($name)) ?: [];
         $letters = '';

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Daems\Infrastructure\Framework\Http;
 
 use Daems\Domain\Auth\ActingUser;
+use Daems\Domain\Auth\UnauthorizedException;
 
 final class Request
 {
@@ -80,6 +81,17 @@ final class Request
     public function actingUser(): ?ActingUser
     {
         return $this->actingUser;
+    }
+
+    /**
+     * Non-null variant. Controllers whose route is gated by AuthMiddleware
+     * should prefer this — it keeps the null check out of every handler
+     * and gives a clean 401 via the Kernel exception mapping if the route
+     * somehow reaches the controller without an attached ActingUser.
+     */
+    public function requireActingUser(): ActingUser
+    {
+        return $this->actingUser ?? throw new UnauthorizedException();
     }
 
     public function withActingUser(ActingUser $user): self

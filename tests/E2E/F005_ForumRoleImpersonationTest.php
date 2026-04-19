@@ -57,7 +57,7 @@ final class F005_ForumRoleImpersonationTest extends TestCase
 
         $this->assertSame(201, $resp->status());
 
-        $storedPost = $this->h->forum->posts[0];
+        $storedPost = $this->h->forum->lastPost();
         $this->assertNotSame('Administrator', $storedPost->role());
         $this->assertNotSame('role-admin', $storedPost->roleClass());
         $this->assertNotSame('Site Administrator', $storedPost->authorName());
@@ -76,7 +76,7 @@ final class F005_ForumRoleImpersonationTest extends TestCase
 
         $this->assertSame(201, $resp->status());
 
-        $storedPost = $this->h->forum->posts[0];
+        $storedPost = $this->h->forum->lastPost();
         $this->assertSame('Administrator', $storedPost->role());
         $this->assertSame('role-admin', $storedPost->roleClass());
     }

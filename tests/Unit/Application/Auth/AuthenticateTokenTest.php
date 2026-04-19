@@ -57,7 +57,7 @@ final class AuthenticateTokenTest extends TestCase
         $this->assertNull($out->error);
         $this->assertNotNull($out->actingUser);
         $this->assertSame($u->id()->value(), $out->actingUser->id->value());
-        $this->assertSame('registered', $out->actingUser->role);
+        $this->assertSame(\Daems\Domain\User\Role::Registered, $out->actingUser->role);
     }
 
     public function testRejectsMissingToken(): void

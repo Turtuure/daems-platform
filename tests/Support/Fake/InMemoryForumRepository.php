@@ -20,6 +20,12 @@ final class InMemoryForumRepository implements ForumRepositoryInterface
     /** @var list<ForumPost> */
     public array $posts = [];
 
+    /** Test helper: the most recently saved post, or null if none. */
+    public function lastPost(): ?ForumPost
+    {
+        return $this->posts === [] ? null : $this->posts[array_key_last($this->posts)];
+    }
+
     public function findAllCategories(): array
     {
         return array_values($this->categoriesBySlug);

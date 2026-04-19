@@ -18,8 +18,6 @@ use Daems\Application\Forum\LikeForumPost\LikeForumPost;
 use Daems\Application\Forum\LikeForumPost\LikeForumPostInput;
 use Daems\Application\Forum\ListForumCategories\ListForumCategories;
 use Daems\Application\Forum\ListForumCategories\ListForumCategoriesInput;
-use Daems\Domain\Auth\ActingUser;
-use Daems\Domain\Auth\UnauthorizedException;
 use Daems\Infrastructure\Framework\Http\Request;
 use Daems\Infrastructure\Framework\Http\Response;
 
@@ -31,18 +29,9 @@ final class ForumController
         private readonly GetForumThread $getThread,
         private readonly CreateForumTopic $createTopic,
         private readonly CreateForumPost $createPost,
-        private readonly LikeForumPost $likePost,
-        private readonly IncrementTopicView $incrementView,
+        private readonly LikeForumPost $likePostUseCase,
+        private readonly IncrementTopicView $incrementViewUseCase,
     ) {}
-
-    private function requireActing(Request $request): ActingUser
-    {
-        $acting = $request->actingUser();
-        if ($acting === null) {
-            throw new UnauthorizedException();
-        }
-        return $acting;
-    }
 
     public function index(Request $request): Response
     {
@@ -74,7 +63,7 @@ final class ForumController
 
     public function createTopic(Request $request, array $params): Response
     {
-        $acting = $this->requireActing($request);
+        $acting = $request->requireActingUser();
         $title   = trim((string) $request->input('title'));
         $content = trim((string) $request->input('content'));
 
@@ -98,7 +87,7 @@ final class ForumController
 
     public function createPost(Request $request, array $params): Response
     {
-        $acting = $this->requireActing($request);
+        $acting = $request->requireActingUser();
         $content = trim((string) $request->input('content'));
 
         if ($content === '') {
@@ -120,14 +109,14 @@ final class ForumController
 
     public function likePost(Request $request, array $params): Response
     {
-        $acting = $this->requireActing($request);
-        $this->likePost->execute(new LikeForumPostInput($acting, $params['id']));
+        $acting = $request->requireActingUser();
+        $this->likePostUseCase->execute(new LikeForumPostInput($acting, $params['id']));
         return Response::json(['data' => ['ok' => true]]);
     }
 
     public function incrementView(Request $request, array $params): Response
     {
-        $this->incrementView->execute(new IncrementTopicViewInput($params['slug']));
+        $this->incrementViewUseCase->execute(new IncrementTopicViewInput($params['slug']));
         return Response::json(['data' => ['ok' => true]]);
     }
 }

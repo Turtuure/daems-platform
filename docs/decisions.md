@@ -171,7 +171,7 @@ On each authenticated request, update `last_used_at = NOW()` and `expires_at = L
 F-009: `/auth/login` had no throttle. No Redis in the stack. Credential-stuffing is the realistic attack.
 
 **Decision:**
-A new `auth_login_attempts` table keyed by `(ip, email, attempted_at)`. Middleware counts failures within a 15-minute window and returns HTTP 429 + `Retry-After: 900` after 5 failures. Keying by `(ip, email)` — not `email` alone — prevents an attacker from DoS-ing arbitrary accounts by typing the wrong password from any IP. Opportunistic cleanup (1-in-100 sweep of rows older than 24 h) avoids cron.
+A new `auth_login_attempts` table with `id BIGINT AUTO_INCREMENT` as primary key and a secondary index on `(ip, email, attempted_at)` to support window queries. Middleware counts failures within a 15-minute window and returns HTTP 429 + `Retry-After: 900` after 5 failures for a given `(ip, email)` pair. Indexing on `(ip, email)` — not `email` alone — prevents an attacker from DoS-ing arbitrary accounts by typing the wrong password from any IP. A secondary per-IP budget (default 20 failures / 15 min) catches credential-stuffing that sprays many distinct emails from one source. Opportunistic cleanup (1-in-100 sweep of rows older than 24 h) avoids cron.
 
 **Consequences:**
 - Works on any MySQL install without new infrastructure.

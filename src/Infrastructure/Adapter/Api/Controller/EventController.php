@@ -12,7 +12,6 @@ use Daems\Application\Event\RegisterForEvent\RegisterForEvent;
 use Daems\Application\Event\RegisterForEvent\RegisterForEventInput;
 use Daems\Application\Event\UnregisterFromEvent\UnregisterFromEvent;
 use Daems\Application\Event\UnregisterFromEvent\UnregisterFromEventInput;
-use Daems\Domain\Auth\UnauthorizedException;
 use Daems\Infrastructure\Framework\Http\Request;
 use Daems\Infrastructure\Framework\Http\Response;
 
@@ -46,10 +45,7 @@ final class EventController
 
     public function register(Request $request, array $params): Response
     {
-        $acting = $request->actingUser();
-        if ($acting === null) {
-            throw new UnauthorizedException();
-        }
+        $acting = $request->requireActingUser();
 
         $output = $this->registerForEvent->execute(
             new RegisterForEventInput($acting, $params['slug']),
@@ -64,10 +60,7 @@ final class EventController
 
     public function unregister(Request $request, array $params): Response
     {
-        $acting = $request->actingUser();
-        if ($acting === null) {
-            throw new UnauthorizedException();
-        }
+        $acting = $request->requireActingUser();
 
         $output = $this->unregisterFromEvent->execute(
             new UnregisterFromEventInput($acting, $params['slug']),

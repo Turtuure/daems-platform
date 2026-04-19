@@ -184,7 +184,7 @@ Revoke the caller's token. Requires `Authorization: Bearer <token>`.
 
 ### GET /api/v1/users/{id}
 
-Retrieve a user profile.
+Retrieve a user profile. **Requires authentication.**
 
 **Path parameters**
 
@@ -192,15 +192,19 @@ Retrieve a user profile.
 | --------- | ------ | ----------- |
 | `id`      | UUID7  | User ID     |
 
-**Response 200**
+**Response shape depends on caller identity.**
+
+Self (`{id}` matches caller's user id) or caller with `role=admin` — full profile:
 
 ```json
 {
   "data": {
     "id": "01951234-abcd-7ef0-8abc-0123456789ab",
     "name": "Ada Lovelace",
+    "first_name": "Ada",
+    "last_name": "Lovelace",
     "email": "ada@example.com",
-    "date_of_birth": "1990-04-18",
+    "dob": "1990-04-18",
     "role": "registered",
     "country": "FI",
     "address_street": "Mannerheimintie 1",
@@ -215,18 +219,30 @@ Retrieve a user profile.
 }
 ```
 
+Any other authenticated caller — reduced public view (name only, no PII):
+
+```json
+{
+  "data": {
+    "id": "01951234-abcd-7ef0-8abc-0123456789ab",
+    "name": "Ada Lovelace"
+  }
+}
+```
+
 **Errors**
 
-| Status | Condition       |
-| ------ | --------------- |
-| 400    | ID is empty     |
-| 404    | User not found  |
+| Status | Condition                            |
+| ------ | ------------------------------------ |
+| 400    | ID is empty                          |
+| 401    | Missing / invalid `Authorization`    |
+| 404    | User not found                       |
 
 ---
 
 ### POST /api/v1/users/{id}
 
-Update a user's profile fields.
+Update a user's profile fields. **Requires authentication.** Only the user themselves or an admin can update.
 
 **Path parameters**
 
@@ -234,7 +250,7 @@ Update a user's profile fields.
 | --------- | ----- | ----------- |
 | `id`      | UUID7 | User ID     |
 
-**Request body** (all fields optional — send only those to change)
+**Request body** — all fields optional. Omitted fields are left unchanged; an explicit empty string sets the field to empty.
 
 | Field             | Type   |
 | ----------------- | ------ |
@@ -256,16 +272,17 @@ Update a user's profile fields.
 
 **Errors**
 
-| Status | Condition                   |
-| ------ | --------------------------- |
-| 400    | Validation error (message varies) |
-| 400    | ID is empty                 |
+| Status | Condition                                  |
+| ------ | ------------------------------------------ |
+| 400    | ID is empty, `first_name` empty, email invalid, or duplicate email (generic "Invalid email.") |
+| 401    | Missing / invalid `Authorization`          |
+| 403    | Caller is neither self nor admin           |
 
 ---
 
 ### POST /api/v1/users/{id}/password
 
-Change a user's password.
+Change a user's password. **Requires authentication. Self-only** — admins cannot reset another user's password through this endpoint.
 
 **Path parameters**
 
@@ -275,11 +292,11 @@ Change a user's password.
 
 **Request body**
 
-| Field              | Type   | Required |
-| ------------------ | ------ | -------- |
-| `current_password` | string | yes      |
-| `new_password`     | string | yes      |
-| `confirm_password` | string | yes      |
+| Field              | Type   | Required | Notes                                 |
+| ------------------ | ------ | -------- | ------------------------------------- |
+| `current_password` | string | yes      |                                       |
+| `new_password`     | string | yes      | 8–72 bytes (bcrypt truncates beyond)  |
+| `confirm_password` | string | yes      |                                       |
 
 **Response 200**
 
@@ -289,16 +306,19 @@ Change a user's password.
 
 **Errors**
 
-| Status | Condition                               |
-| ------ | --------------------------------------- |
-| 400    | `new_password` and `confirm_password` do not match |
-| 422    | Current password is incorrect           |
+| Status | Condition                                                |
+| ------ | -------------------------------------------------------- |
+| 400    | `new_password` and `confirm_password` do not match       |
+| 401    | Missing / invalid `Authorization`                        |
+| 403    | Caller is not the target user (admins cannot override)   |
+| 422    | New password too short (<8 bytes) or too long (>72 bytes) |
+| 422    | Current password is incorrect                            |
 
 ---
 
 ### GET /api/v1/users/{id}/activity
 
-Retrieve a user's recent activity (forum posts and event registrations).
+Retrieve a user's recent activity (forum posts and event registrations). **Requires authentication.** Self-or-admin only.
 
 **Path parameters**
 
@@ -311,17 +331,27 @@ Retrieve a user's recent activity (forum posts and event registrations).
 ```json
 {
   "data": {
-    "forum_posts": [...],
-    "event_registrations": [...]
+    "forum_posts": 3,
+    "recent_posts": [...],
+    "events_attended": 1,
+    "attended_events": [...]
   }
 }
 ```
+
+**Errors**
+
+| Status | Condition                         |
+| ------ | --------------------------------- |
+| 400    | ID is empty                       |
+| 401    | Missing / invalid `Authorization` |
+| 403    | Caller is neither self nor admin  |
 
 ---
 
 ### POST /api/v1/users/{id}/delete
 
-Delete a user account and all associated data.
+Delete a user account and all associated data. **Requires authentication.** Self or admin.
 
 **Path parameters**
 
@@ -337,9 +367,12 @@ Delete a user account and all associated data.
 
 **Errors**
 
-| Status | Condition      |
-| ------ | -------------- |
-| 404    | User not found |
+| Status | Condition                         |
+| ------ | --------------------------------- |
+| 400    | ID is empty                       |
+| 401    | Missing / invalid `Authorization` |
+| 403    | Caller is neither self nor admin  |
+| 404    | User not found                    |
 
 ---
 
@@ -427,7 +460,7 @@ Retrieve a single event with registration status for a given user.
 
 ### POST /api/v1/events/{slug}/register
 
-Register a user for an event. Idempotent — registering twice is not an error.
+Register the authenticated user for an event. Idempotent — registering twice is not an error. **Requires authentication.** The registrant is always the authenticated user; there is no `user_id` body field.
 
 **Path parameters**
 
@@ -435,11 +468,7 @@ Register a user for an event. Idempotent — registering twice is not an error.
 | --------- | ------ | ----------- |
 | `slug`    | string | Event slug  |
 
-**Request body**
-
-| Field     | Type  | Required |
-| --------- | ----- | -------- |
-| `user_id` | UUID7 | yes      |
+**Request body** — empty.
 
 **Response 200**
 
@@ -449,16 +478,16 @@ Register a user for an event. Idempotent — registering twice is not an error.
 
 **Errors**
 
-| Status | Condition                      |
-| ------ | ------------------------------ |
-| 400    | `user_id` is empty             |
-| 404    | Event not found                |
+| Status | Condition                         |
+| ------ | --------------------------------- |
+| 401    | Missing / invalid `Authorization` |
+| 404    | Event not found                   |
 
 ---
 
 ### POST /api/v1/events/{slug}/unregister
 
-Remove a user's event registration.
+Remove the authenticated user's event registration. **Requires authentication.**
 
 **Path parameters**
 
@@ -466,11 +495,7 @@ Remove a user's event registration.
 | --------- | ------ | ----------- |
 | `slug`    | string | Event slug  |
 
-**Request body**
-
-| Field     | Type  | Required |
-| --------- | ----- | -------- |
-| `user_id` | UUID7 | yes      |
+**Request body** — empty.
 
 **Response 200**
 
@@ -480,10 +505,10 @@ Remove a user's event registration.
 
 **Errors**
 
-| Status | Condition              |
-| ------ | ---------------------- |
-| 400    | `user_id` is empty     |
-| 404    | Event or registration not found |
+| Status | Condition                         |
+| ------ | --------------------------------- |
+| 401    | Missing / invalid `Authorization` |
+| 404    | Event or registration not found   |
 
 ---
 
@@ -608,7 +633,7 @@ Retrieve a topic thread with all its posts.
 
 ### POST /api/v1/forum/categories/{slug}/topics
 
-Create a new topic in a category.
+Create a new topic in a category. **Requires authentication.** Author identity (user_id, author_name, avatar, role badge, join date) is derived server-side from the authenticated user's record — attempts to supply these fields in the body are silently ignored.
 
 **Path parameters**
 
@@ -618,17 +643,10 @@ Create a new topic in a category.
 
 **Request body**
 
-| Field             | Type   | Required | Notes                  |
-| ----------------- | ------ | -------- | ---------------------- |
-| `title`           | string | yes      |                        |
-| `content`         | string | yes      | Body of the first post |
-| `author_name`     | string | yes      |                        |
-| `user_id`         | UUID7  | no       | Authenticated user     |
-| `avatar_initials` | string | no       | Up to 4 characters     |
-| `avatar_color`    | string | no       | CSS colour value       |
-| `role`            | string | no       | Default: `Member`      |
-| `role_class`      | string | no       | Default: `role-member` |
-| `joined_text`     | string | no       |                        |
+| Field     | Type   | Required | Notes                  |
+| --------- | ------ | -------- | ---------------------- |
+| `title`   | string | yes      |                        |
+| `content` | string | yes      | Body of the first post |
 
 **Response 201**
 
@@ -638,16 +656,17 @@ Create a new topic in a category.
 
 **Errors**
 
-| Status | Condition                            |
-| ------ | ------------------------------------ |
-| 400    | `title`, `content`, or `author_name` is empty |
-| 404    | Category not found                   |
+| Status | Condition                         |
+| ------ | --------------------------------- |
+| 400    | `title` or `content` is empty     |
+| 401    | Missing / invalid `Authorization` |
+| 404    | Category not found                |
 
 ---
 
 ### POST /api/v1/forum/topics/{slug}/posts
 
-Add a reply to a topic.
+Add a reply to a topic. **Requires authentication.** Author identity (user_id, author_name, avatar, role badge, join date) is derived server-side from the authenticated user's record — attempts to supply these fields in the body are silently ignored.
 
 **Path parameters**
 
@@ -657,16 +676,9 @@ Add a reply to a topic.
 
 **Request body**
 
-| Field             | Type   | Required | Notes              |
-| ----------------- | ------ | -------- | ------------------ |
-| `content`         | string | yes      |                    |
-| `author_name`     | string | yes      |                    |
-| `user_id`         | UUID7  | no       |                    |
-| `avatar_initials` | string | no       |                    |
-| `avatar_color`    | string | no       |                    |
-| `role`            | string | no       | Default: `Member`  |
-| `role_class`      | string | no       | Default: `role-member` |
-| `joined_text`     | string | no       |                    |
+| Field     | Type   | Required |
+| --------- | ------ | -------- |
+| `content` | string | yes      |
 
 **Response 201**
 
@@ -684,16 +696,17 @@ Add a reply to a topic.
 
 **Errors**
 
-| Status | Condition                       |
-| ------ | ------------------------------- |
-| 400    | `content` or `author_name` is empty |
-| 404    | Topic not found                 |
+| Status | Condition                         |
+| ------ | --------------------------------- |
+| 400    | `content` is empty                |
+| 401    | Missing / invalid `Authorization` |
+| 404    | Topic not found                   |
 
 ---
 
 ### POST /api/v1/forum/posts/{id}/like
 
-Increment the like counter on a post. No authentication required.
+Increment the like counter on a post. **Requires authentication.**
 
 **Path parameters**
 
@@ -707,11 +720,17 @@ Increment the like counter on a post. No authentication required.
 { "data": { "ok": true } }
 ```
 
+**Errors**
+
+| Status | Condition                         |
+| ------ | --------------------------------- |
+| 401    | Missing / invalid `Authorization` |
+
 ---
 
 ### POST /api/v1/forum/topics/{slug}/view
 
-Increment the view counter on a topic.
+Increment the view counter on a topic. Public — no authentication required (used for anonymous view tracking).
 
 **Path parameters**
 
@@ -810,18 +829,18 @@ Retrieve a single project with participants, comments, and updates.
 
 ### POST /api/v1/projects
 
-Create a new project.
+Create a new project. **Requires authentication.** `owner_id` is set from the authenticated user.
 
 **Request body**
 
-| Field         | Type   | Required | Notes                     |
-| ------------- | ------ | -------- | ------------------------- |
-| `title`       | string | yes      |                           |
-| `category`    | string | yes      |                           |
-| `icon`        | string | no       | Bootstrap Icons class; default `bi-folder` |
-| `summary`     | string | yes      |                           |
-| `description` | string | yes      |                           |
-| `status`      | string | no       | Default `active`          |
+| Field         | Type   | Required | Notes                                       |
+| ------------- | ------ | -------- | ------------------------------------------- |
+| `title`       | string | yes      |                                             |
+| `category`    | string | yes      |                                             |
+| `icon`        | string | no       | Bootstrap Icons class; default `bi-folder`  |
+| `summary`     | string | yes      |                                             |
+| `description` | string | yes      |                                             |
+| `status`      | string | no       | Default `active`                            |
 
 **Response 201**
 
@@ -831,15 +850,16 @@ Create a new project.
 
 **Errors**
 
-| Status | Condition           |
-| ------ | ------------------- |
-| 422    | Validation failed   |
+| Status | Condition                         |
+| ------ | --------------------------------- |
+| 401    | Missing / invalid `Authorization` |
+| 422    | Validation failed                 |
 
 ---
 
 ### POST /api/v1/projects/{slug}
 
-Update an existing project.
+Update an existing project. **Requires authentication.** Only the project owner or an admin may update. Legacy rows with `owner_id IS NULL` are admin-only.
 
 **Path parameters**
 
@@ -857,21 +877,25 @@ Update an existing project.
 
 **Errors**
 
-| Status | Condition         |
-| ------ | ----------------- |
-| 404    | Project not found |
+| Status | Condition                                  |
+| ------ | ------------------------------------------ |
+| 401    | Missing / invalid `Authorization`          |
+| 403    | Caller is neither project owner nor admin  |
+| 404    | Project not found                          |
 
 ---
 
 ### POST /api/v1/projects/{slug}/archive
 
-Archive a project (sets status to `archived`).
+Archive a project (sets status to `archived`). **Requires authentication.** Same owner-or-admin policy as update.
 
 **Path parameters**
 
 | Parameter | Type   | Description  |
 | --------- | ------ | ------------ |
 | `slug`    | string | Project slug |
+
+**Request body** — empty.
 
 **Response 200**
 
@@ -881,15 +905,17 @@ Archive a project (sets status to `archived`).
 
 **Errors**
 
-| Status | Condition         |
-| ------ | ----------------- |
-| 404    | Project not found |
+| Status | Condition                                  |
+| ------ | ------------------------------------------ |
+| 401    | Missing / invalid `Authorization`          |
+| 403    | Caller is neither project owner nor admin  |
+| 404    | Project not found                          |
 
 ---
 
 ### POST /api/v1/projects/{slug}/join
 
-Add an authenticated user as a project participant.
+Add the authenticated user as a project participant. **Requires authentication.** Participant id is always the authenticated user.
 
 **Path parameters**
 
@@ -897,11 +923,7 @@ Add an authenticated user as a project participant.
 | --------- | ------ | ------------ |
 | `slug`    | string | Project slug |
 
-**Request body**
-
-| Field     | Type  | Required |
-| --------- | ----- | -------- |
-| `user_id` | UUID7 | yes      |
+**Request body** — empty.
 
 **Response 200**
 
@@ -911,15 +933,16 @@ Add an authenticated user as a project participant.
 
 **Errors**
 
-| Status | Condition                          |
-| ------ | ---------------------------------- |
+| Status | Condition                           |
+| ------ | ----------------------------------- |
+| 401    | Missing / invalid `Authorization`   |
 | 422    | Project not found or already member |
 
 ---
 
 ### POST /api/v1/projects/{slug}/leave
 
-Remove an authenticated user from a project.
+Remove the authenticated user from a project. **Requires authentication.** Only the caller's own participation can be removed — attempts to pass another user's id are ignored.
 
 **Path parameters**
 
@@ -927,11 +950,7 @@ Remove an authenticated user from a project.
 | --------- | ------ | ------------ |
 | `slug`    | string | Project slug |
 
-**Request body**
-
-| Field     | Type  | Required |
-| --------- | ----- | -------- |
-| `user_id` | UUID7 | yes      |
+**Request body** — empty.
 
 **Response 200**
 
@@ -941,15 +960,15 @@ Remove an authenticated user from a project.
 
 **Errors**
 
-| Status | Condition        |
-| ------ | ---------------- |
-| 422    | Not a member     |
+| Status | Condition                         |
+| ------ | --------------------------------- |
+| 401    | Missing / invalid `Authorization` |
 
 ---
 
 ### POST /api/v1/projects/{slug}/comments
 
-Post a comment on a project.
+Post a comment on a project. **Requires authentication.** Author identity is derived server-side — supplying `user_id` or `author_name` in the body is silently ignored.
 
 **Path parameters**
 
@@ -959,13 +978,9 @@ Post a comment on a project.
 
 **Request body**
 
-| Field             | Type   | Required |
-| ----------------- | ------ | -------- |
-| `user_id`         | UUID7  | yes      |
-| `author_name`     | string | yes      |
-| `avatar_initials` | string | no       |
-| `avatar_color`    | string | no       |
-| `content`         | string | yes      |
+| Field     | Type   | Required |
+| --------- | ------ | -------- |
+| `content` | string | yes      |
 
 **Response 201**
 
@@ -973,25 +988,26 @@ Post a comment on a project.
 {
   "data": {
     "id": "...",
-    "author_name": "Ada Lovelace",
+    "author": "Ada Lovelace",
     "content": "Great work!",
     "likes": 0,
-    "created_at": "2025-04-18 12:00:00"
+    "timestamp": "April 18, 2025, 12:00"
   }
 }
 ```
 
 **Errors**
 
-| Status | Condition                    |
-| ------ | ---------------------------- |
-| 422    | Missing required fields      |
+| Status | Condition                         |
+| ------ | --------------------------------- |
+| 401    | Missing / invalid `Authorization` |
+| 422    | Project not found                 |
 
 ---
 
 ### POST /api/v1/project-comments/{id}/like
 
-Increment the like counter on a project comment.
+Increment the like counter on a project comment. **Requires authentication.**
 
 **Path parameters**
 
@@ -1005,11 +1021,17 @@ Increment the like counter on a project comment.
 { "data": { "ok": true } }
 ```
 
+**Errors**
+
+| Status | Condition                         |
+| ------ | --------------------------------- |
+| 401    | Missing / invalid `Authorization` |
+
 ---
 
 ### POST /api/v1/projects/{slug}/updates
 
-Publish a project update (mini-blog entry).
+Publish a project update (mini-blog entry). **Requires authentication.** Only the project owner or an admin may post. `author_name` is derived server-side from the caller.
 
 **Path parameters**
 
@@ -1019,11 +1041,10 @@ Publish a project update (mini-blog entry).
 
 **Request body**
 
-| Field         | Type   | Required |
-| ------------- | ------ | -------- |
-| `title`       | string | yes      |
-| `content`     | string | yes      |
-| `author_name` | string | yes      |
+| Field     | Type   | Required |
+| --------- | ------ | -------- |
+| `title`   | string | yes      |
+| `content` | string | yes      |
 
 **Response 201**
 
@@ -1033,23 +1054,22 @@ Publish a project update (mini-blog entry).
 
 **Errors**
 
-| Status | Condition               |
-| ------ | ----------------------- |
-| 422    | Missing required fields |
+| Status | Condition                                  |
+| ------ | ------------------------------------------ |
+| 401    | Missing / invalid `Authorization`          |
+| 403    | Caller is neither project owner nor admin  |
+| 422    | Project not found                          |
 
 ---
 
 ### POST /api/v1/project-proposals
 
-Submit a community project proposal.
+Submit a community project proposal. **Requires authentication.** Proposer identity (user_id, author_name, author_email) is derived server-side — attempts to supply these in the body are silently ignored.
 
 **Request body**
 
 | Field         | Type   | Required |
 | ------------- | ------ | -------- |
-| `user_id`     | UUID7  | yes      |
-| `author_name` | string | yes      |
-| `author_email`| string | yes      |
 | `title`       | string | yes      |
 | `category`    | string | yes      |
 | `summary`     | string | yes      |
@@ -1150,7 +1170,7 @@ Retrieve a single insight article including full content.
 
 ### POST /api/v1/applications/member
 
-Submit an individual membership application.
+Submit an individual membership application. **Requires authentication.**
 
 **Request body**
 
@@ -1166,14 +1186,21 @@ Submit an individual membership application.
 **Response 201**
 
 ```json
-{ "data": { "ok": true } }
+{ "data": { "id": "..." } }
 ```
+
+**Errors**
+
+| Status | Condition                                         |
+| ------ | ------------------------------------------------- |
+| 400    | Missing required fields or invalid email          |
+| 401    | Missing / invalid `Authorization`                 |
 
 ---
 
 ### POST /api/v1/applications/supporter
 
-Submit an organisational supporter application.
+Submit an organisational supporter application. **Requires authentication.**
 
 **Request body**
 

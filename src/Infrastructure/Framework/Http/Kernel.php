@@ -26,11 +26,11 @@ final class Kernel
         try {
             return $this->container->make(Router::class)->dispatch($request);
         } catch (UnauthorizedException $e) {
-            return Response::unauthorized($e->getMessage() ?: 'Authentication required.');
+            return Response::unauthorized($e->getMessage());
         } catch (ForbiddenException $e) {
-            return Response::forbidden($e->getMessage() ?: 'Forbidden.');
+            return Response::forbidden($e->getMessage());
         } catch (NotFoundException $e) {
-            return Response::notFound($e->getMessage() ?: 'Not found.');
+            return Response::notFound($e->getMessage());
         } catch (ValidationException $e) {
             return Response::badRequest($e->getMessage());
         } catch (TooManyRequestsException $e) {

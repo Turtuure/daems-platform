@@ -124,6 +124,47 @@ final class ChangePasswordTest extends TestCase
         );
     }
 
+    /**
+     * The authorization check must fire BEFORE length/lookup/verify checks.
+     * An attacker probing another user's account must never observe
+     * differences in response for short-password vs correct-length
+     * vs wrong-current-password — all three must collapse to 403.
+     */
+    public function testForbiddenFiresBeforeLengthAndLookupChecks(): void
+    {
+        $repo = $this->createMock(UserRepositoryInterface::class);
+        $repo->expects($this->never())->method('findById');
+        $repo->expects($this->never())->method('updatePassword');
+
+        // Short new password would otherwise return an error output,
+        // but Forbidden must short-circuit first.
+        try {
+            (new ChangePassword($repo))->execute(new ChangePasswordInput(
+                new ActingUser(UserId::generate(), 'registered'),
+                UserId::generate()->value(),
+                'OldPass1!',
+                'x',
+            ));
+            $this->fail('expected ForbiddenException');
+        } catch (ForbiddenException) {
+            $this->addToAssertionCount(1);
+        }
+
+        // 73-byte new password would otherwise return an error output,
+        // but Forbidden must short-circuit first.
+        try {
+            (new ChangePassword($repo))->execute(new ChangePasswordInput(
+                new ActingUser(UserId::generate(), 'registered'),
+                UserId::generate()->value(),
+                'OldPass1!',
+                str_repeat('a', 73),
+            ));
+            $this->fail('expected ForbiddenException');
+        } catch (ForbiddenException) {
+            $this->addToAssertionCount(1);
+        }
+    }
+
     public function testAdminAlsoForbiddenForOtherUser(): void
     {
         $this->expectException(ForbiddenException::class);

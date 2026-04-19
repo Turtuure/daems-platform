@@ -14,7 +14,6 @@ use Daems\Application\User\GetUserActivity\GetUserActivity;
 use Daems\Application\User\GetUserActivity\GetUserActivityInput;
 use Daems\Application\User\UpdateProfile\UpdateProfile;
 use Daems\Application\User\UpdateProfile\UpdateProfileInput;
-use Daems\Domain\Auth\UnauthorizedException;
 use Daems\Infrastructure\Framework\Http\Request;
 use Daems\Infrastructure\Framework\Http\Response;
 
@@ -34,10 +33,7 @@ final class UserController
         if ($id === '') {
             return Response::badRequest('User ID is required.');
         }
-        $acting = $request->actingUser();
-        if ($acting === null) {
-            throw new UnauthorizedException();
-        }
+        $acting = $request->requireActingUser();
 
         $output = $this->getProfile->execute(new GetProfileInput($acting, $id));
 
@@ -54,13 +50,9 @@ final class UserController
         if ($id === '') {
             return Response::badRequest('User ID is required.');
         }
-        $acting = $request->actingUser();
-        if ($acting === null) {
-            throw new UnauthorizedException();
-        }
+        $acting = $request->requireActingUser();
 
         $b = $request->all();
-
         $pick = static fn(string $key): ?string => array_key_exists($key, $b) ? trim((string) $b[$key]) : null;
 
         $output = $this->updateProfile->execute(new UpdateProfileInput(
@@ -90,10 +82,7 @@ final class UserController
         if ($id === '') {
             return Response::badRequest('User ID is required.');
         }
-        $acting = $request->actingUser();
-        if ($acting === null) {
-            throw new UnauthorizedException();
-        }
+        $acting = $request->requireActingUser();
 
         $output = $this->deleteAccount->execute(new DeleteAccountInput($acting, $id));
 
@@ -110,10 +99,7 @@ final class UserController
         if ($id === '') {
             return Response::badRequest('User ID is required.');
         }
-        $acting = $request->actingUser();
-        if ($acting === null) {
-            throw new UnauthorizedException();
-        }
+        $acting = $request->requireActingUser();
 
         $output = $this->getUserActivity->execute(new GetUserActivityInput($acting, $id));
         return Response::json(['data' => $output->data]);
@@ -125,10 +111,7 @@ final class UserController
         if ($id === '') {
             return Response::badRequest('User ID is required.');
         }
-        $acting = $request->actingUser();
-        if ($acting === null) {
-            throw new UnauthorizedException();
-        }
+        $acting = $request->requireActingUser();
 
         $b = $request->all();
         $currentPassword = (string) ($b['current_password'] ?? '');

@@ -24,6 +24,16 @@ final class InMemoryProjectRepository implements ProjectRepositoryInterface
     /** @var list<ProjectUpdate> */
     public array $updates = [];
 
+    public function lastComment(): ?ProjectComment
+    {
+        return $this->comments === [] ? null : $this->comments[array_key_last($this->comments)];
+    }
+
+    public function lastUpdate(): ?ProjectUpdate
+    {
+        return $this->updates === [] ? null : $this->updates[array_key_last($this->updates)];
+    }
+
     public function findAll(?string $category = null, ?string $status = null, ?string $search = null): array
     {
         return array_values($this->bySlug);

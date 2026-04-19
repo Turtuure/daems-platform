@@ -27,4 +27,15 @@ final class InMemoryAuthLoginAttemptRepository implements AuthLoginAttemptReposi
         }
         return $count;
     }
+
+    public function countFailuresByIpSince(string $ip, DateTimeImmutable $since): int
+    {
+        $count = 0;
+        foreach ($this->rows as $r) {
+            if (!$r['success'] && $r['ip'] === $ip && $r['at'] >= $since) {
+                $count++;
+            }
+        }
+        return $count;
+    }
 }

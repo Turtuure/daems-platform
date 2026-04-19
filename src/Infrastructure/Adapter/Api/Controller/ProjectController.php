@@ -26,7 +26,6 @@ use Daems\Application\Project\SubmitProjectProposal\SubmitProjectProposal;
 use Daems\Application\Project\SubmitProjectProposal\SubmitProjectProposalInput;
 use Daems\Application\Project\UpdateProject\UpdateProject;
 use Daems\Application\Project\UpdateProject\UpdateProjectInput;
-use Daems\Domain\Auth\UnauthorizedException;
 use Daems\Infrastructure\Framework\Http\Request;
 use Daems\Infrastructure\Framework\Http\Response;
 
@@ -38,22 +37,13 @@ final class ProjectController
         private readonly CreateProject $createProject,
         private readonly UpdateProject $updateProject,
         private readonly ArchiveProject $archiveProject,
-        private readonly AddProjectComment $addComment,
-        private readonly LikeProjectComment $likeComment,
+        private readonly AddProjectComment $addCommentUseCase,
+        private readonly LikeProjectComment $likeCommentUseCase,
         private readonly JoinProject $joinProject,
         private readonly LeaveProject $leaveProject,
-        private readonly AddProjectUpdate $addUpdate,
+        private readonly AddProjectUpdate $addUpdateUseCase,
         private readonly SubmitProjectProposal $submitProposal,
     ) {}
-
-    private function requireActing(Request $request): \Daems\Domain\Auth\ActingUser
-    {
-        $acting = $request->actingUser();
-        if ($acting === null) {
-            throw new UnauthorizedException();
-        }
-        return $acting;
-    }
 
     public function index(Request $request): Response
     {
@@ -78,7 +68,7 @@ final class ProjectController
 
     public function create(Request $request): Response
     {
-        $acting = $this->requireActing($request);
+        $acting = $request->requireActingUser();
         $body = $request->all();
         $output = $this->createProject->execute(new CreateProjectInput(
             $acting,
@@ -99,7 +89,7 @@ final class ProjectController
 
     public function update(Request $request, array $params): Response
     {
-        $acting = $this->requireActing($request);
+        $acting = $request->requireActingUser();
         $body = $request->all();
         $output = $this->updateProject->execute(new UpdateProjectInput(
             $acting,
@@ -121,7 +111,7 @@ final class ProjectController
 
     public function archive(Request $request, array $params): Response
     {
-        $acting = $this->requireActing($request);
+        $acting = $request->requireActingUser();
         $output = $this->archiveProject->execute(new ArchiveProjectInput($acting, $params['slug']));
 
         if (!$output->success) {
@@ -133,9 +123,9 @@ final class ProjectController
 
     public function addComment(Request $request, array $params): Response
     {
-        $acting = $this->requireActing($request);
+        $acting = $request->requireActingUser();
         $body = $request->all();
-        $output = $this->addComment->execute(new AddProjectCommentInput(
+        $output = $this->addCommentUseCase->execute(new AddProjectCommentInput(
             $acting,
             $params['slug'],
             trim($body['content'] ?? ''),
@@ -150,14 +140,14 @@ final class ProjectController
 
     public function likeComment(Request $request, array $params): Response
     {
-        $acting = $this->requireActing($request);
-        $this->likeComment->execute(new LikeProjectCommentInput($acting, $params['id']));
+        $acting = $request->requireActingUser();
+        $this->likeCommentUseCase->execute(new LikeProjectCommentInput($acting, $params['id']));
         return Response::json(['data' => ['ok' => true]]);
     }
 
     public function join(Request $request, array $params): Response
     {
-        $acting = $this->requireActing($request);
+        $acting = $request->requireActingUser();
         $output = $this->joinProject->execute(new JoinProjectInput($acting, $params['slug']));
 
         if (!$output->success) {
@@ -169,7 +159,7 @@ final class ProjectController
 
     public function leave(Request $request, array $params): Response
     {
-        $acting = $this->requireActing($request);
+        $acting = $request->requireActingUser();
         $output = $this->leaveProject->execute(new LeaveProjectInput($acting, $params['slug']));
 
         if (!$output->success) {
@@ -181,9 +171,9 @@ final class ProjectController
 
     public function addUpdate(Request $request, array $params): Response
     {
-        $acting = $this->requireActing($request);
+        $acting = $request->requireActingUser();
         $body = $request->all();
-        $output = $this->addUpdate->execute(new AddProjectUpdateInput(
+        $output = $this->addUpdateUseCase->execute(new AddProjectUpdateInput(
             $acting,
             $params['slug'],
             trim($body['title'] ?? ''),
@@ -199,7 +189,7 @@ final class ProjectController
 
     public function propose(Request $request): Response
     {
-        $acting = $this->requireActing($request);
+        $acting = $request->requireActingUser();
         $body = $request->all();
         $output = $this->submitProposal->execute(new SubmitProjectProposalInput(
             $acting,

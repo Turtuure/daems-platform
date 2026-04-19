@@ -8,7 +8,6 @@ use Daems\Application\Membership\SubmitMemberApplication\SubmitMemberApplication
 use Daems\Application\Membership\SubmitMemberApplication\SubmitMemberApplicationInput;
 use Daems\Application\Membership\SubmitSupporterApplication\SubmitSupporterApplication;
 use Daems\Application\Membership\SubmitSupporterApplication\SubmitSupporterApplicationInput;
-use Daems\Domain\Auth\UnauthorizedException;
 use Daems\Infrastructure\Framework\Http\Request;
 use Daems\Infrastructure\Framework\Http\Response;
 
@@ -21,10 +20,7 @@ final class ApplicationController
 
     public function member(Request $request): Response
     {
-        $acting = $request->actingUser();
-        if ($acting === null) {
-            throw new UnauthorizedException();
-        }
+        $acting = $request->requireActingUser();
 
         $name        = trim((string) $request->input('name'));
         $email       = trim((string) $request->input('email'));
@@ -50,10 +46,7 @@ final class ApplicationController
 
     public function supporter(Request $request): Response
     {
-        $acting = $request->actingUser();
-        if ($acting === null) {
-            throw new UnauthorizedException();
-        }
+        $acting = $request->requireActingUser();
 
         $orgName       = trim((string) $request->input('org_name'));
         $contactPerson = trim((string) $request->input('contact_person'));

@@ -49,7 +49,7 @@ Close every finding in the SAST report by adding a coherent authentication + aut
 ### AD-5 — DB-based fixed-window rate limit on login
 
 **Context.** F-009 — no throttle on `/auth/login`. No Redis in stack.
-**Decision.** `auth_login_attempts` table keyed by `(ip, email)`. 5 failures / 15 min → 429 with `Retry-After: 900`. Opportunistic cleanup (1-in-100 sweep of rows older than 24 h). Keying by `(ip, email)` not just `email` prevents DoS of arbitrary accounts by an attacker.
+**Decision.** `auth_login_attempts` table indexed on `(ip, email, attempted_at)`. 5 failures / 15 min per `(ip, email)` → 429 with `Retry-After: 900`. Secondary 20 failures / 15 min per `ip` catches stuffing across many emails. Opportunistic cleanup (1-in-100 sweep of rows older than 24 h). Indexing on `(ip, email)` not just `email` prevents DoS of arbitrary accounts by an attacker.
 
 ### AD-6 — Sanitise Kernel errors
 

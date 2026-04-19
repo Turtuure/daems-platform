@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Daems\Application\Project\AddProjectUpdate;
 
-use Daems\Domain\Auth\ForbiddenException;
 use Daems\Domain\Project\ProjectRepositoryInterface;
 use Daems\Domain\Project\ProjectUpdate;
 use Daems\Domain\Project\ProjectUpdateId;
@@ -24,14 +23,7 @@ final class AddProjectUpdate
             return new AddProjectUpdateOutput(false, 'Project not found.');
         }
 
-        $ownerId = $project->ownerId();
-        if ($ownerId === null) {
-            if (!$input->acting->isAdmin()) {
-                throw new ForbiddenException();
-            }
-        } elseif (!$input->acting->owns($ownerId) && !$input->acting->isAdmin()) {
-            throw new ForbiddenException();
-        }
+        $project->assertMutableBy($input->acting);
 
         $actingUser = $this->users->findById($input->acting->id->value());
         $authorName = $actingUser !== null ? $actingUser->name() : 'Unknown';

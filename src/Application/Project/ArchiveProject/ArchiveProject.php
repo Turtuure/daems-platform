@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Daems\Application\Project\ArchiveProject;
 
-use Daems\Domain\Auth\ForbiddenException;
 use Daems\Domain\Project\Project;
 use Daems\Domain\Project\ProjectRepositoryInterface;
 
@@ -19,14 +18,7 @@ final class ArchiveProject
             return new ArchiveProjectOutput(false, 'Project not found.');
         }
 
-        $ownerId = $existing->ownerId();
-        if ($ownerId === null) {
-            if (!$input->acting->isAdmin()) {
-                throw new ForbiddenException();
-            }
-        } elseif (!$input->acting->owns($ownerId) && !$input->acting->isAdmin()) {
-            throw new ForbiddenException();
-        }
+        $existing->assertMutableBy($input->acting);
 
         $archived = new Project(
             $existing->id(),

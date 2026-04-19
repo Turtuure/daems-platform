@@ -51,7 +51,7 @@ final class F007_IdentitySpoofingTest extends TestCase
         ]);
 
         $this->assertSame(201, $resp->status());
-        $stored = $this->h->projects->comments[0];
+        $stored = $this->h->projects->lastComment();
         $this->assertSame($bob->id()->value(), $stored->userId());
         $this->assertSame($bob->name(), $stored->authorName());
         $this->assertNotSame('Alice (Victim)', $stored->authorName());
@@ -104,7 +104,7 @@ final class F007_IdentitySpoofingTest extends TestCase
         ]);
 
         $this->assertSame(201, $resp->status());
-        $stored = $this->h->proposals->proposals[0];
+        $stored = $this->h->proposals->lastProposal();
         $this->assertSame($bob->id()->value(), $stored->userId());
         $this->assertSame($bob->email(), $stored->authorEmail());
         $this->assertSame($bob->name(), $stored->authorName());

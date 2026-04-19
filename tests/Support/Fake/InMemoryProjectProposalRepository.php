@@ -16,4 +16,9 @@ final class InMemoryProjectProposalRepository implements ProjectProposalReposito
     {
         $this->proposals[] = $proposal;
     }
+
+    public function lastProposal(): ?ProjectProposal
+    {
+        return $this->proposals === [] ? null : $this->proposals[array_key_last($this->proposals)];
+    }
 }

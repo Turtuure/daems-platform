@@ -49,4 +49,14 @@ final class SqlAuthLoginAttemptRepository implements AuthLoginAttemptRepositoryI
         );
         return (int) ($row['n'] ?? 0);
     }
+
+    public function countFailuresByIpSince(string $ip, DateTimeImmutable $since): int
+    {
+        $row = $this->db->queryOne(
+            'SELECT COUNT(*) AS n FROM auth_login_attempts
+             WHERE ip = ? AND success = 0 AND attempted_at >= ?',
+            [$ip, $since->format('Y-m-d H:i:s')],
+        );
+        return (int) ($row['n'] ?? 0);
+    }
 }
