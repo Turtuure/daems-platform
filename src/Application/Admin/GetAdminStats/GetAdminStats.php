@@ -25,6 +25,10 @@ final class GetAdminStats
             applicationsSparkline: $stats->applicationsSparkline,
             eventsSparkline:       $stats->eventsSparkline,
             projectsSparkline:     $stats->projectsSparkline,
+            membersChange:         $stats->membersChange,
+            applicationsChange:    $stats->applicationsChange,
+            eventsChange:          $stats->eventsChange,
+            projectsChange:        $stats->projectsChange,
         );
     }
 }

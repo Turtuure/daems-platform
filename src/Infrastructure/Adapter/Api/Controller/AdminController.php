@@ -22,18 +22,22 @@ final class AdminController
             'data' => [
                 'members' => [
                     'value'     => $output->members,
+                    'change'    => $output->membersChange,
                     'sparkline' => $output->membersSparkline,
                 ],
                 'pending_applications' => [
                     'value'     => $output->pendingApplications,
+                    'change'    => $output->applicationsChange,
                     'sparkline' => $output->applicationsSparkline,
                 ],
                 'upcoming_events' => [
                     'value'     => $output->upcomingEvents,
+                    'change'    => $output->eventsChange,
                     'sparkline' => $output->eventsSparkline,
                 ],
                 'active_projects' => [
                     'value'     => $output->activeProjects,
+                    'change'    => $output->projectsChange,
                     'sparkline' => $output->projectsSparkline,
                 ],
             ],

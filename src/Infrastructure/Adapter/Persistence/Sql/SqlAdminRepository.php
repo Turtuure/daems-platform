@@ -63,14 +63,37 @@ final class SqlAdminRepository implements AdminStatsRepositoryInterface
                  WHERE created_at >= CURDATE() - INTERVAL 6 DAY
                  GROUP BY DATE(created_at)"
             ),
+            membersChange:         $this->weekOverWeek(
+                'SELECT COUNT(*) AS n FROM users WHERE created_at >= CURDATE() - INTERVAL 6 DAY',
+                'SELECT COUNT(*) AS n FROM users WHERE created_at >= CURDATE() - INTERVAL 13 DAY AND created_at < CURDATE() - INTERVAL 6 DAY'
+            ),
+            applicationsChange:    $this->weekOverWeek(
+                "SELECT COUNT(*) AS n FROM (
+                     SELECT created_at FROM member_applications WHERE created_at >= CURDATE() - INTERVAL 6 DAY
+                     UNION ALL
+                     SELECT created_at FROM supporter_applications WHERE created_at >= CURDATE() - INTERVAL 6 DAY
+                 ) t",
+                "SELECT COUNT(*) AS n FROM (
+                     SELECT created_at FROM member_applications WHERE created_at >= CURDATE() - INTERVAL 13 DAY AND created_at < CURDATE() - INTERVAL 6 DAY
+                     UNION ALL
+                     SELECT created_at FROM supporter_applications WHERE created_at >= CURDATE() - INTERVAL 13 DAY AND created_at < CURDATE() - INTERVAL 6 DAY
+                 ) t"
+            ),
+            eventsChange:          $this->weekOverWeek(
+                'SELECT COUNT(*) AS n FROM events WHERE created_at >= CURDATE() - INTERVAL 6 DAY',
+                'SELECT COUNT(*) AS n FROM events WHERE created_at >= CURDATE() - INTERVAL 13 DAY AND created_at < CURDATE() - INTERVAL 6 DAY'
+            ),
+            projectsChange:        $this->weekOverWeek(
+                "SELECT COUNT(*) AS n FROM projects WHERE created_at >= CURDATE() - INTERVAL 6 DAY AND status != 'archived'",
+                "SELECT COUNT(*) AS n FROM projects WHERE created_at >= CURDATE() - INTERVAL 13 DAY AND created_at < CURDATE() - INTERVAL 6 DAY AND status != 'archived'"
+            ),
         );
     }
 
     /** Returns a 7-element array of daily counts (oldest→newest, missing days = 0). */
     private function dailyCounts(string $sql): array
     {
-        $rows = $this->db->query($sql);
-
+        $rows   = $this->db->query($sql);
         $byDate = [];
         foreach ($rows as $row) {
             $byDate[$row['d']] = (int) $row['n'];
@@ -78,10 +101,22 @@ final class SqlAdminRepository implements AdminStatsRepositoryInterface
 
         $result = [];
         for ($i = 6; $i >= 0; $i--) {
-            $date     = date('Y-m-d', strtotime("-{$i} days"));
-            $result[] = $byDate[$date] ?? 0;
+            $result[] = $byDate[date('Y-m-d', strtotime("-{$i} days"))] ?? 0;
         }
 
         return $result;
+    }
+
+    /** Week-over-week % change: ((this_week - last_week) / last_week) * 100. */
+    private function weekOverWeek(string $thisWeekSql, string $lastWeekSql): float
+    {
+        $this_week = (int) ($this->db->queryOne($thisWeekSql)['n'] ?? 0);
+        $last_week = (int) ($this->db->queryOne($lastWeekSql)['n'] ?? 0);
+
+        if ($last_week === 0) {
+            return $this_week > 0 ? 100.0 : 0.0;
+        }
+
+        return round(($this_week - $last_week) / $last_week * 100, 1);
     }
 }
