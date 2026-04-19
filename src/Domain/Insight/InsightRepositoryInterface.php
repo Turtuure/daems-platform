@@ -4,12 +4,14 @@ declare(strict_types=1);
 
 namespace Daems\Domain\Insight;
 
+use Daems\Domain\Tenant\TenantId;
+
 interface InsightRepositoryInterface
 {
     /** @return Insight[] */
-    public function findAll(?string $category = null): array;
+    public function listForTenant(TenantId $tenantId, ?string $category = null): array;
 
-    public function findBySlug(string $slug): ?Insight;
+    public function findBySlugForTenant(string $slug, TenantId $tenantId): ?Insight;
 
     public function save(Insight $insight): void;
 }

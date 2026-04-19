@@ -6,6 +6,7 @@ require_once dirname(__DIR__, 2) . '/vendor/autoload.php';
 
 use Daems\Domain\Insight\Insight;
 use Daems\Domain\Insight\InsightId;
+use Daems\Domain\Tenant\TenantId;
 use Daems\Infrastructure\Adapter\Persistence\Sql\SqlInsightRepository;
 use Daems\Infrastructure\Framework\Database\Connection;
 
@@ -29,9 +30,16 @@ $db = new Connection([
 
 $repo = new SqlInsightRepository($db);
 
+$daemsTenantIdRaw = $db->queryOne("SELECT id FROM tenants WHERE slug = 'daems'");
+if ($daemsTenantIdRaw === null || !is_string($daemsTenantIdRaw['id'] ?? null)) {
+    throw new RuntimeException("Tenant 'daems' not found — run migration 019 first.");
+}
+$t = TenantId::fromString($daemsTenantIdRaw['id']);
+
 $insights = [
     new Insight(
         InsightId::generate(),
+        $t,
         'ai-in-civil-society',
         'How AI Is Reshaping Civil Society',
         'analysis',
@@ -66,6 +74,7 @@ $insights = [
     ),
     new Insight(
         InsightId::generate(),
+        $t,
         'open-source-community',
         'Building Open Source Communities That Last',
         'report',
@@ -100,6 +109,7 @@ $insights = [
     ),
     new Insight(
         InsightId::generate(),
+        $t,
         'digital-rights-2025',
         'Digital Rights in 2025: Where Do We Stand?',
         'opinion',

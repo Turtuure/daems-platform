@@ -4,10 +4,13 @@ declare(strict_types=1);
 
 namespace Daems\Domain\Insight;
 
+use Daems\Domain\Tenant\TenantId;
+
 final class Insight
 {
     public function __construct(
         private readonly InsightId $id,
+        private readonly TenantId $tenantId,
         private readonly string $slug,
         private readonly string $title,
         private readonly string $category,
@@ -23,6 +26,7 @@ final class Insight
     ) {}
 
     public function id(): InsightId { return $this->id; }
+    public function tenantId(): TenantId { return $this->tenantId; }
     public function slug(): string { return $this->slug; }
     public function title(): string { return $this->title; }
     public function category(): string { return $this->category; }

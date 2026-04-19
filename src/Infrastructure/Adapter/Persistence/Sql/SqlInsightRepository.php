@@ -7,31 +7,35 @@ namespace Daems\Infrastructure\Adapter\Persistence\Sql;
 use Daems\Domain\Insight\Insight;
 use Daems\Domain\Insight\InsightId;
 use Daems\Domain\Insight\InsightRepositoryInterface;
+use Daems\Domain\Tenant\TenantId;
 use Daems\Infrastructure\Framework\Database\Connection;
 
 final class SqlInsightRepository implements InsightRepositoryInterface
 {
     public function __construct(private readonly Connection $db) {}
 
-    public function findAll(?string $category = null): array
+    public function listForTenant(TenantId $tenantId, ?string $category = null): array
     {
         if ($category !== null) {
             $rows = $this->db->query(
-                'SELECT * FROM insights WHERE category = ? ORDER BY published_date DESC',
-                [$category],
+                'SELECT * FROM insights WHERE tenant_id = ? AND category = ? ORDER BY published_date DESC',
+                [$tenantId->value(), $category],
             );
         } else {
-            $rows = $this->db->query('SELECT * FROM insights ORDER BY published_date DESC');
+            $rows = $this->db->query(
+                'SELECT * FROM insights WHERE tenant_id = ? ORDER BY published_date DESC',
+                [$tenantId->value()],
+            );
         }
 
         return array_map($this->hydrate(...), $rows);
     }
 
-    public function findBySlug(string $slug): ?Insight
+    public function findBySlugForTenant(string $slug, TenantId $tenantId): ?Insight
     {
         $row = $this->db->queryOne(
-            'SELECT * FROM insights WHERE slug = ?',
-            [$slug],
+            'SELECT * FROM insights WHERE slug = ? AND tenant_id = ?',
+            [$slug, $tenantId->value()],
         );
 
         return $row !== null ? $this->hydrate($row) : null;
@@ -41,9 +45,9 @@ final class SqlInsightRepository implements InsightRepositoryInterface
     {
         $this->db->execute(
             'INSERT INTO insights
-                (id, slug, title, category, category_label, featured, published_date,
+                (id, tenant_id, slug, title, category, category_label, featured, published_date,
                  author, reading_time, excerpt, hero_image, tags_json, content)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
              ON DUPLICATE KEY UPDATE
                 title          = VALUES(title),
                 category       = VALUES(category),
@@ -58,6 +62,7 @@ final class SqlInsightRepository implements InsightRepositoryInterface
                 content        = VALUES(content)',
             [
                 $insight->id()->value(),
+                $insight->tenantId()->value(),
                 $insight->slug(),
                 $insight->title(),
                 $insight->category(),
@@ -74,6 +79,7 @@ final class SqlInsightRepository implements InsightRepositoryInterface
         );
     }
 
+    /** @param array<string, mixed> $row */
     private function hydrate(array $row): Insight
     {
         $tagsRaw  = $row['tags_json'] ?? null;
@@ -83,6 +89,7 @@ final class SqlInsightRepository implements InsightRepositoryInterface
 
         return new Insight(
             InsightId::fromString(self::str($row, 'id')),
+            TenantId::fromString(self::str($row, 'tenant_id')),
             self::str($row, 'slug'),
             self::str($row, 'title'),
             self::str($row, 'category'),

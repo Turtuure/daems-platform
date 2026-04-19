@@ -14,7 +14,7 @@ final class GetInsight
 
     public function execute(GetInsightInput $input): GetInsightOutput
     {
-        $insight = $this->insights->findBySlug($input->slug);
+        $insight = $this->insights->findBySlugForTenant($input->slug, $input->tenantId);
 
         if ($insight === null) {
             return new GetInsightOutput(null);

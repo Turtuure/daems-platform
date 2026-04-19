@@ -6,20 +6,28 @@ namespace Daems\Tests\Support\Fake;
 
 use Daems\Domain\Insight\Insight;
 use Daems\Domain\Insight\InsightRepositoryInterface;
+use Daems\Domain\Tenant\TenantId;
 
 final class InMemoryInsightRepository implements InsightRepositoryInterface
 {
     /** @var array<string, Insight> */
     public array $bySlug = [];
 
-    public function findAll(?string $category = null): array
+    public function listForTenant(TenantId $tenantId, ?string $category = null): array
     {
-        return array_values($this->bySlug);
+        return array_values(array_filter(
+            $this->bySlug,
+            static fn(Insight $i): bool => $i->tenantId()->equals($tenantId),
+        ));
     }
 
-    public function findBySlug(string $slug): ?Insight
+    public function findBySlugForTenant(string $slug, TenantId $tenantId): ?Insight
     {
-        return $this->bySlug[$slug] ?? null;
+        $insight = $this->bySlug[$slug] ?? null;
+        if ($insight === null) {
+            return null;
+        }
+        return $insight->tenantId()->equals($tenantId) ? $insight : null;
     }
 
     public function save(Insight $insight): void
