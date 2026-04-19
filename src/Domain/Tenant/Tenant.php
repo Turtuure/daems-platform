@@ -6,12 +6,12 @@ namespace Daems\Domain\Tenant;
 
 use DateTimeImmutable;
 
-final readonly class Tenant
+final class Tenant
 {
     public function __construct(
-        public TenantId $id,
-        public TenantSlug $slug,
-        public string $name,
-        public DateTimeImmutable $createdAt,
+        public readonly TenantId $id,
+        public readonly TenantSlug $slug,
+        public readonly string $name,
+        public readonly DateTimeImmutable $createdAt,
     ) {}
 }

@@ -6,9 +6,9 @@ namespace Daems\Domain\Tenant;
 
 use InvalidArgumentException;
 
-final readonly class TenantSlug
+final class TenantSlug
 {
-    private function __construct(private string $value) {}
+    private function __construct(private readonly string $value) {}
 
     public static function fromString(string $value): self
     {
