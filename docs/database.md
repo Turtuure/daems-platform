@@ -38,6 +38,23 @@ Migrations live in `database/migrations/` and must be applied in numerical order
 | `022_create_platform_admin_audit_table.sql` | `platform_admin_audit` table + trigger                                 |
 | `023_backfill_user_tenants.sql`             | Backfills `user_tenants` from legacy `users.role` values (tenant `daems`) |
 | `024_drop_role_from_users.sql`              | Drops `users.role` column                                              |
+| `025_add_tenant_id_to_events.sql`           | Adds `tenant_id` to `events` (NOT NULL, FK → `tenants(id)`)            |
+| `026_add_tenant_id_to_insights.sql`         | Adds `tenant_id` to `insights`                                         |
+| `027_add_tenant_id_to_projects.sql`         | Adds `tenant_id` to `projects`                                         |
+| `028_add_tenant_id_to_member_applications.sql`    | Adds `tenant_id` to `member_applications`                        |
+| `029_add_tenant_id_to_supporter_applications.sql` | Adds `tenant_id` to `supporter_applications`                     |
+| `030_add_tenant_id_to_forum_tables.sql`     | Adds `tenant_id` to `forum_categories`, `forum_topics`, `forum_posts`  |
+| `031_add_tenant_id_to_project_extras.sql`   | Adds `tenant_id` to `project_comments`, `project_updates`, `project_participants`, `project_proposals` |
+| `032_add_tenant_id_to_event_registrations.sql`    | Adds `tenant_id` to `event_registrations`                        |
+| `033_add_tenant_id_to_member_register_audit.sql`  | Adds `tenant_id` to `member_register_audit`                      |
+
+### Multi-tenant data isolation (migrations 025–033)
+
+After migration 033, **every per-tenant row carries `tenant_id`** and is scoped by the SQL repositories. The invariant is: `SELECT ... WHERE tenant_id = :current_tenant` applies to every read query on a per-tenant table. Isolation tests under `tests/Isolation/*TenantIsolationTest.php` enforce this for each aggregate (Project, Event, Insight, MemberApplication, SupporterApplication, Forum, User).
+
+The `tenant_id` column is `CHAR(36) NOT NULL` with `FK → tenants(id) ON DELETE RESTRICT`. Existing pre-migration rows are backfilled to the `daems` tenant during migration. A composite index `(tenant_id, <query-col>)` is added per table to keep per-tenant queries fast.
+
+Cross-tenant lookups (e.g. host → tenant resolution, platform-admin audit) continue to use tenant-free queries — those are the only legitimate cross-tenant reads.
 
 ### `auth_tokens`
 

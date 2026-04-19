@@ -121,6 +121,8 @@ Exceptions thrown anywhere inside `Kernel::handle()` are caught and converted to
 
 **Tenant override.** A platform admin (`users.is_platform_admin = TRUE`) may include `X-Daems-Tenant: <slug>` on any request. `TenantContextMiddleware` detects the header, resolves the named slug instead of the `Host`, and proceeds normally. Non-admins sending the header receive `403 tenant_override_forbidden`.
 
+**Tenant data isolation.** Every per-tenant aggregate (Project, Event, Insight, MemberApplication, SupporterApplication, Forum, AdminStats) carries a `tenant_id` column at the database level (migrations 025–033) and is read via `*ForTenant` repository methods that require an explicit `TenantId` parameter. Entity constructors take `TenantId` as their second argument so `INSERT` statements persist it automatically. Legacy non-scoped methods (`findBySlug`, `findAll`) have been removed; `tests/Isolation/*TenantIsolationTest.php` asserts their absence and verifies cross-tenant data never leaks (see ADR-016).
+
 ## Namespace structure
 
 ```

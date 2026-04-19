@@ -30,6 +30,8 @@ Platform administrators can override the active tenant context on any authentica
 - Sent with an unknown slug: `404 Not Found` with `{"error": "unknown_tenant"}`
 - Omitted: tenant is resolved from the `Host` header (normal case)
 
+**Data scope:** every list/detail endpoint (`/projects`, `/events`, `/insights`, `/forum/*`, `/backstage/stats`, etc.) returns only rows where `tenant_id` matches the resolved tenant. Attempting to fetch a resource by slug from a tenant that doesn't own it returns `404` — this is enforced at the repository layer (`*ForTenant` methods) and verified by `tests/Isolation/*TenantIsolationTest.php`.
+
 Example:
 ```http
 GET /api/v1/backstage/stats HTTP/1.1

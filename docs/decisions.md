@@ -255,7 +255,31 @@ The platform must support multiple tenants (`daems`, `sahegroup`, and future dom
 - A user can be member of multiple tenants with different roles per tenant.
 - Onboarding a new tenant is three steps: INSERT into `tenants`, INSERT into `tenant_domains`, configure the web server to point the new domain at this platform.
 - The `users.role` column has been dropped (migration 024); legacy values were backfilled into `user_tenants` (tenant `daems`) and `is_platform_admin` (for GSA users).
-- The database-level isolation (tenant_id FK columns on per-tenant aggregates) is a FOLLOW-UP spec (PR 3) — this ADR covers only the user/role/tenant structure and the middleware pipeline.
+- The database-level isolation (tenant_id FK columns on per-tenant aggregates) is **completed in PR 3** (migrations 025–033 + repository refactor) — this ADR covers only the user/role/tenant structure and the middleware pipeline. Tenant data isolation is addressed by ADR-016 below.
+
+---
+
+## ADR-016: Tenant Data Isolation via `tenant_id` Columns + Repository Scoping
+
+**Status:** Accepted (2026-04-19)
+
+**Context:**
+ADR-014 established the tenant context (Host → Tenant → ActingUser). However, per-tenant aggregates (Projects, Events, Insights, Applications, Forum, etc.) lacked database-level tenant scoping — they lived in a shared schema with no tenant column. A SQL query that forgot to filter by tenant would silently leak data from tenant A into tenant B. This is a critical security invariant that cannot be left to developer discipline alone.
+
+**Decision:**
+Add a `tenant_id CHAR(36) NOT NULL` column to every per-tenant table and enforce tenant scoping at the repository-interface contract:
+- Migrations 025–033 add `tenant_id` with a `FK → tenants(id) ON DELETE RESTRICT` and a composite index `(tenant_id, <query-col>)`.
+- Every tenant-scoped repository method takes a `TenantId` parameter (e.g., `findBySlugForTenant`, `listForTenant`).
+- Legacy non-scoped method names (`findBySlug`, `findAll`) are removed; the PHPUnit isolation suite asserts `method_exists === false` for them.
+- Domain entities carry a `TenantId` field so `INSERT` statements persist it automatically.
+- Cross-tenant queries (host resolution, platform-admin audit) are explicitly named and limited to the framework layer.
+
+**Consequences:**
+- SQL-level defense-in-depth: even if a caller forgets to pass `TenantId`, the type system prevents the call from compiling.
+- Seven `*TenantIsolationTest` classes under `tests/Isolation/` prove cross-tenant isolation for each aggregate against a real MySQL instance.
+- Admin statistics (`SqlAdminRepository::getStatsForTenant`) now aggregate from `user_tenants` pivot (for member counts) and per-tenant tables (for content counts).
+- Seed scripts (`database/seeds/seed_*.php`) resolve the `daems` tenant via `SELECT id FROM tenants WHERE slug = 'daems'` before constructing entities.
+- The `findRegistrationsByUserId` / `findPostsByUserId` queries remain cross-tenant (they represent user activity across memberships); this is an intentional exception.
 
 ---
 
