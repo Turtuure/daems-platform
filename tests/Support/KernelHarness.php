@@ -85,6 +85,7 @@ use Daems\Tests\Support\Fake\InMemoryEventRepository;
 use Daems\Tests\Support\Fake\InMemoryForumRepository;
 use Daems\Tests\Support\Fake\InMemoryInsightRepository;
 use Daems\Tests\Support\Fake\InMemoryMemberApplicationRepository;
+use Daems\Tests\Support\Fake\InMemoryMemberDirectoryRepository;
 use Daems\Tests\Support\Fake\InMemoryProjectProposalRepository;
 use Daems\Tests\Support\Fake\InMemoryProjectRepository;
 use Daems\Tests\Support\Fake\InMemorySupporterApplicationRepository;
@@ -109,6 +110,7 @@ final class KernelHarness
     public InMemoryInsightRepository $insights;
     public InMemoryMemberApplicationRepository $memberApps;
     public InMemorySupporterApplicationRepository $supporterApps;
+    public InMemoryMemberDirectoryRepository $memberDirectory;
     public FrozenClock $clock;
 
     /** @var array<array{0:string, 1:array<string,mixed>}> */
@@ -128,6 +130,7 @@ final class KernelHarness
         $this->insights = new InMemoryInsightRepository();
         $this->memberApps = new InMemoryMemberApplicationRepository();
         $this->supporterApps = new InMemorySupporterApplicationRepository();
+        $this->memberDirectory = new InMemoryMemberDirectoryRepository();
 
         $logs = &$this->logs;
         $logger = new class ($logs) implements LoggerInterface {
@@ -162,6 +165,7 @@ final class KernelHarness
         $container->singleton(InsightRepositoryInterface::class, fn() => $this->insights);
         $container->singleton(MemberApplicationRepositoryInterface::class, fn() => $this->memberApps);
         $container->singleton(SupporterApplicationRepositoryInterface::class, fn() => $this->supporterApps);
+        $container->singleton(\Daems\Domain\Backstage\MemberDirectoryRepositoryInterface::class, fn() => $this->memberDirectory);
 
         // Use cases
         $container->bind(CreateAuthToken::class, static fn(Container $c) => new CreateAuthToken(
@@ -245,6 +249,26 @@ final class KernelHarness
         $container->bind(SubmitMemberApplication::class, static fn(Container $c) => new SubmitMemberApplication($c->make(MemberApplicationRepositoryInterface::class)));
         $container->bind(SubmitSupporterApplication::class, static fn(Container $c) => new SubmitSupporterApplication($c->make(SupporterApplicationRepositoryInterface::class)));
 
+        $container->bind(\Daems\Application\Backstage\ListPendingApplications\ListPendingApplications::class, static fn(Container $c) => new \Daems\Application\Backstage\ListPendingApplications\ListPendingApplications(
+            $c->make(\Daems\Domain\Membership\MemberApplicationRepositoryInterface::class),
+            $c->make(\Daems\Domain\Membership\SupporterApplicationRepositoryInterface::class),
+        ));
+        $container->bind(\Daems\Application\Backstage\DecideApplication\DecideApplication::class, static fn(Container $c) => new \Daems\Application\Backstage\DecideApplication\DecideApplication(
+            $c->make(\Daems\Domain\Membership\MemberApplicationRepositoryInterface::class),
+            $c->make(\Daems\Domain\Membership\SupporterApplicationRepositoryInterface::class),
+            $c->make(Clock::class),
+        ));
+        $container->bind(\Daems\Application\Backstage\ListMembers\ListMembers::class, static fn(Container $c) => new \Daems\Application\Backstage\ListMembers\ListMembers(
+            $c->make(\Daems\Domain\Backstage\MemberDirectoryRepositoryInterface::class),
+        ));
+        $container->bind(\Daems\Application\Backstage\ChangeMemberStatus\ChangeMemberStatus::class, static fn(Container $c) => new \Daems\Application\Backstage\ChangeMemberStatus\ChangeMemberStatus(
+            $c->make(\Daems\Domain\Backstage\MemberDirectoryRepositoryInterface::class),
+            $c->make(Clock::class),
+        ));
+        $container->bind(\Daems\Application\Backstage\GetMemberAudit\GetMemberAudit::class, static fn(Container $c) => new \Daems\Application\Backstage\GetMemberAudit\GetMemberAudit(
+            $c->make(\Daems\Domain\Backstage\MemberDirectoryRepositoryInterface::class),
+        ));
+
         // Controllers
         $container->bind(GetAuthMe::class, static fn(Container $c) => new GetAuthMe(
             $c->make(UserRepositoryInterface::class),
@@ -300,6 +324,13 @@ final class KernelHarness
         $container->bind(ApplicationController::class, static fn(Container $c) => new ApplicationController(
             $c->make(SubmitMemberApplication::class),
             $c->make(SubmitSupporterApplication::class),
+        ));
+        $container->bind(\Daems\Infrastructure\Adapter\Api\Controller\BackstageController::class, static fn(Container $c) => new \Daems\Infrastructure\Adapter\Api\Controller\BackstageController(
+            $c->make(\Daems\Application\Backstage\ListPendingApplications\ListPendingApplications::class),
+            $c->make(\Daems\Application\Backstage\DecideApplication\DecideApplication::class),
+            $c->make(\Daems\Application\Backstage\ListMembers\ListMembers::class),
+            $c->make(\Daems\Application\Backstage\ChangeMemberStatus\ChangeMemberStatus::class),
+            $c->make(\Daems\Application\Backstage\GetMemberAudit\GetMemberAudit::class),
         ));
 
         $container->bind(AuthMiddleware::class, static fn(Container $c) => new AuthMiddleware(
