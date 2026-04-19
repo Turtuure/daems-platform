@@ -9,6 +9,7 @@ use Daems\Domain\Project\ProjectComment;
 use Daems\Domain\Project\ProjectParticipant;
 use Daems\Domain\Project\ProjectRepositoryInterface;
 use Daems\Domain\Project\ProjectUpdate;
+use Daems\Domain\Tenant\TenantId;
 
 final class InMemoryProjectRepository implements ProjectRepositoryInterface
 {
@@ -34,14 +35,21 @@ final class InMemoryProjectRepository implements ProjectRepositoryInterface
         return $this->updates === [] ? null : $this->updates[array_key_last($this->updates)];
     }
 
-    public function findAll(?string $category = null, ?string $status = null, ?string $search = null): array
+    public function listForTenant(TenantId $tenantId, ?string $category = null, ?string $status = null, ?string $search = null): array
     {
-        return array_values($this->bySlug);
+        return array_values(array_filter(
+            $this->bySlug,
+            static fn(Project $p): bool => $p->tenantId()->equals($tenantId),
+        ));
     }
 
-    public function findBySlug(string $slug): ?Project
+    public function findBySlugForTenant(string $slug, TenantId $tenantId): ?Project
     {
-        return $this->bySlug[$slug] ?? null;
+        $project = $this->bySlug[$slug] ?? null;
+        if ($project === null) {
+            return null;
+        }
+        return $project->tenantId()->equals($tenantId) ? $project : null;
     }
 
     public function save(Project $project): void
@@ -82,13 +90,13 @@ final class InMemoryProjectRepository implements ProjectRepositoryInterface
     {
         $this->participants[$projectId] = array_values(array_filter(
             $this->participants[$projectId] ?? [],
-            fn(array $p) => $p['user_id'] !== $userId,
+            static fn(array $p): bool => $p['user_id'] !== $userId,
         ));
     }
 
     public function findCommentsByProjectId(string $projectId): array
     {
-        return array_values(array_filter($this->comments, fn(ProjectComment $c) => $c->projectId() === $projectId));
+        return array_values(array_filter($this->comments, static fn(ProjectComment $c): bool => $c->projectId() === $projectId));
     }
 
     public function saveComment(ProjectComment $comment): void
@@ -103,7 +111,7 @@ final class InMemoryProjectRepository implements ProjectRepositoryInterface
 
     public function findUpdatesByProjectId(string $projectId): array
     {
-        return array_values(array_filter($this->updates, fn(ProjectUpdate $u) => $u->projectId() === $projectId));
+        return array_values(array_filter($this->updates, static fn(ProjectUpdate $u): bool => $u->projectId() === $projectId));
     }
 
     public function saveUpdate(ProjectUpdate $update): void

@@ -35,6 +35,7 @@ final class UpdateProjectTest extends TestCase
     {
         return new Project(
             ProjectId::generate(),
+            TenantId::fromString('01958000-0000-7000-8000-000000000001'),
             'my-project',
             'Title',
             'cat',
@@ -58,7 +59,7 @@ final class UpdateProjectTest extends TestCase
         $project = $this->project($ownerId);
 
         $repo = $this->createMock(ProjectRepositoryInterface::class);
-        $repo->method('findBySlug')->willReturn($project);
+        $repo->method('findBySlugForTenant')->willReturn($project);
         $repo->expects($this->once())->method('save');
 
         (new UpdateProject($repo))->execute($this->input($this->acting($ownerId)));
@@ -70,7 +71,7 @@ final class UpdateProjectTest extends TestCase
         $project = $this->project(UserId::generate());
 
         $repo = $this->createMock(ProjectRepositoryInterface::class);
-        $repo->method('findBySlug')->willReturn($project);
+        $repo->method('findBySlugForTenant')->willReturn($project);
 
         (new UpdateProject($repo))->execute($this->input($this->acting(UserId::generate())));
     }
@@ -80,7 +81,7 @@ final class UpdateProjectTest extends TestCase
         $project = $this->project(UserId::generate());
 
         $repo = $this->createMock(ProjectRepositoryInterface::class);
-        $repo->method('findBySlug')->willReturn($project);
+        $repo->method('findBySlugForTenant')->willReturn($project);
         $repo->expects($this->once())->method('save');
 
         (new UpdateProject($repo))->execute($this->input($this->acting(UserId::generate(), 'admin')));
@@ -92,7 +93,7 @@ final class UpdateProjectTest extends TestCase
         $project = $this->project(null);
 
         $repo = $this->createMock(ProjectRepositoryInterface::class);
-        $repo->method('findBySlug')->willReturn($project);
+        $repo->method('findBySlugForTenant')->willReturn($project);
 
         (new UpdateProject($repo))->execute($this->input($this->acting(UserId::generate())));
     }
@@ -102,7 +103,7 @@ final class UpdateProjectTest extends TestCase
         $project = $this->project(null);
 
         $repo = $this->createMock(ProjectRepositoryInterface::class);
-        $repo->method('findBySlug')->willReturn($project);
+        $repo->method('findBySlugForTenant')->willReturn($project);
         $repo->expects($this->once())->method('save');
 
         (new UpdateProject($repo))->execute($this->input($this->acting(UserId::generate(), 'admin')));
@@ -111,7 +112,7 @@ final class UpdateProjectTest extends TestCase
     public function testProjectNotFoundReturnsError(): void
     {
         $repo = $this->createMock(ProjectRepositoryInterface::class);
-        $repo->method('findBySlug')->willReturn(null);
+        $repo->method('findBySlugForTenant')->willReturn(null);
 
         $out = (new UpdateProject($repo))->execute($this->input($this->acting(UserId::generate(), 'admin')));
         $this->assertFalse($out->success);

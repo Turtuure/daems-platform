@@ -24,6 +24,7 @@ final class F007_IdentitySpoofingTest extends TestCase
     {
         $this->h->projects->save(new Project(
             ProjectId::generate(),
+            $this->h->testTenantId,
             $slug,
             'T',
             'c',
@@ -70,7 +71,7 @@ final class F007_IdentitySpoofingTest extends TestCase
         ]);
         $this->assertSame(200, $resp->status());
 
-        $project = $this->h->projects->findBySlug('p');
+        $project = $this->h->projects->findBySlugForTenant('p', $this->h->testTenantId);
         $this->assertTrue($this->h->projects->isParticipant($project->id()->value(), $bob->id()->value()));
         $this->assertFalse($this->h->projects->isParticipant($project->id()->value(), $alice->id()->value()));
 

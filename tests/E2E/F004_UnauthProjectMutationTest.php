@@ -24,6 +24,7 @@ final class F004_UnauthProjectMutationTest extends TestCase
     {
         $project = new Project(
             ProjectId::generate(),
+            $this->h->testTenantId,
             $slug,
             'Title',
             'research',
@@ -64,7 +65,7 @@ final class F004_UnauthProjectMutationTest extends TestCase
 
         $resp = $this->h->authedRequest('POST', '/api/v1/projects/my-project/archive', $token);
         $this->assertSame(200, $resp->status());
-        $this->assertSame('archived', $this->h->projects->findBySlug('my-project')->status());
+        $this->assertSame('archived', $this->h->projects->findBySlugForTenant('my-project', $this->h->testTenantId)->status());
     }
 
     public function testAdminCanArchiveAnyProject(): void

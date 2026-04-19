@@ -6,12 +6,14 @@ namespace Daems\Domain\Project;
 
 use Daems\Domain\Auth\ActingUser;
 use Daems\Domain\Auth\ForbiddenException;
+use Daems\Domain\Tenant\TenantId;
 use Daems\Domain\User\UserId;
 
 final class Project
 {
     public function __construct(
         private readonly ProjectId $id,
+        private readonly TenantId $tenantId,
         private readonly string $slug,
         private readonly string $title,
         private readonly string $category,
@@ -24,6 +26,7 @@ final class Project
     ) {}
 
     public function id(): ProjectId { return $this->id; }
+    public function tenantId(): TenantId { return $this->tenantId; }
     public function slug(): string { return $this->slug; }
     public function title(): string { return $this->title; }
     public function category(): string { return $this->category; }
@@ -34,11 +37,6 @@ final class Project
     public function sortOrder(): int { return $this->sortOrder; }
     public function ownerId(): ?UserId { return $this->ownerId; }
 
-    /**
-     * Ownership policy for mutation (update, archive, addUpdate).
-     * Throws ForbiddenException when the acting user is neither the owner
-     * nor an admin. Legacy rows (owner_id IS NULL) are admin-only.
-     */
     public function assertMutableBy(ActingUser $acting): void
     {
         if ($acting->isAdmin()) {

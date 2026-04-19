@@ -13,7 +13,7 @@ final class ArchiveProject
 
     public function execute(ArchiveProjectInput $input): ArchiveProjectOutput
     {
-        $existing = $this->projects->findBySlug($input->slug);
+        $existing = $this->projects->findBySlugForTenant($input->slug, $input->acting->activeTenant);
         if ($existing === null) {
             return new ArchiveProjectOutput(false, 'Project not found.');
         }
@@ -22,6 +22,7 @@ final class ArchiveProject
 
         $archived = new Project(
             $existing->id(),
+            $existing->tenantId(),
             $existing->slug(),
             $existing->title(),
             $existing->category(),

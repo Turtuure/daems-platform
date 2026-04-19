@@ -6,6 +6,7 @@ require_once dirname(__DIR__, 2) . '/vendor/autoload.php';
 
 use Daems\Domain\Project\Project;
 use Daems\Domain\Project\ProjectId;
+use Daems\Domain\Tenant\TenantId;
 use Daems\Infrastructure\Adapter\Persistence\Sql\SqlProjectRepository;
 use Daems\Infrastructure\Framework\Database\Connection;
 
@@ -29,9 +30,16 @@ $db = new Connection([
 
 $repo = new SqlProjectRepository($db);
 
+$daemsTenantIdRaw = $db->queryOne("SELECT id FROM tenants WHERE slug = 'daems'");
+if ($daemsTenantIdRaw === null || !is_string($daemsTenantIdRaw['id'] ?? null)) {
+    throw new RuntimeException("Tenant 'daems' not found — run migration 019 first.");
+}
+$daemsTenantId = TenantId::fromString($daemsTenantIdRaw['id']);
+
 $projects = [
     new Project(
         ProjectId::generate(),
+        $daemsTenantId,
         'daem-forums',
         'Daem Forums',
         'community',
@@ -59,6 +67,7 @@ $projects = [
     ),
     new Project(
         ProjectId::generate(),
+        $daemsTenantId,
         'open-source-toolkit',
         'Open Source Toolkit',
         'technology',
@@ -84,6 +93,7 @@ $projects = [
     ),
     new Project(
         ProjectId::generate(),
+        $daemsTenantId,
         'annual-meetup-2026',
         'Annual Meetup 2026',
         'events',
@@ -108,6 +118,7 @@ $projects = [
     ),
     new Project(
         ProjectId::generate(),
+        $daemsTenantId,
         'member-survey-2026',
         'Member Survey 2026',
         'research',
@@ -133,6 +144,7 @@ $projects = [
     ),
     new Project(
         ProjectId::generate(),
+        $daemsTenantId,
         'learning-hub',
         'Daem Learning Hub',
         'community',
@@ -153,6 +165,7 @@ $projects = [
     ),
     new Project(
         ProjectId::generate(),
+        $daemsTenantId,
         'platform-api',
         'Platform API',
         'technology',

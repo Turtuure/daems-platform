@@ -15,7 +15,7 @@ final class ListProjects
 
     public function execute(ListProjectsInput $input): ListProjectsOutput
     {
-        $projects = $this->projects->findAll($input->category, $input->status, $input->search);
+        $projects = $this->projects->listForTenant($input->tenantId, $input->category, $input->status, $input->search);
 
         return new ListProjectsOutput(
             array_map(fn(Project $p) => $this->toArray($p), $projects),

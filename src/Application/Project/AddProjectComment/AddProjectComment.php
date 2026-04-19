@@ -19,7 +19,7 @@ final class AddProjectComment
 
     public function execute(AddProjectCommentInput $input): AddProjectCommentOutput
     {
-        $project = $this->projects->findBySlug($input->slug);
+        $project = $this->projects->findBySlugForTenant($input->slug, $input->acting->activeTenant);
         if ($project === null) {
             return new AddProjectCommentOutput(null, 'Project not found.');
         }

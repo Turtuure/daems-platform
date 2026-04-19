@@ -4,12 +4,14 @@ declare(strict_types=1);
 
 namespace Daems\Domain\Project;
 
+use Daems\Domain\Tenant\TenantId;
+
 interface ProjectRepositoryInterface
 {
     /** @return Project[] */
-    public function findAll(?string $category = null, ?string $status = null, ?string $search = null): array;
+    public function listForTenant(TenantId $tenantId, ?string $category = null, ?string $status = null, ?string $search = null): array;
 
-    public function findBySlug(string $slug): ?Project;
+    public function findBySlugForTenant(string $slug, TenantId $tenantId): ?Project;
 
     public function save(Project $project): void;
 

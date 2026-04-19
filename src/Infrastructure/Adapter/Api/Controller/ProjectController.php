@@ -26,6 +26,8 @@ use Daems\Application\Project\SubmitProjectProposal\SubmitProjectProposal;
 use Daems\Application\Project\SubmitProjectProposal\SubmitProjectProposalInput;
 use Daems\Application\Project\UpdateProject\UpdateProject;
 use Daems\Application\Project\UpdateProject\UpdateProjectInput;
+use Daems\Domain\Shared\NotFoundException;
+use Daems\Domain\Tenant\Tenant;
 use Daems\Infrastructure\Framework\Http\Request;
 use Daems\Infrastructure\Framework\Http\Response;
 
@@ -47,23 +49,34 @@ final class ProjectController
 
     public function index(Request $request): Response
     {
+        $tenantId = $this->requireTenant($request)->id;
         $category = $request->string('category') ?: null;
         $status   = $request->string('status') ?: null;
         $search   = $request->string('search') ?: null;
-        $output   = $this->listProjects->execute(new ListProjectsInput($category, $status, $search));
+        $output   = $this->listProjects->execute(new ListProjectsInput($tenantId, $category, $status, $search));
         return Response::json(['data' => $output->projects]);
     }
 
     public function show(Request $request, array $params): Response
     {
+        $tenantId = $this->requireTenant($request)->id;
         $userId = $request->string('user_id') ?: null;
-        $output = $this->getProject->execute(new GetProjectInput($params['slug'], $userId));
+        $output = $this->getProject->execute(new GetProjectInput($tenantId, $params['slug'], $userId));
 
         if ($output->project === null) {
             return Response::notFound('Project not found');
         }
 
         return Response::json(['data' => $output->project]);
+    }
+
+    private function requireTenant(Request $request): Tenant
+    {
+        $tenant = $request->attribute('tenant');
+        if (!$tenant instanceof Tenant) {
+            throw new NotFoundException('unknown_tenant');
+        }
+        return $tenant;
     }
 
     public function create(Request $request): Response

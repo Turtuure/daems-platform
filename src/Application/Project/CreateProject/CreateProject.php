@@ -18,6 +18,7 @@ final class CreateProject
 
         $project = new Project(
             ProjectId::generate(),
+            $input->acting->activeTenant,
             $slug,
             $input->title,
             $input->category,

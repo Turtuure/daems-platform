@@ -14,7 +14,7 @@ final class JoinProject
 
     public function execute(JoinProjectInput $input): JoinProjectOutput
     {
-        $project = $this->projects->findBySlug($input->slug);
+        $project = $this->projects->findBySlugForTenant($input->slug, $input->acting->activeTenant);
         if ($project === null) {
             return new JoinProjectOutput(false, 'Project not found.');
         }

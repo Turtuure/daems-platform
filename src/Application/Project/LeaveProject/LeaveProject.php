@@ -12,7 +12,7 @@ final class LeaveProject
 
     public function execute(LeaveProjectInput $input): LeaveProjectOutput
     {
-        $project = $this->projects->findBySlug($input->slug);
+        $project = $this->projects->findBySlugForTenant($input->slug, $input->acting->activeTenant);
         if ($project === null) {
             return new LeaveProjectOutput(false, 'Project not found.');
         }

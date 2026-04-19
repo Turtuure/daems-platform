@@ -13,7 +13,7 @@ final class UpdateProject
 
     public function execute(UpdateProjectInput $input): UpdateProjectOutput
     {
-        $existing = $this->projects->findBySlug($input->slug);
+        $existing = $this->projects->findBySlugForTenant($input->slug, $input->acting->activeTenant);
         if ($existing === null) {
             return new UpdateProjectOutput(false, 'Project not found.');
         }
@@ -22,6 +22,7 @@ final class UpdateProject
 
         $updated = new Project(
             $existing->id(),
+            $existing->tenantId(),
             $existing->slug(),
             $input->title,
             $input->category,

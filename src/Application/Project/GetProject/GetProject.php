@@ -16,7 +16,7 @@ final class GetProject
 
     public function execute(GetProjectInput $input): GetProjectOutput
     {
-        $project = $this->projects->findBySlug($input->slug);
+        $project = $this->projects->findBySlugForTenant($input->slug, $input->tenantId);
 
         if ($project === null) {
             return new GetProjectOutput(null);

@@ -18,7 +18,7 @@ final class AddProjectUpdate
 
     public function execute(AddProjectUpdateInput $input): AddProjectUpdateOutput
     {
-        $project = $this->projects->findBySlug($input->slug);
+        $project = $this->projects->findBySlugForTenant($input->slug, $input->acting->activeTenant);
         if ($project === null) {
             return new AddProjectUpdateOutput(false, 'Project not found.');
         }
