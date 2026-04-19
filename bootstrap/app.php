@@ -175,13 +175,17 @@ $container->singleton(AuthTokenRepositoryInterface::class,
     static fn(Container $c) => new SqlAuthTokenRepository($c->make(Connection::class)),
 );
 $container->singleton(AuthLoginAttemptRepositoryInterface::class,
-    static fn(Container $c) => new SqlAuthLoginAttemptRepository($c->make(Connection::class)),
+    static fn(Container $c) => new SqlAuthLoginAttemptRepository(
+        $c->make(Connection::class),
+        $c->make(LoggerInterface::class),
+    ),
 );
 
 $container->bind(CreateAuthToken::class,
     static fn(Container $c) => new CreateAuthToken(
         $c->make(AuthTokenRepositoryInterface::class),
         $c->make(Clock::class),
+        (int) ($_ENV['AUTH_TOKEN_TTL_DAYS'] ?? 7),
     ),
 );
 $container->bind(AuthenticateToken::class,
@@ -189,6 +193,9 @@ $container->bind(AuthenticateToken::class,
         $c->make(AuthTokenRepositoryInterface::class),
         $c->make(UserRepositoryInterface::class),
         $c->make(Clock::class),
+        $c->make(LoggerInterface::class),
+        (int) ($_ENV['AUTH_TOKEN_TTL_DAYS'] ?? 7),
+        (int) ($_ENV['AUTH_TOKEN_HARD_CAP_DAYS'] ?? 30),
     ),
 );
 $container->bind(LogoutUser::class,
@@ -226,7 +233,6 @@ $container->bind(AuthController::class,
         $c->make(LoginUser::class),
         $c->make(CreateAuthToken::class),
         $c->make(LogoutUser::class),
-        $c->make(UserRepositoryInterface::class),
     ),
 );
 

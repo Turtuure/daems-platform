@@ -28,8 +28,16 @@ final class InMemoryUserRepository implements UserRepositoryInterface
 
     public function save(User $user): void
     {
+        $key = strtolower($user->email());
+        $existingId = $this->idByEmail[$key] ?? null;
+        if ($existingId !== null && $existingId !== $user->id()->value()) {
+            // Mirror SqlUserRepository's ValidationException on duplicate email.
+            // Without this, tests could seed two users with the same email
+            // and pass while production would fail.
+            throw new \Daems\Domain\Shared\ValidationException('Invalid email.');
+        }
         $this->byId[$user->id()->value()] = $user;
-        $this->idByEmail[strtolower($user->email())] = $user->id()->value();
+        $this->idByEmail[$key] = $user->id()->value();
     }
 
     public function updateProfile(string $id, array $fields): void

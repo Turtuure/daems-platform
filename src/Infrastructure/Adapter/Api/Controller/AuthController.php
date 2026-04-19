@@ -12,8 +12,7 @@ use Daems\Application\Auth\LogoutUser\LogoutUser;
 use Daems\Application\Auth\LogoutUser\LogoutUserInput;
 use Daems\Application\Auth\RegisterUser\RegisterUser;
 use Daems\Application\Auth\RegisterUser\RegisterUserInput;
-use Daems\Domain\Auth\UnauthorizedException;
-use Daems\Domain\User\UserRepositoryInterface;
+use Daems\Domain\User\User;
 use Daems\Infrastructure\Framework\Http\Request;
 use Daems\Infrastructure\Framework\Http\Response;
 
@@ -24,7 +23,6 @@ final class AuthController
         private readonly LoginUser $loginUser,
         private readonly CreateAuthToken $createAuthToken,
         private readonly LogoutUser $logoutUser,
-        private readonly UserRepositoryInterface $users,
     ) {}
 
     public function login(Request $request): Response
@@ -38,24 +36,19 @@ final class AuthController
 
         $output = $this->loginUser->execute(new LoginUserInput($email, $password, $request->clientIp()));
 
-        if ($output->error !== null) {
+        if (!$output->isSuccess()) {
             return Response::json(['error' => $output->error], 401);
         }
 
-        $user = $this->users->findByEmail($email);
-        if ($user === null) {
-            return Response::serverError('Authentication error.');
-        }
-
         $token = $this->createAuthToken->execute(new CreateAuthTokenInput(
-            $user->id(),
+            $output->user->id(),
             $request->header('User-Agent'),
             $request->clientIp(),
         ));
 
         return Response::json([
             'data' => [
-                'user'       => $output->user,
+                'user'       => $this->projectUser($output->user),
                 'token'      => $token->rawToken,
                 'expires_at' => $token->expiresAt->format('c'),
             ],
@@ -98,11 +91,30 @@ final class AuthController
 
     public function logout(Request $request): Response
     {
-        $raw = $request->bearerToken();
-        if ($raw === null) {
-            throw new UnauthorizedException();
-        }
+        // Route is gated by AuthMiddleware so bearerToken() is guaranteed non-null here.
+        $raw = (string) $request->bearerToken();
         $this->logoutUser->execute(new LogoutUserInput($raw));
         return Response::json(null, 204);
+    }
+
+    /** @return array<string, mixed> */
+    private function projectUser(User $u): array
+    {
+        return [
+            'id'                => $u->id()->value(),
+            'name'              => $u->name(),
+            'email'             => $u->email(),
+            'dob'               => $u->dateOfBirth(),
+            'role'              => $u->role(),
+            'country'           => $u->country(),
+            'address_street'    => $u->addressStreet(),
+            'address_zip'       => $u->addressZip(),
+            'address_city'      => $u->addressCity(),
+            'address_country'   => $u->addressCountry(),
+            'membership_type'   => $u->membershipType(),
+            'membership_status' => $u->membershipStatus(),
+            'member_number'     => $u->memberNumber(),
+            'created_at'        => $u->createdAt(),
+        ];
     }
 }

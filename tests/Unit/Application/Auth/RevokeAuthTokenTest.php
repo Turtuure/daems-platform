@@ -20,7 +20,7 @@ final class RevokeAuthTokenTest extends TestCase
     {
         $repo = new InMemoryAuthTokenRepository();
         $id = AuthTokenId::generate();
-        $repo->store(new AuthToken(
+        $repo->store(AuthToken::fromPersistence(
             $id,
             hash('sha256', 's'),
             UserId::generate(),

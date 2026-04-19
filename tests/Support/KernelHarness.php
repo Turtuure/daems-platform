@@ -149,6 +149,7 @@ final class KernelHarness
             $c->make(AuthTokenRepositoryInterface::class),
             $c->make(UserRepositoryInterface::class),
             $c->make(Clock::class),
+            $c->make(LoggerInterface::class),
         ));
         $container->bind(LogoutUser::class, static fn(Container $c) => new LogoutUser(
             $c->make(AuthTokenRepositoryInterface::class),
@@ -224,7 +225,6 @@ final class KernelHarness
             $c->make(LoginUser::class),
             $c->make(CreateAuthToken::class),
             $c->make(LogoutUser::class),
-            $c->make(UserRepositoryInterface::class),
         ));
         $container->bind(UserController::class, static fn(Container $c) => new UserController(
             $c->make(GetProfile::class),

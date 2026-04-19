@@ -19,18 +19,36 @@ final class UpdateProfileTest extends TestCase
     {
         $u = new User(
             UserId::generate(),
-            'Jane',
+            'Jane Doe',
             $email,
             password_hash('p', PASSWORD_BCRYPT),
             '1990-01-01',
+            'registered',
+            'US',
+            'Street 1',
+            '00100',
+            'Helsinki',
+            'FI',
         );
         $repo->save($u);
         return $u;
     }
 
-    private function input(ActingUser $a, string $userId, string $firstName = 'J', string $email = 'j@x.com'): UpdateProfileInput
+    private function input(ActingUser $a, string $userId, ?string $firstName = 'J', ?string $email = 'j@x.com'): UpdateProfileInput
     {
-        return new UpdateProfileInput($a, $userId, $firstName, 'D', $email, '1990-01-01', 'US', '', '', '', '');
+        return new UpdateProfileInput(
+            acting: $a,
+            userId: $userId,
+            firstName: $firstName,
+            lastName: 'D',
+            email: $email,
+            dob: '1990-01-01',
+            country: 'US',
+            addressStreet: '',
+            addressZip: '',
+            addressCity: '',
+            addressCountry: '',
+        );
     }
 
     public function testSelfUpdate(): void
@@ -82,7 +100,7 @@ final class UpdateProfileTest extends TestCase
     {
         $repo = new InMemoryUserRepository();
         $target = $this->seed($repo, 'target@x.com');
-        $other = $this->seed($repo, 'other@x.com');
+        $this->seed($repo, 'other@x.com');
 
         $out = (new UpdateProfile($repo))
             ->execute($this->input(
@@ -94,5 +112,60 @@ final class UpdateProfileTest extends TestCase
         $this->assertNotNull($out->error);
         $this->assertStringNotContainsString('SQLSTATE', $out->error);
         $this->assertStringNotContainsString('Duplicate', $out->error);
+    }
+
+    /**
+     * Regression for SAST F-002 residual: an update call that omits a field
+     * must not wipe the stored value. Previous behavior: every missing field
+     * was coerced to empty string and written unconditionally.
+     */
+    public function testOmittedFieldsAreNotWiped(): void
+    {
+        $repo = new InMemoryUserRepository();
+        $u = $this->seed($repo);
+
+        $out = (new UpdateProfile($repo))->execute(new UpdateProfileInput(
+            acting: new ActingUser($u->id(), 'registered'),
+            userId: $u->id()->value(),
+            firstName: 'Alex',
+        ));
+        $this->assertNull($out->error);
+
+        $reloaded = $repo->findById($u->id()->value());
+        $this->assertNotNull($reloaded);
+        $this->assertSame('Alex Doe', $reloaded->name(), 'first_name update; last_name preserved');
+        $this->assertSame('jane@x.com', $reloaded->email(), 'email unchanged');
+        $this->assertSame('1990-01-01', $reloaded->dateOfBirth(), 'dob unchanged');
+        $this->assertSame('Street 1', $reloaded->addressStreet(), 'address_street unchanged');
+        $this->assertSame('00100', $reloaded->addressZip(), 'address_zip unchanged');
+        $this->assertSame('Helsinki', $reloaded->addressCity(), 'address_city unchanged');
+        $this->assertSame('US', $reloaded->country(), 'country unchanged');
+    }
+
+    public function testExplicitEmptyStringSetsFieldToEmpty(): void
+    {
+        $repo = new InMemoryUserRepository();
+        $u = $this->seed($repo);
+
+        $out = (new UpdateProfile($repo))->execute(new UpdateProfileInput(
+            acting: new ActingUser($u->id(), 'registered'),
+            userId: $u->id()->value(),
+            addressStreet: '',
+        ));
+        $this->assertNull($out->error);
+        $this->assertSame('', $repo->findById($u->id()->value())->addressStreet());
+    }
+
+    public function testNoFieldsProvidedIsNoop(): void
+    {
+        $repo = new InMemoryUserRepository();
+        $u = $this->seed($repo);
+
+        $out = (new UpdateProfile($repo))->execute(new UpdateProfileInput(
+            acting: new ActingUser($u->id(), 'registered'),
+            userId: $u->id()->value(),
+        ));
+        $this->assertNull($out->error);
+        $this->assertSame('Jane Doe', $repo->findById($u->id()->value())->name());
     }
 }

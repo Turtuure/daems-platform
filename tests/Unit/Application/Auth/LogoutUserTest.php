@@ -19,7 +19,7 @@ final class LogoutUserTest extends TestCase
     public function testRevokesTokenByHash(): void
     {
         $repo = new InMemoryAuthTokenRepository();
-        $repo->store(new AuthToken(
+        $repo->store(AuthToken::fromPersistence(
             AuthTokenId::generate(),
             hash('sha256', 'raw-secret'),
             UserId::generate(),

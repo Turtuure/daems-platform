@@ -14,6 +14,7 @@ final class CreateAuthToken
     public function __construct(
         private readonly AuthTokenRepositoryInterface $tokens,
         private readonly Clock $clock,
+        private readonly int $ttlDays = 7,
     ) {}
 
     public function execute(CreateAuthTokenInput $input): CreateAuthTokenOutput
@@ -22,17 +23,15 @@ final class CreateAuthToken
         $hash = hash('sha256', $raw);
 
         $now = $this->clock->now();
-        $expiresAt = $now->modify('+7 days');
+        $expiresAt = $now->modify("+{$this->ttlDays} days");
 
         $id = AuthTokenId::generate();
-        $this->tokens->store(new AuthToken(
+        $this->tokens->store(AuthToken::issue(
             $id,
             $hash,
             $input->userId,
             $now,
-            $now,
             $expiresAt,
-            null,
             $input->userAgent,
             $input->ip,
         ));

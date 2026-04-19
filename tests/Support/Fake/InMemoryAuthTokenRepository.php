@@ -28,7 +28,7 @@ final class InMemoryAuthTokenRepository implements AuthTokenRepositoryInterface
     {
         foreach ($this->byHash as $hash => $t) {
             if ($t->id()->value() === $id->value()) {
-                $this->byHash[$hash] = new AuthToken(
+                $this->byHash[$hash] = AuthToken::fromPersistence(
                     $t->id(),
                     $t->tokenHash(),
                     $t->userId(),
@@ -63,7 +63,7 @@ final class InMemoryAuthTokenRepository implements AuthTokenRepositoryInterface
 
     private function replace(string $hash, AuthToken $t, DateTimeImmutable $revokedAt): void
     {
-        $this->byHash[$hash] = new AuthToken(
+        $this->byHash[$hash] = AuthToken::fromPersistence(
             $t->id(),
             $t->tokenHash(),
             $t->userId(),

@@ -15,7 +15,7 @@ final class InMemoryAuthTokenRepositoryTest extends TestCase
 {
     private function make(string $hash = 'h'): AuthToken
     {
-        return new AuthToken(
+        return AuthToken::fromPersistence(
             AuthTokenId::generate(),
             $hash,
             UserId::generate(),

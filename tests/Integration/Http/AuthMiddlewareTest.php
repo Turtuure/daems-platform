@@ -23,7 +23,7 @@ final class AuthMiddlewareTest extends TestCase
 {
     private function harness(InMemoryAuthTokenRepository $tokens, InMemoryUserRepository $users, FrozenClock $clock): AuthMiddleware
     {
-        return new AuthMiddleware(new AuthenticateToken($tokens, $users, $clock));
+        return new AuthMiddleware(new AuthenticateToken($tokens, $users, $clock, new \Daems\Tests\Support\NullLogger()));
     }
 
     public function testThrowsUnauthorizedWhenHeaderMissing(): void
@@ -49,7 +49,7 @@ final class AuthMiddlewareTest extends TestCase
         $users->save($user);
 
         $tokens = new InMemoryAuthTokenRepository();
-        $tokens->store(new AuthToken(
+        $tokens->store(AuthToken::fromPersistence(
             AuthTokenId::generate(),
             hash('sha256', 'secret'),
             $userId,
@@ -83,7 +83,7 @@ final class AuthMiddlewareTest extends TestCase
         $this->expectException(UnauthorizedException::class);
         $tokens = new InMemoryAuthTokenRepository();
         $userId = UserId::generate();
-        $tokens->store(new AuthToken(
+        $tokens->store(AuthToken::fromPersistence(
             AuthTokenId::generate(),
             hash('sha256', 'secret'),
             $userId,

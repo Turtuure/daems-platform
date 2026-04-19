@@ -6,7 +6,7 @@ namespace Daems\Infrastructure\Framework\Database;
 
 use PDO;
 
-final class Connection
+class Connection
 {
     private PDO $pdo;
 

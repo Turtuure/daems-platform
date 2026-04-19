@@ -43,7 +43,7 @@ final class SqlUserRepository implements UserRepositoryInterface
                 ],
             );
         } catch (PDOException $e) {
-            if (str_starts_with((string) $e->getCode(), '23')) {
+            if (self::isDuplicateEmail($e)) {
                 throw new ValidationException('Invalid email.');
             }
             throw $e;
@@ -69,11 +69,27 @@ final class SqlUserRepository implements UserRepositoryInterface
         try {
             $this->db->execute('UPDATE users SET ' . implode(', ', $set) . ' WHERE id = ?', $params);
         } catch (PDOException $e) {
-            if (str_starts_with((string) $e->getCode(), '23')) {
+            if (self::isDuplicateEmail($e)) {
                 throw new ValidationException('Invalid email.');
             }
             throw $e;
         }
+    }
+
+    /**
+     * True only when MySQL/MariaDB raised a UNIQUE-violation on users_email_unique.
+     * Any other SQLSTATE 23000 (FK violation, CHECK violation, etc.) surfaces truthfully
+     * rather than being mis-labelled as "Invalid email." — which would re-open the class
+     * of bug SAST F-006 was trying to close, just at a lower layer.
+     */
+    private static function isDuplicateEmail(PDOException $e): bool
+    {
+        if ((string) $e->getCode() !== '23000') {
+            return false;
+        }
+        $message = $e->getMessage();
+        return str_contains($message, 'Duplicate entry')
+            && str_contains($message, 'users_email_unique');
     }
 
     public function updatePassword(string $id, string $newHash): void

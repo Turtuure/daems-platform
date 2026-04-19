@@ -61,18 +61,20 @@ final class UserController
 
         $b = $request->all();
 
+        $pick = static fn(string $key): ?string => array_key_exists($key, $b) ? trim((string) $b[$key]) : null;
+
         $output = $this->updateProfile->execute(new UpdateProfileInput(
             acting:         $acting,
             userId:         $id,
-            firstName:      trim((string) ($b['first_name'] ?? '')),
-            lastName:       trim((string) ($b['last_name'] ?? '')),
-            email:          trim((string) ($b['email'] ?? '')),
-            dob:            trim((string) ($b['dob'] ?? '')),
-            country:        trim((string) ($b['country'] ?? '')),
-            addressStreet:  trim((string) ($b['address_street'] ?? '')),
-            addressZip:     trim((string) ($b['address_zip'] ?? '')),
-            addressCity:    trim((string) ($b['address_city'] ?? '')),
-            addressCountry: trim((string) ($b['address_country'] ?? '')),
+            firstName:      $pick('first_name'),
+            lastName:       $pick('last_name'),
+            email:          $pick('email'),
+            dob:            $pick('dob'),
+            country:        $pick('country'),
+            addressStreet:  $pick('address_street'),
+            addressZip:     $pick('address_zip'),
+            addressCity:    $pick('address_city'),
+            addressCountry: $pick('address_country'),
         ));
 
         if ($output->error !== null) {

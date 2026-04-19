@@ -69,21 +69,31 @@ final class SqlAuthTokenRepository implements AuthTokenRepositoryInterface
         );
     }
 
-    /** @param array<string, mixed> $row */
+    /**
+     * @param array<string, mixed> $row
+     *
+     * We require every schema column to be present in the row. `array_key_exists`
+     * catches schema drift (column renamed or dropped) at the earliest possible
+     * point rather than silently filling a null through `isset` fallbacks.
+     */
     private function hydrate(array $row): AuthToken
     {
-        return new AuthToken(
+        foreach (['id', 'token_hash', 'user_id', 'issued_at', 'last_used_at', 'expires_at', 'revoked_at', 'user_agent', 'ip'] as $col) {
+            if (!array_key_exists($col, $row)) {
+                throw new \RuntimeException("auth_tokens row missing column: {$col}");
+            }
+        }
+
+        return AuthToken::fromPersistence(
             AuthTokenId::fromString((string) $row['id']),
             (string) $row['token_hash'],
             UserId::fromString((string) $row['user_id']),
             new DateTimeImmutable((string) $row['issued_at']),
             new DateTimeImmutable((string) $row['last_used_at']),
             new DateTimeImmutable((string) $row['expires_at']),
-            isset($row['revoked_at']) && $row['revoked_at'] !== null
-                ? new DateTimeImmutable((string) $row['revoked_at'])
-                : null,
-            isset($row['user_agent']) ? (string) $row['user_agent'] : null,
-            isset($row['ip']) ? (string) $row['ip'] : null,
+            $row['revoked_at'] !== null ? new DateTimeImmutable((string) $row['revoked_at']) : null,
+            $row['user_agent'] !== null ? (string) $row['user_agent'] : null,
+            $row['ip'] !== null ? (string) $row['ip'] : null,
         );
     }
 }

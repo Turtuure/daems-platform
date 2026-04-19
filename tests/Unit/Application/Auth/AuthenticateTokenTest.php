@@ -38,7 +38,7 @@ final class AuthenticateTokenTest extends TestCase
         $u = $this->seedUser($users);
 
         $tokens = new InMemoryAuthTokenRepository();
-        $tokens->store(new AuthToken(
+        $tokens->store(AuthToken::fromPersistence(
             AuthTokenId::generate(),
             hash('sha256', 'secret'),
             $u->id(),
@@ -51,7 +51,7 @@ final class AuthenticateTokenTest extends TestCase
         ));
         $clock = FrozenClock::at('2026-04-20T00:00:00Z');
 
-        $out = (new AuthenticateToken($tokens, $users, $clock))
+        $out = (new AuthenticateToken($tokens, $users, $clock, new \Daems\Tests\Support\NullLogger()))
             ->execute(new AuthenticateTokenInput('secret'));
 
         $this->assertNull($out->error);
@@ -63,7 +63,7 @@ final class AuthenticateTokenTest extends TestCase
     public function testRejectsMissingToken(): void
     {
         $clock = FrozenClock::at('2026-04-20T00:00:00Z');
-        $out = (new AuthenticateToken(new InMemoryAuthTokenRepository(), new InMemoryUserRepository(), $clock))
+        $out = (new AuthenticateToken(new InMemoryAuthTokenRepository(), new InMemoryUserRepository(), $clock, new \Daems\Tests\Support\NullLogger()))
             ->execute(new AuthenticateTokenInput('unknown'));
         $this->assertNotNull($out->error);
         $this->assertNull($out->actingUser);
@@ -73,7 +73,7 @@ final class AuthenticateTokenTest extends TestCase
     {
         $tokens = new InMemoryAuthTokenRepository();
         $userId = UserId::generate();
-        $tokens->store(new AuthToken(
+        $tokens->store(AuthToken::fromPersistence(
             AuthTokenId::generate(),
             hash('sha256', 'secret'),
             $userId,
@@ -85,7 +85,7 @@ final class AuthenticateTokenTest extends TestCase
             null,
         ));
         $clock = FrozenClock::at('2026-04-20T00:00:00Z');
-        $out = (new AuthenticateToken($tokens, new InMemoryUserRepository(), $clock))
+        $out = (new AuthenticateToken($tokens, new InMemoryUserRepository(), $clock, new \Daems\Tests\Support\NullLogger()))
             ->execute(new AuthenticateTokenInput('secret'));
         $this->assertNotNull($out->error);
     }
@@ -94,7 +94,7 @@ final class AuthenticateTokenTest extends TestCase
     {
         $tokens = new InMemoryAuthTokenRepository();
         $userId = UserId::generate();
-        $tokens->store(new AuthToken(
+        $tokens->store(AuthToken::fromPersistence(
             AuthTokenId::generate(),
             hash('sha256', 'secret'),
             $userId,
@@ -106,7 +106,7 @@ final class AuthenticateTokenTest extends TestCase
             null,
         ));
         $clock = FrozenClock::at('2026-04-20T00:00:00Z');
-        $out = (new AuthenticateToken($tokens, new InMemoryUserRepository(), $clock))
+        $out = (new AuthenticateToken($tokens, new InMemoryUserRepository(), $clock, new \Daems\Tests\Support\NullLogger()))
             ->execute(new AuthenticateTokenInput('secret'));
         $this->assertNotNull($out->error);
     }
@@ -118,7 +118,7 @@ final class AuthenticateTokenTest extends TestCase
         $u = $this->seedUser($users);
 
         $issued = new DateTimeImmutable('2026-04-19T00:00:00Z');
-        $tokens->store(new AuthToken(
+        $tokens->store(AuthToken::fromPersistence(
             AuthTokenId::generate(),
             hash('sha256', 'secret'),
             $u->id(),
@@ -130,7 +130,7 @@ final class AuthenticateTokenTest extends TestCase
             null,
         ));
         $clock = FrozenClock::at('2026-04-20T00:00:00Z');
-        (new AuthenticateToken($tokens, $users, $clock))
+        (new AuthenticateToken($tokens, $users, $clock, new \Daems\Tests\Support\NullLogger()))
             ->execute(new AuthenticateTokenInput('secret'));
 
         $updated = $tokens->findByHash(hash('sha256', 'secret'));
@@ -145,7 +145,7 @@ final class AuthenticateTokenTest extends TestCase
         $u = $this->seedUser($users);
 
         $issued = new DateTimeImmutable('2026-04-01T00:00:00Z');
-        $tokens->store(new AuthToken(
+        $tokens->store(AuthToken::fromPersistence(
             AuthTokenId::generate(),
             hash('sha256', 'secret'),
             $u->id(),
@@ -157,7 +157,7 @@ final class AuthenticateTokenTest extends TestCase
             null,
         ));
         $clock = FrozenClock::at('2026-04-28T00:00:00Z');
-        (new AuthenticateToken($tokens, $users, $clock))
+        (new AuthenticateToken($tokens, $users, $clock, new \Daems\Tests\Support\NullLogger()))
             ->execute(new AuthenticateTokenInput('secret'));
 
         $updated = $tokens->findByHash(hash('sha256', 'secret'));
@@ -171,7 +171,7 @@ final class AuthenticateTokenTest extends TestCase
         $u = $this->seedUser($users, 'admin');
 
         $tokens = new InMemoryAuthTokenRepository();
-        $tokens->store(new AuthToken(
+        $tokens->store(AuthToken::fromPersistence(
             AuthTokenId::generate(),
             hash('sha256', 'secret'),
             $u->id(),
@@ -184,7 +184,7 @@ final class AuthenticateTokenTest extends TestCase
         ));
         $clock = FrozenClock::at('2026-04-20T00:00:00Z');
 
-        $out = (new AuthenticateToken($tokens, $users, $clock))
+        $out = (new AuthenticateToken($tokens, $users, $clock, new \Daems\Tests\Support\NullLogger()))
             ->execute(new AuthenticateTokenInput('secret'));
 
         $this->assertTrue($out->actingUser?->isAdmin());
