@@ -14,6 +14,7 @@ use Daems\Application\Forum\ListForumCategories\ListForumCategories;
 use Daems\Application\Insight\GetInsight\GetInsight;
 use Daems\Application\Insight\ListInsights\ListInsights;
 use Daems\Application\Admin\GetAdminStats\GetAdminStats;
+use Daems\Application\Auth\GetAuthMe\GetAuthMe;
 use Daems\Application\Auth\LoginUser\LoginUser;
 use Daems\Application\Auth\RegisterUser\RegisterUser;
 use Daems\Application\User\ChangePassword\ChangePassword;
@@ -277,12 +278,20 @@ $container->bind(LoginUser::class,
 $container->bind(RegisterUser::class,
     static fn(Container $c) => new RegisterUser($c->make(UserRepositoryInterface::class)),
 );
+$container->bind(GetAuthMe::class,
+    static fn(Container $c) => new GetAuthMe(
+        $c->make(UserRepositoryInterface::class),
+        $c->make(TenantRepositoryInterface::class),
+        $c->make(AuthTokenRepositoryInterface::class),
+    ),
+);
 $container->bind(AuthController::class,
     static fn(Container $c) => new AuthController(
         $c->make(RegisterUser::class),
         $c->make(LoginUser::class),
         $c->make(CreateAuthToken::class),
         $c->make(LogoutUser::class),
+        $c->make(GetAuthMe::class),
     ),
 );
 

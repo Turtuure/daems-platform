@@ -6,6 +6,7 @@ namespace Daems\Infrastructure\Adapter\Api\Controller;
 
 use Daems\Application\Auth\CreateAuthToken\CreateAuthToken;
 use Daems\Application\Auth\CreateAuthToken\CreateAuthTokenInput;
+use Daems\Application\Auth\GetAuthMe\GetAuthMe;
 use Daems\Application\Auth\LoginUser\LoginUser;
 use Daems\Application\Auth\LoginUser\LoginUserInput;
 use Daems\Application\Auth\LogoutUser\LogoutUser;
@@ -23,6 +24,7 @@ final class AuthController
         private readonly LoginUser $loginUser,
         private readonly CreateAuthToken $createAuthToken,
         private readonly LogoutUser $logoutUser,
+        private readonly GetAuthMe $getAuthMe,
     ) {}
 
     public function login(Request $request): Response
@@ -97,6 +99,16 @@ final class AuthController
         $raw = (string) $request->bearerToken();
         $this->logoutUser->execute(new LogoutUserInput($raw));
         return Response::json(null, 204);
+    }
+
+    public function me(Request $request): Response
+    {
+        $actor = $request->requireActingUser();
+        // Route is gated by AuthMiddleware so bearerToken() is guaranteed non-null here.
+        $token = (string) $request->bearerToken();
+        $output = $this->getAuthMe->execute($actor, $token);
+
+        return Response::json(['data' => $output->toArray()]);
     }
 
     /** @return array<string, mixed> */

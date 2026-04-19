@@ -13,6 +13,7 @@ use Daems\Infrastructure\Adapter\Api\Controller\UserController;
 use Daems\Infrastructure\Framework\Container\Container;
 use Daems\Infrastructure\Framework\Http\Middleware\AuthMiddleware;
 use Daems\Infrastructure\Framework\Http\Middleware\RateLimitLoginMiddleware;
+use Daems\Infrastructure\Framework\Http\Middleware\TenantContextMiddleware;
 use Daems\Infrastructure\Framework\Http\Request;
 use Daems\Infrastructure\Framework\Http\Response;
 use Daems\Infrastructure\Framework\Http\Router;
@@ -156,6 +157,10 @@ return static function (Router $router, Container $container): void {
     $router->post('/api/v1/auth/logout', static function (Request $req) use ($container): Response {
         return $container->make(AuthController::class)->logout($req);
     }, [AuthMiddleware::class]);
+
+    $router->get('/api/v1/auth/me', static function (Request $req) use ($container): Response {
+        return $container->make(AuthController::class)->me($req);
+    }, [TenantContextMiddleware::class, AuthMiddleware::class]);
 
     // Forum — public reads
     $router->get('/api/v1/forum/categories', static function (Request $req) use ($container): Response {
