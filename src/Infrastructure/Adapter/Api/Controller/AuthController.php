@@ -40,6 +40,8 @@ final class AuthController
             return Response::json(['error' => $output->error], 401);
         }
 
+        assert($output->user !== null, 'user is non-null after isSuccess() check');
+
         $token = $this->createAuthToken->execute(new CreateAuthTokenInput(
             $output->user->id(),
             $request->header('User-Agent'),
