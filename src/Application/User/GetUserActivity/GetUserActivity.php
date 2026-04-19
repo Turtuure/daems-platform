@@ -30,7 +30,7 @@ final class GetUserActivity
             'slug'  => $r['slug'],
             'title' => $r['title'],
             'type'  => $r['type'],
-            'date'  => date('M j, Y', strtotime($r['date'])),
+            'date'  => date('M j, Y', (int) strtotime($r['date'])),
         ], $eventRows);
 
         return new GetUserActivityOutput([

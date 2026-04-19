@@ -101,6 +101,7 @@ final class SqlAdminRepository implements AdminStatsRepositoryInterface
         );
     }
 
+    /** @return array{labels: array<string>, series: array<int>} */
     public function getMemberGrowth(string $period): array
     {
         return match ($period) {
@@ -111,7 +112,11 @@ final class SqlAdminRepository implements AdminStatsRepositoryInterface
         };
     }
 
-    /** Daily cumulative growth for the last $days days. */
+    /**
+     * Daily cumulative growth for the last $days days.
+     *
+     * @return array{labels: array<string>, series: array<int>}
+     */
     private function growthDaily(int $days): array
     {
         $rows = $this->db->query(
@@ -137,16 +142,20 @@ final class SqlAdminRepository implements AdminStatsRepositoryInterface
         $running = $baseline;
 
         for ($i = $days - 1; $i >= 0; $i--) {
-            $date     = date('Y-m-d', strtotime("-{$i} days"));
+            $date     = date('Y-m-d', (int) strtotime("-{$i} days"));
             $running += $byDate[$date] ?? 0;
-            $labels[] = date('j M', strtotime($date));
+            $labels[] = date('j M', (int) strtotime($date));
             $series[] = $running;
         }
 
         return ['labels' => $labels, 'series' => $series];
     }
 
-    /** Monthly cumulative growth for the last $months months. */
+    /**
+     * Monthly cumulative growth for the last $months months.
+     *
+     * @return array{labels: array<string>, series: array<int>}
+     */
     private function growthMonthly(int $months): array
     {
         $rows = $this->db->query(
@@ -173,16 +182,20 @@ final class SqlAdminRepository implements AdminStatsRepositoryInterface
         $running = $baseline;
 
         for ($i = $months - 1; $i >= 0; $i--) {
-            $ym       = date('Y-m', strtotime("first day of -$i months"));
+            $ym       = date('Y-m', (int) strtotime("first day of -$i months"));
             $running += $byMonth[$ym] ?? 0;
-            $labels[] = date('M \'y', strtotime($ym . '-01'));
+            $labels[] = date('M \'y', (int) strtotime($ym . '-01'));
             $series[] = $running;
         }
 
         return ['labels' => $labels, 'series' => $series];
     }
 
-    /** Monthly cumulative growth from the first ever registered user to today. */
+    /**
+     * Monthly cumulative growth from the first ever registered user to today.
+     *
+     * @return array{labels: array<string>, series: array<int>}
+     */
     private function growthAllTime(): array
     {
         $first = $this->db->queryOne('SELECT MIN(created_at) AS d FROM users')['d'] ?? null;
@@ -206,14 +219,14 @@ final class SqlAdminRepository implements AdminStatsRepositoryInterface
         $labels  = [];
         $series  = [];
         $running = 0;
-        $cursor  = date('Y-m', strtotime($first));
+        $cursor  = date('Y-m', (int) strtotime($first));
         $today   = date('Y-m');
 
         while ($cursor <= $today) {
             $running += $byMonth[$cursor] ?? 0;
-            $labels[] = date('M \'y', strtotime($cursor . '-01'));
+            $labels[] = date('M \'y', (int) strtotime($cursor . '-01'));
             $series[] = $running;
-            $cursor   = date('Y-m', strtotime($cursor . '-01 +1 month'));
+            $cursor   = date('Y-m', (int) strtotime($cursor . '-01 +1 month'));
         }
 
         return ['labels' => $labels, 'series' => $series];
@@ -230,7 +243,7 @@ final class SqlAdminRepository implements AdminStatsRepositoryInterface
 
         $result = [];
         for ($i = 6; $i >= 0; $i--) {
-            $result[] = $byDate[date('Y-m-d', strtotime("-{$i} days"))] ?? 0;
+            $result[] = $byDate[date('Y-m-d', (int) strtotime("-{$i} days"))] ?? 0;
         }
 
         return $result;

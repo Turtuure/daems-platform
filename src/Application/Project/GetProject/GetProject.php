@@ -36,7 +36,7 @@ final class GetProject
                 'avatar_color'    => $c->avatarColor(),
                 'content'         => $c->content(),
                 'likes'           => $c->likes(),
-                'timestamp'       => date('F j, Y, H:i', strtotime($c->createdAt())),
+                'timestamp'       => date('F j, Y, H:i', (int) strtotime($c->createdAt())),
             ],
             $this->projects->findCommentsByProjectId($projectId),
         );
@@ -47,7 +47,7 @@ final class GetProject
                 'title'      => $u->title(),
                 'content'    => $u->content(),
                 'author'     => $u->authorName(),
-                'created_at' => date('F j, Y', strtotime($u->createdAt())),
+                'created_at' => date('F j, Y', (int) strtotime($u->createdAt())),
             ],
             $this->projects->findUpdatesByProjectId($projectId),
         );

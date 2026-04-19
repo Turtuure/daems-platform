@@ -109,8 +109,8 @@ final class ForumController
 
     public function likePost(Request $request, array $params): Response
     {
-        $acting = $request->requireActingUser();
-        $this->likePostUseCase->execute(new LikeForumPostInput($acting, $params['id']));
+        $request->requireActingUser();
+        $this->likePostUseCase->execute(new LikeForumPostInput($params['id']));
         return Response::json(['data' => ['ok' => true]]);
     }
 

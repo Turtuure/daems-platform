@@ -51,7 +51,7 @@ final class AddProjectComment
             'avatar_color'    => $comment->avatarColor(),
             'content'         => htmlspecialchars($comment->content()),
             'likes'           => 0,
-            'timestamp'       => date('F j, Y, H:i', strtotime($now)),
+            'timestamp'       => date('F j, Y, H:i', (int) strtotime($now)),
         ]);
     }
 

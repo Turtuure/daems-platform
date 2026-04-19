@@ -104,9 +104,11 @@ final class SqlEventRepository implements EventRepositoryInterface
         return (int) ($row['cnt'] ?? 0);
     }
 
+    /** @return array<array{event_id: string, slug: string, title: string, type: string, date: string}> */
     public function findRegistrationsByUserId(string $userId): array
     {
-        return $this->db->query(
+        /** @var array<array{event_id: string, slug: string, title: string, type: string, date: string}> $rows */
+        $rows = $this->db->query(
             'SELECT e.id AS event_id, e.slug, e.title, e.type, e.event_date AS date
              FROM event_registrations er
              JOIN events e ON e.id = er.event_id
@@ -114,6 +116,8 @@ final class SqlEventRepository implements EventRepositoryInterface
              ORDER BY e.event_date DESC',
             [$userId],
         );
+
+        return $rows;
     }
 
     private function hydrate(array $row): Event
