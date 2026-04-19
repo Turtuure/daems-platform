@@ -7,6 +7,7 @@ namespace Daems\Tests\Support;
 use Daems\Application\Auth\AuthenticateToken\AuthenticateToken;
 use Daems\Application\Auth\CreateAuthToken\CreateAuthToken;
 use Daems\Application\Auth\CreateAuthToken\CreateAuthTokenInput;
+use Daems\Application\Auth\GetAuthMe\GetAuthMe;
 use Daems\Application\Auth\LoginUser\LoginUser;
 use Daems\Application\Auth\LogoutUser\LogoutUser;
 use Daems\Application\Auth\RegisterUser\RegisterUser;
@@ -56,6 +57,7 @@ use Daems\Domain\Tenant\TenantId;
 use Daems\Domain\Tenant\TenantRepositoryInterface;
 use Daems\Domain\Tenant\TenantSlug;
 use Daems\Domain\Tenant\UserTenantRepositoryInterface;
+use Daems\Domain\Tenant\UserTenantRole;
 use Daems\Infrastructure\Framework\Http\Middleware\TenantContextMiddleware;
 use Daems\Infrastructure\Tenant\TenantResolverInterface;
 use DateTimeImmutable;
@@ -93,6 +95,8 @@ final class KernelHarness
 {
     public Container $container;
     public Kernel $kernel;
+
+    public readonly TenantId $testTenantId;
 
     public InMemoryUserRepository $users;
     public InMemoryUserTenantRepository $userTenants;
@@ -242,11 +246,17 @@ final class KernelHarness
         $container->bind(SubmitSupporterApplication::class, static fn(Container $c) => new SubmitSupporterApplication($c->make(SupporterApplicationRepositoryInterface::class)));
 
         // Controllers
+        $container->bind(GetAuthMe::class, static fn(Container $c) => new GetAuthMe(
+            $c->make(UserRepositoryInterface::class),
+            $c->make(TenantRepositoryInterface::class),
+            $c->make(AuthTokenRepositoryInterface::class),
+        ));
         $container->bind(AuthController::class, static fn(Container $c) => new AuthController(
             $c->make(RegisterUser::class),
             $c->make(LoginUser::class),
             $c->make(CreateAuthToken::class),
             $c->make(LogoutUser::class),
+            $c->make(GetAuthMe::class),
         ));
         $container->bind(UserController::class, static fn(Container $c) => new UserController(
             $c->make(GetProfile::class),
@@ -315,6 +325,7 @@ final class KernelHarness
             'Test Tenant',
             new DateTimeImmutable('2024-01-01'),
         );
+        $this->testTenantId = $stubTenant->id;
         $container->bind(TenantContextMiddleware::class, static fn() => new TenantContextMiddleware(
             new class ($stubTenant) implements TenantResolverInterface {
                 public function __construct(private readonly Tenant $tenant) {}
@@ -334,7 +345,12 @@ final class KernelHarness
         $this->kernel = new Kernel($container, $logger, $debug);
     }
 
-    public function seedUser(string $email = 'user@x.com', string $password = 'pass1234'): User
+    /**
+     * @param string|null $role  Pass 'admin' to give the user UserTenantRole::Admin in the
+     *                           test tenant. Any other non-null value is attached as-is via
+     *                           UserTenantRole::fromStringOrRegistered().
+     */
+    public function seedUser(string $email = 'user@x.com', string $password = 'pass1234', ?string $role = null): User
     {
         $u = new User(
             UserId::generate(),
@@ -344,6 +360,12 @@ final class KernelHarness
             '1990-01-01',
         );
         $this->users->save($u);
+
+        if ($role !== null) {
+            $tenantRole = UserTenantRole::fromStringOrRegistered($role);
+            $this->userTenants->attach($u->id(), $this->testTenantId, $tenantRole);
+        }
+
         return $u;
     }
 
