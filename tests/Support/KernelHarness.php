@@ -400,6 +400,20 @@ final class KernelHarness
         return $u;
     }
 
+    public function seedPlatformAdmin(string $email = 'gsa@x.com', string $password = 'pass1234'): User
+    {
+        $u = new User(
+            id: UserId::generate(),
+            name: 'GSA User',
+            email: $email,
+            passwordHash: password_hash($password, PASSWORD_BCRYPT),
+            dateOfBirth: '1990-01-01',
+            isPlatformAdmin: true,
+        );
+        $this->users->save($u);
+        return $u;
+    }
+
     public function tokenFor(User $user): string
     {
         $out = $this->container->make(CreateAuthToken::class)
