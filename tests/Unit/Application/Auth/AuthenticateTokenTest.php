@@ -15,11 +15,10 @@ use Daems\Tests\Support\Fake\InMemoryUserRepository;
 use Daems\Tests\Support\FrozenClock;
 use DateTimeImmutable;
 use PHPUnit\Framework\TestCase;
-use Daems\Domain\Tenant\TenantId;
 
 final class AuthenticateTokenTest extends TestCase
 {
-    private function seedUser(InMemoryUserRepository $users, string $role = 'registered'): User
+    private function seedUser(InMemoryUserRepository $users, bool $isPlatformAdmin = false): User
     {
         $u = new User(
             UserId::generate(),
@@ -27,13 +26,13 @@ final class AuthenticateTokenTest extends TestCase
             'j@x.com',
             password_hash('p', PASSWORD_BCRYPT),
             '1990-01-01',
-            $role,
+            isPlatformAdmin: $isPlatformAdmin,
         );
         $users->save($u);
         return $u;
     }
 
-    public function testReturnsActingUserForValidToken(): void
+    public function testReturnsUserIdentityForValidToken(): void
     {
         $users = new InMemoryUserRepository();
         $u = $this->seedUser($users);
@@ -56,11 +55,12 @@ final class AuthenticateTokenTest extends TestCase
             ->execute(new AuthenticateTokenInput('secret'));
 
         $this->assertNull($out->error);
-        $this->assertNotNull($out->actingUser);
-        $this->assertSame($u->id()->value(), $out->actingUser->id->value());
-        // TEMP: PR 2 Task 18 will wire roleInActiveTenant; until then it is null.
-        $this->assertNull($out->actingUser->roleInActiveTenant);
-        $this->assertFalse($out->actingUser->isPlatformAdmin);
+        $this->assertTrue($out->isSuccess());
+        $this->assertNotNull($out->userId);
+        $this->assertSame($u->id()->value(), $out->userId->value());
+        $this->assertSame('j@x.com', $out->email);
+        $this->assertFalse($out->isPlatformAdmin);
+        $this->assertNotNull($out->tokenId);
     }
 
     public function testRejectsMissingToken(): void
@@ -69,7 +69,8 @@ final class AuthenticateTokenTest extends TestCase
         $out = (new AuthenticateToken(new InMemoryAuthTokenRepository(), new InMemoryUserRepository(), $clock, new \Daems\Tests\Support\NullLogger()))
             ->execute(new AuthenticateTokenInput('unknown'));
         $this->assertNotNull($out->error);
-        $this->assertNull($out->actingUser);
+        $this->assertFalse($out->isSuccess());
+        $this->assertNull($out->userId);
     }
 
     public function testRejectsExpiredToken(): void
@@ -168,10 +169,10 @@ final class AuthenticateTokenTest extends TestCase
         $this->assertSame('2026-05-01T00:00:00+00:00', $updated->expiresAt()->format('c'));
     }
 
-    public function testReturnsAdminRoleForAdminUser(): void
+    public function testPlatformAdminFlagIsPreserved(): void
     {
         $users = new InMemoryUserRepository();
-        $u = $this->seedUser($users, 'admin');
+        $u = $this->seedUser($users, isPlatformAdmin: true);
 
         $tokens = new InMemoryAuthTokenRepository();
         $tokens->store(AuthToken::fromPersistence(
@@ -190,9 +191,7 @@ final class AuthenticateTokenTest extends TestCase
         $out = (new AuthenticateToken($tokens, $users, $clock, new \Daems\Tests\Support\NullLogger()))
             ->execute(new AuthenticateTokenInput('secret'));
 
-        // TEMP: PR 2 Task 18 will wire roleInActiveTenant from user_tenants; until then
-        // AuthenticateToken cannot convey tenant-scoped admin role. Assert TEMP state.
-        $this->assertNull($out->actingUser?->roleInActiveTenant);
-        $this->assertFalse($out->actingUser?->isPlatformAdmin);
+        $this->assertTrue($out->isSuccess());
+        $this->assertTrue($out->isPlatformAdmin);
     }
 }
