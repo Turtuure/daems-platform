@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use Daems\Infrastructure\Adapter\Api\Controller\AdminController;
 use Daems\Infrastructure\Adapter\Api\Controller\EventController;
 use Daems\Infrastructure\Adapter\Api\Controller\ForumController;
 use Daems\Infrastructure\Adapter\Api\Controller\InsightController;
@@ -18,6 +19,11 @@ return static function (Router $router, Container $container): void {
 
     $router->get('/api/v1/status', static function (): Response {
         return Response::json(['data' => ['status' => 'ok', 'version' => '1.0.0']]);
+    });
+
+    // Admin
+    $router->get('/api/v1/admin/stats', static function (Request $req) use ($container): Response {
+        return $container->make(AdminController::class)->stats($req);
     });
 
     $router->get('/api/v1/events', static function (Request $req) use ($container): Response {

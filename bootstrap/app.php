@@ -13,6 +13,7 @@ use Daems\Application\Forum\LikeForumPost\LikeForumPost;
 use Daems\Application\Forum\ListForumCategories\ListForumCategories;
 use Daems\Application\Insight\GetInsight\GetInsight;
 use Daems\Application\Insight\ListInsights\ListInsights;
+use Daems\Application\Admin\GetAdminStats\GetAdminStats;
 use Daems\Application\Auth\LoginUser\LoginUser;
 use Daems\Application\Auth\RegisterUser\RegisterUser;
 use Daems\Application\User\ChangePassword\ChangePassword;
@@ -35,6 +36,7 @@ use Daems\Application\Project\LikeProjectComment\LikeProjectComment;
 use Daems\Application\Project\ListProjects\ListProjects;
 use Daems\Application\Project\SubmitProjectProposal\SubmitProjectProposal;
 use Daems\Application\Project\UpdateProject\UpdateProject;
+use Daems\Domain\Admin\AdminStatsRepositoryInterface;
 use Daems\Domain\Event\EventRepositoryInterface;
 use Daems\Domain\Forum\ForumRepositoryInterface;
 use Daems\Domain\Insight\InsightRepositoryInterface;
@@ -43,6 +45,7 @@ use Daems\Domain\Membership\SupporterApplicationRepositoryInterface;
 use Daems\Domain\Project\ProjectProposalRepositoryInterface;
 use Daems\Domain\Project\ProjectRepositoryInterface;
 use Daems\Domain\User\UserRepositoryInterface;
+use Daems\Infrastructure\Adapter\Api\Controller\AdminController;
 use Daems\Infrastructure\Adapter\Api\Controller\EventController;
 use Daems\Infrastructure\Adapter\Api\Controller\ForumController;
 use Daems\Infrastructure\Adapter\Api\Controller\InsightController;
@@ -50,6 +53,7 @@ use Daems\Infrastructure\Adapter\Api\Controller\ApplicationController;
 use Daems\Infrastructure\Adapter\Api\Controller\AuthController;
 use Daems\Infrastructure\Adapter\Api\Controller\ProjectController;
 use Daems\Infrastructure\Adapter\Api\Controller\UserController;
+use Daems\Infrastructure\Adapter\Persistence\Sql\SqlAdminRepository;
 use Daems\Infrastructure\Adapter\Persistence\Sql\SqlEventRepository;
 use Daems\Infrastructure\Adapter\Persistence\Sql\SqlForumRepository;
 use Daems\Infrastructure\Adapter\Persistence\Sql\SqlInsightRepository;
@@ -94,6 +98,17 @@ $container->singleton(Connection::class, static function (): Connection {
         'password' => $_ENV['DB_PASSWORD'] ?? '',
     ]);
 });
+
+// Admin
+$container->singleton(AdminStatsRepositoryInterface::class,
+    static fn(Container $c) => new SqlAdminRepository($c->make(Connection::class)),
+);
+$container->bind(GetAdminStats::class,
+    static fn(Container $c) => new GetAdminStats($c->make(AdminStatsRepositoryInterface::class)),
+);
+$container->bind(AdminController::class,
+    static fn(Container $c) => new AdminController($c->make(GetAdminStats::class)),
+);
 
 // Events
 $container->singleton(EventRepositoryInterface::class,
