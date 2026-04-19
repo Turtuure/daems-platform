@@ -12,6 +12,12 @@ final class Response
         private readonly string $body,
     ) {}
 
+    /** @param array<string, string> $headers */
+    public static function make(string $body, int $status = 200, array $headers = []): self
+    {
+        return new self($status, $headers, $body);
+    }
+
     public static function json(mixed $data, int $status = 200): self
     {
         $body = $data === null
