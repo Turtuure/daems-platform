@@ -20,6 +20,8 @@ final class ApplicationController
 
     public function member(Request $request): Response
     {
+        $acting = $request->requireActingUser();
+
         $name        = trim((string) $request->input('name'));
         $email       = trim((string) $request->input('email'));
         $dob         = trim((string) $request->input('date_of_birth'));
@@ -36,7 +38,7 @@ final class ApplicationController
         }
 
         $output = $this->submitMember->execute(
-            new SubmitMemberApplicationInput($name, $email, $dob, $country, $motivation, $howHeard),
+            new SubmitMemberApplicationInput($acting, $name, $email, $dob, $country, $motivation, $howHeard),
         );
 
         return Response::json(['data' => ['id' => $output->id]], 201);
@@ -44,6 +46,8 @@ final class ApplicationController
 
     public function supporter(Request $request): Response
     {
+        $acting = $request->requireActingUser();
+
         $orgName       = trim((string) $request->input('org_name'));
         $contactPerson = trim((string) $request->input('contact_person'));
         $regNo         = trim((string) $request->input('reg_no')) ?: null;
@@ -61,7 +65,7 @@ final class ApplicationController
         }
 
         $output = $this->submitSupporter->execute(
-            new SubmitSupporterApplicationInput($orgName, $contactPerson, $regNo, $email, $country, $motivation, $howHeard),
+            new SubmitSupporterApplicationInput($acting, $orgName, $contactPerson, $regNo, $email, $country, $motivation, $howHeard),
         );
 
         return Response::json(['data' => ['id' => $output->id]], 201);

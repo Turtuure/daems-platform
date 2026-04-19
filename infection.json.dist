@@ -1,0 +1,26 @@
+{
+    "$schema": "vendor/infection/infection/resources/schema.json",
+    "source": {
+        "directories": [
+            "src/Application/Auth",
+            "src/Application/User",
+            "src/Application/Project",
+            "src/Application/Forum",
+            "src/Domain/Auth"
+        ],
+        "excludes": [
+            "**/*Input.php",
+            "**/*Output.php"
+        ]
+    },
+    "testFrameworkOptions": "--testsuite=Unit,Integration",
+    "logs": {
+        "text": "build/infection.log",
+        "summary": "build/infection-summary.log"
+    },
+    "minMsi": 85,
+    "minCoveredMsi": 90,
+    "mutators": {
+        "@default": true
+    }
+}

@@ -26,6 +26,7 @@ final class CreateProject
             $input->description,
             $input->status,
             0,
+            $input->acting->id,
         );
 
         $this->projects->save($project);
@@ -38,7 +39,7 @@ final class CreateProject
 
     private function makeSlug(string $title): string
     {
-        $slug = strtolower(trim(preg_replace('/[^a-z0-9]+/i', '-', $title), '-'));
+        $slug = strtolower(trim((string) preg_replace('/[^a-z0-9]+/i', '-', $title), '-'));
         return substr($slug, 0, 60) . '-' . substr(uniqid(), -6);
     }
 }

@@ -18,6 +18,8 @@ final class UpdateProject
             return new UpdateProjectOutput(false, 'Project not found.');
         }
 
+        $existing->assertMutableBy($input->acting);
+
         $updated = new Project(
             $existing->id(),
             $existing->slug(),
@@ -28,6 +30,7 @@ final class UpdateProject
             $input->description,
             $input->status,
             $existing->sortOrder(),
+            $existing->ownerId(),
         );
 
         $this->projects->save($updated);

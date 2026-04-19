@@ -16,6 +16,10 @@ final class RegisterUser
 
     public function execute(RegisterUserInput $input): RegisterUserOutput
     {
+        if (strlen($input->password) > 72) {
+            return new RegisterUserOutput(null, 'Password must be at most 72 bytes.');
+        }
+
         if ($this->users->findByEmail($input->email) !== null) {
             return new RegisterUserOutput(null, 'An account with this email already exists.');
         }

@@ -58,10 +58,23 @@ use Daems\Infrastructure\Adapter\Persistence\Sql\SqlProjectProposalRepository;
 use Daems\Infrastructure\Adapter\Persistence\Sql\SqlProjectRepository;
 use Daems\Infrastructure\Adapter\Persistence\Sql\SqlSupporterApplicationRepository;
 use Daems\Infrastructure\Adapter\Persistence\Sql\SqlUserRepository;
+use Daems\Application\Auth\AuthenticateToken\AuthenticateToken;
+use Daems\Application\Auth\CreateAuthToken\CreateAuthToken;
+use Daems\Application\Auth\LogoutUser\LogoutUser;
+use Daems\Domain\Auth\AuthLoginAttemptRepositoryInterface;
+use Daems\Domain\Auth\AuthTokenRepositoryInterface;
+use Daems\Domain\Shared\Clock;
+use Daems\Infrastructure\Adapter\Persistence\Sql\SqlAuthLoginAttemptRepository;
+use Daems\Infrastructure\Adapter\Persistence\Sql\SqlAuthTokenRepository;
+use Daems\Infrastructure\Framework\Clock\SystemClock;
 use Daems\Infrastructure\Framework\Container\Container;
 use Daems\Infrastructure\Framework\Database\Connection;
 use Daems\Infrastructure\Framework\Http\Kernel;
+use Daems\Infrastructure\Framework\Http\Middleware\AuthMiddleware;
+use Daems\Infrastructure\Framework\Http\Middleware\RateLimitLoginMiddleware;
 use Daems\Infrastructure\Framework\Http\Router;
+use Daems\Infrastructure\Framework\Logging\ErrorLogLogger;
+use Daems\Infrastructure\Framework\Logging\LoggerInterface;
 
 // Load .env
 (static function (): void {
@@ -155,14 +168,73 @@ $container->bind(ApplicationController::class,
 $container->singleton(UserRepositoryInterface::class,
     static fn(Container $c) => new SqlUserRepository($c->make(Connection::class)),
 );
+$container->singleton(LoggerInterface::class, static fn() => new ErrorLogLogger());
+$container->singleton(Clock::class, static fn() => new SystemClock());
+
+$container->singleton(AuthTokenRepositoryInterface::class,
+    static fn(Container $c) => new SqlAuthTokenRepository($c->make(Connection::class)),
+);
+$container->singleton(AuthLoginAttemptRepositoryInterface::class,
+    static fn(Container $c) => new SqlAuthLoginAttemptRepository(
+        $c->make(Connection::class),
+        $c->make(LoggerInterface::class),
+    ),
+);
+
+$container->bind(CreateAuthToken::class,
+    static fn(Container $c) => new CreateAuthToken(
+        $c->make(AuthTokenRepositoryInterface::class),
+        $c->make(Clock::class),
+        (int) ($_ENV['AUTH_TOKEN_TTL_DAYS'] ?? 7),
+    ),
+);
+$container->bind(AuthenticateToken::class,
+    static fn(Container $c) => new AuthenticateToken(
+        $c->make(AuthTokenRepositoryInterface::class),
+        $c->make(UserRepositoryInterface::class),
+        $c->make(Clock::class),
+        $c->make(LoggerInterface::class),
+        (int) ($_ENV['AUTH_TOKEN_TTL_DAYS'] ?? 7),
+        (int) ($_ENV['AUTH_TOKEN_HARD_CAP_DAYS'] ?? 30),
+    ),
+);
+$container->bind(LogoutUser::class,
+    static fn(Container $c) => new LogoutUser(
+        $c->make(AuthTokenRepositoryInterface::class),
+        $c->make(Clock::class),
+    ),
+);
+$container->bind(AuthMiddleware::class,
+    static fn(Container $c) => new AuthMiddleware($c->make(AuthenticateToken::class)),
+);
+$container->bind(RateLimitLoginMiddleware::class,
+    static fn(Container $c) => new RateLimitLoginMiddleware(
+        $c->make(AuthLoginAttemptRepositoryInterface::class),
+        $c->make(Clock::class),
+        (int) ($_ENV['AUTH_RATE_LIMIT_MAX_FAILS'] ?? 5),
+        (int) ($_ENV['AUTH_RATE_LIMIT_WINDOW_MIN'] ?? 15),
+        (int) ($_ENV['AUTH_RATE_LIMIT_LOCKOUT_MIN'] ?? 15) * 60,
+        (int) ($_ENV['AUTH_RATE_LIMIT_MAX_FAILS_PER_IP'] ?? 20),
+    ),
+);
+
 $container->bind(LoginUser::class,
-    static fn(Container $c) => new LoginUser($c->make(UserRepositoryInterface::class)),
+    static fn(Container $c) => new LoginUser(
+        $c->make(UserRepositoryInterface::class),
+        $c->make(AuthLoginAttemptRepositoryInterface::class),
+        $c->make(Clock::class),
+    ),
 );
 $container->bind(RegisterUser::class,
     static fn(Container $c) => new RegisterUser($c->make(UserRepositoryInterface::class)),
 );
 $container->bind(AuthController::class,
-    static fn(Container $c) => new AuthController($c->make(RegisterUser::class), $c->make(LoginUser::class)),
+    static fn(Container $c) => new AuthController(
+        $c->make(RegisterUser::class),
+        $c->make(LoginUser::class),
+        $c->make(CreateAuthToken::class),
+        $c->make(LogoutUser::class),
+    ),
 );
 
 // User profile
@@ -208,10 +280,16 @@ $container->bind(GetForumThread::class,
     static fn(Container $c) => new GetForumThread($c->make(ForumRepositoryInterface::class)),
 );
 $container->bind(CreateForumTopic::class,
-    static fn(Container $c) => new CreateForumTopic($c->make(ForumRepositoryInterface::class)),
+    static fn(Container $c) => new CreateForumTopic(
+        $c->make(ForumRepositoryInterface::class),
+        $c->make(UserRepositoryInterface::class),
+    ),
 );
 $container->bind(CreateForumPost::class,
-    static fn(Container $c) => new CreateForumPost($c->make(ForumRepositoryInterface::class)),
+    static fn(Container $c) => new CreateForumPost(
+        $c->make(ForumRepositoryInterface::class),
+        $c->make(UserRepositoryInterface::class),
+    ),
 );
 $container->bind(LikeForumPost::class,
     static fn(Container $c) => new LikeForumPost($c->make(ForumRepositoryInterface::class)),
@@ -251,7 +329,10 @@ $container->bind(ArchiveProject::class,
     static fn(Container $c) => new ArchiveProject($c->make(ProjectRepositoryInterface::class)),
 );
 $container->bind(AddProjectComment::class,
-    static fn(Container $c) => new AddProjectComment($c->make(ProjectRepositoryInterface::class)),
+    static fn(Container $c) => new AddProjectComment(
+        $c->make(ProjectRepositoryInterface::class),
+        $c->make(UserRepositoryInterface::class),
+    ),
 );
 $container->bind(LikeProjectComment::class,
     static fn(Container $c) => new LikeProjectComment($c->make(ProjectRepositoryInterface::class)),
@@ -263,13 +344,19 @@ $container->bind(LeaveProject::class,
     static fn(Container $c) => new LeaveProject($c->make(ProjectRepositoryInterface::class)),
 );
 $container->bind(AddProjectUpdate::class,
-    static fn(Container $c) => new AddProjectUpdate($c->make(ProjectRepositoryInterface::class)),
+    static fn(Container $c) => new AddProjectUpdate(
+        $c->make(ProjectRepositoryInterface::class),
+        $c->make(UserRepositoryInterface::class),
+    ),
 );
 $container->singleton(ProjectProposalRepositoryInterface::class,
     static fn(Container $c) => new SqlProjectProposalRepository($c->make(Connection::class)),
 );
 $container->bind(SubmitProjectProposal::class,
-    static fn(Container $c) => new SubmitProjectProposal($c->make(ProjectProposalRepositoryInterface::class)),
+    static fn(Container $c) => new SubmitProjectProposal(
+        $c->make(ProjectProposalRepositoryInterface::class),
+        $c->make(UserRepositoryInterface::class),
+    ),
 );
 $container->bind(ProjectController::class,
     static fn(Container $c) => new ProjectController(
@@ -289,9 +376,13 @@ $container->bind(ProjectController::class,
 
 // Router
 $container->singleton(Router::class, static function () use ($container): Router {
-    $router = new Router();
+    $router = new Router(static fn(string $class): mixed => $container->make($class));
     (require dirname(__DIR__) . '/routes/api.php')($router, $container);
     return $router;
 });
 
-return new Kernel($container);
+return new Kernel(
+    $container,
+    $container->make(LoggerInterface::class),
+    ($_ENV['APP_DEBUG'] ?? 'false') === 'true',
+);

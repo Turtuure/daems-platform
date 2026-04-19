@@ -14,10 +14,13 @@ final class Response
 
     public static function json(mixed $data, int $status = 200): self
     {
+        $body = $data === null
+            ? ''
+            : (string) json_encode($data, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
         return new self(
             $status,
             ['Content-Type' => 'application/json; charset=utf-8'],
-            (string) json_encode($data, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
+            $body,
         );
     }
 
@@ -34,6 +37,43 @@ final class Response
     public static function serverError(string $message = 'Internal server error'): self
     {
         return self::json(['error' => $message], 500);
+    }
+
+    public static function unauthorized(string $message = 'Authentication required.'): self
+    {
+        return self::json(['error' => $message], 401);
+    }
+
+    public static function forbidden(string $message = 'Forbidden.'): self
+    {
+        return self::json(['error' => $message], 403);
+    }
+
+    public static function tooManyRequests(string $message, int $retryAfter): self
+    {
+        return new self(
+            429,
+            [
+                'Content-Type' => 'application/json; charset=utf-8',
+                'Retry-After'  => (string) $retryAfter,
+            ],
+            (string) json_encode(['error' => $message], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
+        );
+    }
+
+    public function status(): int
+    {
+        return $this->status;
+    }
+
+    public function body(): string
+    {
+        return $this->body;
+    }
+
+    public function header(string $name): ?string
+    {
+        return $this->headers[$name] ?? null;
     }
 
     public function send(): void

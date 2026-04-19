@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Daems\Application\User\ChangePassword;
 
+use Daems\Domain\Auth\ForbiddenException;
+use Daems\Domain\User\UserId;
 use Daems\Domain\User\UserRepositoryInterface;
 
 final class ChangePassword
@@ -14,8 +16,16 @@ final class ChangePassword
 
     public function execute(ChangePasswordInput $input): ChangePasswordOutput
     {
+        if (!$input->acting->owns(UserId::fromString($input->userId))) {
+            throw new ForbiddenException();
+        }
+
         if (strlen($input->newPassword) < 8) {
             return new ChangePasswordOutput('New password must be at least 8 characters.');
+        }
+
+        if (strlen($input->newPassword) > 72) {
+            return new ChangePasswordOutput('Password must be at most 72 bytes.');
         }
 
         $user = $this->users->findById($input->userId);

@@ -4,8 +4,10 @@ declare(strict_types=1);
 
 namespace Daems\Application\User\GetUserActivity;
 
+use Daems\Domain\Auth\ForbiddenException;
 use Daems\Domain\Event\EventRepositoryInterface;
 use Daems\Domain\Forum\ForumRepositoryInterface;
+use Daems\Domain\User\UserId;
 
 final class GetUserActivity
 {
@@ -16,6 +18,11 @@ final class GetUserActivity
 
     public function execute(GetUserActivityInput $input): GetUserActivityOutput
     {
+        $target = UserId::fromString($input->userId);
+        if (!$input->acting->owns($target) && !$input->acting->isAdmin()) {
+            throw new ForbiddenException();
+        }
+
         $forumData   = $this->forum->findPostsByUserId($input->userId, 5);
         $eventRows   = $this->events->findRegistrationsByUserId($input->userId);
 
