@@ -28,6 +28,7 @@ final class SubmitProjectProposal
 
         $proposal = new ProjectProposal(
             ProjectProposalId::generate(),
+            $input->acting->activeTenant,
             $input->acting->id->value(),
             $authorName,
             $authorEmail,

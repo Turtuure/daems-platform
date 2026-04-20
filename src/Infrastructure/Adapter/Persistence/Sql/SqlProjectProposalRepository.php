@@ -16,10 +16,11 @@ final class SqlProjectProposalRepository implements ProjectProposalRepositoryInt
     {
         $this->db->execute(
             'INSERT INTO project_proposals
-                (id, user_id, author_name, author_email, title, category, summary, description, status, created_at)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+                (id, tenant_id, user_id, author_name, author_email, title, category, summary, description, status, created_at)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
             [
                 $proposal->id()->value(),
+                $proposal->tenantId()->value(),
                 $proposal->userId(),
                 $proposal->authorName(),
                 $proposal->authorEmail(),
