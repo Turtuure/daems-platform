@@ -16,6 +16,10 @@ final class RegisterUser
 
     public function execute(RegisterUserInput $input): RegisterUserOutput
     {
+        if (!$input->acceptedTerms) {
+            return new RegisterUserOutput(null, 'You must accept the terms to create an account.');
+        }
+
         if (strlen($input->password) > 72) {
             return new RegisterUserOutput(null, 'Password must be at most 72 bytes.');
         }

@@ -69,9 +69,14 @@ final class AuthController
         $email    = trim($request->string('email') ?? '');
         $password = $request->string('password') ?? '';
         $dob      = trim($request->string('date_of_birth') ?? '');
+        $terms    = (bool) $request->input('terms_accepted');
 
         if ($name === '' || $email === '' || $password === '' || $dob === '') {
             return Response::badRequest('Name, email, password and date of birth are required.');
+        }
+
+        if (!$terms) {
+            return Response::badRequest('You must accept the terms to create an account.');
         }
 
         if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
@@ -87,7 +92,7 @@ final class AuthController
         }
 
         $output = $this->registerUser->execute(
-            new RegisterUserInput($name, $email, $password, $dob),
+            new RegisterUserInput($name, $email, $password, $dob, $terms),
         );
 
         if ($output->error !== null) {

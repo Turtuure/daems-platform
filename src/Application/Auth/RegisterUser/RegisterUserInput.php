@@ -11,5 +11,6 @@ final class RegisterUserInput
         public readonly string $email,
         public readonly string $password,
         public readonly string $dateOfBirth,
+        public readonly bool $acceptedTerms = false,
     ) {}
 }

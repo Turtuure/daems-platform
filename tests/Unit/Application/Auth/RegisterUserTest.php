@@ -20,7 +20,19 @@ final class RegisterUserTest extends TestCase
             $overrides['email']       ?? 'john@example.com',
             $overrides['password']    ?? 'SecurePass1!',
             $overrides['dateOfBirth'] ?? '1990-05-20',
+            $overrides['acceptedTerms'] ?? true,
         );
+    }
+
+    public function testRejectsRegistrationWithoutTermsAccepted(): void
+    {
+        $repo = $this->createMock(UserRepositoryInterface::class);
+        $repo->expects($this->never())->method('save');
+
+        $out = (new RegisterUser($repo))->execute($this->makeInput(['acceptedTerms' => false]));
+
+        $this->assertNull($out->id);
+        $this->assertSame('You must accept the terms to create an account.', $out->error);
     }
 
     public function testReturnsIdOnSuccessfulRegistration(): void
