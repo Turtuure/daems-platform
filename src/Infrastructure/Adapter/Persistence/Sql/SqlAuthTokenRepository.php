@@ -69,6 +69,14 @@ final class SqlAuthTokenRepository implements AuthTokenRepositoryInterface
         );
     }
 
+    public function revokeAllForUser(string $userId): void
+    {
+        $this->db->execute(
+            'DELETE FROM auth_tokens WHERE user_id = ?',
+            [$userId],
+        );
+    }
+
     /**
      * @param array<string, mixed> $row
      */

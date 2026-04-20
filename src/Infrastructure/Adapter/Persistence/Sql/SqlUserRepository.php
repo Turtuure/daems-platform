@@ -131,8 +131,33 @@ final class SqlUserRepository implements UserRepositoryInterface
         $this->db->execute('DELETE FROM users WHERE id = ?', [$id]);
     }
 
+    public function anonymise(string $userId, \DateTimeImmutable $now): void
+    {
+        $this->db->execute(
+            "UPDATE users
+             SET name             = 'Anonyymi',
+                 email            = CONCAT('anon-', id, '@anon.local'),
+                 date_of_birth    = NULL,
+                 country          = '',
+                 address_street   = '',
+                 address_zip      = '',
+                 address_city     = '',
+                 address_country  = '',
+                 password_hash    = NULL,
+                 membership_status = 'terminated',
+                 deleted_at       = ?
+             WHERE id = ?",
+            [$now->format('Y-m-d H:i:s'), $userId],
+        );
+    }
+
     private function hydrate(array $row): User
     {
+        $deletedAt = null;
+        if (isset($row['deleted_at']) && is_string($row['deleted_at']) && $row['deleted_at'] !== '') {
+            $deletedAt = new \DateTimeImmutable($row['deleted_at']);
+        }
+
         return new User(
             id:              UserId::fromString($row['id']),
             name:            $row['name'],
@@ -149,6 +174,7 @@ final class SqlUserRepository implements UserRepositoryInterface
             memberNumber:    $row['member_number'] ?? null,
             createdAt:       $row['created_at'] ?? '',
             isPlatformAdmin: (bool) ($row['is_platform_admin'] ?? false),
+            deletedAt:       $deletedAt,
         );
     }
 }

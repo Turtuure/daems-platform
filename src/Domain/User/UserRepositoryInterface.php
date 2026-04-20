@@ -33,4 +33,6 @@ interface UserRepositoryInterface
     public function updatePassword(string $id, string $newHash): void;
 
     public function deleteById(string $id): void;
+
+    public function anonymise(string $userId, \DateTimeImmutable $now): void;
 }

@@ -17,4 +17,6 @@ interface AuthTokenRepositoryInterface
     public function revoke(AuthTokenId $id, DateTimeImmutable $at): void;
 
     public function revokeByHash(string $hash, DateTimeImmutable $at): void;
+
+    public function revokeAllForUser(string $userId): void;
 }

@@ -46,6 +46,14 @@ final class SqlUserTenantRepository implements UserTenantRepositoryInterface
         $stmt->execute([$userId->value(), $tenantId->value()]);
     }
 
+    public function markAllLeftForUser(string $userId, \DateTimeImmutable $now): void
+    {
+        $stmt = $this->pdo->prepare(
+            'UPDATE user_tenants SET left_at = ? WHERE user_id = ? AND left_at IS NULL'
+        );
+        $stmt->execute([$now->format('Y-m-d H:i:s'), $userId]);
+    }
+
     /** @return list<UserTenantRole> */
     public function rolesForUser(UserId $userId): array
     {

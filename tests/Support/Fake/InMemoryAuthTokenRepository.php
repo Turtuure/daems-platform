@@ -61,6 +61,15 @@ final class InMemoryAuthTokenRepository implements AuthTokenRepositoryInterface
         }
     }
 
+    public function revokeAllForUser(string $userId): void
+    {
+        foreach (array_keys($this->byHash) as $hash) {
+            if ($this->byHash[$hash]->userId()->value() === $userId) {
+                unset($this->byHash[$hash]);
+            }
+        }
+    }
+
     private function replace(string $hash, AuthToken $t, DateTimeImmutable $revokedAt): void
     {
         $this->byHash[$hash] = AuthToken::fromPersistence(

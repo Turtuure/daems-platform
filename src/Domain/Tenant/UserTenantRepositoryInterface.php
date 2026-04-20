@@ -18,4 +18,7 @@ interface UserTenantRepositoryInterface
 
     /** @return list<UserTenantRole> active memberships for this user */
     public function rolesForUser(UserId $userId): array;
+
+    /** Mark all active tenant memberships for a user as left. */
+    public function markAllLeftForUser(string $userId, \DateTimeImmutable $now): void;
 }

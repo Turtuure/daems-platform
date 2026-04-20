@@ -49,6 +49,17 @@ final class InMemoryUserTenantRepository implements UserTenantRepositoryInterfac
         return $stored !== null && $stored->value === $role;
     }
 
+    public function markAllLeftForUser(string $userId, \DateTimeImmutable $now): void
+    {
+        // In the in-memory fake, we remove active memberships for the user
+        // (the real SQL sets left_at; here we just track detachment by key removal).
+        foreach (array_keys($this->roles) as $key) {
+            if (str_starts_with($key, $userId . ':')) {
+                unset($this->roles[$key]);
+            }
+        }
+    }
+
     private function key(UserId $userId, TenantId $tenantId): string
     {
         return $userId->value() . ':' . $tenantId->value();

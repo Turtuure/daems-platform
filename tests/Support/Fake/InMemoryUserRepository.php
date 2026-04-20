@@ -126,4 +126,34 @@ final class InMemoryUserRepository implements UserRepositoryInterface
         unset($this->idByEmail[strtolower($u->email())]);
         unset($this->byId[$id]);
     }
+
+    public function anonymise(string $userId, \DateTimeImmutable $now): void
+    {
+        $u = $this->byId[$userId] ?? null;
+        if ($u === null) {
+            return;
+        }
+        $anonEmail = 'anon-' . $userId . '@anon.local';
+        unset($this->idByEmail[strtolower($u->email())]);
+        $anon = new \Daems\Domain\User\User(
+            id:              $u->id(),
+            name:            'Anonyymi',
+            email:           $anonEmail,
+            passwordHash:    null,
+            dateOfBirth:     null,
+            country:         '',
+            addressStreet:   '',
+            addressZip:      '',
+            addressCity:     '',
+            addressCountry:  '',
+            membershipType:  $u->membershipType(),
+            membershipStatus: 'terminated',
+            memberNumber:    $u->memberNumber(),
+            createdAt:       $u->createdAt(),
+            isPlatformAdmin: $u->isPlatformAdmin(),
+            deletedAt:       $now,
+        );
+        $this->byId[$userId] = $anon;
+        $this->idByEmail[strtolower($anonEmail)] = $userId;
+    }
 }
