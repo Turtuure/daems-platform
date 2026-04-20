@@ -141,6 +141,10 @@ final class InMemoryEventRepository implements EventRepositoryInterface
             $this->registrations,
             static fn(EventRegistration $r): bool => !($r->eventId() === $eventId && $r->userId() === $userId),
         ));
+        $this->adminRegistrations = array_values(array_filter(
+            $this->adminRegistrations,
+            static fn(array $r): bool => !($r['event_id'] === $eventId && $r['user_id'] === $userId),
+        ));
     }
 
     public function isRegistered(string $eventId, string $userId): bool
