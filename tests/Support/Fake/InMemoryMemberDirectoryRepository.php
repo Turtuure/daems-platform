@@ -63,6 +63,7 @@ final class InMemoryMemberDirectoryRepository implements MemberDirectoryReposito
                 $this->entries[$i] = new MemberDirectoryEntry(
                     $e->userId, $e->name, $e->email, $e->membershipType,
                     $newStatus, $e->memberNumber, $e->roleInTenant, $e->joinedAt,
+                    $e->country, $e->dateOfBirth, $e->createdAt,
                 );
                 break;
             }

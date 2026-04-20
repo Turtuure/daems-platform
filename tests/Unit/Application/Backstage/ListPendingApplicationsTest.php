@@ -64,7 +64,7 @@ final class ListPendingApplicationsTest extends TestCase
         );
 
         self::assertCount(1, $out->member);
-        self::assertSame('Alice', $out->member[0]->displayName);
+        self::assertSame('Alice', $out->member[0]->name());
     }
 
     public function testPlatformAdminAllowedEvenWithoutTenantRole(): void

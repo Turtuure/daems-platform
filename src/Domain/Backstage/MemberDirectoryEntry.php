@@ -14,21 +14,27 @@ final class MemberDirectoryEntry
         public readonly string $membershipStatus,
         public readonly ?string $memberNumber,
         public readonly ?string $roleInTenant,
-        public readonly string $joinedAt,        // ISO-8601
+        public readonly string $joinedAt,        // ISO-8601 (membership start)
+        public readonly ?string $country,
+        public readonly ?string $dateOfBirth,
+        public readonly string $createdAt,       // user account created_at
     ) {}
 
     /** @return array<string, string|null> */
     public function toArray(): array
     {
         return [
-            'userId'           => $this->userId,
-            'name'             => $this->name,
-            'email'            => $this->email,
-            'membershipType'   => $this->membershipType,
-            'membershipStatus' => $this->membershipStatus,
-            'memberNumber'     => $this->memberNumber,
-            'roleInTenant'     => $this->roleInTenant,
-            'joinedAt'         => $this->joinedAt,
+            'id'                    => $this->userId,
+            'name'                  => $this->name,
+            'email'                 => $this->email,
+            'membership_type'       => $this->membershipType,
+            'membership_status'     => $this->membershipStatus,
+            'member_number'         => $this->memberNumber,
+            'role_in_tenant'        => $this->roleInTenant,
+            'country'               => $this->country,
+            'date_of_birth'         => $this->dateOfBirth,
+            'created_at'            => $this->createdAt,
+            'membership_started_at' => $this->joinedAt,
         ];
     }
 }

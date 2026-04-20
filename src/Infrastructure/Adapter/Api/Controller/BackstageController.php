@@ -98,7 +98,7 @@ final class BackstageController
             return $this->csvResponse($out->entries, $acting->activeTenant->value());
         }
 
-        return Response::json($out->toArray());
+        return Response::json(['data' => $out->toArray()]);
     }
 
     public function changeMemberStatus(Request $request, array $params): Response

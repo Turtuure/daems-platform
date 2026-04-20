@@ -20,21 +20,19 @@ final class ListMembersOutput
 
     /**
      * @return array{
-     *   data: list<array<string, string|null>>,
-     *   meta: array{page:int, per_page:int, total:int, total_pages:int}
+     *   items: list<array<string, string|null>>,
+     *   total: int,
+     *   page: int,
+     *   per_page: int
      * }
      */
     public function toArray(): array
     {
-        $totalPages = $this->perPage > 0 ? (int) ceil($this->total / $this->perPage) : 0;
         return [
-            'data' => array_map(static fn (MemberDirectoryEntry $e) => $e->toArray(), $this->entries),
-            'meta' => [
-                'page'        => $this->page,
-                'per_page'    => $this->perPage,
-                'total'       => $this->total,
-                'total_pages' => $totalPages,
-            ],
+            'items'    => array_map(static fn (MemberDirectoryEntry $e) => $e->toArray(), $this->entries),
+            'total'    => $this->total,
+            'page'     => $this->page,
+            'per_page' => $this->perPage,
         ];
     }
 }
