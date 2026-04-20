@@ -4,12 +4,12 @@ declare(strict_types=1);
 
 namespace Daems\Application\Membership\SubmitMemberApplication;
 
-use Daems\Domain\Auth\ActingUser;
+use Daems\Domain\Tenant\TenantId;
 
 final class SubmitMemberApplicationInput
 {
     public function __construct(
-        public readonly ActingUser $acting,
+        public readonly TenantId $tenantId,
         public readonly string $name,
         public readonly string $email,
         public readonly string $dateOfBirth,

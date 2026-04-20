@@ -136,14 +136,14 @@ return static function (Router $router, Container $container): void {
         return $container->make(EventController::class)->unregister($req, $params);
     }, [TenantContextMiddleware::class, AuthMiddleware::class]);
 
-    // Applications — protected
+    // Applications — public (anyone can apply for membership or supporter status)
     $router->post('/api/v1/applications/member', static function (Request $req) use ($container): Response {
         return $container->make(ApplicationController::class)->member($req);
-    }, [TenantContextMiddleware::class, AuthMiddleware::class]);
+    }, [TenantContextMiddleware::class]);
 
     $router->post('/api/v1/applications/supporter', static function (Request $req) use ($container): Response {
         return $container->make(ApplicationController::class)->supporter($req);
-    }, [TenantContextMiddleware::class, AuthMiddleware::class]);
+    }, [TenantContextMiddleware::class]);
 
     // Auth
     $router->post('/api/v1/auth/login', static function (Request $req) use ($container): Response {

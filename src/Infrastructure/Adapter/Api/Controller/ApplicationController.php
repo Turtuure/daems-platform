@@ -8,6 +8,7 @@ use Daems\Application\Membership\SubmitMemberApplication\SubmitMemberApplication
 use Daems\Application\Membership\SubmitMemberApplication\SubmitMemberApplicationInput;
 use Daems\Application\Membership\SubmitSupporterApplication\SubmitSupporterApplication;
 use Daems\Application\Membership\SubmitSupporterApplication\SubmitSupporterApplicationInput;
+use Daems\Domain\Tenant\Tenant;
 use Daems\Infrastructure\Framework\Http\Request;
 use Daems\Infrastructure\Framework\Http\Response;
 
@@ -20,7 +21,7 @@ final class ApplicationController
 
     public function member(Request $request): Response
     {
-        $acting = $request->requireActingUser();
+        $tenantId = $this->resolveTenantId($request);
 
         $name        = trim($request->string('name') ?? '');
         $email       = trim($request->string('email') ?? '');
@@ -38,7 +39,7 @@ final class ApplicationController
         }
 
         $output = $this->submitMember->execute(
-            new SubmitMemberApplicationInput($acting, $name, $email, $dob, $country, $motivation, $howHeard),
+            new SubmitMemberApplicationInput($tenantId, $name, $email, $dob, $country, $motivation, $howHeard),
         );
 
         return Response::json(['data' => ['id' => $output->id]], 201);
@@ -46,7 +47,7 @@ final class ApplicationController
 
     public function supporter(Request $request): Response
     {
-        $acting = $request->requireActingUser();
+        $tenantId = $this->resolveTenantId($request);
 
         $orgName       = trim($request->string('org_name') ?? '');
         $contactPerson = trim($request->string('contact_person') ?? '');
@@ -65,9 +66,18 @@ final class ApplicationController
         }
 
         $output = $this->submitSupporter->execute(
-            new SubmitSupporterApplicationInput($acting, $orgName, $contactPerson, $regNo, $email, $country, $motivation, $howHeard),
+            new SubmitSupporterApplicationInput($tenantId, $orgName, $contactPerson, $regNo, $email, $country, $motivation, $howHeard),
         );
 
         return Response::json(['data' => ['id' => $output->id]], 201);
+    }
+
+    private function resolveTenantId(Request $request): \Daems\Domain\Tenant\TenantId
+    {
+        $tenant = $request->attribute('tenant');
+        if (!$tenant instanceof Tenant) {
+            throw new \RuntimeException('TenantContextMiddleware must run before ApplicationController');
+        }
+        return $tenant->id;
     }
 }
