@@ -4,20 +4,32 @@ declare(strict_types=1);
 
 namespace Daems\Tests\Unit\Application\Backstage;
 
+use Daems\Application\Backstage\ActivateMember\MemberActivationService;
+use Daems\Application\Backstage\ActivateSupporter\SupporterActivationService;
 use Daems\Application\Backstage\DecideApplication\DecideApplication;
 use Daems\Application\Backstage\DecideApplication\DecideApplicationInput;
+use Daems\Application\Invite\IssueInvite\IssueInvite;
 use Daems\Domain\Auth\ActingUser;
 use Daems\Domain\Auth\ForbiddenException;
+use Daems\Domain\Config\BaseUrlResolverInterface;
+use Daems\Domain\Invite\TokenGeneratorInterface;
 use Daems\Domain\Membership\MemberApplication;
 use Daems\Domain\Membership\MemberApplicationId;
-use Daems\Domain\Membership\MemberApplicationRepositoryInterface;
-use Daems\Domain\Membership\SupporterApplicationRepositoryInterface;
 use Daems\Domain\Shared\Clock;
 use Daems\Domain\Shared\NotFoundException;
 use Daems\Domain\Shared\ValidationException;
 use Daems\Domain\Tenant\TenantId;
 use Daems\Domain\Tenant\UserTenantRole;
 use Daems\Domain\User\UserId;
+use Daems\Tests\Support\Fake\ImmediateTransactionManager;
+use Daems\Tests\Support\Fake\InMemoryAdminApplicationDismissalRepository;
+use Daems\Tests\Support\Fake\InMemoryMemberApplicationRepository;
+use Daems\Tests\Support\Fake\InMemoryMemberStatusAuditRepository;
+use Daems\Tests\Support\Fake\InMemorySupporterApplicationRepository;
+use Daems\Tests\Support\Fake\InMemoryTenantMemberCounterRepository;
+use Daems\Tests\Support\Fake\InMemoryUserInviteRepository;
+use Daems\Tests\Support\Fake\InMemoryUserRepository;
+use Daems\Tests\Support\Fake\InMemoryUserTenantRepository;
 use DateTimeImmutable;
 use PHPUnit\Framework\TestCase;
 
@@ -43,14 +55,67 @@ final class DecideApplicationTest extends TestCase
         );
     }
 
+    private function buildSut(
+        InMemoryMemberApplicationRepository $memberApps,
+        InMemorySupporterApplicationRepository $supporterApps,
+    ): DecideApplication {
+        $users      = new InMemoryUserRepository();
+        $userTenants = new InMemoryUserTenantRepository();
+        $counters   = new InMemoryTenantMemberCounterRepository();
+        $audit      = new InMemoryMemberStatusAuditRepository();
+        $inviteRepo = new InMemoryUserInviteRepository();
+        $dismissals = new InMemoryAdminApplicationDismissalRepository();
+
+        $ids = new class implements \Daems\Domain\Shared\IdGeneratorInterface {
+            private int $i = 0;
+            private array $pool = [
+                '01958000-0000-7000-8000-000000000090',
+                '01958000-0000-7000-8000-000000000091',
+                '01958000-0000-7000-8000-000000000092',
+            ];
+            public function generate(): string
+            {
+                return $this->pool[$this->i++ % count($this->pool)];
+            }
+        };
+
+        $memberActivation = new MemberActivationService(
+            $users, $userTenants, $counters, $audit, $this->clock, $ids,
+        );
+        $supporterActivation = new SupporterActivationService(
+            $users, $userTenants, $this->clock, $ids,
+        );
+
+        $tokenGen = new class implements TokenGeneratorInterface {
+            public function generate(): string { return 'tok'; }
+        };
+        $urls = new class implements BaseUrlResolverInterface {
+            public function resolveFrontendBaseUrl(string $tenantId): string { return 'https://x.test'; }
+        };
+        $issueInvite = new IssueInvite($inviteRepo, $tokenGen, $urls, $this->clock, $ids);
+
+        return new DecideApplication(
+            $memberApps,
+            $supporterApps,
+            $memberActivation,
+            $supporterActivation,
+            $issueInvite,
+            $dismissals,
+            new ImmediateTransactionManager(),
+            $this->clock,
+        );
+    }
+
     public function testNonAdminForbidden(): void
     {
         $this->expectException(ForbiddenException::class);
 
-        $m = $this->createMock(MemberApplicationRepositoryInterface::class);
-        $s = $this->createMock(SupporterApplicationRepositoryInterface::class);
+        $sut = $this->buildSut(
+            new InMemoryMemberApplicationRepository(),
+            new InMemorySupporterApplicationRepository(),
+        );
 
-        (new DecideApplication($m, $s, $this->clock))->execute(
+        $sut->execute(
             new DecideApplicationInput($this->acting(UserTenantRole::Member), 'member', 'id', 'approved', null),
         );
     }
@@ -59,10 +124,12 @@ final class DecideApplicationTest extends TestCase
     {
         $this->expectException(ValidationException::class);
 
-        $m = $this->createMock(MemberApplicationRepositoryInterface::class);
-        $s = $this->createMock(SupporterApplicationRepositoryInterface::class);
+        $sut = $this->buildSut(
+            new InMemoryMemberApplicationRepository(),
+            new InMemorySupporterApplicationRepository(),
+        );
 
-        (new DecideApplication($m, $s, $this->clock))->execute(
+        $sut->execute(
             new DecideApplicationInput($this->acting(UserTenantRole::Admin), 'member', 'id', 'maybe', null),
         );
     }
@@ -71,26 +138,27 @@ final class DecideApplicationTest extends TestCase
     {
         $this->expectException(NotFoundException::class);
 
-        $m = $this->createMock(MemberApplicationRepositoryInterface::class);
-        $m->method('findByIdForTenant')->willReturn(null);
-        $s = $this->createMock(SupporterApplicationRepositoryInterface::class);
+        $memberApps = new InMemoryMemberApplicationRepository();
+        // No app seeded — findByIdForTenant returns null
 
-        (new DecideApplication($m, $s, $this->clock))->execute(
+        $sut = $this->buildSut($memberApps, new InMemorySupporterApplicationRepository());
+
+        $sut->execute(
             new DecideApplicationInput($this->acting(UserTenantRole::Admin), 'member', 'id', 'approved', null),
         );
     }
 
     public function testRecordsDecisionForMember(): void
     {
+        $memberApps = new InMemoryMemberApplicationRepository();
         $app = new MemberApplication(
-            MemberApplicationId::generate(), $this->tenant, 'A', 'a@x', '1990-01-01', null, 'm', null, 'pending',
+            MemberApplicationId::generate(), $this->tenant, 'A', 'a@x.test', '1990-01-01', null, 'm', null, 'pending',
         );
-        $m = $this->createMock(MemberApplicationRepositoryInterface::class);
-        $m->method('findByIdForTenant')->willReturn($app);
-        $m->expects($this->once())->method('recordDecision');
-        $s = $this->createMock(SupporterApplicationRepositoryInterface::class);
+        $memberApps->save($app);
 
-        $out = (new DecideApplication($m, $s, $this->clock))->execute(
+        $sut = $this->buildSut($memberApps, new InMemorySupporterApplicationRepository());
+
+        $out = $sut->execute(
             new DecideApplicationInput($this->acting(UserTenantRole::Admin), 'member', $app->id()->value(), 'approved', 'welcome'),
         );
 
