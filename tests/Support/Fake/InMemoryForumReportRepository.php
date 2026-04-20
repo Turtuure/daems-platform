@@ -209,4 +209,39 @@ final class InMemoryForumReportRepository implements ForumReportRepositoryInterf
         }
         return count($seen);
     }
+
+    /**
+     * Test helper: seed an OPEN report with a unique generated id and a monotonically
+     * increasing createdAt (to keep sort order deterministic across rapid seeds).
+     */
+    public function seedOpen(
+        TenantId $tenantId,
+        string $targetType,
+        string $targetId,
+        string $reporterUserId,
+        string $reasonCategory,
+        ?string $reasonDetail = null,
+    ): void {
+        $seq = count($this->reports) + 1;
+        $createdAt = (new DateTimeImmutable('2025-01-01 00:00:00'))
+            ->modify('+' . $seq . ' seconds')
+            ->format('Y-m-d H:i:s');
+
+        $report = new ForumReport(
+            ForumReportId::generate(),
+            $tenantId,
+            $targetType,
+            $targetId,
+            $reporterUserId,
+            $reasonCategory,
+            $reasonDetail,
+            ForumReport::STATUS_OPEN,
+            null,
+            null,
+            null,
+            null,
+            $createdAt,
+        );
+        $this->upsert($report);
+    }
 }
