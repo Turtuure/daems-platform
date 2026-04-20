@@ -37,8 +37,8 @@ use Daems\Application\Project\LikeProjectComment\LikeProjectComment;
 use Daems\Application\Project\ListProjects\ListProjects;
 use Daems\Application\Project\SubmitProjectProposal\SubmitProjectProposal;
 use Daems\Application\Project\UpdateProject\UpdateProject;
+use Daems\Application\User\AnonymiseAccount\AnonymiseAccount;
 use Daems\Application\User\ChangePassword\ChangePassword;
-use Daems\Application\User\DeleteAccount\DeleteAccount;
 use Daems\Application\User\GetProfile\GetProfile;
 use Daems\Application\User\GetUserActivity\GetUserActivity;
 use Daems\Application\User\UpdateProfile\UpdateProfile;
@@ -244,7 +244,15 @@ final class KernelHarness
         ));
         $container->bind(UpdateProfile::class, static fn(Container $c) => new UpdateProfile($c->make(UserRepositoryInterface::class)));
         $container->bind(ChangePassword::class, static fn(Container $c) => new ChangePassword($c->make(UserRepositoryInterface::class)));
-        $container->bind(DeleteAccount::class, static fn(Container $c) => new DeleteAccount($c->make(UserRepositoryInterface::class)));
+        $container->bind(AnonymiseAccount::class, static fn(Container $c) => new AnonymiseAccount(
+            $c->make(UserRepositoryInterface::class),
+            $c->make(UserTenantRepositoryInterface::class),
+            $c->make(AuthTokenRepositoryInterface::class),
+            $c->make(\Daems\Domain\Membership\MemberStatusAuditRepositoryInterface::class),
+            $c->make(\Daems\Domain\Shared\TransactionManagerInterface::class),
+            $c->make(Clock::class),
+            $c->make(\Daems\Domain\Shared\IdGeneratorInterface::class),
+        ));
         $container->bind(GetUserActivity::class, static fn(Container $c) => new GetUserActivity(
             $c->make(ForumRepositoryInterface::class),
             $c->make(EventRepositoryInterface::class),
@@ -377,7 +385,7 @@ final class KernelHarness
             $c->make(UpdateProfile::class),
             $c->make(ChangePassword::class),
             $c->make(GetUserActivity::class),
-            $c->make(DeleteAccount::class),
+            $c->make(AnonymiseAccount::class),
         ));
         $container->bind(ProjectController::class, static fn(Container $c) => new ProjectController(
             $c->make(ListProjects::class),

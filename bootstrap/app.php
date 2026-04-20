@@ -17,8 +17,8 @@ use Daems\Application\Admin\GetAdminStats\GetAdminStats;
 use Daems\Application\Auth\GetAuthMe\GetAuthMe;
 use Daems\Application\Auth\LoginUser\LoginUser;
 use Daems\Application\Auth\RegisterUser\RegisterUser;
+use Daems\Application\User\AnonymiseAccount\AnonymiseAccount;
 use Daems\Application\User\ChangePassword\ChangePassword;
-use Daems\Application\User\DeleteAccount\DeleteAccount;
 use Daems\Application\User\GetProfile\GetProfile;
 use Daems\Application\User\GetUserActivity\GetUserActivity;
 use Daems\Application\User\UpdateProfile\UpdateProfile;
@@ -457,8 +457,16 @@ $container->bind(UpdateProfile::class,
 $container->bind(ChangePassword::class,
     static fn(Container $c) => new ChangePassword($c->make(UserRepositoryInterface::class)),
 );
-$container->bind(DeleteAccount::class,
-    static fn(Container $c) => new DeleteAccount($c->make(UserRepositoryInterface::class)),
+$container->bind(AnonymiseAccount::class,
+    static fn(Container $c) => new AnonymiseAccount(
+        $c->make(UserRepositoryInterface::class),
+        $c->make(UserTenantRepositoryInterface::class),
+        $c->make(AuthTokenRepositoryInterface::class),
+        $c->make(\Daems\Domain\Membership\MemberStatusAuditRepositoryInterface::class),
+        $c->make(\Daems\Domain\Shared\TransactionManagerInterface::class),
+        $c->make(Clock::class),
+        $c->make(\Daems\Domain\Shared\IdGeneratorInterface::class),
+    ),
 );
 $container->bind(GetUserActivity::class,
     static fn(Container $c) => new GetUserActivity(
@@ -472,7 +480,7 @@ $container->bind(UserController::class,
         $c->make(UpdateProfile::class),
         $c->make(ChangePassword::class),
         $c->make(GetUserActivity::class),
-        $c->make(DeleteAccount::class),
+        $c->make(AnonymiseAccount::class),
     ),
 );
 

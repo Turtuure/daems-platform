@@ -4,16 +4,19 @@ declare(strict_types=1);
 
 namespace Daems\Infrastructure\Adapter\Api\Controller;
 
+use Daems\Application\User\AnonymiseAccount\AnonymiseAccount;
+use Daems\Application\User\AnonymiseAccount\AnonymiseAccountInput;
 use Daems\Application\User\ChangePassword\ChangePassword;
 use Daems\Application\User\ChangePassword\ChangePasswordInput;
-use Daems\Application\User\DeleteAccount\DeleteAccount;
-use Daems\Application\User\DeleteAccount\DeleteAccountInput;
 use Daems\Application\User\GetProfile\GetProfile;
 use Daems\Application\User\GetProfile\GetProfileInput;
 use Daems\Application\User\GetUserActivity\GetUserActivity;
 use Daems\Application\User\GetUserActivity\GetUserActivityInput;
 use Daems\Application\User\UpdateProfile\UpdateProfile;
 use Daems\Application\User\UpdateProfile\UpdateProfileInput;
+use Daems\Domain\Auth\ForbiddenException;
+use Daems\Domain\Shared\NotFoundException;
+use Daems\Domain\Shared\ValidationException;
 use Daems\Infrastructure\Framework\Http\Request;
 use Daems\Infrastructure\Framework\Http\Response;
 
@@ -24,7 +27,7 @@ final class UserController
         private readonly UpdateProfile $updateProfile,
         private readonly ChangePassword $changePassword,
         private readonly GetUserActivity $getUserActivity,
-        private readonly DeleteAccount $deleteAccount,
+        private readonly AnonymiseAccount $anonymiseAccount,
     ) {}
 
     public function profile(Request $request, array $params): Response
@@ -76,7 +79,7 @@ final class UserController
         return Response::json(['data' => ['updated' => true]]);
     }
 
-    public function delete(Request $request, array $params): Response
+    public function anonymise(Request $request, array $params): Response
     {
         $id = $params['id'] ?? '';
         if ($id === '') {
@@ -84,13 +87,17 @@ final class UserController
         }
         $acting = $request->requireActingUser();
 
-        $output = $this->deleteAccount->execute(new DeleteAccountInput($acting, $id));
-
-        if (!$output->deleted) {
-            return Response::json(['error' => $output->error], 404);
+        try {
+            $this->anonymiseAccount->execute(new AnonymiseAccountInput($id, $acting));
+        } catch (ForbiddenException $e) {
+            return Response::json(['error' => 'forbidden', 'message' => $e->getMessage()], 403);
+        } catch (NotFoundException) {
+            return Response::json(['error' => 'not_found'], 404);
+        } catch (ValidationException $e) {
+            return Response::json(['error' => 'validation_failed', 'errors' => $e->fields()], 422);
         }
 
-        return Response::json(['data' => ['deleted' => true]]);
+        return Response::json(null, 204);
     }
 
     public function activity(Request $request, array $params): Response

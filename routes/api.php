@@ -123,8 +123,8 @@ return static function (Router $router, Container $container): void {
         return $container->make(UserController::class)->activity($req, $params);
     }, [TenantContextMiddleware::class, AuthMiddleware::class]);
 
-    $router->post('/api/v1/users/{id}/delete', static function (Request $req, array $params) use ($container): Response {
-        return $container->make(UserController::class)->delete($req, $params);
+    $router->post('/api/v1/users/{id}/anonymise', static function (Request $req, array $params) use ($container): Response {
+        return $container->make(UserController::class)->anonymise($req, $params);
     }, [TenantContextMiddleware::class, AuthMiddleware::class]);
 
     // Events — protected mutations

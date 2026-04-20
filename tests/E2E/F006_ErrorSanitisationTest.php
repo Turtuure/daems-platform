@@ -42,7 +42,7 @@ final class F006_ErrorSanitisationTest extends TestCase
         $u = $h->seedUser('u@x.com');
         $token = $h->tokenFor($u);
 
-        $resp = $h->authedRequest('POST', '/api/v1/users/not-a-uuid/delete', $token);
+        $resp = $h->authedRequest('POST', '/api/v1/users/not-a-uuid/anonymise', $token);
         $this->assertSame(500, $resp->status());
         $body = $resp->body();
         $this->assertStringContainsString('Internal server error', $body);
@@ -55,7 +55,7 @@ final class F006_ErrorSanitisationTest extends TestCase
         $u = $h->seedUser('u@x.com');
         $token = $h->tokenFor($u);
 
-        $resp = $h->authedRequest('POST', '/api/v1/users/not-a-uuid/delete', $token);
+        $resp = $h->authedRequest('POST', '/api/v1/users/not-a-uuid/anonymise', $token);
         $this->assertSame(500, $resp->status());
         $this->assertStringContainsString('Invalid UUID', $resp->body());
     }
