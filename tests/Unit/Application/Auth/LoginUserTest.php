@@ -9,6 +9,7 @@ use Daems\Application\Auth\LoginUser\LoginUserInput;
 use Daems\Domain\User\User;
 use Daems\Domain\User\UserId;
 use Daems\Domain\User\UserRepositoryInterface;
+use Daems\Tests\Support\Fake\InMemoryAdminApplicationDismissalRepository;
 use Daems\Tests\Support\Fake\InMemoryAuthLoginAttemptRepository;
 use Daems\Tests\Support\FrozenClock;
 use PHPUnit\Framework\TestCase;
@@ -26,11 +27,15 @@ final class LoginUserTest extends TestCase
         );
     }
 
-    private function uc(?UserRepositoryInterface $repo = null, ?InMemoryAuthLoginAttemptRepository $attempts = null): LoginUser
-    {
+    private function uc(
+        ?UserRepositoryInterface $repo = null,
+        ?InMemoryAuthLoginAttemptRepository $attempts = null,
+        ?InMemoryAdminApplicationDismissalRepository $dismissals = null,
+    ): LoginUser {
         return new LoginUser(
             $repo ?? $this->createMock(UserRepositoryInterface::class),
             $attempts ?? new InMemoryAuthLoginAttemptRepository(),
+            $dismissals ?? new InMemoryAdminApplicationDismissalRepository(),
             FrozenClock::at('2026-04-19T12:00:00Z'),
         );
     }

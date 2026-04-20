@@ -68,7 +68,9 @@ use Daems\Application\Auth\CreateAuthToken\CreateAuthToken;
 use Daems\Application\Auth\LogoutUser\LogoutUser;
 use Daems\Domain\Auth\AuthLoginAttemptRepositoryInterface;
 use Daems\Domain\Auth\AuthTokenRepositoryInterface;
+use Daems\Domain\Dismissal\AdminApplicationDismissalRepositoryInterface;
 use Daems\Domain\Shared\Clock;
+use Daems\Infrastructure\Adapter\Persistence\Sql\SqlAdminApplicationDismissalRepository;
 use Daems\Infrastructure\Adapter\Persistence\Sql\SqlAuthLoginAttemptRepository;
 use Daems\Infrastructure\Adapter\Persistence\Sql\SqlAuthTokenRepository;
 use Daems\Infrastructure\Adapter\Persistence\Sql\SqlTenantRepository;
@@ -249,6 +251,9 @@ $container->singleton(AuthLoginAttemptRepositoryInterface::class,
         $c->make(LoggerInterface::class),
     ),
 );
+$container->singleton(AdminApplicationDismissalRepositoryInterface::class,
+    static fn(Container $c) => new SqlAdminApplicationDismissalRepository($c->make(Connection::class)),
+);
 
 $container->bind(CreateAuthToken::class,
     static fn(Container $c) => new CreateAuthToken(
@@ -315,6 +320,7 @@ $container->bind(LoginUser::class,
     static fn(Container $c) => new LoginUser(
         $c->make(UserRepositoryInterface::class),
         $c->make(AuthLoginAttemptRepositoryInterface::class),
+        $c->make(AdminApplicationDismissalRepositoryInterface::class),
         $c->make(Clock::class),
     ),
 );

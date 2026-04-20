@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Daems\Application\Auth\LoginUser;
 
 use Daems\Domain\Auth\AuthLoginAttemptRepositoryInterface;
+use Daems\Domain\Dismissal\AdminApplicationDismissalRepositoryInterface;
 use Daems\Domain\Shared\Clock;
 use Daems\Domain\User\UserRepositoryInterface;
 
@@ -24,6 +25,7 @@ final class LoginUser
     public function __construct(
         private readonly UserRepositoryInterface $users,
         private readonly AuthLoginAttemptRepositoryInterface $attempts,
+        private readonly AdminApplicationDismissalRepositoryInterface $dismissals,
         private readonly Clock $clock,
     ) {}
 
@@ -50,6 +52,9 @@ final class LoginUser
         if (!$ok) {
             return LoginUserOutput::failure('Invalid email or password.');
         }
+
+        // $user is non-null here because $ok = ($user !== null && $passwordMatches)
+        $this->dismissals->deleteByAdminId($user->id()->value());
 
         return LoginUserOutput::success($user);
     }

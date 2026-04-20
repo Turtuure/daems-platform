@@ -44,6 +44,7 @@ use Daems\Application\User\GetUserActivity\GetUserActivity;
 use Daems\Application\User\UpdateProfile\UpdateProfile;
 use Daems\Domain\Auth\AuthLoginAttemptRepositoryInterface;
 use Daems\Domain\Auth\AuthTokenRepositoryInterface;
+use Daems\Domain\Dismissal\AdminApplicationDismissalRepositoryInterface;
 use Daems\Domain\Event\EventRepositoryInterface;
 use Daems\Domain\Forum\ForumRepositoryInterface;
 use Daems\Domain\Insight\InsightRepositoryInterface;
@@ -84,6 +85,7 @@ use Daems\Tests\Support\Fake\InMemoryAuthTokenRepository;
 use Daems\Tests\Support\Fake\InMemoryEventRepository;
 use Daems\Tests\Support\Fake\InMemoryForumRepository;
 use Daems\Tests\Support\Fake\InMemoryInsightRepository;
+use Daems\Tests\Support\Fake\InMemoryAdminApplicationDismissalRepository;
 use Daems\Tests\Support\Fake\InMemoryMemberApplicationRepository;
 use Daems\Tests\Support\Fake\InMemoryMemberDirectoryRepository;
 use Daems\Tests\Support\Fake\InMemoryProjectProposalRepository;
@@ -111,6 +113,7 @@ final class KernelHarness
     public InMemoryMemberApplicationRepository $memberApps;
     public InMemorySupporterApplicationRepository $supporterApps;
     public InMemoryMemberDirectoryRepository $memberDirectory;
+    public InMemoryAdminApplicationDismissalRepository $dismissals;
     public FrozenClock $clock;
 
     /** @var array<array{0:string, 1:array<string,mixed>}> */
@@ -131,6 +134,7 @@ final class KernelHarness
         $this->memberApps = new InMemoryMemberApplicationRepository();
         $this->supporterApps = new InMemorySupporterApplicationRepository();
         $this->memberDirectory = new InMemoryMemberDirectoryRepository();
+        $this->dismissals = new InMemoryAdminApplicationDismissalRepository();
 
         $logs = &$this->logs;
         $logger = new class ($logs) implements LoggerInterface {
@@ -158,6 +162,7 @@ final class KernelHarness
         });
         $container->singleton(AuthTokenRepositoryInterface::class, fn() => $this->tokens);
         $container->singleton(AuthLoginAttemptRepositoryInterface::class, fn() => $this->attempts);
+        $container->singleton(AdminApplicationDismissalRepositoryInterface::class, fn() => $this->dismissals);
         $container->singleton(ProjectRepositoryInterface::class, fn() => $this->projects);
         $container->singleton(ForumRepositoryInterface::class, fn() => $this->forum);
         $container->singleton(EventRepositoryInterface::class, fn() => $this->events);
@@ -185,6 +190,7 @@ final class KernelHarness
         $container->bind(LoginUser::class, static fn(Container $c) => new LoginUser(
             $c->make(UserRepositoryInterface::class),
             $c->make(AuthLoginAttemptRepositoryInterface::class),
+            $c->make(AdminApplicationDismissalRepositoryInterface::class),
             $c->make(Clock::class),
         ));
         $container->bind(RegisterUser::class, static fn(Container $c) => new RegisterUser(
