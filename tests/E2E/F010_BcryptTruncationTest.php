@@ -18,6 +18,7 @@ final class F010_BcryptTruncationTest extends TestCase
             'email'         => 'trunc@example.com',
             'password'      => str_repeat('a', 73),
             'date_of_birth' => '1990-01-01',
+            'terms_accepted' => true,
         ]);
         $this->assertSame(400, $resp->status());
         $this->assertStringContainsString('72 bytes', $resp->body());
@@ -31,6 +32,7 @@ final class F010_BcryptTruncationTest extends TestCase
             'email'         => 'ok@example.com',
             'password'      => str_repeat('a', 72),
             'date_of_birth' => '1990-01-01',
+            'terms_accepted' => true,
         ]);
         $this->assertSame(201, $resp->status());
     }
@@ -55,7 +57,7 @@ final class F010_BcryptTruncationTest extends TestCase
         // Step 1: registration must reject 73 bytes.
         $reg = $h->request('POST', '/api/v1/auth/register', [
             'name' => 'T', 'email' => 'trunc@example.com',
-            'password' => $p73, 'date_of_birth' => '1990-01-01',
+            'password' => $p73, 'date_of_birth' => '1990-01-01', 'terms_accepted' => true,
         ]);
         $this->assertSame(400, $reg->status(), 'register-73 must be 400');
 
