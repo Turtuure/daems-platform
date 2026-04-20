@@ -172,7 +172,7 @@ final class AnonymiseAccountIntegrationTest extends MigrationTestCase
         $row = $stmt->fetch(PDO::FETCH_ASSOC);
         $this->assertIsArray($row);
         $this->assertSame('terminated', $row['new_status']);
-        $this->assertSame($this->adminId, $row['performed_by_admin_id']);
+        $this->assertSame($this->adminId, $row['performed_by']);
     }
 
     public function test_not_found_throws_exception(): void
