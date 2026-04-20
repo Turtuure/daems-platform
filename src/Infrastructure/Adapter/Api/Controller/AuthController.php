@@ -127,6 +127,7 @@ final class AuthController
             'membership_type'   => $u->membershipType(),
             'membership_status' => $u->membershipStatus(),
             'member_number'     => $u->memberNumber(),
+            'is_platform_admin' => $u->isPlatformAdmin(),
             'created_at'        => $u->createdAt(),
         ];
     }
