@@ -1,0 +1,118 @@
+<?php
+
+declare(strict_types=1);
+
+namespace Daems\Tests\Unit\Application\Backstage;
+
+use Daems\Application\Backstage\DismissApplication\DismissApplication;
+use Daems\Application\Backstage\DismissApplication\DismissApplicationInput;
+use Daems\Domain\Auth\ActingUser;
+use Daems\Domain\Auth\ForbiddenException;
+use Daems\Domain\Shared\ValidationException;
+use Daems\Domain\Tenant\TenantId;
+use Daems\Domain\Tenant\UserTenantRole;
+use Daems\Domain\User\UserId;
+use Daems\Tests\Support\Fake\InMemoryAdminApplicationDismissalRepository;
+use DateTimeImmutable;
+use PHPUnit\Framework\TestCase;
+
+final class DismissApplicationTest extends TestCase
+{
+    private TenantId $tenant;
+
+    protected function setUp(): void
+    {
+        $this->tenant = TenantId::fromString('01958000-0000-7000-8000-000000000001');
+    }
+
+    private function makeClock(): \Daems\Domain\Shared\Clock
+    {
+        return new class implements \Daems\Domain\Shared\Clock {
+            public function now(): DateTimeImmutable
+            {
+                return new DateTimeImmutable('2026-04-20 12:00:00');
+            }
+        };
+    }
+
+    private function makeIds(string $id = 'd-1'): \Daems\Domain\Shared\IdGeneratorInterface
+    {
+        return new class($id) implements \Daems\Domain\Shared\IdGeneratorInterface {
+            public function __construct(private readonly string $id) {}
+            public function generate(): string { return $this->id; }
+        };
+    }
+
+    private function adminActingUser(string $userId = '01958000-0000-7000-8000-000000000010'): ActingUser
+    {
+        return new ActingUser(
+            id: UserId::fromString($userId),
+            email: 'admin@x.com',
+            isPlatformAdmin: false,
+            activeTenant: $this->tenant,
+            roleInActiveTenant: UserTenantRole::Admin,
+        );
+    }
+
+    private function nonAdminActingUser(): ActingUser
+    {
+        return new ActingUser(
+            id: UserId::fromString('01958000-0000-7000-8000-000000000011'),
+            email: 'member@x.com',
+            isPlatformAdmin: false,
+            activeTenant: $this->tenant,
+            roleInActiveTenant: UserTenantRole::Member,
+        );
+    }
+
+    public function test_dismiss_stores_row_keyed_by_admin_and_app(): void
+    {
+        $repo   = new InMemoryAdminApplicationDismissalRepository();
+        $acting = $this->adminActingUser('01958000-0000-7000-8000-000000000010');
+
+        $sut = new DismissApplication($repo, $this->makeClock(), $this->makeIds());
+        $sut->execute(new DismissApplicationInput($acting, '01958000-0000-7000-8000-000000000020', 'member'));
+
+        self::assertSame(
+            ['01958000-0000-7000-8000-000000000020'],
+            $repo->listAppIdsDismissedByAdmin('01958000-0000-7000-8000-000000000010'),
+        );
+    }
+
+    public function test_dismiss_is_idempotent(): void
+    {
+        $repo   = new InMemoryAdminApplicationDismissalRepository();
+        $acting = $this->adminActingUser('01958000-0000-7000-8000-000000000010');
+
+        $sut = new DismissApplication($repo, $this->makeClock(), $this->makeIds());
+        $sut->execute(new DismissApplicationInput($acting, '01958000-0000-7000-8000-000000000020', 'member'));
+        $sut->execute(new DismissApplicationInput($acting, '01958000-0000-7000-8000-000000000020', 'member'));
+
+        self::assertSame(
+            ['01958000-0000-7000-8000-000000000020'],
+            $repo->listAppIdsDismissedByAdmin('01958000-0000-7000-8000-000000000010'),
+        );
+    }
+
+    public function test_rejects_non_admin(): void
+    {
+        $this->expectException(ForbiddenException::class);
+
+        $repo   = new InMemoryAdminApplicationDismissalRepository();
+        $acting = $this->nonAdminActingUser();
+
+        $sut = new DismissApplication($repo, $this->makeClock(), $this->makeIds());
+        $sut->execute(new DismissApplicationInput($acting, '01958000-0000-7000-8000-000000000020', 'member'));
+    }
+
+    public function test_rejects_invalid_app_type(): void
+    {
+        $this->expectException(ValidationException::class);
+
+        $repo   = new InMemoryAdminApplicationDismissalRepository();
+        $acting = $this->adminActingUser();
+
+        $sut = new DismissApplication($repo, $this->makeClock(), $this->makeIds());
+        $sut->execute(new DismissApplicationInput($acting, '01958000-0000-7000-8000-000000000020', 'invalid'));
+    }
+}
