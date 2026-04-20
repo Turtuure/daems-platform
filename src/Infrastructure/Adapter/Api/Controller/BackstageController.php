@@ -4,20 +4,34 @@ declare(strict_types=1);
 
 namespace Daems\Infrastructure\Adapter\Api\Controller;
 
+use Daems\Application\Backstage\ArchiveEvent\ArchiveEvent;
+use Daems\Application\Backstage\ArchiveEvent\ArchiveEventInput;
 use Daems\Application\Backstage\ChangeMemberStatus\ChangeMemberStatus;
 use Daems\Application\Backstage\ChangeMemberStatus\ChangeMemberStatusInput;
+use Daems\Application\Backstage\CreateEvent\CreateEvent;
+use Daems\Application\Backstage\CreateEvent\CreateEventInput;
 use Daems\Application\Backstage\DecideApplication\DecideApplication;
 use Daems\Application\Backstage\DecideApplication\DecideApplicationInput;
 use Daems\Application\Backstage\DismissApplication\DismissApplication;
 use Daems\Application\Backstage\DismissApplication\DismissApplicationInput;
 use Daems\Application\Backstage\GetMemberAudit\GetMemberAudit;
 use Daems\Application\Backstage\GetMemberAudit\GetMemberAuditInput;
+use Daems\Application\Backstage\ListEventRegistrations\ListEventRegistrations;
+use Daems\Application\Backstage\ListEventRegistrations\ListEventRegistrationsInput;
+use Daems\Application\Backstage\ListEventsForAdmin\ListEventsForAdmin;
+use Daems\Application\Backstage\ListEventsForAdmin\ListEventsForAdminInput;
 use Daems\Application\Backstage\ListMembers\ListMembers;
 use Daems\Application\Backstage\ListMembers\ListMembersInput;
 use Daems\Application\Backstage\ListPendingApplications\ListPendingApplications;
 use Daems\Application\Backstage\ListPendingApplications\ListPendingApplicationsForAdmin;
 use Daems\Application\Backstage\ListPendingApplications\ListPendingApplicationsForAdminInput;
 use Daems\Application\Backstage\ListPendingApplications\ListPendingApplicationsInput;
+use Daems\Application\Backstage\PublishEvent\PublishEvent;
+use Daems\Application\Backstage\PublishEvent\PublishEventInput;
+use Daems\Application\Backstage\UnregisterUserFromEvent\UnregisterUserFromEvent;
+use Daems\Application\Backstage\UnregisterUserFromEvent\UnregisterUserFromEventInput;
+use Daems\Application\Backstage\UpdateEvent\UpdateEvent;
+use Daems\Application\Backstage\UpdateEvent\UpdateEventInput;
 use Daems\Domain\Auth\ForbiddenException;
 use Daems\Domain\Shared\NotFoundException;
 use Daems\Domain\Shared\ValidationException;
@@ -34,6 +48,13 @@ final class BackstageController
         private readonly GetMemberAudit $getAudit,
         private readonly ListPendingApplicationsForAdmin $listPendingForAdmin,
         private readonly DismissApplication $dismiss,
+        private readonly ListEventsForAdmin $listEventsForAdmin,
+        private readonly CreateEvent $createEvent,
+        private readonly UpdateEvent $updateEvent,
+        private readonly PublishEvent $publishEvent,
+        private readonly ArchiveEvent $archiveEvent,
+        private readonly ListEventRegistrations $listEventRegistrations,
+        private readonly UnregisterUserFromEvent $unregisterUserFromEvent,
     ) {}
 
     public function pendingApplications(Request $request): Response
@@ -169,6 +190,129 @@ final class BackstageController
         }
 
         return Response::json(null, 204);
+    }
+
+    public function listEvents(Request $request): Response
+    {
+        $acting = $request->requireActingUser();
+        try {
+            $out = $this->listEventsForAdmin->execute(new ListEventsForAdminInput(
+                $acting,
+                $request->string('status'),
+                $request->string('type'),
+            ));
+            return Response::json($out->toArray());
+        } catch (ForbiddenException) {
+            return Response::json(['error' => 'forbidden'], 403);
+        }
+    }
+
+    public function createEvent(Request $request): Response
+    {
+        $acting = $request->requireActingUser();
+        try {
+            $out = $this->createEvent->execute(new CreateEventInput(
+                $acting,
+                (string) $request->string('title'),
+                (string) $request->string('type'),
+                (string) $request->string('event_date'),
+                $request->string('event_time'),
+                $request->string('location'),
+                (bool) $request->input('is_online'),
+                (string) $request->string('description'),
+                (bool) $request->input('publish_immediately'),
+            ));
+            return Response::json(['data' => $out->toArray()], 201);
+        } catch (ForbiddenException) {
+            return Response::json(['error' => 'forbidden'], 403);
+        } catch (ValidationException $e) {
+            return Response::json(['error' => 'validation_failed', 'errors' => $e->fields()], 422);
+        }
+    }
+
+    public function updateEvent(Request $request, array $params): Response
+    {
+        $acting = $request->requireActingUser();
+        $id = (string) ($params['id'] ?? '');
+        try {
+            $gallery = $request->input('gallery_json');
+            $out = $this->updateEvent->execute(new UpdateEventInput(
+                $acting, $id,
+                $request->string('title'),
+                $request->string('type'),
+                $request->string('event_date'),
+                $request->string('event_time'),
+                $request->string('location'),
+                $request->input('is_online') !== null ? (bool) $request->input('is_online') : null,
+                $request->string('description'),
+                $request->string('hero_image'),
+                is_array($gallery) ? $gallery : null,
+            ));
+            return Response::json(['data' => $out->toArray()]);
+        } catch (ForbiddenException) {
+            return Response::json(['error' => 'forbidden'], 403);
+        } catch (NotFoundException) {
+            return Response::json(['error' => 'not_found'], 404);
+        } catch (ValidationException $e) {
+            return Response::json(['error' => 'validation_failed', 'errors' => $e->fields()], 422);
+        }
+    }
+
+    public function publishEvent(Request $request, array $params): Response
+    {
+        $acting = $request->requireActingUser();
+        $id = (string) ($params['id'] ?? '');
+        try {
+            $this->publishEvent->execute(new PublishEventInput($acting, $id));
+            return Response::json(['data' => ['id' => $id, 'status' => 'published']]);
+        } catch (ForbiddenException) {
+            return Response::json(['error' => 'forbidden'], 403);
+        } catch (NotFoundException) {
+            return Response::json(['error' => 'not_found'], 404);
+        }
+    }
+
+    public function archiveEvent(Request $request, array $params): Response
+    {
+        $acting = $request->requireActingUser();
+        $id = (string) ($params['id'] ?? '');
+        try {
+            $this->archiveEvent->execute(new ArchiveEventInput($acting, $id));
+            return Response::json(['data' => ['id' => $id, 'status' => 'archived']]);
+        } catch (ForbiddenException) {
+            return Response::json(['error' => 'forbidden'], 403);
+        } catch (NotFoundException) {
+            return Response::json(['error' => 'not_found'], 404);
+        }
+    }
+
+    public function listEventRegistrations(Request $request, array $params): Response
+    {
+        $acting = $request->requireActingUser();
+        $id = (string) ($params['id'] ?? '');
+        try {
+            $out = $this->listEventRegistrations->execute(new ListEventRegistrationsInput($acting, $id));
+            return Response::json($out->toArray());
+        } catch (ForbiddenException) {
+            return Response::json(['error' => 'forbidden'], 403);
+        } catch (NotFoundException) {
+            return Response::json(['error' => 'not_found'], 404);
+        }
+    }
+
+    public function removeEventRegistration(Request $request, array $params): Response
+    {
+        $acting = $request->requireActingUser();
+        $eventId = (string) ($params['id'] ?? '');
+        $userId  = (string) ($params['user_id'] ?? '');
+        try {
+            $this->unregisterUserFromEvent->execute(new UnregisterUserFromEventInput($acting, $eventId, $userId));
+            return Response::json(null, 204);
+        } catch (ForbiddenException) {
+            return Response::json(['error' => 'forbidden'], 403);
+        } catch (NotFoundException) {
+            return Response::json(['error' => 'not_found'], 404);
+        }
     }
 
     /**
