@@ -213,4 +213,16 @@ return static function (Router $router, Container $container): void {
     $router->get('/api/v1/backstage/members/{id}/audit', static function (Request $req, array $params) use ($container): Response {
         return $container->make(\Daems\Infrastructure\Adapter\Api\Controller\BackstageController::class)->memberAudit($req, $params);
     }, [TenantContextMiddleware::class, AuthMiddleware::class]);
+
+    $router->get('/api/v1/backstage/applications/pending-count', static function (Request $req) use ($container): Response {
+        return $container->make(\Daems\Infrastructure\Adapter\Api\Controller\BackstageController::class)->listPendingForAdmin($req);
+    }, [TenantContextMiddleware::class, AuthMiddleware::class]);
+
+    $router->post('/api/v1/backstage/applications/{type}/{id}/dismiss', static function (Request $req, array $params) use ($container): Response {
+        return $container->make(\Daems\Infrastructure\Adapter\Api\Controller\BackstageController::class)->dismissApplication($req, $params);
+    }, [TenantContextMiddleware::class, AuthMiddleware::class]);
+
+    $router->post('/api/v1/auth/invites/redeem', static function (Request $req) use ($container): Response {
+        return $container->make(AuthController::class)->redeemInvite($req);
+    }, [TenantContextMiddleware::class]);
 };

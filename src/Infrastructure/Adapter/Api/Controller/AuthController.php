@@ -11,8 +11,11 @@ use Daems\Application\Auth\LoginUser\LoginUser;
 use Daems\Application\Auth\LoginUser\LoginUserInput;
 use Daems\Application\Auth\LogoutUser\LogoutUser;
 use Daems\Application\Auth\LogoutUser\LogoutUserInput;
+use Daems\Application\Auth\RedeemInvite\RedeemInvite;
+use Daems\Application\Auth\RedeemInvite\RedeemInviteInput;
 use Daems\Application\Auth\RegisterUser\RegisterUser;
 use Daems\Application\Auth\RegisterUser\RegisterUserInput;
+use Daems\Domain\Shared\ValidationException;
 use Daems\Domain\User\User;
 use Daems\Infrastructure\Framework\Http\Request;
 use Daems\Infrastructure\Framework\Http\Response;
@@ -25,6 +28,7 @@ final class AuthController
         private readonly CreateAuthToken $createAuthToken,
         private readonly LogoutUser $logoutUser,
         private readonly GetAuthMe $getAuthMe,
+        private readonly RedeemInvite $redeemInvite,
     ) {}
 
     public function login(Request $request): Response
@@ -109,6 +113,36 @@ final class AuthController
         $output = $this->getAuthMe->execute($actor, $token);
 
         return Response::json(['data' => $output->toArray()]);
+    }
+
+    public function redeemInvite(Request $request): Response
+    {
+        $rawToken = trim($request->string('token') ?? '');
+        $password = $request->string('password') ?? '';
+
+        if ($rawToken === '' || $password === '') {
+            return Response::badRequest('token and password are required.');
+        }
+
+        try {
+            $output = $this->redeemInvite->execute(new RedeemInviteInput($rawToken, $password));
+        } catch (ValidationException $e) {
+            return Response::json(['error' => 'validation_failed', 'errors' => $e->fields()], 422);
+        }
+
+        $token = $this->createAuthToken->execute(new CreateAuthTokenInput(
+            $output->user->id(),
+            $request->header('User-Agent'),
+            $request->clientIp(),
+        ));
+
+        return Response::json([
+            'data' => [
+                'user'       => $this->projectUser($output->user),
+                'token'      => $token->rawToken,
+                'expires_at' => $token->expiresAt->format('c'),
+            ],
+        ]);
     }
 
     /** @return array<string, mixed> */

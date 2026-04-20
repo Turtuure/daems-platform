@@ -8,11 +8,15 @@ use Daems\Application\Backstage\ChangeMemberStatus\ChangeMemberStatus;
 use Daems\Application\Backstage\ChangeMemberStatus\ChangeMemberStatusInput;
 use Daems\Application\Backstage\DecideApplication\DecideApplication;
 use Daems\Application\Backstage\DecideApplication\DecideApplicationInput;
+use Daems\Application\Backstage\DismissApplication\DismissApplication;
+use Daems\Application\Backstage\DismissApplication\DismissApplicationInput;
 use Daems\Application\Backstage\GetMemberAudit\GetMemberAudit;
 use Daems\Application\Backstage\GetMemberAudit\GetMemberAuditInput;
 use Daems\Application\Backstage\ListMembers\ListMembers;
 use Daems\Application\Backstage\ListMembers\ListMembersInput;
 use Daems\Application\Backstage\ListPendingApplications\ListPendingApplications;
+use Daems\Application\Backstage\ListPendingApplications\ListPendingApplicationsForAdmin;
+use Daems\Application\Backstage\ListPendingApplications\ListPendingApplicationsForAdminInput;
 use Daems\Application\Backstage\ListPendingApplications\ListPendingApplicationsInput;
 use Daems\Domain\Auth\ForbiddenException;
 use Daems\Domain\Shared\NotFoundException;
@@ -28,6 +32,8 @@ final class BackstageController
         private readonly ListMembers $listMembers,
         private readonly ChangeMemberStatus $changeStatus,
         private readonly GetMemberAudit $getAudit,
+        private readonly ListPendingApplicationsForAdmin $listPendingForAdmin,
+        private readonly DismissApplication $dismiss,
     ) {}
 
     public function pendingApplications(Request $request): Response
@@ -133,6 +139,36 @@ final class BackstageController
         }
 
         return Response::json(['data' => $out->toArray()]);
+    }
+
+    public function listPendingForAdmin(Request $request): Response
+    {
+        $acting = $request->requireActingUser();
+
+        try {
+            $out = $this->listPendingForAdmin->execute(new ListPendingApplicationsForAdminInput($acting));
+        } catch (ForbiddenException $e) {
+            return Response::json(['error' => 'forbidden', 'message' => $e->getMessage()], 403);
+        }
+
+        return Response::json(['data' => $out->toArray()]);
+    }
+
+    public function dismissApplication(Request $request, array $params): Response
+    {
+        $acting = $request->requireActingUser();
+        $type   = (string) ($params['type'] ?? '');
+        $id     = (string) ($params['id'] ?? '');
+
+        try {
+            $this->dismiss->execute(new DismissApplicationInput($acting, $id, $type));
+        } catch (ForbiddenException $e) {
+            return Response::json(['error' => 'forbidden', 'message' => $e->getMessage()], 403);
+        } catch (ValidationException $e) {
+            return Response::json(['error' => 'validation_failed', 'errors' => $e->fields()], 422);
+        }
+
+        return Response::json(null, 204);
     }
 
     /**
