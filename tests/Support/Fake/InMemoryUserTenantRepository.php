@@ -41,6 +41,14 @@ final class InMemoryUserTenantRepository implements UserTenantRepositoryInterfac
         return $out;
     }
 
+    /** Test-only helper: check by raw string values. */
+    public function hasRole(string $userId, string $tenantId, string $role): bool
+    {
+        $key = $userId . ':' . $tenantId;
+        $stored = $this->roles[$key] ?? null;
+        return $stored !== null && $stored->value === $role;
+    }
+
     private function key(UserId $userId, TenantId $tenantId): string
     {
         return $userId->value() . ':' . $tenantId->value();
