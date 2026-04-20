@@ -112,18 +112,21 @@ Under `/api/v1/backstage/events` — all `[TenantContextMiddleware, AuthMiddlewa
 
 ### 5.2 Validation
 
-- Accepted MIME types: `image/jpeg`, `image/png`, `image/webp`, `image/gif` (static — reject animated gifs via frame count check).
-- Max file size: **5 MiB** before resize.
+- Accepted upload MIME types: `image/jpeg`, `image/png`, `image/webp`, `image/gif` (static — reject animated gifs via frame count check).
+- Max file size: **10 MiB** before resize. The generous cap is safe because everything is re-encoded to WebP on the server (see §5.3) — original bytes are discarded after processing.
 - Max files per event: **15** (1 hero + 14 gallery). Server enforces on upload — if over, 422.
 - Extension derived from validated MIME, not from user-provided filename (prevents extension spoofing).
 
-### 5.3 Processing
+Check `php.ini` in dev (Laragon) + production: `upload_max_filesize` and `post_max_size` must be ≥ `12M` (10 MiB upload + form overhead headroom). Laragon default is typically 64M, so no change needed locally, but the plan must verify before declaring done.
 
-- On upload, load with GD (`imagecreatefromjpeg` / `imagecreatefrompng` / `imagecreatefromwebp`).
-- If longest edge > **2048 px**, resize proportionally.
-- Re-encode as JPEG quality 85 (non-transparent) or PNG (transparent). Strips EXIF metadata as a side effect — good for privacy and size.
-- Store result under `<uuid>.jpg` or `.png`.
-- If GD extension is missing (unlikely on Laragon but possible), fall back to storing the original — log a warning.
+### 5.3 Processing — always re-encode to WebP
+
+- On upload, load with GD (`imagecreatefromjpeg` / `imagecreatefrompng` / `imagecreatefromwebp` / `imagecreatefromgif`).
+- If longest edge > **2048 px**, resize proportionally (`imagecopyresampled`).
+- Strip EXIF by virtue of the resize/re-encode pipeline (GD does not preserve EXIF) — good for privacy + size.
+- **Always re-encode to WebP** (`imagewebp($im, $path, quality: 85)`). Alpha-transparent PNGs keep their transparency (WebP supports alpha). This gives roughly 25–35% smaller files than equivalent-quality JPEG and collapses all input formats into one output format.
+- Store result at `<uuid>.webp` regardless of input extension.
+- If GD is missing the `webp` encoder (`gd_info()['WebP Support']` === false), fall back to JPEG quality 85 (`.jpg`) and log a warning. The URL returned still points to whatever extension was actually written.
 
 ### 5.4 Authorization
 
@@ -211,6 +214,15 @@ This two-phase save avoids a giant multipart request. If any image upload fails,
 - `public/api/backstage/events.php` — relays list/create/update/publish/archive/registrations/remove.
 - `public/api/backstage/event-upload.php` — relays multipart upload (requires forwarding `$_FILES` through `ApiClient`).
 
+### 6.8 Public event-detail page — lightbox
+
+The daem-society public event-detail page (`public/pages/events/detail/gallery.php`) already has a working lightbox: thumbnails with class `event-gallery-thumb` + modal `#galleryLightbox`, wired in `public/assets/js/daems.js` ("Event gallery lightbox" block). Styles in `public/assets/css/daems.css`.
+
+**No JS or CSS changes needed for the lightbox itself.** The plan must only ensure:
+- Event-detail PHP rendering reads `gallery_json` from the API response (or whatever it already uses) and emits one `<a class="event-gallery-thumb" data-src="<full-url>" data-alt="..."><img src="<full-url>"></a>` per image, matching the existing markup pattern already in `gallery.php`.
+- If `gallery_json` is empty or null, the whole `.event-gallery` section is skipped — no empty modal, no "0 photos" header.
+- URLs stored are relative (`/uploads/events/<id>/<uuid>.webp`) — emit them as-is; the daem-society host has its own Apache config but the platform host (daems-platform.local) serves `public/uploads/`, so admins must verify the event-detail page loads images from the correct absolute base URL. If the frontend expects same-origin, prefix with `http://daems-platform.local` or expose the resolver used elsewhere (same pattern as invite URLs).
+
 ---
 
 ## 7. Testing
@@ -242,12 +254,14 @@ Upload is hard to unit-test against GD. Integration-level test: POST a 1×1 PNG 
 ### 7.6 Manual UAT
 
 1. Create draft event → appears in list with `draft` pill, not visible on public `/events`.
-2. Edit draft → change title, upload hero image → saved, thumbnail renders.
-3. Publish → pill turns green → event appears on public `/events`.
-4. Register from public as a logged-in user → registration count = 1 on admin page.
-5. Open participants modal → remove registration → count = 0.
-6. Archive event → pill turns amber → disappears from public list but remains in admin list.
-7. As a logged-in registered user of archived event, unregister via user profile → succeeds.
+2. Edit draft → change title, upload hero image (a PNG) → saved, thumbnail renders as `.webp`.
+3. Upload a 9 MiB JPG → accepted, file on disk is WebP, noticeably smaller than the source.
+4. Publish → pill turns green → event appears on public `/events`.
+5. Public event-detail page shows hero image + gallery thumbnails; clicking a thumbnail opens the existing lightbox (see §6.8).
+6. Register from public as a logged-in user → registration count = 1 on admin page.
+7. Open participants modal → remove registration → count = 0.
+8. Archive event → pill turns amber → disappears from public list but remains in admin list.
+9. As a logged-in registered user of archived event, unregister via user profile → succeeds.
 
 ---
 
