@@ -33,7 +33,7 @@ final class SqlProjectRepository implements ProjectRepositoryInterface
             $where[]  = 'status = ?';
             $params[] = $status;
         } else {
-            $where[] = "status != 'archived'";
+            $where[] = "status NOT IN ('archived','draft')";
         }
         if ($search !== null && $search !== '') {
             $where[]  = '(title LIKE ? OR summary LIKE ?)';
@@ -41,9 +41,124 @@ final class SqlProjectRepository implements ProjectRepositoryInterface
             $params[] = '%' . $search . '%';
         }
 
-        $sql = 'SELECT * FROM projects WHERE ' . implode(' AND ', $where) . ' ORDER BY sort_order ASC, title ASC';
+        $sql = 'SELECT * FROM projects WHERE ' . implode(' AND ', $where) . ' ORDER BY featured DESC, sort_order ASC, created_at DESC';
         $rows = $this->db->query($sql, $params);
         return array_map($this->hydrate(...), $rows);
+    }
+
+    public function listAllStatusesForTenant(TenantId $tenantId, array $filters = []): array
+    {
+        $sql = 'SELECT * FROM projects WHERE tenant_id = ?';
+        $params = [$tenantId->value()];
+        if (isset($filters['status']) && $filters['status'] !== '') {
+            $sql .= ' AND status = ?';
+            $params[] = $filters['status'];
+        }
+        if (isset($filters['category']) && $filters['category'] !== '') {
+            $sql .= ' AND category = ?';
+            $params[] = $filters['category'];
+        }
+        if (isset($filters['featured']) && $filters['featured'] === true) {
+            $sql .= ' AND featured = 1';
+        }
+        if (isset($filters['q']) && $filters['q'] !== '') {
+            $sql .= ' AND (title LIKE ? OR summary LIKE ?)';
+            $params[] = '%' . $filters['q'] . '%';
+            $params[] = '%' . $filters['q'] . '%';
+        }
+        $sql .= ' ORDER BY featured DESC, sort_order ASC, created_at DESC';
+        return array_map($this->hydrate(...), $this->db->query($sql, $params));
+    }
+
+    public function findByIdForTenant(string $id, TenantId $tenantId): ?Project
+    {
+        $row = $this->db->queryOne(
+            'SELECT * FROM projects WHERE id = ? AND tenant_id = ?',
+            [$id, $tenantId->value()],
+        );
+        return $row !== null ? $this->hydrate($row) : null;
+    }
+
+    public function updateForTenant(string $id, TenantId $tenantId, array $fields): void
+    {
+        if ($fields === []) {
+            return;
+        }
+        $allowed = ['title', 'category', 'icon', 'summary', 'description', 'status', 'sort_order', 'featured'];
+        $sets = [];
+        $params = [];
+        foreach ($fields as $col => $val) {
+            if (!is_string($col) || !in_array($col, $allowed, true)) {
+                continue;
+            }
+            $sets[] = "{$col} = ?";
+            $params[] = $val;
+        }
+        if ($sets === []) {
+            return;
+        }
+        $params[] = $id;
+        $params[] = $tenantId->value();
+        $this->db->execute(
+            'UPDATE projects SET ' . implode(', ', $sets) . ' WHERE id = ? AND tenant_id = ?',
+            $params,
+        );
+    }
+
+    public function setStatusForTenant(string $id, TenantId $tenantId, string $status): void
+    {
+        if (!in_array($status, ['draft', 'active', 'archived'], true)) {
+            throw new \DomainException('invalid_project_status');
+        }
+        $this->db->execute(
+            'UPDATE projects SET status = ? WHERE id = ? AND tenant_id = ?',
+            [$status, $id, $tenantId->value()],
+        );
+    }
+
+    public function setFeaturedForTenant(string $id, TenantId $tenantId, bool $featured): void
+    {
+        $this->db->execute(
+            'UPDATE projects SET featured = ? WHERE id = ? AND tenant_id = ?',
+            [$featured ? 1 : 0, $id, $tenantId->value()],
+        );
+    }
+
+    public function listRecentCommentsForTenant(TenantId $tenantId, int $limit = 100): array
+    {
+        $rows = $this->db->query(
+            'SELECT pc.id AS comment_id, pc.project_id AS project_id, p.title AS project_title,
+                    pc.author_name AS author_name, pc.content AS content,
+                    DATE_FORMAT(pc.created_at, "%Y-%m-%d %H:%i:%s") AS created_at
+             FROM project_comments pc
+             JOIN projects p ON p.id = pc.project_id
+             WHERE p.tenant_id = ?
+             ORDER BY pc.created_at DESC
+             LIMIT ' . (int) $limit,
+            [$tenantId->value()],
+        );
+        $out = [];
+        foreach ($rows as $row) {
+            $out[] = [
+                'comment_id'    => self::str($row, 'comment_id'),
+                'project_id'    => self::str($row, 'project_id'),
+                'project_title' => self::str($row, 'project_title'),
+                'author_name'   => self::str($row, 'author_name'),
+                'content'       => self::str($row, 'content'),
+                'created_at'    => self::str($row, 'created_at'),
+            ];
+        }
+        return $out;
+    }
+
+    public function deleteCommentForTenant(string $commentId, TenantId $tenantId): void
+    {
+        $this->db->execute(
+            'DELETE pc FROM project_comments pc
+             JOIN projects p ON p.id = pc.project_id
+             WHERE pc.id = ? AND p.tenant_id = ?',
+            [$commentId, $tenantId->value()],
+        );
     }
 
     public function findBySlugForTenant(string $slug, TenantId $tenantId): ?Project
@@ -56,8 +171,8 @@ final class SqlProjectRepository implements ProjectRepositoryInterface
     {
         $this->db->execute(
             'INSERT INTO projects
-                (id, tenant_id, owner_id, slug, title, category, icon, summary, description, status, sort_order)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                (id, tenant_id, owner_id, slug, title, category, icon, summary, description, status, sort_order, featured)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
              ON DUPLICATE KEY UPDATE
                 owner_id    = VALUES(owner_id),
                 title       = VALUES(title),
@@ -66,7 +181,8 @@ final class SqlProjectRepository implements ProjectRepositoryInterface
                 summary     = VALUES(summary),
                 description = VALUES(description),
                 status      = VALUES(status),
-                sort_order  = VALUES(sort_order)',
+                sort_order  = VALUES(sort_order),
+                featured    = VALUES(featured)',
             [
                 $project->id()->value(),
                 $project->tenantId()->value(),
@@ -79,6 +195,7 @@ final class SqlProjectRepository implements ProjectRepositoryInterface
                 $project->description(),
                 $project->status(),
                 $project->sortOrder(),
+                $project->featured() ? 1 : 0,
             ],
         );
     }
@@ -198,6 +315,7 @@ final class SqlProjectRepository implements ProjectRepositoryInterface
     private function hydrate(array $row): Project
     {
         $ownerIdRaw = $row['owner_id'] ?? null;
+        $featuredRaw = $row['featured'] ?? 0;
 
         return new Project(
             ProjectId::fromString(self::str($row, 'id')),
@@ -211,6 +329,8 @@ final class SqlProjectRepository implements ProjectRepositoryInterface
             self::str($row, 'status'),
             self::intOf($row, 'sort_order'),
             is_string($ownerIdRaw) && $ownerIdRaw !== '' ? UserId::fromString($ownerIdRaw) : null,
+            (bool) (is_int($featuredRaw) ? $featuredRaw : (is_string($featuredRaw) && is_numeric($featuredRaw) ? (int) $featuredRaw : 0)),
+            self::strOrDefault($row, 'created_at', ''),
         );
     }
 

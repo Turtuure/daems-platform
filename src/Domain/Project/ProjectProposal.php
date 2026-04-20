@@ -20,6 +20,9 @@ final class ProjectProposal
         private readonly string $description,
         private readonly string $status,
         private readonly string $createdAt,
+        private readonly ?string $decidedAt = null,
+        private readonly ?string $decidedBy = null,
+        private readonly ?string $decisionNote = null,
     ) {}
 
     public function id(): ProjectProposalId { return $this->id; }
@@ -33,4 +36,7 @@ final class ProjectProposal
     public function description(): string { return $this->description; }
     public function status(): string { return $this->status; }
     public function createdAt(): string { return $this->createdAt; }
+    public function decidedAt(): ?string { return $this->decidedAt; }
+    public function decidedBy(): ?string { return $this->decidedBy; }
+    public function decisionNote(): ?string { return $this->decisionNote; }
 }

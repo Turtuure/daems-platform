@@ -23,6 +23,8 @@ final class Project
         private readonly string $status,
         private readonly int $sortOrder,
         private readonly ?UserId $ownerId = null,
+        private readonly bool $featured = false,
+        private readonly string $createdAt = '',
     ) {}
 
     public function id(): ProjectId { return $this->id; }
@@ -36,6 +38,8 @@ final class Project
     public function status(): string { return $this->status; }
     public function sortOrder(): int { return $this->sortOrder; }
     public function ownerId(): ?UserId { return $this->ownerId; }
+    public function featured(): bool { return $this->featured; }
+    public function createdAt(): string { return $this->createdAt; }
 
     public function assertMutableBy(ActingUser $acting): void
     {
