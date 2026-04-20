@@ -8,6 +8,7 @@ use Daems\Application\Forum\Shared\ForumIdentityDeriver;
 use Daems\Domain\Forum\ForumPost;
 use Daems\Domain\Forum\ForumPostId;
 use Daems\Domain\Forum\ForumRepositoryInterface;
+use Daems\Domain\Forum\TopicLockedException;
 use Daems\Domain\User\UserRepositoryInterface;
 
 final class CreateForumPost
@@ -23,6 +24,10 @@ final class CreateForumPost
 
         if ($topic === null) {
             return new CreateForumPostOutput(false, 'Thread not found.');
+        }
+
+        if ($topic->locked()) {
+            throw new TopicLockedException('topic_locked');
         }
 
         $identity = ForumIdentityDeriver::derive($input->acting, $this->users);
