@@ -136,6 +136,67 @@ $container->bind(AdminController::class,
     ),
 );
 
+// Invite infrastructure
+$container->singleton(\Daems\Domain\Invite\TokenGeneratorInterface::class,
+    static fn() => new \Daems\Infrastructure\Token\RandomTokenGenerator(),
+);
+$container->singleton(\Daems\Domain\Config\BaseUrlResolverInterface::class,
+    static fn() => new \Daems\Infrastructure\Config\EnvBaseUrlResolver(
+        [
+            'daems'      => 'http://daem-society.local',
+            'sahegroup'  => 'http://sahegroup.local',
+        ],
+        'http://daems-platform.local',
+    ),
+);
+$container->singleton(\Daems\Domain\Invite\UserInviteRepositoryInterface::class,
+    static fn(Container $c) => new \Daems\Infrastructure\Adapter\Persistence\Sql\SqlUserInviteRepository($c->make(Connection::class)->pdo()),
+);
+$container->singleton(\Daems\Domain\Tenant\TenantMemberCounterRepositoryInterface::class,
+    static fn(Container $c) => new \Daems\Infrastructure\Adapter\Persistence\Sql\SqlTenantMemberCounterRepository($c->make(Connection::class)->pdo()),
+);
+$container->singleton(\Daems\Domain\Shared\TransactionManagerInterface::class,
+    static fn(Container $c) => new \Daems\Infrastructure\Adapter\Persistence\Sql\PdoTransactionManager($c->make(Connection::class)->pdo()),
+);
+$container->singleton(\Daems\Domain\Membership\MemberStatusAuditRepositoryInterface::class,
+    static fn(Container $c) => new \Daems\Infrastructure\Adapter\Persistence\Sql\SqlMemberStatusAuditRepository($c->make(Connection::class)),
+);
+$container->singleton(\Daems\Domain\Shared\IdGeneratorInterface::class,
+    static fn() => new class implements \Daems\Domain\Shared\IdGeneratorInterface {
+        public function generate(): string
+        {
+            return \Daems\Domain\Shared\ValueObject\Uuid7::generate()->value();
+        }
+    },
+);
+$container->bind(\Daems\Application\Invite\IssueInvite\IssueInvite::class,
+    static fn(Container $c) => new \Daems\Application\Invite\IssueInvite\IssueInvite(
+        $c->make(\Daems\Domain\Invite\UserInviteRepositoryInterface::class),
+        $c->make(\Daems\Domain\Invite\TokenGeneratorInterface::class),
+        $c->make(\Daems\Domain\Config\BaseUrlResolverInterface::class),
+        $c->make(Clock::class),
+        $c->make(\Daems\Domain\Shared\IdGeneratorInterface::class),
+    ),
+);
+$container->bind(\Daems\Application\Backstage\ActivateMember\MemberActivationService::class,
+    static fn(Container $c) => new \Daems\Application\Backstage\ActivateMember\MemberActivationService(
+        $c->make(UserRepositoryInterface::class),
+        $c->make(\Daems\Domain\Tenant\UserTenantRepositoryInterface::class),
+        $c->make(\Daems\Domain\Tenant\TenantMemberCounterRepositoryInterface::class),
+        $c->make(\Daems\Domain\Membership\MemberStatusAuditRepositoryInterface::class),
+        $c->make(Clock::class),
+        $c->make(\Daems\Domain\Shared\IdGeneratorInterface::class),
+    ),
+);
+$container->bind(\Daems\Application\Backstage\ActivateSupporter\SupporterActivationService::class,
+    static fn(Container $c) => new \Daems\Application\Backstage\ActivateSupporter\SupporterActivationService(
+        $c->make(UserRepositoryInterface::class),
+        $c->make(\Daems\Domain\Tenant\UserTenantRepositoryInterface::class),
+        $c->make(Clock::class),
+        $c->make(\Daems\Domain\Shared\IdGeneratorInterface::class),
+    ),
+);
+
 // Backstage
 $container->singleton(\Daems\Domain\Backstage\MemberDirectoryRepositoryInterface::class,
     static fn(Container $c) => new \Daems\Infrastructure\Adapter\Persistence\Sql\SqlMemberDirectoryRepository($c->make(Connection::class)),
@@ -146,11 +207,30 @@ $container->bind(\Daems\Application\Backstage\ListPendingApplications\ListPendin
         $c->make(SupporterApplicationRepositoryInterface::class),
     ),
 );
+$container->bind(\Daems\Application\Backstage\DismissApplication\DismissApplication::class,
+    static fn(Container $c) => new \Daems\Application\Backstage\DismissApplication\DismissApplication(
+        $c->make(AdminApplicationDismissalRepositoryInterface::class),
+        $c->make(Clock::class),
+        $c->make(\Daems\Domain\Shared\IdGeneratorInterface::class),
+    ),
+);
+$container->bind(\Daems\Application\Backstage\ListPendingApplications\ListPendingApplicationsForAdmin::class,
+    static fn(Container $c) => new \Daems\Application\Backstage\ListPendingApplications\ListPendingApplicationsForAdmin(
+        $c->make(MemberApplicationRepositoryInterface::class),
+        $c->make(SupporterApplicationRepositoryInterface::class),
+        $c->make(AdminApplicationDismissalRepositoryInterface::class),
+    ),
+);
 $container->bind(\Daems\Application\Backstage\DecideApplication\DecideApplication::class,
     static fn(Container $c) => new \Daems\Application\Backstage\DecideApplication\DecideApplication(
         $c->make(MemberApplicationRepositoryInterface::class),
         $c->make(SupporterApplicationRepositoryInterface::class),
-        $c->make(\Daems\Domain\Shared\Clock::class),
+        $c->make(\Daems\Application\Backstage\ActivateMember\MemberActivationService::class),
+        $c->make(\Daems\Application\Backstage\ActivateSupporter\SupporterActivationService::class),
+        $c->make(\Daems\Application\Invite\IssueInvite\IssueInvite::class),
+        $c->make(AdminApplicationDismissalRepositoryInterface::class),
+        $c->make(\Daems\Domain\Shared\TransactionManagerInterface::class),
+        $c->make(Clock::class),
     ),
 );
 $container->bind(\Daems\Application\Backstage\ListMembers\ListMembers::class,
@@ -161,7 +241,7 @@ $container->bind(\Daems\Application\Backstage\ListMembers\ListMembers::class,
 $container->bind(\Daems\Application\Backstage\ChangeMemberStatus\ChangeMemberStatus::class,
     static fn(Container $c) => new \Daems\Application\Backstage\ChangeMemberStatus\ChangeMemberStatus(
         $c->make(\Daems\Domain\Backstage\MemberDirectoryRepositoryInterface::class),
-        $c->make(\Daems\Domain\Shared\Clock::class),
+        $c->make(Clock::class),
     ),
 );
 $container->bind(\Daems\Application\Backstage\GetMemberAudit\GetMemberAudit::class,
@@ -176,6 +256,8 @@ $container->bind(\Daems\Infrastructure\Adapter\Api\Controller\BackstageControlle
         $c->make(\Daems\Application\Backstage\ListMembers\ListMembers::class),
         $c->make(\Daems\Application\Backstage\ChangeMemberStatus\ChangeMemberStatus::class),
         $c->make(\Daems\Application\Backstage\GetMemberAudit\GetMemberAudit::class),
+        $c->make(\Daems\Application\Backstage\ListPendingApplications\ListPendingApplicationsForAdmin::class),
+        $c->make(\Daems\Application\Backstage\DismissApplication\DismissApplication::class),
     ),
 );
 
@@ -334,6 +416,13 @@ $container->bind(GetAuthMe::class,
         $c->make(AuthTokenRepositoryInterface::class),
     ),
 );
+$container->bind(\Daems\Application\Auth\RedeemInvite\RedeemInvite::class,
+    static fn(Container $c) => new \Daems\Application\Auth\RedeemInvite\RedeemInvite(
+        $c->make(\Daems\Domain\Invite\UserInviteRepositoryInterface::class),
+        $c->make(UserRepositoryInterface::class),
+        $c->make(Clock::class),
+    ),
+);
 $container->bind(AuthController::class,
     static fn(Container $c) => new AuthController(
         $c->make(RegisterUser::class),
@@ -341,6 +430,7 @@ $container->bind(AuthController::class,
         $c->make(CreateAuthToken::class),
         $c->make(LogoutUser::class),
         $c->make(GetAuthMe::class),
+        $c->make(\Daems\Application\Auth\RedeemInvite\RedeemInvite::class),
     ),
 );
 
