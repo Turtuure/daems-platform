@@ -340,7 +340,7 @@ $container->singleton(AuthLoginAttemptRepositoryInterface::class,
     ),
 );
 $container->singleton(AdminApplicationDismissalRepositoryInterface::class,
-    static fn(Container $c) => new SqlAdminApplicationDismissalRepository($c->make(Connection::class)),
+    static fn(Container $c) => new SqlAdminApplicationDismissalRepository($c->make(Connection::class)->pdo()),
 );
 
 $container->bind(CreateAuthToken::class,
