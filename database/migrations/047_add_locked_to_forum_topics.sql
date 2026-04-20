@@ -1,0 +1,2 @@
+ALTER TABLE forum_topics
+    ADD COLUMN locked TINYINT(1) NOT NULL DEFAULT 0 AFTER pinned;
