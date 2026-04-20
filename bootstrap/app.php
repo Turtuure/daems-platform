@@ -260,6 +260,73 @@ $container->bind(\Daems\Application\Backstage\GetMemberAudit\GetMemberAudit::cla
         $c->make(\Daems\Domain\Backstage\MemberDirectoryRepositoryInterface::class),
     ),
 );
+// Events admin — use cases
+$container->bind(\Daems\Application\Backstage\ListEventsForAdmin\ListEventsForAdmin::class,
+    static fn(Container $c) => new \Daems\Application\Backstage\ListEventsForAdmin\ListEventsForAdmin(
+        $c->make(EventRepositoryInterface::class),
+    ),
+);
+$container->bind(\Daems\Application\Backstage\CreateEvent\CreateEvent::class,
+    static fn(Container $c) => new \Daems\Application\Backstage\CreateEvent\CreateEvent(
+        $c->make(EventRepositoryInterface::class),
+        $c->make(\Daems\Domain\Shared\IdGeneratorInterface::class),
+    ),
+);
+$container->bind(\Daems\Application\Backstage\UpdateEvent\UpdateEvent::class,
+    static fn(Container $c) => new \Daems\Application\Backstage\UpdateEvent\UpdateEvent(
+        $c->make(EventRepositoryInterface::class),
+    ),
+);
+$container->bind(\Daems\Application\Backstage\PublishEvent\PublishEvent::class,
+    static fn(Container $c) => new \Daems\Application\Backstage\PublishEvent\PublishEvent(
+        $c->make(EventRepositoryInterface::class),
+    ),
+);
+$container->bind(\Daems\Application\Backstage\ArchiveEvent\ArchiveEvent::class,
+    static fn(Container $c) => new \Daems\Application\Backstage\ArchiveEvent\ArchiveEvent(
+        $c->make(EventRepositoryInterface::class),
+    ),
+);
+$container->bind(\Daems\Application\Backstage\ListEventRegistrations\ListEventRegistrations::class,
+    static fn(Container $c) => new \Daems\Application\Backstage\ListEventRegistrations\ListEventRegistrations(
+        $c->make(EventRepositoryInterface::class),
+    ),
+);
+$container->bind(\Daems\Application\Backstage\UnregisterUserFromEvent\UnregisterUserFromEvent::class,
+    static fn(Container $c) => new \Daems\Application\Backstage\UnregisterUserFromEvent\UnregisterUserFromEvent(
+        $c->make(EventRepositoryInterface::class),
+    ),
+);
+
+// Image storage
+$container->singleton(\Daems\Domain\Storage\ImageStorageInterface::class,
+    static fn(Container $c) => new \Daems\Infrastructure\Storage\LocalImageStorage(
+        publicRoot: dirname(__DIR__) . '/public',
+        urlPrefix:  rtrim((string) ($_ENV['APP_URL'] ?? 'http://daems-platform.local'), '/'),
+        ids:        $c->make(\Daems\Domain\Shared\IdGeneratorInterface::class),
+    ),
+);
+$container->bind(\Daems\Application\Backstage\UploadEventImage\UploadEventImage::class,
+    static fn(Container $c) => new \Daems\Application\Backstage\UploadEventImage\UploadEventImage(
+        $c->make(EventRepositoryInterface::class),
+        $c->make(\Daems\Domain\Storage\ImageStorageInterface::class),
+    ),
+);
+$container->bind(\Daems\Application\Backstage\DeleteEventImage\DeleteEventImage::class,
+    static fn(Container $c) => new \Daems\Application\Backstage\DeleteEventImage\DeleteEventImage(
+        $c->make(EventRepositoryInterface::class),
+        $c->make(\Daems\Domain\Storage\ImageStorageInterface::class),
+    ),
+);
+
+// MediaController
+$container->bind(\Daems\Infrastructure\Adapter\Api\Controller\MediaController::class,
+    static fn(Container $c) => new \Daems\Infrastructure\Adapter\Api\Controller\MediaController(
+        $c->make(\Daems\Application\Backstage\UploadEventImage\UploadEventImage::class),
+        $c->make(\Daems\Application\Backstage\DeleteEventImage\DeleteEventImage::class),
+    ),
+);
+
 $container->bind(\Daems\Infrastructure\Adapter\Api\Controller\BackstageController::class,
     static fn(Container $c) => new \Daems\Infrastructure\Adapter\Api\Controller\BackstageController(
         $c->make(\Daems\Application\Backstage\ListPendingApplications\ListPendingApplications::class),
@@ -269,6 +336,13 @@ $container->bind(\Daems\Infrastructure\Adapter\Api\Controller\BackstageControlle
         $c->make(\Daems\Application\Backstage\GetMemberAudit\GetMemberAudit::class),
         $c->make(\Daems\Application\Backstage\ListPendingApplications\ListPendingApplicationsForAdmin::class),
         $c->make(\Daems\Application\Backstage\DismissApplication\DismissApplication::class),
+        $c->make(\Daems\Application\Backstage\ListEventsForAdmin\ListEventsForAdmin::class),
+        $c->make(\Daems\Application\Backstage\CreateEvent\CreateEvent::class),
+        $c->make(\Daems\Application\Backstage\UpdateEvent\UpdateEvent::class),
+        $c->make(\Daems\Application\Backstage\PublishEvent\PublishEvent::class),
+        $c->make(\Daems\Application\Backstage\ArchiveEvent\ArchiveEvent::class),
+        $c->make(\Daems\Application\Backstage\ListEventRegistrations\ListEventRegistrations::class),
+        $c->make(\Daems\Application\Backstage\UnregisterUserFromEvent\UnregisterUserFromEvent::class),
     ),
 );
 
