@@ -92,6 +92,8 @@ final class SqlSupporterApplicationRepository implements SupporterApplicationRep
         $country  = $row['country'] ?? null;
         $howHeard = $row['how_heard'] ?? null;
 
+        $createdAt = $row['created_at'] ?? null;
+
         return new SupporterApplication(
             SupporterApplicationId::fromString(self::str($row, 'id')),
             TenantId::fromString(self::str($row, 'tenant_id')),
@@ -103,6 +105,7 @@ final class SqlSupporterApplicationRepository implements SupporterApplicationRep
             self::str($row, 'motivation'),
             is_string($howHeard) ? $howHeard : null,
             self::str($row, 'status'),
+            is_string($createdAt) ? $createdAt : null,
         );
     }
 

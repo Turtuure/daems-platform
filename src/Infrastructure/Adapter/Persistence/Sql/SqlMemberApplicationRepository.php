@@ -104,6 +104,8 @@ final class SqlMemberApplicationRepository implements MemberApplicationRepositor
         $country  = $row['country'] ?? null;
         $howHeard = $row['how_heard'] ?? null;
 
+        $createdAt = $row['created_at'] ?? null;
+
         return new MemberApplication(
             MemberApplicationId::fromString(self::str($row, 'id')),
             TenantId::fromString(self::str($row, 'tenant_id')),
@@ -114,6 +116,7 @@ final class SqlMemberApplicationRepository implements MemberApplicationRepositor
             self::str($row, 'motivation'),
             is_string($howHeard) ? $howHeard : null,
             self::str($row, 'status'),
+            is_string($createdAt) ? $createdAt : null,
         );
     }
 

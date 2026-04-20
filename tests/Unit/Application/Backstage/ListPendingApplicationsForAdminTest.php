@@ -54,7 +54,7 @@ final class ListPendingApplicationsForAdminTest extends TestCase
         );
     }
 
-    private function makeMemberApp(string $id, string $name = 'Member'): MemberApplication
+    private function makeMemberApp(string $id, string $name = 'Member', string $createdAt = '2026-04-01 10:00:00'): MemberApplication
     {
         return new MemberApplication(
             MemberApplicationId::fromString($id),
@@ -66,10 +66,11 @@ final class ListPendingApplicationsForAdminTest extends TestCase
             'motivation',
             null,
             'pending',
+            $createdAt,
         );
     }
 
-    private function makeSupporterApp(string $id, string $contactPerson = 'Org Contact'): SupporterApplication
+    private function makeSupporterApp(string $id, string $contactPerson = 'Org Contact', string $createdAt = '2026-04-02 10:00:00'): SupporterApplication
     {
         return new SupporterApplication(
             SupporterApplicationId::fromString($id),
@@ -82,6 +83,7 @@ final class ListPendingApplicationsForAdminTest extends TestCase
             'motivation',
             null,
             'pending',
+            $createdAt,
         );
     }
 
@@ -138,6 +140,11 @@ final class ListPendingApplicationsForAdminTest extends TestCase
         self::assertNotContains('01958000-0000-7000-8000-000000000023', $ids);
         self::assertContains('01958000-0000-7000-8000-000000000024', $ids);
         self::assertContains('01958000-0000-7000-8000-000000000025', $ids);
+
+        // created_at is propagated from entities
+        foreach ($out->items as $item) {
+            self::assertNotSame('', $item['created_at'], "created_at should be non-empty for item {$item['id']}");
+        }
     }
 
     public function test_rejects_non_admin(): void

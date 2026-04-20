@@ -42,7 +42,7 @@ final class ListPendingApplicationsForAdmin
                 'id'         => $app->id()->value(),
                 'type'       => 'member',
                 'name'       => $app->name(),
-                'created_at' => '',
+                'created_at' => $app->createdAt() ?? '',
             ];
         }
 
@@ -54,7 +54,7 @@ final class ListPendingApplicationsForAdmin
                 'id'         => $app->id()->value(),
                 'type'       => 'supporter',
                 'name'       => $app->contactPerson(),
-                'created_at' => '',
+                'created_at' => $app->createdAt() ?? '',
             ];
         }
 

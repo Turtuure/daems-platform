@@ -19,6 +19,7 @@ final class SupporterApplication
         private readonly string $motivation,
         private readonly ?string $howHeard,
         private readonly string $status,
+        private readonly ?string $createdAt = null,
     ) {}
 
     public function id(): SupporterApplicationId { return $this->id; }
@@ -31,4 +32,5 @@ final class SupporterApplication
     public function motivation(): string { return $this->motivation; }
     public function howHeard(): ?string { return $this->howHeard; }
     public function status(): string { return $this->status; }
+    public function createdAt(): ?string { return $this->createdAt; }
 }

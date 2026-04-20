@@ -53,7 +53,7 @@ final class InMemoryMemberApplicationRepository implements MemberApplicationRepo
                 $this->applications[$i] = new MemberApplication(
                     $a->id(), $a->tenantId(), $a->name(), $a->email(),
                     $a->dateOfBirth(), $a->country(), $a->motivation(), $a->howHeard(),
-                    $decision,
+                    $decision, $a->createdAt(),
                 );
                 $this->decisions[$id] = ['decision' => $decision, 'by' => $decidedBy->value(), 'note' => $note, 'at' => $decidedAt->format('Y-m-d H:i:s')];
                 return;
