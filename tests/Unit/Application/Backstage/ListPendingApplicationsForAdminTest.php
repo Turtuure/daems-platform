@@ -14,11 +14,14 @@ use Daems\Domain\Membership\MemberApplication;
 use Daems\Domain\Membership\MemberApplicationId;
 use Daems\Domain\Membership\SupporterApplication;
 use Daems\Domain\Membership\SupporterApplicationId;
+use Daems\Domain\Project\ProjectProposal;
+use Daems\Domain\Project\ProjectProposalId;
 use Daems\Domain\Tenant\TenantId;
 use Daems\Domain\Tenant\UserTenantRole;
 use Daems\Domain\User\UserId;
 use Daems\Tests\Support\Fake\InMemoryAdminApplicationDismissalRepository;
 use Daems\Tests\Support\Fake\InMemoryMemberApplicationRepository;
+use Daems\Tests\Support\Fake\InMemoryProjectProposalRepository;
 use Daems\Tests\Support\Fake\InMemorySupporterApplicationRepository;
 use DateTimeImmutable;
 use PHPUnit\Framework\TestCase;
@@ -87,6 +90,23 @@ final class ListPendingApplicationsForAdminTest extends TestCase
         );
     }
 
+    private function makeProposal(string $id, string $title = 'Community Garden', string $createdAt = '2026-04-20 10:00:00'): ProjectProposal
+    {
+        return new ProjectProposal(
+            ProjectProposalId::fromString($id),
+            $this->tenant,
+            '01958000-0000-7000-8000-0000000000aa',
+            'Proposer Name',
+            'proposer@x.test',
+            $title,
+            'environment',
+            'A summary for the proposal',
+            'A description for the proposal',
+            'pending',
+            $createdAt,
+        );
+    }
+
     private function makeClock(): \Daems\Domain\Shared\Clock
     {
         return new class implements \Daems\Domain\Shared\Clock {
@@ -110,6 +130,7 @@ final class ListPendingApplicationsForAdminTest extends TestCase
         $memberApps    = new InMemoryMemberApplicationRepository();
         $supporterApps = new InMemorySupporterApplicationRepository();
         $dismissals    = new InMemoryAdminApplicationDismissalRepository();
+        $proposalRepo  = new InMemoryProjectProposalRepository();
 
         $member1 = $this->makeMemberApp('01958000-0000-7000-8000-000000000021', 'Alice');
         $member2 = $this->makeMemberApp('01958000-0000-7000-8000-000000000022', 'Bob');
@@ -128,7 +149,7 @@ final class ListPendingApplicationsForAdminTest extends TestCase
         $dismisser = new DismissApplication($dismissals, $this->makeClock(), $this->makeIds('dis-1'));
         $dismisser->execute(new DismissApplicationInput($acting, '01958000-0000-7000-8000-000000000023', 'member'));
 
-        $sut = new ListPendingApplicationsForAdmin($memberApps, $supporterApps, $dismissals);
+        $sut = new ListPendingApplicationsForAdmin($memberApps, $supporterApps, $dismissals, $proposalRepo);
         $out = $sut->execute(new ListPendingApplicationsForAdminInput($acting));
 
         self::assertSame(4, $out->total);
@@ -155,7 +176,53 @@ final class ListPendingApplicationsForAdminTest extends TestCase
             new InMemoryMemberApplicationRepository(),
             new InMemorySupporterApplicationRepository(),
             new InMemoryAdminApplicationDismissalRepository(),
+            new InMemoryProjectProposalRepository(),
         );
         $sut->execute(new ListPendingApplicationsForAdminInput($this->nonAdminActingUser()));
+    }
+
+    public function test_output_includes_pending_project_proposals(): void
+    {
+        $memberApps    = new InMemoryMemberApplicationRepository();
+        $supporterApps = new InMemorySupporterApplicationRepository();
+        $dismissals    = new InMemoryAdminApplicationDismissalRepository();
+        $proposalRepo  = new InMemoryProjectProposalRepository();
+
+        $proposal = $this->makeProposal('01959900-0000-7000-8000-0000000000aa', 'Community Garden');
+        $proposalRepo->save($proposal);
+
+        $acting = $this->adminActingUser();
+        $sut = new ListPendingApplicationsForAdmin($memberApps, $supporterApps, $dismissals, $proposalRepo);
+        $out = $sut->execute(new ListPendingApplicationsForAdminInput($acting));
+
+        self::assertSame(1, $out->total);
+        self::assertCount(1, $out->items);
+        $item = $out->items[0];
+        self::assertSame('01959900-0000-7000-8000-0000000000aa', $item['id']);
+        self::assertSame('project_proposal', $item['type']);
+        self::assertSame('Community Garden', $item['name']);
+        self::assertSame('2026-04-20 10:00:00', $item['created_at']);
+    }
+
+    public function test_dismissed_proposal_is_excluded(): void
+    {
+        $memberApps    = new InMemoryMemberApplicationRepository();
+        $supporterApps = new InMemorySupporterApplicationRepository();
+        $dismissals    = new InMemoryAdminApplicationDismissalRepository();
+        $proposalRepo  = new InMemoryProjectProposalRepository();
+
+        $proposalId = '01959900-0000-7000-8000-0000000000bb';
+        $proposalRepo->save($this->makeProposal($proposalId, 'Dismissed Proposal'));
+
+        $acting = $this->adminActingUser('01958000-0000-7000-8000-000000000010');
+
+        $dismisser = new DismissApplication($dismissals, $this->makeClock(), $this->makeIds('dis-proposal'));
+        $dismisser->execute(new DismissApplicationInput($acting, $proposalId, 'project_proposal'));
+
+        $sut = new ListPendingApplicationsForAdmin($memberApps, $supporterApps, $dismissals, $proposalRepo);
+        $out = $sut->execute(new ListPendingApplicationsForAdminInput($acting));
+
+        self::assertSame(0, $out->total);
+        self::assertSame([], $out->items);
     }
 }

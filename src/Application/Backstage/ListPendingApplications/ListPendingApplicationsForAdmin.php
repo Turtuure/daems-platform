@@ -8,6 +8,7 @@ use Daems\Domain\Auth\ForbiddenException;
 use Daems\Domain\Dismissal\AdminApplicationDismissalRepositoryInterface;
 use Daems\Domain\Membership\MemberApplicationRepositoryInterface;
 use Daems\Domain\Membership\SupporterApplicationRepositoryInterface;
+use Daems\Domain\Project\ProjectProposalRepositoryInterface;
 
 final class ListPendingApplicationsForAdmin
 {
@@ -17,6 +18,7 @@ final class ListPendingApplicationsForAdmin
         private readonly MemberApplicationRepositoryInterface $members,
         private readonly SupporterApplicationRepositoryInterface $supporters,
         private readonly AdminApplicationDismissalRepositoryInterface $dismissals,
+        private readonly ProjectProposalRepositoryInterface $proposals,
     ) {}
 
     public function execute(ListPendingApplicationsForAdminInput $input): ListPendingApplicationsForAdminOutput
@@ -55,6 +57,18 @@ final class ListPendingApplicationsForAdmin
                 'type'       => 'supporter',
                 'name'       => $app->contactPerson(),
                 'created_at' => $app->createdAt() ?? '',
+            ];
+        }
+
+        foreach ($this->proposals->listPendingForTenant($tenantId) as $proposal) {
+            if (isset($dismissed[$proposal->id()->value()])) {
+                continue;
+            }
+            $items[] = [
+                'id'         => $proposal->id()->value(),
+                'type'       => 'project_proposal',
+                'name'       => $proposal->title(),
+                'created_at' => $proposal->createdAt(),
             ];
         }
 
