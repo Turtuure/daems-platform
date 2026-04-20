@@ -19,17 +19,42 @@ final class SqlEventRepository implements EventRepositoryInterface
     {
         if ($type !== null) {
             $rows = $this->db->query(
-                'SELECT * FROM events WHERE tenant_id = ? AND type = ? ORDER BY event_date ASC',
-                [$tenantId->value(), $type],
+                'SELECT * FROM events WHERE tenant_id = ? AND status = ? AND type = ? ORDER BY event_date ASC',
+                [$tenantId->value(), 'published', $type],
             );
         } else {
             $rows = $this->db->query(
-                'SELECT * FROM events WHERE tenant_id = ? ORDER BY event_date ASC',
-                [$tenantId->value()],
+                'SELECT * FROM events WHERE tenant_id = ? AND status = ? ORDER BY event_date ASC',
+                [$tenantId->value(), 'published'],
             );
         }
 
         return array_map($this->hydrate(...), $rows);
+    }
+
+    public function listAllStatusesForTenant(TenantId $tenantId, array $filters = []): array
+    {
+        $sql = 'SELECT * FROM events WHERE tenant_id = ?';
+        $params = [$tenantId->value()];
+        if (isset($filters['status']) && $filters['status'] !== '') {
+            $sql .= ' AND status = ?';
+            $params[] = $filters['status'];
+        }
+        if (isset($filters['type']) && $filters['type'] !== '') {
+            $sql .= ' AND type = ?';
+            $params[] = $filters['type'];
+        }
+        $sql .= ' ORDER BY event_date DESC';
+        return array_map($this->hydrate(...), $this->db->query($sql, $params));
+    }
+
+    public function findByIdForTenant(string $id, TenantId $tenantId): ?Event
+    {
+        $row = $this->db->queryOne(
+            'SELECT * FROM events WHERE id = ? AND tenant_id = ?',
+            [$id, $tenantId->value()],
+        );
+        return $row !== null ? $this->hydrate($row) : null;
     }
 
     public function findBySlugForTenant(string $slug, TenantId $tenantId): ?Event
@@ -46,8 +71,8 @@ final class SqlEventRepository implements EventRepositoryInterface
     {
         $this->db->execute(
             'INSERT INTO events
-                (id, tenant_id, slug, title, type, event_date, event_time, location, is_online, description, hero_image, gallery_json)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                (id, tenant_id, slug, title, type, event_date, event_time, location, is_online, description, hero_image, gallery_json, status)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
              ON DUPLICATE KEY UPDATE
                 title = VALUES(title),
                 type = VALUES(type),
@@ -57,7 +82,8 @@ final class SqlEventRepository implements EventRepositoryInterface
                 is_online = VALUES(is_online),
                 description = VALUES(description),
                 hero_image = VALUES(hero_image),
-                gallery_json = VALUES(gallery_json)',
+                gallery_json = VALUES(gallery_json),
+                status = VALUES(status)',
             [
                 $event->id()->value(),
                 $event->tenantId()->value(),
@@ -71,7 +97,45 @@ final class SqlEventRepository implements EventRepositoryInterface
                 $event->description(),
                 $event->heroImage(),
                 json_encode($event->gallery()),
+                $event->status(),
             ],
+        );
+    }
+
+    public function updateForTenant(string $id, TenantId $tenantId, array $fields): void
+    {
+        if ($fields === []) {
+            return;
+        }
+        $allowed = ['title', 'type', 'event_date', 'event_time', 'location', 'is_online', 'description', 'hero_image', 'gallery_json'];
+        $sets = [];
+        $params = [];
+        foreach ($fields as $col => $val) {
+            if (!in_array($col, $allowed, true)) {
+                continue;
+            }
+            $sets[] = "{$col} = ?";
+            $params[] = $val;
+        }
+        if ($sets === []) {
+            return;
+        }
+        $params[] = $id;
+        $params[] = $tenantId->value();
+        $this->db->execute(
+            'UPDATE events SET ' . implode(', ', $sets) . ' WHERE id = ? AND tenant_id = ?',
+            $params,
+        );
+    }
+
+    public function setStatus(string $id, TenantId $tenantId, string $status): void
+    {
+        if (!in_array($status, ['draft', 'published', 'archived'], true)) {
+            throw new \DomainException('invalid_event_status');
+        }
+        $this->db->execute(
+            'UPDATE events SET status = ? WHERE id = ? AND tenant_id = ?',
+            [$status, $id, $tenantId->value()],
         );
     }
 
@@ -133,6 +197,22 @@ final class SqlEventRepository implements EventRepositoryInterface
         return $rows;
     }
 
+    public function listRegistrationsForEvent(string $eventId, TenantId $tenantId): array
+    {
+        /** @var list<array{user_id:string,name:string,email:string,registered_at:string}> $rows */
+        $rows = $this->db->query(
+            'SELECT er.user_id AS user_id, u.name AS name, u.email AS email,
+                    DATE_FORMAT(er.registered_at, "%Y-%m-%d %H:%i:%s") AS registered_at
+             FROM event_registrations er
+             JOIN events e ON e.id = er.event_id
+             JOIN users u ON u.id = er.user_id
+             WHERE er.event_id = ? AND e.tenant_id = ?
+             ORDER BY er.registered_at DESC',
+            [$eventId, $tenantId->value()],
+        );
+        return $rows;
+    }
+
     /** @param array<string, mixed> $row */
     private function hydrate(array $row): Event
     {
@@ -154,6 +234,7 @@ final class SqlEventRepository implements EventRepositoryInterface
             self::strOrNull($row, 'description'),
             self::strOrNull($row, 'hero_image'),
             $gallery,
+            self::str($row, 'status'),
         );
     }
 

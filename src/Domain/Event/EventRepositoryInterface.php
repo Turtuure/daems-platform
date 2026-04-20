@@ -8,12 +8,25 @@ use Daems\Domain\Tenant\TenantId;
 
 interface EventRepositoryInterface
 {
-    /** @return Event[] */
+    /** @return Event[] — PUBLIC path: only published events. */
     public function listForTenant(TenantId $tenantId, ?string $type = null): array;
+
+    /**
+     * @param array{status?:string,type?:string} $filters
+     * @return Event[] — ADMIN path: all statuses, optional filters.
+     */
+    public function listAllStatusesForTenant(TenantId $tenantId, array $filters = []): array;
+
+    public function findByIdForTenant(string $id, TenantId $tenantId): ?Event;
 
     public function findBySlugForTenant(string $slug, TenantId $tenantId): ?Event;
 
     public function save(Event $event): void;
+
+    /** @param array<string,mixed> $fields */
+    public function updateForTenant(string $id, TenantId $tenantId, array $fields): void;
+
+    public function setStatus(string $id, TenantId $tenantId, string $status): void;
 
     public function register(EventRegistration $registration): void;
 
@@ -25,4 +38,7 @@ interface EventRepositoryInterface
 
     /** @return array<array{event_id:string,slug:string,title:string,type:string,date:string}> */
     public function findRegistrationsByUserId(string $userId): array;
+
+    /** @return list<array{user_id:string,name:string,email:string,registered_at:string}> */
+    public function listRegistrationsForEvent(string $eventId, TenantId $tenantId): array;
 }
