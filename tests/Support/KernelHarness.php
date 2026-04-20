@@ -355,6 +355,7 @@ final class KernelHarness
         ));
         $container->bind(\Daems\Application\Backstage\ChangeMemberStatus\ChangeMemberStatus::class, static fn(Container $c) => new \Daems\Application\Backstage\ChangeMemberStatus\ChangeMemberStatus(
             $c->make(\Daems\Domain\Backstage\MemberDirectoryRepositoryInterface::class),
+            $c->make(AnonymiseAccount::class),
             $c->make(Clock::class),
         ));
         $container->bind(\Daems\Application\Backstage\GetMemberAudit\GetMemberAudit::class, static fn(Container $c) => new \Daems\Application\Backstage\GetMemberAudit\GetMemberAudit(

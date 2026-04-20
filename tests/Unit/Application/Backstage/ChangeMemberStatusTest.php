@@ -6,6 +6,7 @@ namespace Daems\Tests\Unit\Application\Backstage;
 
 use Daems\Application\Backstage\ChangeMemberStatus\ChangeMemberStatus;
 use Daems\Application\Backstage\ChangeMemberStatus\ChangeMemberStatusInput;
+use Daems\Application\User\AnonymiseAccount\AnonymiseAccount;
 use Daems\Domain\Auth\ActingUser;
 use Daems\Domain\Auth\ForbiddenException;
 use Daems\Domain\Backstage\MemberDirectoryRepositoryInterface;
@@ -30,6 +31,23 @@ final class ChangeMemberStatusTest extends TestCase
         };
     }
 
+    private function makeAnonymiseStub(): AnonymiseAccount
+    {
+        // AnonymiseAccount is final; build a real instance with InMemory fakes.
+        // These tests never hit the 'terminated' branch, so execute() is never called.
+        return new AnonymiseAccount(
+            new \Daems\Tests\Support\Fake\InMemoryUserRepository(),
+            new \Daems\Tests\Support\Fake\InMemoryUserTenantRepository(),
+            new \Daems\Tests\Support\Fake\InMemoryAuthTokenRepository(),
+            new \Daems\Tests\Support\Fake\InMemoryMemberStatusAuditRepository(),
+            new \Daems\Tests\Support\Fake\ImmediateTransactionManager(),
+            $this->clock,
+            new class implements \Daems\Domain\Shared\IdGeneratorInterface {
+                public function generate(): string { return '01958000-0000-7000-8000-00000000aaaa'; }
+            },
+        );
+    }
+
     private function acting(bool $platformAdmin, ?UserTenantRole $role = UserTenantRole::Admin): ActingUser
     {
         return new ActingUser(
@@ -43,7 +61,7 @@ final class ChangeMemberStatusTest extends TestCase
     {
         $this->expectException(ForbiddenException::class);
         $repo = $this->createMock(MemberDirectoryRepositoryInterface::class);
-        (new ChangeMemberStatus($repo, $this->clock))->execute(
+        (new ChangeMemberStatus($repo, $this->makeAnonymiseStub(), $this->clock))->execute(
             new ChangeMemberStatusInput(
                 $this->acting(platformAdmin: false, role: UserTenantRole::Admin),
                 UserId::generate()->value(), 'suspended', 'reason',
@@ -55,7 +73,7 @@ final class ChangeMemberStatusTest extends TestCase
     {
         $this->expectException(ValidationException::class);
         $repo = $this->createMock(MemberDirectoryRepositoryInterface::class);
-        (new ChangeMemberStatus($repo, $this->clock))->execute(
+        (new ChangeMemberStatus($repo, $this->makeAnonymiseStub(), $this->clock))->execute(
             new ChangeMemberStatusInput($this->acting(platformAdmin: true), UserId::generate()->value(), 'frobnicated', 'reason'),
         );
     }
@@ -64,7 +82,7 @@ final class ChangeMemberStatusTest extends TestCase
     {
         $this->expectException(ValidationException::class);
         $repo = $this->createMock(MemberDirectoryRepositoryInterface::class);
-        (new ChangeMemberStatus($repo, $this->clock))->execute(
+        (new ChangeMemberStatus($repo, $this->makeAnonymiseStub(), $this->clock))->execute(
             new ChangeMemberStatusInput($this->acting(platformAdmin: true), UserId::generate()->value(), 'suspended', '   '),
         );
     }
@@ -74,7 +92,7 @@ final class ChangeMemberStatusTest extends TestCase
         $repo = $this->createMock(MemberDirectoryRepositoryInterface::class);
         $repo->expects($this->once())->method('changeStatus');
 
-        $out = (new ChangeMemberStatus($repo, $this->clock))->execute(
+        $out = (new ChangeMemberStatus($repo, $this->makeAnonymiseStub(), $this->clock))->execute(
             new ChangeMemberStatusInput($this->acting(platformAdmin: true), UserId::generate()->value(), 'suspended', 'overdue fees'),
         );
 
