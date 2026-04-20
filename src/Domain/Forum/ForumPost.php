@@ -23,6 +23,7 @@ final class ForumPost
         private readonly int $likes,
         private readonly string $createdAt,
         private readonly int $sortOrder,
+        private readonly ?string $editedAt = null,
     ) {}
 
     public function id(): ForumPostId { return $this->id; }
@@ -39,4 +40,5 @@ final class ForumPost
     public function likes(): int { return $this->likes; }
     public function createdAt(): string { return $this->createdAt; }
     public function sortOrder(): int { return $this->sortOrder; }
+    public function editedAt(): ?string { return $this->editedAt; }
 }

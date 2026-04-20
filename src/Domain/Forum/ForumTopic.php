@@ -24,6 +24,7 @@ final class ForumTopic
         private readonly string $lastActivityAt,
         private readonly string $lastActivityBy,
         private readonly string $createdAt,
+        private readonly bool $locked = false,
     ) {}
 
     public function id(): ForumTopicId { return $this->id; }
@@ -41,4 +42,5 @@ final class ForumTopic
     public function lastActivityAt(): string { return $this->lastActivityAt; }
     public function lastActivityBy(): string { return $this->lastActivityBy; }
     public function createdAt(): string { return $this->createdAt; }
+    public function locked(): bool { return $this->locked; }
 }

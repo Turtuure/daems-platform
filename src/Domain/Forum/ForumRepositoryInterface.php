@@ -37,4 +37,36 @@ interface ForumRepositoryInterface
 
     /** @return array{total:int, posts:array} */
     public function findPostsByUserId(string $userId, int $limit = 5): array;
+
+    public function setTopicPinnedForTenant(string $topicId, TenantId $tenantId, bool $pinned): void;
+
+    public function setTopicLockedForTenant(string $topicId, TenantId $tenantId, bool $locked): void;
+
+    public function deleteTopicForTenant(string $topicId, TenantId $tenantId): void;
+
+    public function deletePostForTenant(string $postId, TenantId $tenantId): void;
+
+    public function updatePostContentForTenant(string $postId, TenantId $tenantId, string $content, string $editedAt): void;
+
+    public function findPostByIdForTenant(string $postId, TenantId $tenantId): ?ForumPost;
+
+    public function findTopicByIdForTenant(string $topicId, TenantId $tenantId): ?ForumTopic;
+
+    /**
+     * @param array<string, mixed> $filters
+     * @return ForumTopic[]
+     */
+    public function listRecentTopicsForTenant(TenantId $tenantId, int $limit, array $filters): array;
+
+    /**
+     * @param array<string, mixed> $filters
+     * @return ForumPost[]
+     */
+    public function listRecentPostsForTenant(TenantId $tenantId, int $limit, array $filters): array;
+
+    public function countTopicsInCategoryForTenant(string $categoryId, TenantId $tenantId): int;
+
+    public function updateCategoryForTenant(ForumCategory $category): void;
+
+    public function deleteCategoryForTenant(string $categoryId, TenantId $tenantId): void;
 }

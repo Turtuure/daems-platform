@@ -117,14 +117,15 @@ final class SqlForumRepository implements ForumRepositoryInterface
         $this->db->execute(
             'INSERT INTO forum_topics
                 (id, tenant_id, category_id, user_id, slug, title, author_name, avatar_initials, avatar_color,
-                 pinned, reply_count, view_count, last_activity_at, last_activity_by, created_at)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                 pinned, reply_count, view_count, last_activity_at, last_activity_by, created_at, locked)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
              ON DUPLICATE KEY UPDATE
                 title            = VALUES(title),
                 author_name      = VALUES(author_name),
                 avatar_initials  = VALUES(avatar_initials),
                 avatar_color     = VALUES(avatar_color),
                 pinned           = VALUES(pinned),
+                locked           = VALUES(locked),
                 reply_count      = VALUES(reply_count),
                 view_count       = VALUES(view_count),
                 last_activity_at = VALUES(last_activity_at),
@@ -145,6 +146,7 @@ final class SqlForumRepository implements ForumRepositoryInterface
                 $topic->lastActivityAt(),
                 $topic->lastActivityBy(),
                 $topic->createdAt(),
+                $topic->locked() ? 1 : 0,
             ],
         );
     }
@@ -154,11 +156,12 @@ final class SqlForumRepository implements ForumRepositoryInterface
         $this->db->execute(
             'INSERT INTO forum_posts
                 (id, tenant_id, topic_id, user_id, author_name, avatar_initials, avatar_color,
-                 role, role_class, joined_text, content, likes, created_at, sort_order)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                 role, role_class, joined_text, content, likes, created_at, sort_order, edited_at)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
              ON DUPLICATE KEY UPDATE
                 content    = VALUES(content),
-                likes      = VALUES(likes)',
+                likes      = VALUES(likes),
+                edited_at  = VALUES(edited_at)',
             [
                 $post->id()->value(),
                 $post->tenantId()->value(),
@@ -174,6 +177,7 @@ final class SqlForumRepository implements ForumRepositoryInterface
                 $post->likes(),
                 $post->createdAt(),
                 $post->sortOrder(),
+                $post->editedAt(),
             ],
         );
     }
@@ -203,6 +207,148 @@ final class SqlForumRepository implements ForumRepositoryInterface
         $this->db->execute(
             'UPDATE forum_posts SET likes = likes + 1 WHERE id = ?',
             [$postId],
+        );
+    }
+
+    public function setTopicPinnedForTenant(string $topicId, TenantId $tenantId, bool $pinned): void
+    {
+        $this->db->execute(
+            'UPDATE forum_topics SET pinned = ? WHERE id = ? AND tenant_id = ?',
+            [$pinned ? 1 : 0, $topicId, $tenantId->value()],
+        );
+    }
+
+    public function setTopicLockedForTenant(string $topicId, TenantId $tenantId, bool $locked): void
+    {
+        $this->db->execute(
+            'UPDATE forum_topics SET locked = ? WHERE id = ? AND tenant_id = ?',
+            [$locked ? 1 : 0, $topicId, $tenantId->value()],
+        );
+    }
+
+    public function deleteTopicForTenant(string $topicId, TenantId $tenantId): void
+    {
+        // FK cascade on forum_posts is not set; delete posts first explicitly.
+        $this->db->execute(
+            'DELETE FROM forum_posts WHERE topic_id = ? AND tenant_id = ?',
+            [$topicId, $tenantId->value()],
+        );
+        $this->db->execute(
+            'DELETE FROM forum_topics WHERE id = ? AND tenant_id = ?',
+            [$topicId, $tenantId->value()],
+        );
+    }
+
+    public function deletePostForTenant(string $postId, TenantId $tenantId): void
+    {
+        $this->db->execute(
+            'DELETE FROM forum_posts WHERE id = ? AND tenant_id = ?',
+            [$postId, $tenantId->value()],
+        );
+    }
+
+    public function updatePostContentForTenant(string $postId, TenantId $tenantId, string $content, string $editedAt): void
+    {
+        $this->db->execute(
+            'UPDATE forum_posts SET content = ?, edited_at = ? WHERE id = ? AND tenant_id = ?',
+            [$content, $editedAt, $postId, $tenantId->value()],
+        );
+    }
+
+    public function findPostByIdForTenant(string $postId, TenantId $tenantId): ?ForumPost
+    {
+        $row = $this->db->queryOne(
+            'SELECT * FROM forum_posts WHERE id = ? AND tenant_id = ?',
+            [$postId, $tenantId->value()],
+        );
+        return $row !== null ? $this->hydratePost($row) : null;
+    }
+
+    public function findTopicByIdForTenant(string $topicId, TenantId $tenantId): ?ForumTopic
+    {
+        $row = $this->db->queryOne(
+            'SELECT * FROM forum_topics WHERE id = ? AND tenant_id = ?',
+            [$topicId, $tenantId->value()],
+        );
+        return $row !== null ? $this->hydrateTopic($row) : null;
+    }
+
+    public function listRecentTopicsForTenant(TenantId $tenantId, int $limit, array $filters): array
+    {
+        $sql = 'SELECT * FROM forum_topics WHERE tenant_id = ?';
+        $args = [$tenantId->value()];
+
+        if (!empty($filters['category_id']) && is_string($filters['category_id'])) {
+            $sql .= ' AND category_id = ?';
+            $args[] = $filters['category_id'];
+        }
+        if (!empty($filters['pinned_only'])) {
+            $sql .= ' AND pinned = 1';
+        }
+        if (!empty($filters['locked_only'])) {
+            $sql .= ' AND locked = 1';
+        }
+        if (!empty($filters['q']) && is_string($filters['q'])) {
+            $sql .= ' AND title LIKE ?';
+            $args[] = '%' . $filters['q'] . '%';
+        }
+        $sql .= ' ORDER BY created_at DESC LIMIT ?';
+        $args[] = $limit;
+
+        return array_map($this->hydrateTopic(...), $this->db->query($sql, $args));
+    }
+
+    public function listRecentPostsForTenant(TenantId $tenantId, int $limit, array $filters): array
+    {
+        $sql = 'SELECT * FROM forum_posts WHERE tenant_id = ?';
+        $args = [$tenantId->value()];
+        if (!empty($filters['topic_id']) && is_string($filters['topic_id'])) {
+            $sql .= ' AND topic_id = ?';
+            $args[] = $filters['topic_id'];
+        }
+        if (!empty($filters['q']) && is_string($filters['q'])) {
+            $sql .= ' AND content LIKE ?';
+            $args[] = '%' . $filters['q'] . '%';
+        }
+        $sql .= ' ORDER BY created_at DESC LIMIT ?';
+        $args[] = $limit;
+
+        return array_map($this->hydratePost(...), $this->db->query($sql, $args));
+    }
+
+    public function countTopicsInCategoryForTenant(string $categoryId, TenantId $tenantId): int
+    {
+        $row = $this->db->queryOne(
+            'SELECT COUNT(*) AS c FROM forum_topics WHERE category_id = ? AND tenant_id = ?',
+            [$categoryId, $tenantId->value()],
+        );
+        $c = $row['c'] ?? 0;
+        return is_numeric($c) ? (int) $c : 0;
+    }
+
+    public function updateCategoryForTenant(ForumCategory $category): void
+    {
+        $this->db->execute(
+            'UPDATE forum_categories
+                SET slug = ?, name = ?, icon = ?, description = ?, sort_order = ?
+              WHERE id = ? AND tenant_id = ?',
+            [
+                $category->slug(),
+                $category->name(),
+                $category->icon(),
+                $category->description(),
+                $category->sortOrder(),
+                $category->id()->value(),
+                $category->tenantId()->value(),
+            ],
+        );
+    }
+
+    public function deleteCategoryForTenant(string $categoryId, TenantId $tenantId): void
+    {
+        $this->db->execute(
+            'DELETE FROM forum_categories WHERE id = ? AND tenant_id = ?',
+            [$categoryId, $tenantId->value()],
         );
     }
 
@@ -241,6 +387,7 @@ final class SqlForumRepository implements ForumRepositoryInterface
             self::str($row, 'last_activity_at'),
             self::str($row, 'last_activity_by'),
             self::str($row, 'created_at'),
+            (bool) ($row['locked'] ?? false),
         );
     }
 
@@ -300,6 +447,7 @@ final class SqlForumRepository implements ForumRepositoryInterface
             self::intOf($row, 'likes'),
             self::str($row, 'created_at'),
             self::intOf($row, 'sort_order'),
+            self::strOrNull($row, 'edited_at'),
         );
     }
 
