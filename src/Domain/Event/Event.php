@@ -21,6 +21,7 @@ final class Event
         private readonly ?string $description,
         private readonly ?string $heroImage,
         private readonly array $gallery,
+        private readonly string $status = 'published',
     ) {}
 
     public function id(): EventId { return $this->id; }
@@ -35,4 +36,5 @@ final class Event
     public function description(): ?string { return $this->description; }
     public function heroImage(): ?string { return $this->heroImage; }
     public function gallery(): array { return $this->gallery; }
+    public function status(): string { return $this->status; }
 }
