@@ -27,7 +27,7 @@ final class DismissApplication
             throw new ForbiddenException('not_tenant_admin');
         }
 
-        if (!in_array($input->appType, ['member', 'supporter'], true)) {
+        if (!in_array($input->appType, ['member', 'supporter', 'project_proposal'], true)) {
             throw new ValidationException(['app_type' => 'invalid_value']);
         }
 

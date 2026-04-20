@@ -115,4 +115,22 @@ final class DismissApplicationTest extends TestCase
         $sut = new DismissApplication($repo, $this->makeClock(), $this->makeIds());
         $sut->execute(new DismissApplicationInput($acting, '01958000-0000-7000-8000-000000000020', 'invalid'));
     }
+
+    public function test_accepts_project_proposal_app_type(): void
+    {
+        $repo   = new InMemoryAdminApplicationDismissalRepository();
+        $acting = $this->adminActingUser('01958000-0000-7000-8000-000000000010');
+
+        $sut = new DismissApplication($repo, $this->makeClock(), $this->makeIds());
+        $sut->execute(new DismissApplicationInput(
+            $acting,
+            '01959900-0000-7000-8000-0000000000aa',
+            'project_proposal',
+        ));
+
+        self::assertSame(
+            ['01959900-0000-7000-8000-0000000000aa'],
+            $repo->listAppIdsDismissedByAdmin('01958000-0000-7000-8000-000000000010'),
+        );
+    }
 }
