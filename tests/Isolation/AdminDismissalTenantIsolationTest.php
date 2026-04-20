@@ -12,6 +12,8 @@ use Daems\Domain\Auth\ActingUser;
 use Daems\Domain\Shared\ValueObject\Uuid7;
 use Daems\Domain\Tenant\UserTenantRole;
 use Daems\Infrastructure\Adapter\Persistence\Sql\SqlAdminApplicationDismissalRepository;
+use Daems\Infrastructure\Adapter\Persistence\Sql\SqlForumReportRepository;
+use Daems\Infrastructure\Adapter\Persistence\Sql\SqlForumRepository;
 use Daems\Infrastructure\Adapter\Persistence\Sql\SqlMemberApplicationRepository;
 use Daems\Infrastructure\Adapter\Persistence\Sql\SqlProjectProposalRepository;
 use Daems\Infrastructure\Adapter\Persistence\Sql\SqlSupporterApplicationRepository;
@@ -58,6 +60,8 @@ final class AdminDismissalTenantIsolationTest extends IsolationTestCase
             new SqlSupporterApplicationRepository($this->conn),
             new SqlAdminApplicationDismissalRepository($this->conn->pdo()),
             new SqlProjectProposalRepository($this->conn),
+            new SqlForumReportRepository($this->conn),
+            new SqlForumRepository($this->conn),
         );
     }
 

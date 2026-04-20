@@ -20,9 +20,12 @@ use Daems\Domain\Tenant\TenantId;
 use Daems\Domain\Tenant\UserTenantRole;
 use Daems\Domain\User\UserId;
 use Daems\Tests\Support\Fake\InMemoryAdminApplicationDismissalRepository;
+use Daems\Tests\Support\Fake\InMemoryForumReportRepository;
+use Daems\Tests\Support\Fake\InMemoryForumRepository;
 use Daems\Tests\Support\Fake\InMemoryMemberApplicationRepository;
 use Daems\Tests\Support\Fake\InMemoryProjectProposalRepository;
 use Daems\Tests\Support\Fake\InMemorySupporterApplicationRepository;
+use Daems\Tests\Support\ForumSeed;
 use DateTimeImmutable;
 use PHPUnit\Framework\TestCase;
 
@@ -131,6 +134,8 @@ final class ListPendingApplicationsForAdminTest extends TestCase
         $supporterApps = new InMemorySupporterApplicationRepository();
         $dismissals    = new InMemoryAdminApplicationDismissalRepository();
         $proposalRepo  = new InMemoryProjectProposalRepository();
+        $forumReports  = new InMemoryForumReportRepository();
+        $forum         = new InMemoryForumRepository();
 
         $member1 = $this->makeMemberApp('01958000-0000-7000-8000-000000000021', 'Alice');
         $member2 = $this->makeMemberApp('01958000-0000-7000-8000-000000000022', 'Bob');
@@ -149,7 +154,7 @@ final class ListPendingApplicationsForAdminTest extends TestCase
         $dismisser = new DismissApplication($dismissals, $this->makeClock(), $this->makeIds('dis-1'));
         $dismisser->execute(new DismissApplicationInput($acting, '01958000-0000-7000-8000-000000000023', 'member'));
 
-        $sut = new ListPendingApplicationsForAdmin($memberApps, $supporterApps, $dismissals, $proposalRepo);
+        $sut = new ListPendingApplicationsForAdmin($memberApps, $supporterApps, $dismissals, $proposalRepo, $forumReports, $forum);
         $out = $sut->execute(new ListPendingApplicationsForAdminInput($acting));
 
         self::assertSame(4, $out->total);
@@ -177,6 +182,8 @@ final class ListPendingApplicationsForAdminTest extends TestCase
             new InMemorySupporterApplicationRepository(),
             new InMemoryAdminApplicationDismissalRepository(),
             new InMemoryProjectProposalRepository(),
+            new InMemoryForumReportRepository(),
+            new InMemoryForumRepository(),
         );
         $sut->execute(new ListPendingApplicationsForAdminInput($this->nonAdminActingUser()));
     }
@@ -187,12 +194,14 @@ final class ListPendingApplicationsForAdminTest extends TestCase
         $supporterApps = new InMemorySupporterApplicationRepository();
         $dismissals    = new InMemoryAdminApplicationDismissalRepository();
         $proposalRepo  = new InMemoryProjectProposalRepository();
+        $forumReports  = new InMemoryForumReportRepository();
+        $forum         = new InMemoryForumRepository();
 
         $proposal = $this->makeProposal('01959900-0000-7000-8000-0000000000aa', 'Community Garden');
         $proposalRepo->save($proposal);
 
         $acting = $this->adminActingUser();
-        $sut = new ListPendingApplicationsForAdmin($memberApps, $supporterApps, $dismissals, $proposalRepo);
+        $sut = new ListPendingApplicationsForAdmin($memberApps, $supporterApps, $dismissals, $proposalRepo, $forumReports, $forum);
         $out = $sut->execute(new ListPendingApplicationsForAdminInput($acting));
 
         self::assertSame(1, $out->total);
@@ -210,6 +219,8 @@ final class ListPendingApplicationsForAdminTest extends TestCase
         $supporterApps = new InMemorySupporterApplicationRepository();
         $dismissals    = new InMemoryAdminApplicationDismissalRepository();
         $proposalRepo  = new InMemoryProjectProposalRepository();
+        $forumReports  = new InMemoryForumReportRepository();
+        $forum         = new InMemoryForumRepository();
 
         $proposalId = '01959900-0000-7000-8000-0000000000bb';
         $proposalRepo->save($this->makeProposal($proposalId, 'Dismissed Proposal'));
@@ -219,10 +230,114 @@ final class ListPendingApplicationsForAdminTest extends TestCase
         $dismisser = new DismissApplication($dismissals, $this->makeClock(), $this->makeIds('dis-proposal'));
         $dismisser->execute(new DismissApplicationInput($acting, $proposalId, 'project_proposal'));
 
-        $sut = new ListPendingApplicationsForAdmin($memberApps, $supporterApps, $dismissals, $proposalRepo);
+        $sut = new ListPendingApplicationsForAdmin($memberApps, $supporterApps, $dismissals, $proposalRepo, $forumReports, $forum);
         $out = $sut->execute(new ListPendingApplicationsForAdminInput($acting));
 
         self::assertSame(0, $out->total);
         self::assertSame([], $out->items);
+    }
+
+    public function test_includes_aggregated_forum_reports(): void
+    {
+        $memberApps    = new InMemoryMemberApplicationRepository();
+        $supporterApps = new InMemorySupporterApplicationRepository();
+        $dismissals    = new InMemoryAdminApplicationDismissalRepository();
+        $proposalRepo  = new InMemoryProjectProposalRepository();
+        $forumReports  = new InMemoryForumReportRepository();
+        $forum         = new InMemoryForumRepository();
+
+        $postId  = '01958000-0000-7000-8000-0000000a0001';
+        $topicId = '01958000-0000-7000-8000-000000010001';
+
+        ForumSeed::seedTopic($forum, $this->tenant, $topicId, 'topic-one', 'Offending Topic Title');
+        ForumSeed::seedPost(
+            $forum,
+            $this->tenant,
+            $postId,
+            $topicId,
+            'This is the offending post content that will be trimmed to 80 chars if longer...',
+        );
+
+        // Two reports on the same post, one on the topic → 2 aggregated entries.
+        $forumReports->seedOpen(
+            $this->tenant,
+            'post',
+            $postId,
+            '01958000-0000-7000-8000-0000000b0001',
+            'spam',
+        );
+        $forumReports->seedOpen(
+            $this->tenant,
+            'post',
+            $postId,
+            '01958000-0000-7000-8000-0000000b0002',
+            'harassment',
+        );
+        $forumReports->seedOpen(
+            $this->tenant,
+            'topic',
+            $topicId,
+            '01958000-0000-7000-8000-0000000b0003',
+            'hate_speech',
+        );
+
+        $acting = $this->adminActingUser();
+        $sut = new ListPendingApplicationsForAdmin($memberApps, $supporterApps, $dismissals, $proposalRepo, $forumReports, $forum);
+        $out = $sut->execute(new ListPendingApplicationsForAdminInput($acting));
+
+        $forumItems = array_values(array_filter(
+            $out->items,
+            static fn (array $item): bool => $item['type'] === 'forum_report',
+        ));
+
+        self::assertCount(2, $forumItems, 'expected exactly 2 aggregated forum_report items (one per target)');
+
+        $byId = [];
+        foreach ($forumItems as $item) {
+            $byId[$item['id']] = $item;
+        }
+
+        self::assertArrayHasKey('post:' . $postId, $byId);
+        self::assertArrayHasKey('topic:' . $topicId, $byId);
+
+        self::assertSame('forum_report', $byId['post:' . $postId]['type']);
+        self::assertStringStartsWith('This is the offending post content', $byId['post:' . $postId]['name']);
+        self::assertLessThanOrEqual(80, mb_strlen($byId['post:' . $postId]['name']));
+
+        self::assertSame('forum_report', $byId['topic:' . $topicId]['type']);
+        self::assertSame('Offending Topic Title', $byId['topic:' . $topicId]['name']);
+    }
+
+    public function test_dismissed_forum_report_excluded(): void
+    {
+        $memberApps    = new InMemoryMemberApplicationRepository();
+        $supporterApps = new InMemorySupporterApplicationRepository();
+        $dismissals    = new InMemoryAdminApplicationDismissalRepository();
+        $proposalRepo  = new InMemoryProjectProposalRepository();
+        $forumReports  = new InMemoryForumReportRepository();
+        $forum         = new InMemoryForumRepository();
+
+        $postId = '01958000-0000-7000-8000-0000000a0001';
+        ForumSeed::seedPost($forum, $this->tenant, $postId, null, 'offending post');
+
+        $forumReports->seedOpen(
+            $this->tenant,
+            'post',
+            $postId,
+            '01958000-0000-7000-8000-0000000b0001',
+            'spam',
+        );
+
+        $acting = $this->adminActingUser('01958000-0000-7000-8000-000000000010');
+        $compoundId = 'post:' . $postId;
+
+        $dismisser = new DismissApplication($dismissals, $this->makeClock(), $this->makeIds('dis-fr'));
+        $dismisser->execute(new DismissApplicationInput($acting, $compoundId, 'forum_report'));
+
+        $sut = new ListPendingApplicationsForAdmin($memberApps, $supporterApps, $dismissals, $proposalRepo, $forumReports, $forum);
+        $out = $sut->execute(new ListPendingApplicationsForAdminInput($acting));
+
+        $ids = array_column($out->items, 'id');
+        self::assertNotContains($compoundId, $ids, 'dismissed forum_report must be excluded from output');
     }
 }

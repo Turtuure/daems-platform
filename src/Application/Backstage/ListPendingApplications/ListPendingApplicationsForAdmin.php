@@ -6,6 +6,9 @@ namespace Daems\Application\Backstage\ListPendingApplications;
 
 use Daems\Domain\Auth\ForbiddenException;
 use Daems\Domain\Dismissal\AdminApplicationDismissalRepositoryInterface;
+use Daems\Domain\Forum\ForumReport;
+use Daems\Domain\Forum\ForumReportRepositoryInterface;
+use Daems\Domain\Forum\ForumRepositoryInterface;
 use Daems\Domain\Membership\MemberApplicationRepositoryInterface;
 use Daems\Domain\Membership\SupporterApplicationRepositoryInterface;
 use Daems\Domain\Project\ProjectProposalRepositoryInterface;
@@ -19,6 +22,8 @@ final class ListPendingApplicationsForAdmin
         private readonly SupporterApplicationRepositoryInterface $supporters,
         private readonly AdminApplicationDismissalRepositoryInterface $dismissals,
         private readonly ProjectProposalRepositoryInterface $proposals,
+        private readonly ForumReportRepositoryInterface $forumReports,
+        private readonly ForumRepositoryInterface $forum,
     ) {}
 
     public function execute(ListPendingApplicationsForAdminInput $input): ListPendingApplicationsForAdminOutput
@@ -69,6 +74,30 @@ final class ListPendingApplicationsForAdmin
                 'type'       => 'project_proposal',
                 'name'       => $proposal->title(),
                 'created_at' => $proposal->createdAt(),
+            ];
+        }
+
+        $forumAggregated = $this->forumReports->listAggregatedForTenant(
+            $tenantId,
+            ['status' => ForumReport::STATUS_OPEN],
+        );
+        foreach ($forumAggregated as $agg) {
+            $compoundId = $agg->compoundKey();
+            if (isset($dismissed[$compoundId])) {
+                continue;
+            }
+            if ($agg->targetType === 'post') {
+                $p = $this->forum->findPostByIdForTenant($agg->targetId, $tenantId);
+                $name = $p !== null ? mb_substr(trim($p->content()), 0, 80) : '(deleted post)';
+            } else {
+                $t = $this->forum->findTopicByIdForTenant($agg->targetId, $tenantId);
+                $name = $t !== null ? $t->title() : '(deleted topic)';
+            }
+            $items[] = [
+                'id'         => $compoundId,
+                'type'       => 'forum_report',
+                'name'       => $name,
+                'created_at' => $agg->latestCreatedAt,
             ];
         }
 

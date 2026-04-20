@@ -83,6 +83,7 @@ use Daems\Infrastructure\Framework\Logging\LoggerInterface;
 use Daems\Tests\Support\Fake\InMemoryAuthLoginAttemptRepository;
 use Daems\Tests\Support\Fake\InMemoryAuthTokenRepository;
 use Daems\Tests\Support\Fake\InMemoryEventRepository;
+use Daems\Tests\Support\Fake\InMemoryForumReportRepository;
 use Daems\Tests\Support\Fake\InMemoryForumRepository;
 use Daems\Tests\Support\Fake\InMemoryInsightRepository;
 use Daems\Tests\Support\Fake\ImmediateTransactionManager;
@@ -115,6 +116,7 @@ final class KernelHarness
     public InMemoryAuthLoginAttemptRepository $attempts;
     public InMemoryProjectRepository $projects;
     public InMemoryForumRepository $forum;
+    public InMemoryForumReportRepository $forumReports;
     public InMemoryEventRepository $events;
     public InMemoryProjectProposalRepository $proposals;
     public InMemoryInsightRepository $insights;
@@ -142,6 +144,7 @@ final class KernelHarness
         $this->attempts = new InMemoryAuthLoginAttemptRepository();
         $this->projects = new InMemoryProjectRepository();
         $this->forum = new InMemoryForumRepository();
+        $this->forumReports = new InMemoryForumReportRepository();
         $this->events = new InMemoryEventRepository();
         $this->proposals = new InMemoryProjectProposalRepository();
         $this->insights = new InMemoryInsightRepository();
@@ -185,6 +188,7 @@ final class KernelHarness
         $container->singleton(AdminApplicationDismissalRepositoryInterface::class, fn() => $this->dismissals);
         $container->singleton(ProjectRepositoryInterface::class, fn() => $this->projects);
         $container->singleton(ForumRepositoryInterface::class, fn() => $this->forum);
+        $container->singleton(\Daems\Domain\Forum\ForumReportRepositoryInterface::class, fn() => $this->forumReports);
         $container->singleton(EventRepositoryInterface::class, fn() => $this->events);
         $container->singleton(ProjectProposalRepositoryInterface::class, fn() => $this->proposals);
         $container->singleton(\Daems\Domain\Project\ProjectCommentModerationAuditRepositoryInterface::class, fn() => $this->commentAudit);
@@ -347,6 +351,8 @@ final class KernelHarness
             $c->make(\Daems\Domain\Membership\SupporterApplicationRepositoryInterface::class),
             $c->make(AdminApplicationDismissalRepositoryInterface::class),
             $c->make(ProjectProposalRepositoryInterface::class),
+            $c->make(\Daems\Domain\Forum\ForumReportRepositoryInterface::class),
+            $c->make(ForumRepositoryInterface::class),
         ));
         $container->bind(\Daems\Application\Backstage\DecideApplication\DecideApplication::class, static fn(Container $c) => new \Daems\Application\Backstage\DecideApplication\DecideApplication(
             $c->make(\Daems\Domain\Membership\MemberApplicationRepositoryInterface::class),

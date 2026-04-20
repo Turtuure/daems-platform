@@ -133,4 +133,55 @@ final class DismissApplicationTest extends TestCase
             $repo->listAppIdsDismissedByAdmin('01958000-0000-7000-8000-000000000010'),
         );
     }
+
+    public function test_accepts_forum_report_type_with_compound_id(): void
+    {
+        $repo   = new InMemoryAdminApplicationDismissalRepository();
+        $acting = $this->adminActingUser('01958000-0000-7000-8000-000000000010');
+
+        $compoundPost  = 'post:01958000-0000-7000-8000-0000000a0001';
+        $compoundTopic = 'topic:01958000-0000-7000-8000-000000010001';
+
+        $sut = new DismissApplication($repo, $this->makeClock(), $this->makeIds());
+        $sut->execute(new DismissApplicationInput($acting, $compoundPost, 'forum_report'));
+        $sut->execute(new DismissApplicationInput($acting, $compoundTopic, 'forum_report'));
+
+        self::assertSame(
+            [$compoundPost, $compoundTopic],
+            $repo->listAppIdsDismissedByAdmin('01958000-0000-7000-8000-000000000010'),
+        );
+    }
+
+    public function test_rejects_malformed_forum_report_compound_id(): void
+    {
+        $repo   = new InMemoryAdminApplicationDismissalRepository();
+        $acting = $this->adminActingUser('01958000-0000-7000-8000-000000000010');
+
+        $sut = new DismissApplication($repo, $this->makeClock(), $this->makeIds());
+
+        $invalidIds = [
+            // wrong prefix
+            'user:01958000-0000-7000-8000-0000000a0001',
+            // missing uuid portion
+            'post:',
+            // no prefix / not compound
+            '01958000-0000-7000-8000-0000000a0001',
+            // uppercase hex disallowed
+            'post:01958000-0000-7000-8000-0000000A0001',
+            // wrong separator
+            'post-01958000-0000-7000-8000-0000000a0001',
+        ];
+
+        foreach ($invalidIds as $bad) {
+            $caught = null;
+            try {
+                $sut->execute(new DismissApplicationInput($acting, $bad, 'forum_report'));
+            } catch (ValidationException $e) {
+                $caught = $e;
+            }
+            self::assertNotNull($caught, "expected ValidationException for malformed compound id: {$bad}");
+        }
+
+        self::assertSame([], $repo->listAppIdsDismissedByAdmin('01958000-0000-7000-8000-000000000010'));
+    }
 }

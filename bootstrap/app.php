@@ -230,6 +230,8 @@ $container->bind(\Daems\Application\Backstage\ListPendingApplications\ListPendin
         $c->make(SupporterApplicationRepositoryInterface::class),
         $c->make(AdminApplicationDismissalRepositoryInterface::class),
         $c->make(ProjectProposalRepositoryInterface::class),
+        $c->make(\Daems\Domain\Forum\ForumReportRepositoryInterface::class),
+        $c->make(ForumRepositoryInterface::class),
     ),
 );
 $container->bind(\Daems\Application\Backstage\DecideApplication\DecideApplication::class,
@@ -637,6 +639,9 @@ $container->bind(UserController::class,
 // Forum
 $container->singleton(ForumRepositoryInterface::class,
     static fn(Container $c) => new SqlForumRepository($c->make(Connection::class)),
+);
+$container->singleton(\Daems\Domain\Forum\ForumReportRepositoryInterface::class,
+    static fn(Container $c) => new \Daems\Infrastructure\Adapter\Persistence\Sql\SqlForumReportRepository($c->make(Connection::class)),
 );
 $container->bind(ListForumCategories::class,
     static fn(Container $c) => new ListForumCategories($c->make(ForumRepositoryInterface::class)),

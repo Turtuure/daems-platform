@@ -27,8 +27,14 @@ final class DismissApplication
             throw new ForbiddenException('not_tenant_admin');
         }
 
-        if (!in_array($input->appType, ['member', 'supporter', 'project_proposal'], true)) {
+        if (!in_array($input->appType, ['member', 'supporter', 'project_proposal', 'forum_report'], true)) {
             throw new ValidationException(['app_type' => 'invalid_value']);
+        }
+
+        if ($input->appType === 'forum_report'
+            && preg_match('/^(post|topic):[0-9a-f\-]{36}$/', $input->appId) !== 1
+        ) {
+            throw new ValidationException(['app_id' => 'invalid_forum_report_id']);
         }
 
         $this->repo->save(new AdminApplicationDismissal(
