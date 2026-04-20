@@ -161,6 +161,9 @@ $container->singleton(\Daems\Domain\Invite\UserInviteRepositoryInterface::class,
 $container->singleton(\Daems\Domain\Tenant\TenantMemberCounterRepositoryInterface::class,
     static fn(Container $c) => new \Daems\Infrastructure\Adapter\Persistence\Sql\SqlTenantMemberCounterRepository($c->make(Connection::class)->pdo()),
 );
+$container->singleton(\Daems\Domain\Tenant\TenantSupporterCounterRepositoryInterface::class,
+    static fn(Container $c) => new \Daems\Infrastructure\Adapter\Persistence\Sql\SqlTenantSupporterCounterRepository($c->make(Connection::class)->pdo()),
+);
 $container->singleton(\Daems\Domain\Shared\TransactionManagerInterface::class,
     static fn(Container $c) => new \Daems\Infrastructure\Adapter\Persistence\Sql\PdoTransactionManager($c->make(Connection::class)->pdo()),
 );
@@ -198,6 +201,7 @@ $container->bind(\Daems\Application\Backstage\ActivateSupporter\SupporterActivat
     static fn(Container $c) => new \Daems\Application\Backstage\ActivateSupporter\SupporterActivationService(
         $c->make(UserRepositoryInterface::class),
         $c->make(\Daems\Domain\Tenant\UserTenantRepositoryInterface::class),
+        $c->make(\Daems\Domain\Tenant\TenantSupporterCounterRepositoryInterface::class),
         $c->make(Clock::class),
         $c->make(\Daems\Domain\Shared\IdGeneratorInterface::class),
     ),

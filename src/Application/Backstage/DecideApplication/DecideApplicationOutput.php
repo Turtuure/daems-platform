@@ -10,6 +10,7 @@ final class DecideApplicationOutput
         public readonly bool $success,
         public readonly ?string $activatedUserId = null,
         public readonly ?string $memberNumber = null,
+        public readonly ?string $supporterNumber = null,
         public readonly ?string $inviteUrl = null,
         public readonly ?string $inviteExpiresAt = null,
     ) {}
@@ -21,6 +22,7 @@ final class DecideApplicationOutput
             'success'           => $this->success,
             'activated_user_id' => $this->activatedUserId,
             'member_number'     => $this->memberNumber,
+            'supporter_number'  => $this->supporterNumber,
             'invite_url'        => $this->inviteUrl,
             'invite_expires_at' => $this->inviteExpiresAt,
         ], static fn (mixed $v): bool => $v !== null);

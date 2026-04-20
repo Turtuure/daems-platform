@@ -102,6 +102,7 @@ final class DecideApplicationApproveSupporterTest extends TestCase
         $supporterActivation = new SupporterActivationService(
             $users,
             $userTenants,
+            new \Daems\Tests\Support\Fake\InMemoryTenantSupporterCounterRepository(),
             $this->clock,
             $ids,
         );

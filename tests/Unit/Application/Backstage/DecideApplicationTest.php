@@ -83,7 +83,7 @@ final class DecideApplicationTest extends TestCase
             $users, $userTenants, $counters, $audit, $this->clock, $ids,
         );
         $supporterActivation = new SupporterActivationService(
-            $users, $userTenants, $this->clock, $ids,
+            $users, $userTenants, new \Daems\Tests\Support\Fake\InMemoryTenantSupporterCounterRepository(), $this->clock, $ids,
         );
 
         $tokenGen = new class implements TokenGeneratorInterface {

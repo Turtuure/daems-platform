@@ -136,6 +136,7 @@ final class DecideApplication
         return new DecideApplicationOutput(
             success: true,
             activatedUserId: $activation['userId'],
+            supporterNumber: $activation['supporterNumber'],
             inviteUrl: $invite->inviteUrl,
             inviteExpiresAt: $invite->expiresAt->format('Y-m-d H:i:s'),
         );

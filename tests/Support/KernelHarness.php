@@ -94,6 +94,7 @@ use Daems\Tests\Support\Fake\InMemoryProjectProposalRepository;
 use Daems\Tests\Support\Fake\InMemoryProjectRepository;
 use Daems\Tests\Support\Fake\InMemorySupporterApplicationRepository;
 use Daems\Tests\Support\Fake\InMemoryTenantMemberCounterRepository;
+use Daems\Tests\Support\Fake\InMemoryTenantSupporterCounterRepository;
 use Daems\Tests\Support\Fake\InMemoryTenantSlugResolver;
 use Daems\Tests\Support\Fake\InMemoryUserInviteRepository;
 use Daems\Tests\Support\Fake\InMemoryUserRepository;
@@ -121,6 +122,7 @@ final class KernelHarness
     public InMemoryAdminApplicationDismissalRepository $dismissals;
     public InMemoryUserInviteRepository $invites;
     public InMemoryTenantMemberCounterRepository $memberCounters;
+    public InMemoryTenantSupporterCounterRepository $supporterCounters;
     public InMemoryMemberStatusAuditRepository $memberStatusAudit;
     public FrozenClock $clock;
 
@@ -145,6 +147,7 @@ final class KernelHarness
         $this->dismissals = new InMemoryAdminApplicationDismissalRepository();
         $this->invites = new InMemoryUserInviteRepository();
         $this->memberCounters = new InMemoryTenantMemberCounterRepository();
+        $this->supporterCounters = new InMemoryTenantSupporterCounterRepository();
         $this->memberStatusAudit = new InMemoryMemberStatusAuditRepository();
 
         $logs = &$this->logs;
@@ -184,6 +187,7 @@ final class KernelHarness
         $container->singleton(\Daems\Domain\Backstage\MemberDirectoryRepositoryInterface::class, fn() => $this->memberDirectory);
         $container->singleton(\Daems\Domain\Invite\UserInviteRepositoryInterface::class, fn() => $this->invites);
         $container->singleton(\Daems\Domain\Tenant\TenantMemberCounterRepositoryInterface::class, fn() => $this->memberCounters);
+        $container->singleton(\Daems\Domain\Tenant\TenantSupporterCounterRepositoryInterface::class, fn() => $this->supporterCounters);
         $container->singleton(\Daems\Domain\Membership\MemberStatusAuditRepositoryInterface::class, fn() => $this->memberStatusAudit);
         $container->singleton(\Daems\Domain\Shared\TransactionManagerInterface::class, fn() => new ImmediateTransactionManager());
         $container->singleton(\Daems\Domain\Invite\TokenGeneratorInterface::class, static function (): \Daems\Domain\Invite\TokenGeneratorInterface {
@@ -310,6 +314,7 @@ final class KernelHarness
         $container->bind(\Daems\Application\Backstage\ActivateSupporter\SupporterActivationService::class, static fn(Container $c) => new \Daems\Application\Backstage\ActivateSupporter\SupporterActivationService(
             $c->make(UserRepositoryInterface::class),
             $c->make(UserTenantRepositoryInterface::class),
+            $c->make(\Daems\Domain\Tenant\TenantSupporterCounterRepositoryInterface::class),
             $c->make(Clock::class),
             $c->make(\Daems\Domain\Shared\IdGeneratorInterface::class),
         ));
