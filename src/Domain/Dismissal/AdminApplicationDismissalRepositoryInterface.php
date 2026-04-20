@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Daems\Domain\Dismissal;
 
+use Daems\Domain\Tenant\TenantId;
+
 interface AdminApplicationDismissalRepositoryInterface
 {
     /** Idempotent: upsert keyed by (admin_id, app_id). */
@@ -15,4 +17,12 @@ interface AdminApplicationDismissalRepositoryInterface
 
     /** @return list<string> app_ids dismissed by this admin */
     public function listAppIdsDismissedByAdmin(string $adminId): array;
+
+    /**
+     * Clears all admin dismissals for the given (app_type, app_id) so every admin re-sees the toast.
+     *
+     * $tenantId is accepted for future-proofing even though the current schema scopes uniqueness globally
+     * via admin_id + app_id. Implementations SHOULD ignore $tenantId until a tenant_id column is added.
+     */
+    public function clearForAppIdAnyAdmin(TenantId $tenantId, string $appType, string $appId): void;
 }

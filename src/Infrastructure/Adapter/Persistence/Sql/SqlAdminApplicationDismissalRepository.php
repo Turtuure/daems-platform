@@ -6,6 +6,7 @@ namespace Daems\Infrastructure\Adapter\Persistence\Sql;
 
 use Daems\Domain\Dismissal\AdminApplicationDismissal;
 use Daems\Domain\Dismissal\AdminApplicationDismissalRepositoryInterface;
+use Daems\Domain\Tenant\TenantId;
 use PDO;
 
 final class SqlAdminApplicationDismissalRepository implements AdminApplicationDismissalRepositoryInterface
@@ -49,5 +50,17 @@ final class SqlAdminApplicationDismissalRepository implements AdminApplicationDi
             static fn (array $r): string => (string) $r['app_id'],
             $stmt->fetchAll(PDO::FETCH_ASSOC) ?: []
         ));
+    }
+
+    public function clearForAppIdAnyAdmin(TenantId $tenantId, string $appType, string $appId): void
+    {
+        // The current schema has no tenant_id column — tenant_id is accepted in the signature for
+        // forward-compat and semantic clarity. Uniqueness is already enforced by (admin_id, app_id),
+        // and app_id for forum reports is prefixed (`post:<uuid>` / `topic:<uuid>`), so (app_type, app_id)
+        // is sufficient to target the correct rows.
+        unset($tenantId);
+        $this->pdo->prepare(
+            'DELETE FROM admin_application_dismissals WHERE app_type = ? AND app_id = ?'
+        )->execute([$appType, $appId]);
     }
 }
