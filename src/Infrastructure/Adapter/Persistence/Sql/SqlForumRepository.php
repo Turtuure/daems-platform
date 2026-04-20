@@ -49,6 +49,23 @@ final class SqlForumRepository implements ForumRepositoryInterface
         return $row !== null ? $this->hydrateCategory($row) : null;
     }
 
+    public function findCategoryByIdForTenant(string $id, TenantId $tenantId): ?ForumCategory
+    {
+        $row = $this->db->queryOne(
+            'SELECT c.*,
+                    COUNT(DISTINCT t.id) AS topic_count,
+                    COUNT(DISTINCT p.id) AS post_count
+               FROM forum_categories c
+               LEFT JOIN forum_topics t ON t.category_id = c.id
+               LEFT JOIN forum_posts  p ON p.topic_id    = t.id
+              WHERE c.id = ? AND c.tenant_id = ?
+              GROUP BY c.id',
+            [$id, $tenantId->value()],
+        );
+
+        return $row !== null ? $this->hydrateCategory($row) : null;
+    }
+
     public function findCategorySlugById(string $categoryId): string
     {
         $row = $this->db->queryOne(

@@ -43,6 +43,16 @@ final class InMemoryForumRepository implements ForumRepositoryInterface
         return $c->tenantId()->equals($tenantId) ? $c : null;
     }
 
+    public function findCategoryByIdForTenant(string $id, TenantId $tenantId): ?ForumCategory
+    {
+        foreach ($this->categoriesBySlug as $c) {
+            if ($c->id()->value() === $id && $c->tenantId()->equals($tenantId)) {
+                return $c;
+            }
+        }
+        return null;
+    }
+
     public function findTopicsByCategory(string $categoryId): array
     {
         return array_values(array_filter(

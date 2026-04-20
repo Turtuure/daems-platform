@@ -13,6 +13,8 @@ interface ForumRepositoryInterface
 
     public function findCategoryBySlugForTenant(string $slug, TenantId $tenantId): ?ForumCategory;
 
+    public function findCategoryByIdForTenant(string $id, TenantId $tenantId): ?ForumCategory;
+
     /** @return ForumTopic[] ordered by pinned DESC, last_activity_at DESC */
     public function findTopicsByCategory(string $categoryId): array;
 
