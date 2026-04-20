@@ -17,5 +17,7 @@ FROM tenants t
 LEFT JOIN user_tenants ut
        ON ut.tenant_id = t.id AND ut.role = 'member' AND ut.left_at IS NULL
 LEFT JOIN users u
-       ON u.id = ut.user_id AND u.member_number IS NOT NULL
+       ON u.id = ut.user_id
+      AND u.member_number IS NOT NULL
+      AND u.member_number REGEXP '^[0-9]+$'
 GROUP BY t.id;
