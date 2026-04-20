@@ -40,6 +40,24 @@ final class InMemoryUserRepository implements UserRepositoryInterface
         $this->idByEmail[$key] = $user->id()->value();
     }
 
+    public function createActivated(string $userId, array $fields, \DateTimeImmutable $now): User
+    {
+        $user = new User(
+            \Daems\Domain\User\UserId::fromString($userId),
+            $fields['name'],
+            $fields['email'],
+            null,
+            $fields['date_of_birth'],
+            $fields['country'],
+            membershipType:   $fields['membership_type'],
+            membershipStatus: $fields['membership_status'],
+            memberNumber:     $fields['member_number'],
+            createdAt:        $now->format('Y-m-d H:i:s'),
+        );
+        $this->save($user);
+        return $user;
+    }
+
     public function updateProfile(string $id, array $fields): void
     {
         $u = $this->byId[$id] ?? null;

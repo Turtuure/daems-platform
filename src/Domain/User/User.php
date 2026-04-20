@@ -10,8 +10,8 @@ final class User
         private readonly UserId $id,
         private readonly string $name,
         private readonly string $email,
-        private readonly string $passwordHash,
-        private readonly string $dateOfBirth,
+        private readonly ?string $passwordHash,
+        private readonly ?string $dateOfBirth,
         private readonly string $country = '',
         private readonly string $addressStreet = '',
         private readonly string $addressZip = '',
@@ -27,8 +27,8 @@ final class User
     public function id(): UserId { return $this->id; }
     public function name(): string { return $this->name; }
     public function email(): string { return $this->email; }
-    public function passwordHash(): string { return $this->passwordHash; }
-    public function dateOfBirth(): string { return $this->dateOfBirth; }
+    public function passwordHash(): ?string { return $this->passwordHash; }
+    public function dateOfBirth(): ?string { return $this->dateOfBirth; }
     public function country(): string { return $this->country; }
     public function addressStreet(): string { return $this->addressStreet; }
     public function addressZip(): string { return $this->addressZip; }

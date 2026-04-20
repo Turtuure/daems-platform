@@ -49,6 +49,36 @@ final class SqlUserRepository implements UserRepositoryInterface
         }
     }
 
+    public function createActivated(string $userId, array $fields, \DateTimeImmutable $now): User
+    {
+        try {
+            $this->db->execute(
+                'INSERT INTO users (id, name, email, password_hash, date_of_birth, country,
+                                   membership_type, membership_status, member_number, created_at)
+                 VALUES (?, ?, ?, NULL, ?, ?, ?, ?, ?, ?)',
+                [
+                    $userId,
+                    $fields['name'],
+                    $fields['email'],
+                    $fields['date_of_birth'],
+                    $fields['country'],
+                    $fields['membership_type'],
+                    $fields['membership_status'],
+                    $fields['member_number'],
+                    $now->format('Y-m-d H:i:s'),
+                ],
+            );
+        } catch (PDOException $e) {
+            if (self::isDuplicateEmail($e)) {
+                throw new ValidationException('Invalid email.');
+            }
+            throw $e;
+        }
+        $user = $this->findById($userId);
+        assert($user !== null);
+        return $user;
+    }
+
     public function updateProfile(string $id, array $fields): void
     {
         $allowed = ['name', 'email', 'date_of_birth', 'country',

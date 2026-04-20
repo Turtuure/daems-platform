@@ -34,7 +34,8 @@ final class ChangePassword
             return new ChangePasswordOutput('User not found.');
         }
 
-        if (!password_verify($input->currentPassword, $user->passwordHash())) {
+        $hash = $user->passwordHash();
+        if ($hash === null || !password_verify($input->currentPassword, $hash)) {
             return new ChangePasswordOutput('Current password is incorrect.');
         }
 

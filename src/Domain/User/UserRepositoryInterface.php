@@ -12,6 +12,22 @@ interface UserRepositoryInterface
 
     public function save(User $user): void;
 
+    /**
+     * Insert a user that is active but has no password yet (pending invite).
+     * Returns the persisted domain object.
+     *
+     * @param array{
+     *     name: string,
+     *     email: string,
+     *     date_of_birth: ?string,
+     *     country: string,
+     *     membership_type: string,
+     *     membership_status: string,
+     *     member_number: ?string
+     * } $fields
+     */
+    public function createActivated(string $userId, array $fields, \DateTimeImmutable $now): User;
+
     public function updateProfile(string $id, array $fields): void;
 
     public function updatePassword(string $id, string $newHash): void;
