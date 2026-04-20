@@ -134,6 +134,49 @@ $container->bind(AdminController::class,
     ),
 );
 
+// Backstage
+$container->singleton(\Daems\Domain\Backstage\MemberDirectoryRepositoryInterface::class,
+    static fn(Container $c) => new \Daems\Infrastructure\Adapter\Persistence\Sql\SqlMemberDirectoryRepository($c->make(Connection::class)),
+);
+$container->bind(\Daems\Application\Backstage\ListPendingApplications\ListPendingApplications::class,
+    static fn(Container $c) => new \Daems\Application\Backstage\ListPendingApplications\ListPendingApplications(
+        $c->make(MemberApplicationRepositoryInterface::class),
+        $c->make(SupporterApplicationRepositoryInterface::class),
+    ),
+);
+$container->bind(\Daems\Application\Backstage\DecideApplication\DecideApplication::class,
+    static fn(Container $c) => new \Daems\Application\Backstage\DecideApplication\DecideApplication(
+        $c->make(MemberApplicationRepositoryInterface::class),
+        $c->make(SupporterApplicationRepositoryInterface::class),
+        $c->make(\Daems\Domain\Shared\Clock::class),
+    ),
+);
+$container->bind(\Daems\Application\Backstage\ListMembers\ListMembers::class,
+    static fn(Container $c) => new \Daems\Application\Backstage\ListMembers\ListMembers(
+        $c->make(\Daems\Domain\Backstage\MemberDirectoryRepositoryInterface::class),
+    ),
+);
+$container->bind(\Daems\Application\Backstage\ChangeMemberStatus\ChangeMemberStatus::class,
+    static fn(Container $c) => new \Daems\Application\Backstage\ChangeMemberStatus\ChangeMemberStatus(
+        $c->make(\Daems\Domain\Backstage\MemberDirectoryRepositoryInterface::class),
+        $c->make(\Daems\Domain\Shared\Clock::class),
+    ),
+);
+$container->bind(\Daems\Application\Backstage\GetMemberAudit\GetMemberAudit::class,
+    static fn(Container $c) => new \Daems\Application\Backstage\GetMemberAudit\GetMemberAudit(
+        $c->make(\Daems\Domain\Backstage\MemberDirectoryRepositoryInterface::class),
+    ),
+);
+$container->bind(\Daems\Infrastructure\Adapter\Api\Controller\BackstageController::class,
+    static fn(Container $c) => new \Daems\Infrastructure\Adapter\Api\Controller\BackstageController(
+        $c->make(\Daems\Application\Backstage\ListPendingApplications\ListPendingApplications::class),
+        $c->make(\Daems\Application\Backstage\DecideApplication\DecideApplication::class),
+        $c->make(\Daems\Application\Backstage\ListMembers\ListMembers::class),
+        $c->make(\Daems\Application\Backstage\ChangeMemberStatus\ChangeMemberStatus::class),
+        $c->make(\Daems\Application\Backstage\GetMemberAudit\GetMemberAudit::class),
+    ),
+);
+
 // Events
 $container->singleton(EventRepositoryInterface::class,
     static fn(Container $c) => new SqlEventRepository($c->make(Connection::class)),
