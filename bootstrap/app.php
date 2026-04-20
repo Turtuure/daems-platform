@@ -140,13 +140,19 @@ $container->bind(AdminController::class,
 $container->singleton(\Daems\Domain\Invite\TokenGeneratorInterface::class,
     static fn() => new \Daems\Infrastructure\Token\RandomTokenGenerator(),
 );
+$container->singleton(\Daems\Domain\Tenant\TenantSlugResolverInterface::class,
+    static fn(Container $c) => new \Daems\Infrastructure\Adapter\Persistence\Sql\SqlTenantSlugResolver(
+        $c->make(Connection::class)->pdo(),
+    ),
+);
 $container->singleton(\Daems\Domain\Config\BaseUrlResolverInterface::class,
-    static fn() => new \Daems\Infrastructure\Config\EnvBaseUrlResolver(
+    static fn(Container $c) => new \Daems\Infrastructure\Config\EnvBaseUrlResolver(
         [
             'daems'      => 'http://daem-society.local',
             'sahegroup'  => 'http://sahegroup.local',
         ],
         'http://daems-platform.local',
+        $c->make(\Daems\Domain\Tenant\TenantSlugResolverInterface::class),
     ),
 );
 $container->singleton(\Daems\Domain\Invite\UserInviteRepositoryInterface::class,

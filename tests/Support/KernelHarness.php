@@ -94,6 +94,7 @@ use Daems\Tests\Support\Fake\InMemoryProjectProposalRepository;
 use Daems\Tests\Support\Fake\InMemoryProjectRepository;
 use Daems\Tests\Support\Fake\InMemorySupporterApplicationRepository;
 use Daems\Tests\Support\Fake\InMemoryTenantMemberCounterRepository;
+use Daems\Tests\Support\Fake\InMemoryTenantSlugResolver;
 use Daems\Tests\Support\Fake\InMemoryUserInviteRepository;
 use Daems\Tests\Support\Fake\InMemoryUserRepository;
 use Daems\Tests\Support\Fake\InMemoryUserTenantRepository;
@@ -194,6 +195,7 @@ final class KernelHarness
                 }
             };
         });
+        $container->singleton(\Daems\Domain\Tenant\TenantSlugResolverInterface::class, static fn(): \Daems\Domain\Tenant\TenantSlugResolverInterface => new InMemoryTenantSlugResolver());
         $container->singleton(\Daems\Domain\Config\BaseUrlResolverInterface::class, static fn(): \Daems\Domain\Config\BaseUrlResolverInterface => new class implements \Daems\Domain\Config\BaseUrlResolverInterface {
             public function resolveFrontendBaseUrl(string $tenantId): string
             {
