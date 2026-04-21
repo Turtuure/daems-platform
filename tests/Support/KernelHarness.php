@@ -691,7 +691,46 @@ final class KernelHarness
             $c->make(\Daems\Application\Backstage\Forum\UpdateForumCategoryAsAdmin\UpdateForumCategoryAsAdmin::class),
             $c->make(\Daems\Application\Backstage\Forum\DeleteForumCategoryAsAdmin\DeleteForumCategoryAsAdmin::class),
             $c->make(\Daems\Application\Backstage\Forum\ListForumModerationAuditForAdmin\ListForumModerationAuditForAdmin::class),
+            $c->make(\Daems\Application\Backstage\GetEventWithAllTranslations\GetEventWithAllTranslations::class),
+            $c->make(\Daems\Application\Backstage\UpdateEventTranslation\UpdateEventTranslation::class),
+            $c->make(\Daems\Application\Backstage\GetProjectWithAllTranslations\GetProjectWithAllTranslations::class),
+            $c->make(\Daems\Application\Backstage\UpdateProjectTranslation\UpdateProjectTranslation::class),
+            $c->make(\Daems\Application\Backstage\ListEventProposalsForAdmin\ListEventProposalsForAdmin::class),
+            $c->make(\Daems\Application\Backstage\ApproveEventProposal\ApproveEventProposal::class),
+            $c->make(\Daems\Application\Backstage\RejectEventProposal\RejectEventProposal::class),
         ));
+        $container->bind(\Daems\Application\Backstage\GetEventWithAllTranslations\GetEventWithAllTranslations::class,
+            static fn(Container $c) => new \Daems\Application\Backstage\GetEventWithAllTranslations\GetEventWithAllTranslations(
+                $c->make(EventRepositoryInterface::class),
+            ));
+        $container->bind(\Daems\Application\Backstage\UpdateEventTranslation\UpdateEventTranslation::class,
+            static fn(Container $c) => new \Daems\Application\Backstage\UpdateEventTranslation\UpdateEventTranslation(
+                $c->make(EventRepositoryInterface::class),
+            ));
+        $container->bind(\Daems\Application\Backstage\GetProjectWithAllTranslations\GetProjectWithAllTranslations::class,
+            static fn(Container $c) => new \Daems\Application\Backstage\GetProjectWithAllTranslations\GetProjectWithAllTranslations(
+                $c->make(ProjectRepositoryInterface::class),
+            ));
+        $container->bind(\Daems\Application\Backstage\UpdateProjectTranslation\UpdateProjectTranslation::class,
+            static fn(Container $c) => new \Daems\Application\Backstage\UpdateProjectTranslation\UpdateProjectTranslation(
+                $c->make(ProjectRepositoryInterface::class),
+            ));
+        $container->bind(\Daems\Application\Backstage\ListEventProposalsForAdmin\ListEventProposalsForAdmin::class,
+            static fn(Container $c) => new \Daems\Application\Backstage\ListEventProposalsForAdmin\ListEventProposalsForAdmin(
+                $c->make(EventProposalRepositoryInterface::class),
+            ));
+        $container->bind(\Daems\Application\Backstage\ApproveEventProposal\ApproveEventProposal::class,
+            static fn(Container $c) => new \Daems\Application\Backstage\ApproveEventProposal\ApproveEventProposal(
+                $c->make(EventProposalRepositoryInterface::class),
+                $c->make(EventRepositoryInterface::class),
+                $c->make(Clock::class),
+                $c->make(\Daems\Domain\Shared\IdGeneratorInterface::class),
+            ));
+        $container->bind(\Daems\Application\Backstage\RejectEventProposal\RejectEventProposal::class,
+            static fn(Container $c) => new \Daems\Application\Backstage\RejectEventProposal\RejectEventProposal(
+                $c->make(EventProposalRepositoryInterface::class),
+                $c->make(Clock::class),
+            ));
         $container->bind(\Daems\Infrastructure\Adapter\Api\Controller\MediaController::class, static fn(Container $c) => new \Daems\Infrastructure\Adapter\Api\Controller\MediaController(
             $c->make(\Daems\Application\Backstage\UploadEventImage\UploadEventImage::class),
             $c->make(\Daems\Application\Backstage\DeleteEventImage\DeleteEventImage::class),

@@ -6,8 +6,22 @@ namespace Daems\Infrastructure\Adapter\Api\Controller;
 
 use Daems\Application\Backstage\AdminUpdateProject\AdminUpdateProject;
 use Daems\Application\Backstage\AdminUpdateProject\AdminUpdateProjectInput;
+use Daems\Application\Backstage\ApproveEventProposal\ApproveEventProposal;
+use Daems\Application\Backstage\ApproveEventProposal\ApproveEventProposalInput;
 use Daems\Application\Backstage\ApproveProjectProposal\ApproveProjectProposal;
 use Daems\Application\Backstage\ApproveProjectProposal\ApproveProjectProposalInput;
+use Daems\Application\Backstage\GetEventWithAllTranslations\GetEventWithAllTranslations;
+use Daems\Application\Backstage\GetEventWithAllTranslations\GetEventWithAllTranslationsInput;
+use Daems\Application\Backstage\GetProjectWithAllTranslations\GetProjectWithAllTranslations;
+use Daems\Application\Backstage\GetProjectWithAllTranslations\GetProjectWithAllTranslationsInput;
+use Daems\Application\Backstage\ListEventProposalsForAdmin\ListEventProposalsForAdmin;
+use Daems\Application\Backstage\ListEventProposalsForAdmin\ListEventProposalsForAdminInput;
+use Daems\Application\Backstage\RejectEventProposal\RejectEventProposal;
+use Daems\Application\Backstage\RejectEventProposal\RejectEventProposalInput;
+use Daems\Application\Backstage\UpdateEventTranslation\UpdateEventTranslation;
+use Daems\Application\Backstage\UpdateEventTranslation\UpdateEventTranslationInput;
+use Daems\Application\Backstage\UpdateProjectTranslation\UpdateProjectTranslation;
+use Daems\Application\Backstage\UpdateProjectTranslation\UpdateProjectTranslationInput;
 use Daems\Application\Backstage\ArchiveEvent\ArchiveEvent;
 use Daems\Application\Backstage\ArchiveEvent\ArchiveEventInput;
 use Daems\Application\Backstage\ChangeMemberStatus\ChangeMemberStatus;
@@ -99,9 +113,11 @@ use Daems\Application\Forum\ListForumCategories\ListForumCategoriesInput;
 use Daems\Domain\Auth\ForbiddenException;
 use Daems\Domain\Forum\ForumPost;
 use Daems\Domain\Forum\ForumTopic;
+use Daems\Domain\Locale\InvalidLocaleException;
 use Daems\Domain\Shared\ConflictException;
 use Daems\Domain\Shared\NotFoundException;
 use Daems\Domain\Shared\ValidationException;
+use Daems\Domain\Tenant\Tenant;
 use Daems\Infrastructure\Framework\Http\Request;
 use Daems\Infrastructure\Framework\Http\Response;
 use InvalidArgumentException;
@@ -155,6 +171,13 @@ final class BackstageController
         private readonly UpdateForumCategoryAsAdmin $updateForumCategory,
         private readonly DeleteForumCategoryAsAdmin $deleteForumCategory,
         private readonly ListForumModerationAuditForAdmin $listForumAudit,
+        private readonly GetEventWithAllTranslations $getEventWithAllTranslations,
+        private readonly UpdateEventTranslation $updateEventTranslation,
+        private readonly GetProjectWithAllTranslations $getProjectWithAllTranslations,
+        private readonly UpdateProjectTranslation $updateProjectTranslation,
+        private readonly ListEventProposalsForAdmin $listEventProposals,
+        private readonly ApproveEventProposal $approveEventProposal,
+        private readonly RejectEventProposal $rejectEventProposal,
     ) {}
 
     public function pendingApplications(Request $request): Response
@@ -1155,5 +1178,172 @@ final class BackstageController
             'Content-Type'        => 'text/csv; charset=utf-8',
             'Content-Disposition' => 'attachment; filename="' . $filename . '"',
         ]);
+    }
+
+    // --- i18n: event translations ---
+
+    /** @param array<string, string> $params */
+    public function getEventWithTranslations(Request $request, array $params): Response
+    {
+        $tenantId = $this->requireTenant($request)->id;
+        $acting = $request->requireActingUser();
+        $eventId = (string) ($params['id'] ?? '');
+
+        try {
+            $out = $this->getEventWithAllTranslations->execute(
+                new GetEventWithAllTranslationsInput($tenantId, $eventId, $acting),
+            );
+        } catch (ForbiddenException) {
+            return Response::json(['error' => 'forbidden'], 403);
+        } catch (NotFoundException) {
+            return Response::json(['error' => 'not_found'], 404);
+        }
+        return Response::json(['data' => $out->event]);
+    }
+
+    /** @param array<string, string> $params */
+    public function updateEventTranslation(Request $request, array $params): Response
+    {
+        $tenantId = $this->requireTenant($request)->id;
+        $acting = $request->requireActingUser();
+        $eventId = (string) ($params['id'] ?? '');
+        $localeRaw = (string) ($params['locale'] ?? '');
+        $body = $request->all();
+
+        try {
+            $out = $this->updateEventTranslation->execute(
+                new UpdateEventTranslationInput($tenantId, $eventId, $localeRaw, $body, $acting),
+            );
+        } catch (ForbiddenException) {
+            return Response::json(['error' => 'forbidden'], 403);
+        } catch (InvalidLocaleException) {
+            return Response::json(['error' => 'invalid_locale'], 400);
+        } catch (NotFoundException) {
+            return Response::json(['error' => 'not_found'], 404);
+        } catch (\DomainException $e) {
+            return Response::json(['error' => $e->getMessage()], 400);
+        }
+        return Response::json(['data' => ['coverage' => $out->coverage]]);
+    }
+
+    // --- i18n: project translations ---
+
+    /** @param array<string, string> $params */
+    public function getProjectWithTranslations(Request $request, array $params): Response
+    {
+        $tenantId = $this->requireTenant($request)->id;
+        $acting = $request->requireActingUser();
+        $projectId = (string) ($params['id'] ?? '');
+
+        try {
+            $out = $this->getProjectWithAllTranslations->execute(
+                new GetProjectWithAllTranslationsInput($tenantId, $projectId, $acting),
+            );
+        } catch (ForbiddenException) {
+            return Response::json(['error' => 'forbidden'], 403);
+        } catch (NotFoundException) {
+            return Response::json(['error' => 'not_found'], 404);
+        }
+        return Response::json(['data' => $out->project]);
+    }
+
+    /** @param array<string, string> $params */
+    public function updateProjectTranslation(Request $request, array $params): Response
+    {
+        $tenantId = $this->requireTenant($request)->id;
+        $acting = $request->requireActingUser();
+        $projectId = (string) ($params['id'] ?? '');
+        $localeRaw = (string) ($params['locale'] ?? '');
+        $body = $request->all();
+
+        try {
+            $out = $this->updateProjectTranslation->execute(
+                new UpdateProjectTranslationInput($tenantId, $projectId, $localeRaw, $body, $acting),
+            );
+        } catch (ForbiddenException) {
+            return Response::json(['error' => 'forbidden'], 403);
+        } catch (InvalidLocaleException) {
+            return Response::json(['error' => 'invalid_locale'], 400);
+        } catch (NotFoundException) {
+            return Response::json(['error' => 'not_found'], 404);
+        } catch (\DomainException $e) {
+            return Response::json(['error' => $e->getMessage()], 400);
+        }
+        return Response::json(['data' => ['coverage' => $out->coverage]]);
+    }
+
+    // --- event proposals ---
+
+    public function listEventProposals(Request $request): Response
+    {
+        $tenantId = $this->requireTenant($request)->id;
+        $acting = $request->requireActingUser();
+        $status = $request->string('status');
+
+        try {
+            $out = $this->listEventProposals->execute(
+                new ListEventProposalsForAdminInput(
+                    $tenantId,
+                    $acting,
+                    $status !== null && $status !== '' ? $status : null,
+                ),
+            );
+        } catch (ForbiddenException) {
+            return Response::json(['error' => 'forbidden'], 403);
+        }
+        return Response::json(['data' => $out->proposals]);
+    }
+
+    /** @param array<string, string> $params */
+    public function approveEventProposal(Request $request, array $params): Response
+    {
+        $acting = $request->requireActingUser();
+        $proposalId = (string) ($params['id'] ?? '');
+        $body = $request->all();
+        $note = is_string($body['note'] ?? null) ? (string) $body['note'] : null;
+
+        try {
+            $out = $this->approveEventProposal->execute(
+                new ApproveEventProposalInput($acting, $proposalId, $note),
+            );
+        } catch (ForbiddenException) {
+            return Response::json(['error' => 'forbidden'], 403);
+        } catch (NotFoundException) {
+            return Response::json(['error' => 'not_found'], 404);
+        } catch (\Daems\Domain\Shared\ValidationException $e) {
+            return Response::json(['error' => 'validation', 'details' => $e->fields()], 422);
+        }
+        return Response::json(['data' => ['event_id' => $out->eventId, 'slug' => $out->slug]], 201);
+    }
+
+    /** @param array<string, string> $params */
+    public function rejectEventProposal(Request $request, array $params): Response
+    {
+        $acting = $request->requireActingUser();
+        $proposalId = (string) ($params['id'] ?? '');
+        $body = $request->all();
+        $note = is_string($body['note'] ?? null) ? (string) $body['note'] : null;
+
+        try {
+            $this->rejectEventProposal->execute(
+                new RejectEventProposalInput($acting, $proposalId, $note),
+            );
+        } catch (ForbiddenException) {
+            return Response::json(['error' => 'forbidden'], 403);
+        } catch (NotFoundException) {
+            return Response::json(['error' => 'not_found'], 404);
+        } catch (\Daems\Domain\Shared\ValidationException $e) {
+            return Response::json(['error' => 'validation', 'details' => $e->fields()], 422);
+        }
+        return Response::json(['data' => ['ok' => true]]);
+    }
+
+    private function requireTenant(Request $request): Tenant
+    {
+        $tenant = $request->attribute('tenant');
+        if (!$tenant instanceof Tenant) {
+            throw new NotFoundException('unknown_tenant');
+        }
+        return $tenant;
     }
 }
