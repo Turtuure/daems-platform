@@ -37,7 +37,7 @@ final class ProjectsAdminIntegrationTest extends MigrationTestCase
     protected function setUp(): void
     {
         parent::setUp();
-        $this->runMigrationsUpTo(46);
+        $this->runMigrationsUpTo(56);
 
         $this->conn = new Connection([
             'host'     => getenv('TEST_DB_HOST') ?: '127.0.0.1',

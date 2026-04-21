@@ -35,7 +35,7 @@ final class EventsAdminIntegrationTest extends MigrationTestCase
     protected function setUp(): void
     {
         parent::setUp();
-        $this->runMigrationsUpTo(43);
+        $this->runMigrationsUpTo(56);
 
         $this->conn = new Connection([
             'host'     => getenv('TEST_DB_HOST') ?: '127.0.0.1',
