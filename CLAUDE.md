@@ -19,24 +19,36 @@ Open the **new terminal in `C:\laragon\www\daems-platform`** by default — this
 - `localhost` → `daems` tenant
 - `sahegroup.local` → `sahegroup` tenant
 
-## Current state (updated 2026-04-20)
+## Current state (updated 2026-04-21)
 
-Branch: `dev`. All work lands here; never push without explicit ask.
+Branch: `dev` (pushed to origin). All work lands here; never push without explicit ask.
 
 Completed milestones (see `docs/superpowers/plans/` for plans, `docs/superpowers/specs/` for specs):
 - **PR 1** — PHPStan level 9 baseline (`2026-04-19-phpstan-level9-baseline.md`)
-- **PR 2** — Tenant infrastructure (`2026-04-19-tenant-infrastructure.md`): `tenants`, `tenant_domains`, `user_tenants` tables; `TenantContextMiddleware`, `AuthMiddleware`; `ActingUser::activeTenant`; `GET /auth/me`; `X-Daems-Tenant` header override for GSA
-- **PR 3** — Tenant data migration (`2026-04-19-tenant-data-migration.md`): migrations 025–033 add `tenant_id` to every per-tenant table; all `Sql*Repository` classes scoped via `*ForTenant` methods; 7 `tests/Isolation/*TenantIsolationTest.php` classes prove cross-tenant leak prevention
-- **PR 4** — Backstage Applications + Members API (`2026-04-20-backstage-applications-and-members-api.md`): 5 endpoints under `/api/v1/backstage/*`; migrations 034 (decision metadata) + 035 (member_status_audit)
+- **PR 2** — Tenant infrastructure (`2026-04-19-tenant-infrastructure.md`)
+- **PR 3** — Tenant data migration (`2026-04-19-tenant-data-migration.md`): migrations 025–033 add `tenant_id` to every per-tenant table; 7 `tests/Isolation/*TenantIsolationTest.php` classes
+- **PR 4** — Backstage Applications + Members API (`2026-04-20-backstage-applications-and-members-api.md`): migrations 034–035
+- **2026-04-20** — Approve-flow + global toasts; Events admin; Projects admin; Forum moderation (migrations 036–050)
+- **PR 5** — Content i18n for events + projects + EventProposal (`2026-04-21-content-i18n-events-projects-design.md`): migrations 051–056; `Daems\Domain\Locale\*` value objects; locales `fi_FI|en_GB|sw_TZ`; per-field fallback via `EntityTranslationView`; admin locale-cards pattern; EventProposal mirrors ProjectProposal + `source_locale`
 
 Active roadmap (`docs/planning/roadmap.md`, section 1 Admin Panel):
 1. ✅ Dashboard overview
 2. ✅ Applications + Members pages
-3. ⏭️ **Approve-flow + global toast notifications** (next — combined spec planned)
-4. ⏭️ Events admin (`/backstage/events`)
-5. ⏭️ Projects admin (`/backstage/projects`)
-6. ⏭️ Forum moderation (`/backstage/forum`)
-7. ⏭️ Settings (`/backstage/settings`)
+3. ✅ Approve-flow + global toast notifications
+4. ✅ Events admin (`/backstage/events`)
+5. ✅ Projects admin (`/backstage/projects`)
+6. ✅ Forum moderation (`/backstage/forum`)
+7. ⏭️ **Settings** (`/backstage/settings`) — the only remaining sidebar item
+
+Outstanding technical debt — **A11 follow-up**: `SqlEventRepository` / `SqlProjectRepository` are hybrid (read/write both legacy columns + `*_i18n` tables). Migration 054 (drop legacy translated columns) not yet created. One focused cleanup PR is planned: strip hybrid branches from `hydrate()`, stop populating legacy columns in `save()`, apply migration 054, verify tests.
+
+## i18n notes (PR 5)
+
+- **UI chrome default locale** = `fi_FI` (frontend `I18n::DEFAULT_LOCALE`). **Content fallback** = `en_GB` (backend `SupportedLocale::CONTENT_FALLBACK`). These are intentionally different.
+- Locale negotiation priority (highest first): `Accept-Language` header → `?lang=` query → `X-Daems-Locale` header → default.
+- API response shape for translatable entities: `title`, `title_fallback` (bool), `title_missing` (bool) — same triple per translatable field. Admin read adds a `translations` map keyed by locale + a `coverage` map `{locale: {filled, total}}`.
+- Backstage editor pattern: locale-cards grid inside the existing `event-modal` / `project-modal`; non-translated fields in a shared panel below; save is per-locale via `POST /api/v1/backstage/{kind}s/{id}/translations/{locale}` (NOT PUT).
+- `lang/*.php` files renamed: `fi.php` → `fi_FI.php`, `en.php` → `en_GB.php`, `sw.php` → `sw_TZ.php`. Legacy 2-letter cookie/session values auto-remap on read.
 
 ## Conventions (enforce these)
 
@@ -110,6 +122,9 @@ Persistent memory for this project lives at `C:\Users\Sam\.claude\projects\C--la
 - `feedback_commit_signature.md` — Dev Team git identity
 - `feedback_bootstrap_and_harness_must_both_wire.md` — DI wiring gotcha
 - `project_ds_upgrade_status.md` — PR 1-3 status
-- `project_admin_panel_next.md` — roadmap ordering
+- `project_admin_panel_next.md` — roadmap ordering (Settings is next after i18n milestone)
+- `project_i18n_milestone.md` — PR 5 status + A11 follow-up details
+- `project_forum_moderation_next.md` — forum moderation shipped 2026-04-20
+- `feedback_phpunit_testsuite_names.md` — Unit/Integration/E2E capitalization gotcha
 
 These load automatically on session start.
