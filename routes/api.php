@@ -12,6 +12,7 @@ use Daems\Infrastructure\Adapter\Api\Controller\ProjectController;
 use Daems\Infrastructure\Adapter\Api\Controller\UserController;
 use Daems\Infrastructure\Framework\Container\Container;
 use Daems\Infrastructure\Framework\Http\Middleware\AuthMiddleware;
+use Daems\Infrastructure\Framework\Http\Middleware\LocaleMiddleware;
 use Daems\Infrastructure\Framework\Http\Middleware\RateLimitLoginMiddleware;
 use Daems\Infrastructure\Framework\Http\Middleware\TenantContextMiddleware;
 use Daems\Infrastructure\Framework\Http\Request;
@@ -42,12 +43,21 @@ return static function (Router $router, Container $container): void {
         return $container->make(AdminController::class)->memberGrowth($req);
     }, [TenantContextMiddleware::class, AuthMiddleware::class]);
 
-    // Events — public reads
+    // Events — public reads (locale-aware)
     $router->get('/api/v1/events', static function (Request $req) use ($container): Response {
+        return $container->make(EventController::class)->indexLocalized($req);
+    }, [TenantContextMiddleware::class, LocaleMiddleware::class]);
+
+    $router->get('/api/v1/events/{slug}', static function (Request $req, array $params) use ($container): Response {
+        return $container->make(EventController::class)->showLocalized($req, $params);
+    }, [TenantContextMiddleware::class, LocaleMiddleware::class]);
+
+    // Events — legacy non-localized (kept for backward compat)
+    $router->get('/api/v1/events-legacy', static function (Request $req) use ($container): Response {
         return $container->make(EventController::class)->index($req);
     }, [TenantContextMiddleware::class]);
 
-    $router->get('/api/v1/events/{slug}', static function (Request $req, array $params) use ($container): Response {
+    $router->get('/api/v1/events-legacy/{slug}', static function (Request $req, array $params) use ($container): Response {
         return $container->make(EventController::class)->show($req, $params);
     }, [TenantContextMiddleware::class]);
 
@@ -60,12 +70,21 @@ return static function (Router $router, Container $container): void {
         return $container->make(InsightController::class)->show($req, $params);
     }, [TenantContextMiddleware::class]);
 
-    // Projects — public reads
+    // Projects — public reads (locale-aware)
     $router->get('/api/v1/projects', static function (Request $req) use ($container): Response {
+        return $container->make(ProjectController::class)->indexLocalized($req);
+    }, [TenantContextMiddleware::class, LocaleMiddleware::class]);
+
+    $router->get('/api/v1/projects/{slug}', static function (Request $req, array $params) use ($container): Response {
+        return $container->make(ProjectController::class)->showLocalized($req, $params);
+    }, [TenantContextMiddleware::class, LocaleMiddleware::class]);
+
+    // Projects — legacy non-localized (kept for backward compat)
+    $router->get('/api/v1/projects-legacy', static function (Request $req) use ($container): Response {
         return $container->make(ProjectController::class)->index($req);
     }, [TenantContextMiddleware::class]);
 
-    $router->get('/api/v1/projects/{slug}', static function (Request $req, array $params) use ($container): Response {
+    $router->get('/api/v1/projects-legacy/{slug}', static function (Request $req, array $params) use ($container): Response {
         return $container->make(ProjectController::class)->show($req, $params);
     }, [TenantContextMiddleware::class]);
 
@@ -104,7 +123,12 @@ return static function (Router $router, Container $container): void {
 
     $router->post('/api/v1/project-proposals', static function (Request $req) use ($container): Response {
         return $container->make(ProjectController::class)->propose($req);
-    }, [TenantContextMiddleware::class, AuthMiddleware::class]);
+    }, [TenantContextMiddleware::class, LocaleMiddleware::class, AuthMiddleware::class]);
+
+    // Event proposals — member submit
+    $router->post('/api/v1/event-proposals', static function (Request $req) use ($container): Response {
+        return $container->make(EventController::class)->submitProposal($req);
+    }, [TenantContextMiddleware::class, LocaleMiddleware::class, AuthMiddleware::class]);
 
     // Users — all protected
     $router->get('/api/v1/users/{id}', static function (Request $req, array $params) use ($container): Response {
@@ -290,6 +314,49 @@ return static function (Router $router, Container $container): void {
 
     $router->post('/api/v1/backstage/proposals/{id}/reject', static function (Request $req, array $params) use ($container): Response {
         return $container->make(\Daems\Infrastructure\Adapter\Api\Controller\BackstageController::class)->rejectProposal($req, $params);
+    }, [TenantContextMiddleware::class, AuthMiddleware::class]);
+
+    // Backstage — project-proposals alias (preferred new naming)
+    $router->get('/api/v1/backstage/project-proposals', static function (Request $req) use ($container): Response {
+        return $container->make(\Daems\Infrastructure\Adapter\Api\Controller\BackstageController::class)->listProposalsAdmin($req);
+    }, [TenantContextMiddleware::class, AuthMiddleware::class]);
+
+    $router->post('/api/v1/backstage/project-proposals/{id}/approve', static function (Request $req, array $params) use ($container): Response {
+        return $container->make(\Daems\Infrastructure\Adapter\Api\Controller\BackstageController::class)->approveProposal($req, $params);
+    }, [TenantContextMiddleware::class, AuthMiddleware::class]);
+
+    $router->post('/api/v1/backstage/project-proposals/{id}/reject', static function (Request $req, array $params) use ($container): Response {
+        return $container->make(\Daems\Infrastructure\Adapter\Api\Controller\BackstageController::class)->rejectProposal($req, $params);
+    }, [TenantContextMiddleware::class, AuthMiddleware::class]);
+
+    // Backstage — event proposals (admin)
+    $router->get('/api/v1/backstage/event-proposals', static function (Request $req) use ($container): Response {
+        return $container->make(\Daems\Infrastructure\Adapter\Api\Controller\BackstageController::class)->listEventProposals($req);
+    }, [TenantContextMiddleware::class, AuthMiddleware::class]);
+
+    $router->post('/api/v1/backstage/event-proposals/{id}/approve', static function (Request $req, array $params) use ($container): Response {
+        return $container->make(\Daems\Infrastructure\Adapter\Api\Controller\BackstageController::class)->approveEventProposal($req, $params);
+    }, [TenantContextMiddleware::class, AuthMiddleware::class]);
+
+    $router->post('/api/v1/backstage/event-proposals/{id}/reject', static function (Request $req, array $params) use ($container): Response {
+        return $container->make(\Daems\Infrastructure\Adapter\Api\Controller\BackstageController::class)->rejectEventProposal($req, $params);
+    }, [TenantContextMiddleware::class, AuthMiddleware::class]);
+
+    // Backstage — translations (events + projects)
+    $router->get('/api/v1/backstage/events/{id}/translations', static function (Request $req, array $params) use ($container): Response {
+        return $container->make(\Daems\Infrastructure\Adapter\Api\Controller\BackstageController::class)->getEventWithTranslations($req, $params);
+    }, [TenantContextMiddleware::class, AuthMiddleware::class]);
+
+    $router->post('/api/v1/backstage/events/{id}/translations/{locale}', static function (Request $req, array $params) use ($container): Response {
+        return $container->make(\Daems\Infrastructure\Adapter\Api\Controller\BackstageController::class)->updateEventTranslation($req, $params);
+    }, [TenantContextMiddleware::class, AuthMiddleware::class]);
+
+    $router->get('/api/v1/backstage/projects/{id}/translations', static function (Request $req, array $params) use ($container): Response {
+        return $container->make(\Daems\Infrastructure\Adapter\Api\Controller\BackstageController::class)->getProjectWithTranslations($req, $params);
+    }, [TenantContextMiddleware::class, AuthMiddleware::class]);
+
+    $router->post('/api/v1/backstage/projects/{id}/translations/{locale}', static function (Request $req, array $params) use ($container): Response {
+        return $container->make(\Daems\Infrastructure\Adapter\Api\Controller\BackstageController::class)->updateProjectTranslation($req, $params);
     }, [TenantContextMiddleware::class, AuthMiddleware::class]);
 
     $router->get('/api/v1/backstage/comments/recent', static function (Request $req) use ($container): Response {

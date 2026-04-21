@@ -87,6 +87,7 @@ use Daems\Infrastructure\Framework\Container\Container;
 use Daems\Infrastructure\Framework\Database\Connection;
 use Daems\Infrastructure\Framework\Http\Kernel;
 use Daems\Infrastructure\Framework\Http\Middleware\AuthMiddleware;
+use Daems\Infrastructure\Framework\Http\Middleware\LocaleMiddleware;
 use Daems\Infrastructure\Framework\Http\Middleware\RateLimitLoginMiddleware;
 use Daems\Infrastructure\Framework\Http\Middleware\TenantContextMiddleware;
 use Daems\Infrastructure\Framework\Http\Router;
@@ -636,6 +637,7 @@ $container->singleton(TenantResolverInterface::class,
 $container->bind(TenantContextMiddleware::class,
     static fn(Container $c) => new TenantContextMiddleware($c->make(TenantResolverInterface::class)),
 );
+$container->bind(LocaleMiddleware::class, static fn() => new LocaleMiddleware());
 
 $container->bind(AuthMiddleware::class,
     static fn(Container $c) => new AuthMiddleware(

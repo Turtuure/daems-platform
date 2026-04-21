@@ -81,6 +81,7 @@ use Daems\Infrastructure\Adapter\Api\Controller\UserController;
 use Daems\Infrastructure\Framework\Container\Container;
 use Daems\Infrastructure\Framework\Http\Kernel;
 use Daems\Infrastructure\Framework\Http\Middleware\AuthMiddleware;
+use Daems\Infrastructure\Framework\Http\Middleware\LocaleMiddleware;
 use Daems\Infrastructure\Framework\Http\Middleware\RateLimitLoginMiddleware;
 use Daems\Infrastructure\Framework\Http\Request;
 use Daems\Infrastructure\Framework\Http\Response;
@@ -769,6 +770,7 @@ final class KernelHarness
                 }
             },
         ));
+        $container->bind(LocaleMiddleware::class, static fn() => new LocaleMiddleware());
 
         $container->singleton(Router::class, static function () use ($container): Router {
             $router = new Router(static fn(string $class): mixed => $container->make($class));
