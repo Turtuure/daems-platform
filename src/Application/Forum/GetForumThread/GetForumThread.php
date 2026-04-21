@@ -34,6 +34,7 @@ final class GetForumThread
                 'slug'        => $topic->slug(),
                 'title'       => $topic->title(),
                 'pinned'      => $topic->pinned(),
+                'locked'      => $topic->locked(),
                 'reply_count' => $topic->replyCount(),
                 'view_count'  => $topic->viewCount(),
                 'created_at'  => $topic->createdAt(),
