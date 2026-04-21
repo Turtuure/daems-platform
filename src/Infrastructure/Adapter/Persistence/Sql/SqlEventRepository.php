@@ -9,6 +9,7 @@ use Daems\Domain\Event\EventId;
 use Daems\Domain\Event\EventRegistration;
 use Daems\Domain\Event\EventRepositoryInterface;
 use Daems\Domain\Locale\SupportedLocale;
+use Daems\Domain\Locale\TranslationMap;
 use Daems\Domain\Tenant\TenantId;
 use Daems\Infrastructure\Framework\Database\Connection;
 
@@ -101,6 +102,14 @@ final class SqlEventRepository implements EventRepositoryInterface
                 $event->status(),
             ],
         );
+
+        // Persist explicit translations into events_i18n.
+        foreach ($event->translations()->raw() as $locale => $row) {
+            if ($row === null || !SupportedLocale::isSupported($locale)) {
+                continue;
+            }
+            $this->upsertTranslationRow($event->id()->value(), $locale, $row);
+        }
     }
 
     public function updateForTenant(string $id, TenantId $tenantId, array $fields): void
@@ -227,6 +236,20 @@ final class SqlEventRepository implements EventRepositoryInterface
         if ($exists === null) {
             throw new \DomainException('event_not_found_in_tenant');
         }
+        $this->upsertTranslationRow(
+            $eventId,
+            $locale->value(),
+            [
+                'title'       => (string) ($fields['title'] ?? ''),
+                'location'    => $fields['location'] ?? null,
+                'description' => $fields['description'] ?? null,
+            ],
+        );
+    }
+
+    /** @param array<string, ?string> $row */
+    private function upsertTranslationRow(string $eventId, string $locale, array $row): void
+    {
         $this->db->execute(
             'INSERT INTO events_i18n (event_id, locale, title, location, description)
              VALUES (?, ?, ?, ?, ?)
@@ -235,10 +258,10 @@ final class SqlEventRepository implements EventRepositoryInterface
                 description=VALUES(description), updated_at=CURRENT_TIMESTAMP',
             [
                 $eventId,
-                $locale->value(),
-                (string) ($fields['title'] ?? ''),
-                $fields['location'] ?? null,
-                $fields['description'] ?? null,
+                $locale,
+                (string) ($row['title'] ?? ''),
+                $row['location'] ?? null,
+                $row['description'] ?? null,
             ],
         );
     }
@@ -249,10 +272,14 @@ final class SqlEventRepository implements EventRepositoryInterface
         $galleryRaw = $row['gallery_json'] ?? null;
         $galleryJson = is_string($galleryRaw) ? $galleryRaw : '[]';
         $gallery = json_decode($galleryJson, true);
-        $gallery = is_array($gallery) ? $gallery : [];
+        /** @var array<int, string> $galleryArr */
+        $galleryArr = is_array($gallery) ? array_values(array_filter($gallery, 'is_string')) : [];
+
+        $eventId = self::str($row, 'id');
+        $translations = $this->loadTranslationMap($eventId, self::str($row, 'title'), self::strOrNull($row, 'location'), self::strOrNull($row, 'description'));
 
         return new Event(
-            EventId::fromString(self::str($row, 'id')),
+            EventId::fromString($eventId),
             TenantId::fromString(self::str($row, 'tenant_id')),
             self::str($row, 'slug'),
             self::str($row, 'title'),
@@ -263,9 +290,51 @@ final class SqlEventRepository implements EventRepositoryInterface
             (bool) ($row['is_online'] ?? false),
             self::strOrNull($row, 'description'),
             self::strOrNull($row, 'hero_image'),
-            $gallery,
+            $galleryArr,
             self::str($row, 'status'),
+            $translations,
         );
+    }
+
+    /**
+     * Build TranslationMap from events_i18n rows; fall back to legacy fi_FI row
+     * synthesized from legacy scalar columns if i18n table has nothing.
+     */
+    private function loadTranslationMap(
+        string $eventId,
+        string $legacyTitle,
+        ?string $legacyLocation,
+        ?string $legacyDescription,
+    ): TranslationMap {
+        $rows = $this->db->query(
+            'SELECT locale, title, location, description FROM events_i18n WHERE event_id = ?',
+            [$eventId],
+        );
+        $map = [];
+        foreach (SupportedLocale::supportedValues() as $loc) {
+            $map[$loc] = null;
+        }
+        $hasI18nRow = false;
+        foreach ($rows as $r) {
+            $loc = isset($r['locale']) && is_string($r['locale']) ? $r['locale'] : null;
+            if ($loc === null || !SupportedLocale::isSupported($loc)) {
+                continue;
+            }
+            $hasI18nRow = true;
+            $map[$loc] = [
+                'title'       => isset($r['title']) && is_string($r['title']) ? $r['title'] : '',
+                'location'    => isset($r['location']) && is_string($r['location']) ? $r['location'] : null,
+                'description' => isset($r['description']) && is_string($r['description']) ? $r['description'] : null,
+            ];
+        }
+        if (!$hasI18nRow) {
+            $map[SupportedLocale::UI_DEFAULT] = [
+                'title'       => $legacyTitle,
+                'location'    => $legacyLocation,
+                'description' => $legacyDescription,
+            ];
+        }
+        return new TranslationMap($map);
     }
 
     /** @param array<string, mixed> $row */
