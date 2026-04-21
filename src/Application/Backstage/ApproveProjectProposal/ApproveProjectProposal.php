@@ -6,6 +6,7 @@ namespace Daems\Application\Backstage\ApproveProjectProposal;
 
 use Daems\Domain\Auth\ForbiddenException;
 use Daems\Domain\Dismissal\AdminApplicationDismissalRepositoryInterface;
+use Daems\Domain\Locale\TranslationMap;
 use Daems\Domain\Project\Project;
 use Daems\Domain\Project\ProjectId;
 use Daems\Domain\Project\ProjectProposalRepositoryInterface;
@@ -50,6 +51,14 @@ final class ApproveProjectProposal
             $slug = $this->uniqueSlug($proposal->title(), $tenantId);
             $ownerUserId = UserId::fromString($proposal->userId());
 
+            $translations = new TranslationMap([
+                $proposal->sourceLocale() => [
+                    'title'       => $proposal->title(),
+                    'summary'     => $proposal->summary(),
+                    'description' => $proposal->description(),
+                ],
+            ]);
+
             $project = new Project(
                 $projectId,
                 $tenantId,
@@ -64,6 +73,7 @@ final class ApproveProjectProposal
                 $ownerUserId,
                 false,
                 '',
+                $translations,
             );
             $this->projects->save($project);
 
