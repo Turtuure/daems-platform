@@ -13,3 +13,7 @@ Thumbs.db
 
 # Local planning docs
 docs/planning/
+
+# User-generated uploads (keep folder skeleton via .gitkeep)
+/public/uploads/events/*
+!/public/uploads/events/.gitkeep
