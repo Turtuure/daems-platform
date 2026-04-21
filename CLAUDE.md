@@ -40,7 +40,7 @@ Active roadmap (`docs/planning/roadmap.md`, section 1 Admin Panel):
 6. ✅ Forum moderation (`/backstage/forum`)
 7. ⏭️ **Settings** (`/backstage/settings`) — the only remaining sidebar item
 
-Outstanding technical debt — **A11 follow-up**: `SqlEventRepository` / `SqlProjectRepository` are hybrid (read/write both legacy columns + `*_i18n` tables). Migration 054 (drop legacy translated columns) not yet created. One focused cleanup PR is planned: strip hybrid branches from `hydrate()`, stop populating legacy columns in `save()`, apply migration 054, verify tests.
+Outstanding technical debt — **A11 follow-up**: `SqlEventRepository` / `SqlProjectRepository` are hybrid (read/write both legacy columns + `*_i18n` tables). Migration 054 (drop legacy translated columns) not yet created. Dedicated plan: `docs/superpowers/plans/2026-04-21-a11-cleanup.md` (9 tasks, ~2-3h focused session, target branch `i18n-a11-cleanup`).
 
 ## i18n notes (PR 5)
 
