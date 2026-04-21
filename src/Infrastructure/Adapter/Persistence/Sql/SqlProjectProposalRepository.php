@@ -18,8 +18,8 @@ final class SqlProjectProposalRepository implements ProjectProposalRepositoryInt
     {
         $this->db->execute(
             'INSERT INTO project_proposals
-                (id, tenant_id, user_id, author_name, author_email, title, category, summary, description, status, created_at)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+                (id, tenant_id, user_id, author_name, author_email, title, category, summary, description, source_locale, status, created_at)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
             [
                 $proposal->id()->value(),
                 $proposal->tenantId()->value(),
@@ -30,6 +30,7 @@ final class SqlProjectProposalRepository implements ProjectProposalRepositoryInt
                 $proposal->category(),
                 $proposal->summary(),
                 $proposal->description(),
+                $proposal->sourceLocale(),
                 $proposal->status(),
                 $proposal->createdAt(),
             ],
@@ -93,7 +94,15 @@ final class SqlProjectProposalRepository implements ProjectProposalRepositoryInt
             self::strOrNull($row, 'decided_at'),
             self::strOrNull($row, 'decided_by'),
             self::strOrNull($row, 'decision_note'),
+            self::strOrDefault($row, 'source_locale', 'fi_FI'),
         );
+    }
+
+    /** @param array<string, mixed> $row */
+    private static function strOrDefault(array $row, string $key, string $default): string
+    {
+        $v = $row[$key] ?? null;
+        return is_string($v) ? $v : $default;
     }
 
     /** @param array<string, mixed> $row */

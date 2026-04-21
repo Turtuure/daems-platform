@@ -23,6 +23,7 @@ final class ProjectProposal
         private readonly ?string $decidedAt = null,
         private readonly ?string $decidedBy = null,
         private readonly ?string $decisionNote = null,
+        private readonly string $sourceLocale = 'fi_FI',
     ) {}
 
     public function id(): ProjectProposalId { return $this->id; }
@@ -39,4 +40,5 @@ final class ProjectProposal
     public function decidedAt(): ?string { return $this->decidedAt; }
     public function decidedBy(): ?string { return $this->decidedBy; }
     public function decisionNote(): ?string { return $this->decisionNote; }
+    public function sourceLocale(): string { return $this->sourceLocale; }
 }

@@ -76,6 +76,7 @@ final class InMemoryProjectProposalRepository implements ProjectProposalReposito
             $now->format('Y-m-d H:i:s'),
             $decidedBy,
             $note,
+            $existing->sourceLocale(),
         );
         $this->byId[$id] = $updated;
         foreach ($this->proposals as $i => $p) {

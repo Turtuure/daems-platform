@@ -14,5 +14,6 @@ final class SubmitProjectProposalInput
         public readonly string $category,
         public readonly string $summary,
         public readonly string $description,
+        public readonly ?string $sourceLocale = null,
     ) {}
 }

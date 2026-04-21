@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Daems\Application\Project\SubmitProjectProposal;
 
+use Daems\Domain\Locale\InvalidLocaleException;
+use Daems\Domain\Locale\SupportedLocale;
 use Daems\Domain\Project\ProjectProposal;
 use Daems\Domain\Project\ProjectProposalId;
 use Daems\Domain\Project\ProjectProposalRepositoryInterface;
@@ -26,6 +28,17 @@ final class SubmitProjectProposal
         $authorName = $user !== null ? $user->name() : 'Unknown';
         $authorEmail = $user !== null ? $user->email() : '';
 
+        $sourceLocale = $input->sourceLocale;
+        if ($sourceLocale === null) {
+            $sourceLocale = SupportedLocale::UI_DEFAULT;
+        } else {
+            try {
+                $sourceLocale = SupportedLocale::fromString($sourceLocale)->value();
+            } catch (InvalidLocaleException) {
+                return new SubmitProjectProposalOutput(false, 'Unsupported source_locale.');
+            }
+        }
+
         $proposal = new ProjectProposal(
             ProjectProposalId::generate(),
             $input->acting->activeTenant,
@@ -38,6 +51,10 @@ final class SubmitProjectProposal
             trim($input->description),
             'pending',
             date('Y-m-d H:i:s'),
+            null,
+            null,
+            null,
+            $sourceLocale,
         );
 
         $this->proposals->save($proposal);
