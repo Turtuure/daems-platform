@@ -14,6 +14,8 @@ use Daems\Application\Project\CreateProject\CreateProject;
 use Daems\Application\Project\CreateProject\CreateProjectInput;
 use Daems\Application\Project\GetProject\GetProject;
 use Daems\Application\Project\GetProject\GetProjectInput;
+use Daems\Application\Project\GetProjectBySlugForLocale\GetProjectBySlugForLocale;
+use Daems\Application\Project\GetProjectBySlugForLocale\GetProjectBySlugForLocaleInput;
 use Daems\Application\Project\JoinProject\JoinProject;
 use Daems\Application\Project\JoinProject\JoinProjectInput;
 use Daems\Application\Project\LeaveProject\LeaveProject;
@@ -22,10 +24,13 @@ use Daems\Application\Project\LikeProjectComment\LikeProjectComment;
 use Daems\Application\Project\LikeProjectComment\LikeProjectCommentInput;
 use Daems\Application\Project\ListProjects\ListProjects;
 use Daems\Application\Project\ListProjects\ListProjectsInput;
+use Daems\Application\Project\ListProjectsForLocale\ListProjectsForLocale;
+use Daems\Application\Project\ListProjectsForLocale\ListProjectsForLocaleInput;
 use Daems\Application\Project\SubmitProjectProposal\SubmitProjectProposal;
 use Daems\Application\Project\SubmitProjectProposal\SubmitProjectProposalInput;
 use Daems\Application\Project\UpdateProject\UpdateProject;
 use Daems\Application\Project\UpdateProject\UpdateProjectInput;
+use Daems\Domain\Locale\SupportedLocale;
 use Daems\Domain\Shared\NotFoundException;
 use Daems\Domain\Tenant\Tenant;
 use Daems\Infrastructure\Framework\Http\Request;
@@ -45,6 +50,8 @@ final class ProjectController
         private readonly LeaveProject $leaveProject,
         private readonly AddProjectUpdate $addUpdateUseCase,
         private readonly SubmitProjectProposal $submitProposal,
+        private readonly ListProjectsForLocale $listProjectsForLocale,
+        private readonly GetProjectBySlugForLocale $getProjectBySlugForLocale,
     ) {}
 
     public function index(Request $request): Response
@@ -204,12 +211,20 @@ final class ProjectController
     {
         $acting = $request->requireActingUser();
         $body = $request->all();
+        $locale = $this->requireLocale($request);
+
+        $sourceLocaleRaw = is_string($body['source_locale'] ?? null) ? (string) $body['source_locale'] : null;
+        $sourceLocale = $sourceLocaleRaw !== null && $sourceLocaleRaw !== ''
+            ? $sourceLocaleRaw
+            : $locale->value();
+
         $output = $this->submitProposal->execute(new SubmitProjectProposalInput(
             $acting,
-            trim($body['title'] ?? ''),
-            trim($body['category'] ?? ''),
-            trim($body['summary'] ?? ''),
-            trim($body['description'] ?? ''),
+            trim((string) ($body['title'] ?? '')),
+            trim((string) ($body['category'] ?? '')),
+            trim((string) ($body['summary'] ?? '')),
+            trim((string) ($body['description'] ?? '')),
+            $sourceLocale,
         ));
 
         if (!$output->success) {
@@ -217,5 +232,42 @@ final class ProjectController
         }
 
         return Response::json(['data' => ['ok' => true]], 201);
+    }
+
+    public function indexLocalized(Request $request): Response
+    {
+        $tenantId = $this->requireTenant($request)->id;
+        $locale = $this->requireLocale($request);
+        $category = $request->string('category') ?: null;
+        $status   = $request->string('status') ?: null;
+        $search   = $request->string('search') ?: null;
+        $output = $this->listProjectsForLocale->execute(
+            new ListProjectsForLocaleInput($tenantId, $locale, $category, $status, $search),
+        );
+        return Response::json(['data' => $output->projects]);
+    }
+
+    /** @param array<string, string> $params */
+    public function showLocalized(Request $request, array $params): Response
+    {
+        $tenantId = $this->requireTenant($request)->id;
+        $locale = $this->requireLocale($request);
+        $slug = (string) ($params['slug'] ?? '');
+        $output = $this->getProjectBySlugForLocale->execute(
+            new GetProjectBySlugForLocaleInput($tenantId, $locale, $slug),
+        );
+        if ($output->project === null) {
+            return Response::notFound('Project not found');
+        }
+        return Response::json(['data' => $output->project]);
+    }
+
+    private function requireLocale(Request $request): SupportedLocale
+    {
+        $locale = $request->attribute('locale');
+        if (!$locale instanceof SupportedLocale) {
+            return SupportedLocale::contentFallback();
+        }
+        return $locale;
     }
 }

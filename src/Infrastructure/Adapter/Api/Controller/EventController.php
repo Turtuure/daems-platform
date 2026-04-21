@@ -6,12 +6,19 @@ namespace Daems\Infrastructure\Adapter\Api\Controller;
 
 use Daems\Application\Event\GetEvent\GetEvent;
 use Daems\Application\Event\GetEvent\GetEventInput;
+use Daems\Application\Event\GetEventBySlugForLocale\GetEventBySlugForLocale;
+use Daems\Application\Event\GetEventBySlugForLocale\GetEventBySlugForLocaleInput;
 use Daems\Application\Event\ListEvents\ListEvents;
 use Daems\Application\Event\ListEvents\ListEventsInput;
+use Daems\Application\Event\ListEventsForLocale\ListEventsForLocale;
+use Daems\Application\Event\ListEventsForLocale\ListEventsForLocaleInput;
 use Daems\Application\Event\RegisterForEvent\RegisterForEvent;
 use Daems\Application\Event\RegisterForEvent\RegisterForEventInput;
+use Daems\Application\Event\SubmitEventProposal\SubmitEventProposal;
+use Daems\Application\Event\SubmitEventProposal\SubmitEventProposalInput;
 use Daems\Application\Event\UnregisterFromEvent\UnregisterFromEvent;
 use Daems\Application\Event\UnregisterFromEvent\UnregisterFromEventInput;
+use Daems\Domain\Locale\SupportedLocale;
 use Daems\Domain\Shared\NotFoundException;
 use Daems\Domain\Tenant\Tenant;
 use Daems\Infrastructure\Framework\Http\Request;
@@ -24,6 +31,9 @@ final class EventController
         private readonly GetEvent $getEvent,
         private readonly RegisterForEvent $registerForEvent,
         private readonly UnregisterFromEvent $unregisterFromEvent,
+        private readonly ListEventsForLocale $listEventsForLocale,
+        private readonly GetEventBySlugForLocale $getEventBySlugForLocale,
+        private readonly SubmitEventProposal $submitEventProposal,
     ) {}
 
     public function index(Request $request): Response
@@ -84,5 +94,68 @@ final class EventController
         }
 
         return Response::json(['data' => ['participant_count' => $output->participantCount]]);
+    }
+
+    public function indexLocalized(Request $request): Response
+    {
+        $tenantId = $this->requireTenant($request)->id;
+        $locale = $this->requireLocale($request);
+        $type = $request->string('type');
+        $output = $this->listEventsForLocale->execute(
+            new ListEventsForLocaleInput($tenantId, $locale, $type !== null && $type !== '' ? $type : null),
+        );
+        return Response::json(['data' => $output->events]);
+    }
+
+    /** @param array<string, string> $params */
+    public function showLocalized(Request $request, array $params): Response
+    {
+        $tenantId = $this->requireTenant($request)->id;
+        $locale = $this->requireLocale($request);
+        $slug = (string) ($params['slug'] ?? '');
+        $output = $this->getEventBySlugForLocale->execute(
+            new GetEventBySlugForLocaleInput($tenantId, $locale, $slug),
+        );
+        if ($output->event === null) {
+            return Response::notFound('Event not found');
+        }
+        return Response::json(['data' => $output->event]);
+    }
+
+    public function submitProposal(Request $request): Response
+    {
+        $acting = $request->requireActingUser();
+        $locale = $this->requireLocale($request);
+
+        $sourceLocaleRaw = $request->string('source_locale');
+        $sourceLocale = $sourceLocaleRaw !== null && $sourceLocaleRaw !== ''
+            ? $sourceLocaleRaw
+            : $locale->value();
+
+        $output = $this->submitEventProposal->execute(new SubmitEventProposalInput(
+            acting: $acting,
+            title: (string) $request->string('title', ''),
+            eventDate: (string) $request->string('event_date', ''),
+            eventTime: $request->string('event_time'),
+            location: $request->string('location'),
+            isOnline: (bool) $request->bool('is_online', false),
+            description: (string) $request->string('description', ''),
+            sourceLocale: $sourceLocale,
+        ));
+
+        if (!$output->ok) {
+            return Response::json(['error' => $output->error ?? 'invalid_request'], 400);
+        }
+        return Response::json(['data' => ['id' => $output->proposalId]], 201);
+    }
+
+    private function requireLocale(Request $request): SupportedLocale
+    {
+        $locale = $request->attribute('locale');
+        if (!$locale instanceof SupportedLocale) {
+            // LocaleMiddleware missing on this route — default to content fallback.
+            return SupportedLocale::contentFallback();
+        }
+        return $locale;
     }
 }

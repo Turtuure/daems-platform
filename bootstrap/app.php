@@ -3,7 +3,10 @@
 declare(strict_types=1);
 
 use Daems\Application\Event\GetEvent\GetEvent;
+use Daems\Application\Event\GetEventBySlugForLocale\GetEventBySlugForLocale;
 use Daems\Application\Event\ListEvents\ListEvents;
+use Daems\Application\Event\ListEventsForLocale\ListEventsForLocale;
+use Daems\Application\Event\SubmitEventProposal\SubmitEventProposal;
 use Daems\Application\Forum\CreateForumPost\CreateForumPost;
 use Daems\Application\Forum\CreateForumTopic\CreateForumTopic;
 use Daems\Application\Forum\GetForumCategory\GetForumCategory;
@@ -34,10 +37,13 @@ use Daems\Application\Project\GetProject\GetProject;
 use Daems\Application\Project\JoinProject\JoinProject;
 use Daems\Application\Project\LeaveProject\LeaveProject;
 use Daems\Application\Project\LikeProjectComment\LikeProjectComment;
+use Daems\Application\Project\GetProjectBySlugForLocale\GetProjectBySlugForLocale;
 use Daems\Application\Project\ListProjects\ListProjects;
+use Daems\Application\Project\ListProjectsForLocale\ListProjectsForLocale;
 use Daems\Application\Project\SubmitProjectProposal\SubmitProjectProposal;
 use Daems\Application\Project\UpdateProject\UpdateProject;
 use Daems\Domain\Admin\AdminStatsRepositoryInterface;
+use Daems\Domain\Event\EventProposalRepositoryInterface;
 use Daems\Domain\Event\EventRepositoryInterface;
 use Daems\Domain\Forum\ForumRepositoryInterface;
 use Daems\Domain\Insight\InsightRepositoryInterface;
@@ -55,6 +61,7 @@ use Daems\Infrastructure\Adapter\Api\Controller\AuthController;
 use Daems\Infrastructure\Adapter\Api\Controller\ProjectController;
 use Daems\Infrastructure\Adapter\Api\Controller\UserController;
 use Daems\Infrastructure\Adapter\Persistence\Sql\SqlAdminRepository;
+use Daems\Infrastructure\Adapter\Persistence\Sql\SqlEventProposalRepository;
 use Daems\Infrastructure\Adapter\Persistence\Sql\SqlEventRepository;
 use Daems\Infrastructure\Adapter\Persistence\Sql\SqlForumRepository;
 use Daems\Infrastructure\Adapter\Persistence\Sql\SqlInsightRepository;
@@ -461,12 +468,30 @@ $container->bind(RegisterForEvent::class,
 $container->bind(UnregisterFromEvent::class,
     static fn(Container $c) => new UnregisterFromEvent($c->make(EventRepositoryInterface::class)),
 );
+$container->bind(ListEventsForLocale::class,
+    static fn(Container $c) => new ListEventsForLocale($c->make(EventRepositoryInterface::class)),
+);
+$container->bind(GetEventBySlugForLocale::class,
+    static fn(Container $c) => new GetEventBySlugForLocale($c->make(EventRepositoryInterface::class)),
+);
+$container->singleton(EventProposalRepositoryInterface::class,
+    static fn(Container $c) => new SqlEventProposalRepository($c->make(Connection::class)),
+);
+$container->bind(SubmitEventProposal::class,
+    static fn(Container $c) => new SubmitEventProposal(
+        $c->make(EventProposalRepositoryInterface::class),
+        $c->make(UserRepositoryInterface::class),
+    ),
+);
 $container->bind(EventController::class,
     static fn(Container $c) => new EventController(
         $c->make(ListEvents::class),
         $c->make(GetEvent::class),
         $c->make(RegisterForEvent::class),
         $c->make(UnregisterFromEvent::class),
+        $c->make(ListEventsForLocale::class),
+        $c->make(GetEventBySlugForLocale::class),
+        $c->make(SubmitEventProposal::class),
     ),
 );
 
@@ -901,6 +926,12 @@ $container->bind(SubmitProjectProposal::class,
         $c->make(UserRepositoryInterface::class),
     ),
 );
+$container->bind(ListProjectsForLocale::class,
+    static fn(Container $c) => new ListProjectsForLocale($c->make(ProjectRepositoryInterface::class)),
+);
+$container->bind(GetProjectBySlugForLocale::class,
+    static fn(Container $c) => new GetProjectBySlugForLocale($c->make(ProjectRepositoryInterface::class)),
+);
 $container->bind(ProjectController::class,
     static fn(Container $c) => new ProjectController(
         $c->make(ListProjects::class),
@@ -914,6 +945,8 @@ $container->bind(ProjectController::class,
         $c->make(LeaveProject::class),
         $c->make(AddProjectUpdate::class),
         $c->make(SubmitProjectProposal::class),
+        $c->make(ListProjectsForLocale::class),
+        $c->make(GetProjectBySlugForLocale::class),
     ),
 );
 

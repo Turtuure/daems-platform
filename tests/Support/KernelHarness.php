@@ -12,8 +12,11 @@ use Daems\Application\Auth\LoginUser\LoginUser;
 use Daems\Application\Auth\LogoutUser\LogoutUser;
 use Daems\Application\Auth\RegisterUser\RegisterUser;
 use Daems\Application\Event\GetEvent\GetEvent;
+use Daems\Application\Event\GetEventBySlugForLocale\GetEventBySlugForLocale;
 use Daems\Application\Event\ListEvents\ListEvents;
+use Daems\Application\Event\ListEventsForLocale\ListEventsForLocale;
 use Daems\Application\Event\RegisterForEvent\RegisterForEvent;
+use Daems\Application\Event\SubmitEventProposal\SubmitEventProposal;
 use Daems\Application\Event\UnregisterFromEvent\UnregisterFromEvent;
 use Daems\Application\Forum\CreateForumPost\CreateForumPost;
 use Daems\Application\Forum\CreateForumTopic\CreateForumTopic;
@@ -31,10 +34,12 @@ use Daems\Application\Project\AddProjectUpdate\AddProjectUpdate;
 use Daems\Application\Project\ArchiveProject\ArchiveProject;
 use Daems\Application\Project\CreateProject\CreateProject;
 use Daems\Application\Project\GetProject\GetProject;
+use Daems\Application\Project\GetProjectBySlugForLocale\GetProjectBySlugForLocale;
 use Daems\Application\Project\JoinProject\JoinProject;
 use Daems\Application\Project\LeaveProject\LeaveProject;
 use Daems\Application\Project\LikeProjectComment\LikeProjectComment;
 use Daems\Application\Project\ListProjects\ListProjects;
+use Daems\Application\Project\ListProjectsForLocale\ListProjectsForLocale;
 use Daems\Application\Project\SubmitProjectProposal\SubmitProjectProposal;
 use Daems\Application\Project\UpdateProject\UpdateProject;
 use Daems\Application\User\AnonymiseAccount\AnonymiseAccount;
@@ -45,6 +50,7 @@ use Daems\Application\User\UpdateProfile\UpdateProfile;
 use Daems\Domain\Auth\AuthLoginAttemptRepositoryInterface;
 use Daems\Domain\Auth\AuthTokenRepositoryInterface;
 use Daems\Domain\Dismissal\AdminApplicationDismissalRepositoryInterface;
+use Daems\Domain\Event\EventProposalRepositoryInterface;
 use Daems\Domain\Event\EventRepositoryInterface;
 use Daems\Domain\Forum\ForumRepositoryInterface;
 use Daems\Domain\Insight\InsightRepositoryInterface;
@@ -82,6 +88,7 @@ use Daems\Infrastructure\Framework\Http\Router;
 use Daems\Infrastructure\Framework\Logging\LoggerInterface;
 use Daems\Tests\Support\Fake\InMemoryAuthLoginAttemptRepository;
 use Daems\Tests\Support\Fake\InMemoryAuthTokenRepository;
+use Daems\Tests\Support\Fake\InMemoryEventProposalRepository;
 use Daems\Tests\Support\Fake\InMemoryEventRepository;
 use Daems\Tests\Support\Fake\InMemoryForumModerationAuditRepository;
 use Daems\Tests\Support\Fake\InMemoryForumReportRepository;
@@ -580,6 +587,10 @@ final class KernelHarness
             $c->make(GetUserActivity::class),
             $c->make(AnonymiseAccount::class),
         ));
+        $container->bind(ListProjectsForLocale::class,
+            static fn(Container $c) => new ListProjectsForLocale($c->make(ProjectRepositoryInterface::class)));
+        $container->bind(GetProjectBySlugForLocale::class,
+            static fn(Container $c) => new GetProjectBySlugForLocale($c->make(ProjectRepositoryInterface::class)));
         $container->bind(ProjectController::class, static fn(Container $c) => new ProjectController(
             $c->make(ListProjects::class),
             $c->make(GetProject::class),
@@ -592,6 +603,8 @@ final class KernelHarness
             $c->make(LeaveProject::class),
             $c->make(AddProjectUpdate::class),
             $c->make(SubmitProjectProposal::class),
+            $c->make(ListProjectsForLocale::class),
+            $c->make(GetProjectBySlugForLocale::class),
         ));
         $container->bind(ForumController::class, static fn(Container $c) => new ForumController(
             $c->make(ListForumCategories::class),
@@ -603,11 +616,25 @@ final class KernelHarness
             $c->make(IncrementTopicView::class),
             $c->make(\Daems\Application\Forum\ReportForumTarget\ReportForumTarget::class),
         ));
+        $container->bind(ListEventsForLocale::class,
+            static fn(Container $c) => new ListEventsForLocale($c->make(EventRepositoryInterface::class)));
+        $container->bind(GetEventBySlugForLocale::class,
+            static fn(Container $c) => new GetEventBySlugForLocale($c->make(EventRepositoryInterface::class)));
+        $container->singleton(EventProposalRepositoryInterface::class,
+            static fn() => new InMemoryEventProposalRepository());
+        $container->bind(SubmitEventProposal::class,
+            static fn(Container $c) => new SubmitEventProposal(
+                $c->make(EventProposalRepositoryInterface::class),
+                $c->make(UserRepositoryInterface::class),
+            ));
         $container->bind(EventController::class, static fn(Container $c) => new EventController(
             $c->make(ListEvents::class),
             $c->make(GetEvent::class),
             $c->make(RegisterForEvent::class),
             $c->make(UnregisterFromEvent::class),
+            $c->make(ListEventsForLocale::class),
+            $c->make(GetEventBySlugForLocale::class),
+            $c->make(SubmitEventProposal::class),
         ));
         $container->bind(InsightController::class, static fn(Container $c) => new InsightController(
             $c->make(ListInsights::class),
