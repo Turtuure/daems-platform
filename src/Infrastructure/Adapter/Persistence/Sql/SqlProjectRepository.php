@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Daems\Infrastructure\Adapter\Persistence\Sql;
 
+use Daems\Domain\Locale\SupportedLocale;
 use Daems\Domain\Project\Project;
 use Daems\Domain\Project\ProjectComment;
 use Daems\Domain\Project\ProjectCommentId;
@@ -391,5 +392,34 @@ final class SqlProjectRepository implements ProjectRepositoryInterface
             return (int) $v;
         }
         return 0;
+    }
+
+    public function saveTranslation(
+        TenantId $tenantId,
+        string $projectId,
+        SupportedLocale $locale,
+        array $fields,
+    ): void {
+        $exists = $this->db->queryOne(
+            'SELECT 1 FROM projects WHERE id = ? AND tenant_id = ?',
+            [$projectId, $tenantId->value()],
+        );
+        if ($exists === null) {
+            throw new \DomainException('project_not_found_in_tenant');
+        }
+        $this->db->execute(
+            'INSERT INTO projects_i18n (project_id, locale, title, summary, description)
+             VALUES (?, ?, ?, ?, ?)
+             ON DUPLICATE KEY UPDATE
+                title=VALUES(title), summary=VALUES(summary),
+                description=VALUES(description), updated_at=CURRENT_TIMESTAMP',
+            [
+                $projectId,
+                $locale->value(),
+                (string) ($fields['title'] ?? ''),
+                (string) ($fields['summary'] ?? ''),
+                (string) ($fields['description'] ?? ''),
+            ],
+        );
     }
 }

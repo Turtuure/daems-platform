@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Daems\Tests\Support\Fake;
 
+use Daems\Domain\Locale\SupportedLocale;
 use Daems\Domain\Project\Project;
 use Daems\Domain\Project\ProjectComment;
 use Daems\Domain\Project\ProjectParticipant;
@@ -24,6 +25,9 @@ final class InMemoryProjectRepository implements ProjectRepositoryInterface
 
     /** @var list<ProjectUpdate> */
     public array $updates = [];
+
+    /** @var array<string, array<string, array<string, ?string>>> translations keyed by projectId, then locale */
+    public array $translations = [];
 
     public function lastComment(): ?ProjectComment
     {
@@ -289,6 +293,29 @@ final class InMemoryProjectRepository implements ProjectRepositoryInterface
             }
         }
         return null;
+    }
+
+    public function saveTranslation(
+        TenantId $tenantId,
+        string $projectId,
+        SupportedLocale $locale,
+        array $fields,
+    ): void {
+        $found = null;
+        foreach ($this->bySlug as $p) {
+            if ($p->id()->value() === $projectId && $p->tenantId()->equals($tenantId)) {
+                $found = $p;
+                break;
+            }
+        }
+        if ($found === null) {
+            throw new \DomainException('project_not_found_in_tenant');
+        }
+        $this->translations[$projectId][$locale->value()] = [
+            'title'       => isset($fields['title']) ? (string) $fields['title'] : '',
+            'summary'     => isset($fields['summary']) ? (string) $fields['summary'] : '',
+            'description' => isset($fields['description']) ? (string) $fields['description'] : '',
+        ];
     }
 
     /**

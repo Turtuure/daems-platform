@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Daems\Domain\Project;
 
+use Daems\Domain\Locale\SupportedLocale;
 use Daems\Domain\Tenant\TenantId;
 
 interface ProjectRepositoryInterface
@@ -60,4 +61,18 @@ interface ProjectRepositoryInterface
     public function findUpdatesByProjectId(string $projectId): array;
 
     public function saveUpdate(ProjectUpdate $update): void;
+
+    /**
+     * Upsert one locale's translation row for a project within a tenant.
+     * Throws \DomainException('project_not_found_in_tenant') if the project does not
+     * belong to the provided tenant.
+     *
+     * @param array<string, ?string> $fields title + summary + description
+     */
+    public function saveTranslation(
+        TenantId $tenantId,
+        string $projectId,
+        SupportedLocale $locale,
+        array $fields,
+    ): void;
 }
