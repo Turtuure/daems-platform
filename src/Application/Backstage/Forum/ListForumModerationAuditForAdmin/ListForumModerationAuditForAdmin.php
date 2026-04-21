@@ -29,7 +29,7 @@ final class ListForumModerationAuditForAdmin
         }
 
         return new ListForumModerationAuditForAdminOutput(
-            $this->audit->listRecentForTenant($tenantId, $in->limit, $in->filters),
+            $this->audit->listRecentForTenant($tenantId, $in->limit, $in->filters, $in->offset),
         );
     }
 }

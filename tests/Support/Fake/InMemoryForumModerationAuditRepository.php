@@ -18,7 +18,7 @@ final class InMemoryForumModerationAuditRepository implements ForumModerationAud
         $this->rows[] = $entry;
     }
 
-    public function listRecentForTenant(TenantId $tenantId, int $limit = 200, array $filters = []): array
+    public function listRecentForTenant(TenantId $tenantId, int $limit = 200, array $filters = [], int $offset = 0): array
     {
         $action    = (isset($filters['action']) && $filters['action'] !== '') ? $filters['action'] : null;
         $performer = (isset($filters['performer']) && $filters['performer'] !== '') ? $filters['performer'] : null;
@@ -42,6 +42,6 @@ final class InMemoryForumModerationAuditRepository implements ForumModerationAud
             static fn(ForumModerationAuditEntry $a, ForumModerationAuditEntry $b): int => $b->createdAt() <=> $a->createdAt(),
         );
 
-        return array_values(array_slice($filtered, 0, $limit));
+        return array_values(array_slice($filtered, max(0, $offset), $limit));
     }
 }

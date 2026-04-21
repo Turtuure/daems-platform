@@ -15,5 +15,6 @@ final class ListForumModerationAuditForAdminInput
         public readonly ActingUser $acting,
         public readonly int $limit = 200,
         public readonly array $filters = [],
+        public readonly int $offset = 0,
     ) {}
 }

@@ -1104,10 +1104,12 @@ final class BackstageController
         }
         $limitRaw = $request->string('limit');
         $limit = is_numeric($limitRaw) ? (int) $limitRaw : 200;
+        $offsetRaw = $request->string('offset');
+        $offset = is_numeric($offsetRaw) ? max(0, (int) $offsetRaw) : 0;
 
         try {
             $out = $this->listForumAudit->execute(
-                new ListForumModerationAuditForAdminInput($acting, $limit, $filters),
+                new ListForumModerationAuditForAdminInput($acting, $limit, $filters, $offset),
             );
         } catch (ForbiddenException) {
             return Response::forbidden('Admin only');

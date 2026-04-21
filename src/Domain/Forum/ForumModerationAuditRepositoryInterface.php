@@ -14,5 +14,5 @@ interface ForumModerationAuditRepositoryInterface
      * @param array{action?:string, performer?:string} $filters
      * @return list<ForumModerationAuditEntry>
      */
-    public function listRecentForTenant(TenantId $tenantId, int $limit = 200, array $filters = []): array;
+    public function listRecentForTenant(TenantId $tenantId, int $limit = 200, array $filters = [], int $offset = 0): array;
 }

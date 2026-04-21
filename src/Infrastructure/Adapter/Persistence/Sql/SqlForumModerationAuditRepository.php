@@ -38,7 +38,7 @@ final class SqlForumModerationAuditRepository implements ForumModerationAuditRep
         );
     }
 
-    public function listRecentForTenant(TenantId $tenantId, int $limit = 200, array $filters = []): array
+    public function listRecentForTenant(TenantId $tenantId, int $limit = 200, array $filters = [], int $offset = 0): array
     {
         $sql  = 'SELECT * FROM forum_moderation_audit WHERE tenant_id = ?';
         $args = [$tenantId->value()];
@@ -50,8 +50,9 @@ final class SqlForumModerationAuditRepository implements ForumModerationAuditRep
             $sql   .= ' AND performed_by = ?';
             $args[] = $filters['performer'];
         }
-        $sql .= ' ORDER BY created_at DESC LIMIT ?';
+        $sql   .= ' ORDER BY created_at DESC LIMIT ? OFFSET ?';
         $args[] = $limit;
+        $args[] = max(0, $offset);
 
         $rows = $this->db->query($sql, $args);
         $out  = [];

@@ -131,6 +131,66 @@ final class ListForumModerationAuditForAdminTest extends TestCase
         self::assertSame(self::AUDIT_ID_1, $out->entries[0]->id()->value());
     }
 
+    public function test_offset_pages_past_first_slice(): void
+    {
+        $tenant = TenantId::fromString(self::TENANT_ID);
+        $admin  = ActingUserFactory::adminInTenant(self::ADMIN_ID, $tenant);
+        $audit  = new InMemoryForumModerationAuditRepository();
+
+        $audit->record(new ForumModerationAuditEntry(
+            ForumModerationAuditId::fromString(self::AUDIT_ID_1),
+            $tenant,
+            'post',
+            self::TARGET_POST_1,
+            ForumModerationAuditEntry::ACTION_DELETED,
+            null,
+            null,
+            null,
+            self::PERFORMER_ID,
+            null,
+            '2026-04-20T09:00:00+00:00',
+        ));
+        $audit->record(new ForumModerationAuditEntry(
+            ForumModerationAuditId::fromString(self::AUDIT_ID_2),
+            $tenant,
+            'post',
+            self::TARGET_POST_2,
+            ForumModerationAuditEntry::ACTION_EDITED,
+            null,
+            null,
+            null,
+            self::PERFORMER_ID,
+            null,
+            '2026-04-20T10:00:00+00:00',
+        ));
+        $audit->record(new ForumModerationAuditEntry(
+            ForumModerationAuditId::fromString(self::AUDIT_ID_3),
+            $tenant,
+            'topic',
+            self::TARGET_TOPIC_1,
+            ForumModerationAuditEntry::ACTION_PINNED,
+            null,
+            null,
+            null,
+            self::PERFORMER_ID,
+            null,
+            '2026-04-20T11:00:00+00:00',
+        ));
+
+        $uc = new ListForumModerationAuditForAdmin($audit);
+
+        // limit=2, offset=0 → newest two
+        $page1 = $uc->execute(new ListForumModerationAuditForAdminInput($admin, 2, [], 0));
+        self::assertCount(2, $page1->entries);
+        self::assertSame(self::AUDIT_ID_3, $page1->entries[0]->id()->value());
+        self::assertSame(self::AUDIT_ID_2, $page1->entries[1]->id()->value());
+
+        // limit=2, offset=2 → remaining oldest entry only
+        $page2 = $uc->execute(new ListForumModerationAuditForAdminInput($admin, 2, [], 2));
+        self::assertCount(1, $page2->entries);
+        self::assertSame(self::AUDIT_ID_1, $page2->entries[0]->id()->value());
+    }
+
     public function test_non_admin_forbidden(): void
     {
         $tenant = TenantId::fromString(self::TENANT_ID);
