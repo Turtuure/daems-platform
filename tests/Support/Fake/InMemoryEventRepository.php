@@ -7,6 +7,7 @@ namespace Daems\Tests\Support\Fake;
 use Daems\Domain\Event\Event;
 use Daems\Domain\Event\EventRegistration;
 use Daems\Domain\Event\EventRepositoryInterface;
+use Daems\Domain\Locale\SupportedLocale;
 use Daems\Domain\Tenant\TenantId;
 
 final class InMemoryEventRepository implements EventRepositoryInterface
@@ -22,6 +23,9 @@ final class InMemoryEventRepository implements EventRepositoryInterface
 
     /** @var list<array{user_id:string,event_id:string,name:string,email:string,registered_at:string}> */
     public array $adminRegistrations = [];
+
+    /** @var array<string, array<string, array<string, ?string>>> translations keyed by eventId, then locale */
+    public array $translations = [];
 
     public function listForTenant(TenantId $tenantId, ?string $type = null): array
     {
@@ -191,6 +195,23 @@ final class InMemoryEventRepository implements EventRepositoryInterface
             }
         }
         return $out;
+    }
+
+    public function saveTranslation(
+        TenantId $tenantId,
+        string $eventId,
+        SupportedLocale $locale,
+        array $fields,
+    ): void {
+        $e = $this->byId[$eventId] ?? null;
+        if ($e === null || !$e->tenantId()->equals($tenantId)) {
+            throw new \DomainException('event_not_found_in_tenant');
+        }
+        $this->translations[$eventId][$locale->value()] = [
+            'title'       => isset($fields['title']) ? (string) $fields['title'] : '',
+            'location'    => $fields['location'] ?? null,
+            'description' => $fields['description'] ?? null,
+        ];
     }
 
     public function seedAdminRegistration(

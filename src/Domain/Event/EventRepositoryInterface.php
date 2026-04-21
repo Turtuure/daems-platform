@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Daems\Domain\Event;
 
+use Daems\Domain\Locale\SupportedLocale;
 use Daems\Domain\Tenant\TenantId;
 
 interface EventRepositoryInterface
@@ -41,4 +42,18 @@ interface EventRepositoryInterface
 
     /** @return list<array{user_id:string,name:string,email:string,registered_at:string}> */
     public function listRegistrationsForEvent(string $eventId, TenantId $tenantId): array;
+
+    /**
+     * Upsert one locale's translation row for an event within a tenant.
+     * Throws \DomainException('event_not_found_in_tenant') if the event does not
+     * belong to the provided tenant.
+     *
+     * @param array<string, ?string> $fields title + location + description
+     */
+    public function saveTranslation(
+        TenantId $tenantId,
+        string $eventId,
+        SupportedLocale $locale,
+        array $fields,
+    ): void;
 }

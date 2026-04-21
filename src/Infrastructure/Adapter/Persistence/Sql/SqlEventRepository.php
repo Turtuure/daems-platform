@@ -8,6 +8,7 @@ use Daems\Domain\Event\Event;
 use Daems\Domain\Event\EventId;
 use Daems\Domain\Event\EventRegistration;
 use Daems\Domain\Event\EventRepositoryInterface;
+use Daems\Domain\Locale\SupportedLocale;
 use Daems\Domain\Tenant\TenantId;
 use Daems\Infrastructure\Framework\Database\Connection;
 
@@ -211,6 +212,35 @@ final class SqlEventRepository implements EventRepositoryInterface
             [$eventId, $tenantId->value()],
         );
         return $rows;
+    }
+
+    public function saveTranslation(
+        TenantId $tenantId,
+        string $eventId,
+        SupportedLocale $locale,
+        array $fields,
+    ): void {
+        $exists = $this->db->queryOne(
+            'SELECT 1 FROM events WHERE id = ? AND tenant_id = ?',
+            [$eventId, $tenantId->value()],
+        );
+        if ($exists === null) {
+            throw new \DomainException('event_not_found_in_tenant');
+        }
+        $this->db->execute(
+            'INSERT INTO events_i18n (event_id, locale, title, location, description)
+             VALUES (?, ?, ?, ?, ?)
+             ON DUPLICATE KEY UPDATE
+                title=VALUES(title), location=VALUES(location),
+                description=VALUES(description), updated_at=CURRENT_TIMESTAMP',
+            [
+                $eventId,
+                $locale->value(),
+                (string) ($fields['title'] ?? ''),
+                $fields['location'] ?? null,
+                $fields['description'] ?? null,
+            ],
+        );
     }
 
     /** @param array<string, mixed> $row */
