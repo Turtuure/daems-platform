@@ -45,6 +45,7 @@ final class GetForumReportDetail
             }
             $targetContent = [
                 'author'     => $post->authorName(),
+                'user_id'    => $post->userId(),
                 'content'    => $post->content(),
                 'created_at' => $post->createdAt(),
             ];
@@ -55,6 +56,7 @@ final class GetForumReportDetail
             }
             $targetContent = [
                 'author'     => $topic->authorName(),
+                'user_id'    => $topic->userId(),
                 'title'      => $topic->title(),
                 'created_at' => $topic->createdAt(),
             ];
