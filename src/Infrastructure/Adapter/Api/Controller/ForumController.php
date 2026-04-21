@@ -18,10 +18,14 @@ use Daems\Application\Forum\LikeForumPost\LikeForumPost;
 use Daems\Application\Forum\LikeForumPost\LikeForumPostInput;
 use Daems\Application\Forum\ListForumCategories\ListForumCategories;
 use Daems\Application\Forum\ListForumCategories\ListForumCategoriesInput;
+use Daems\Application\Forum\ReportForumTarget\ReportForumTarget;
+use Daems\Application\Forum\ReportForumTarget\ReportForumTargetInput;
+use Daems\Domain\Forum\TopicLockedException;
 use Daems\Domain\Shared\NotFoundException;
 use Daems\Domain\Tenant\Tenant;
 use Daems\Infrastructure\Framework\Http\Request;
 use Daems\Infrastructure\Framework\Http\Response;
+use InvalidArgumentException;
 
 final class ForumController
 {
@@ -33,6 +37,7 @@ final class ForumController
         private readonly CreateForumPost $createPost,
         private readonly LikeForumPost $likePostUseCase,
         private readonly IncrementTopicView $incrementViewUseCase,
+        private readonly ReportForumTarget $reportForumTarget,
     ) {}
 
     public function index(Request $request): Response
@@ -108,11 +113,15 @@ final class ForumController
             return Response::badRequest('Content is required.');
         }
 
-        $output = $this->createPost->execute(new CreateForumPostInput(
-            $acting,
-            $params['slug'],
-            $content,
-        ));
+        try {
+            $output = $this->createPost->execute(new CreateForumPostInput(
+                $acting,
+                $params['slug'],
+                $content,
+            ));
+        } catch (TopicLockedException) {
+            return Response::conflict('topic_locked');
+        }
 
         if (!$output->success) {
             return Response::notFound($output->error ?? 'Thread not found.');
@@ -133,5 +142,30 @@ final class ForumController
         $tenantId = $this->requireTenant($request)->id;
         $this->incrementViewUseCase->execute(new IncrementTopicViewInput($tenantId, $params['slug']));
         return Response::json(['data' => ['ok' => true]]);
+    }
+
+    public function createReport(Request $request): Response
+    {
+        $acting = $request->requireActingUser();
+        $targetType = (string) ($request->string('target_type') ?? '');
+        $targetId   = (string) ($request->string('target_id') ?? '');
+        $reason     = (string) ($request->string('reason_category') ?? '');
+        $detail     = $request->string('reason_detail');
+
+        try {
+            $this->reportForumTarget->execute(new ReportForumTargetInput(
+                $acting,
+                $targetType,
+                $targetId,
+                $reason,
+                $detail,
+            ));
+        } catch (NotFoundException) {
+            return Response::notFound('Target not found');
+        } catch (InvalidArgumentException $e) {
+            return Response::badRequest($e->getMessage());
+        }
+
+        return Response::json(['data' => ['ok' => true]], 201);
     }
 }

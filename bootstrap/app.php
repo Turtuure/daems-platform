@@ -643,6 +643,12 @@ $container->singleton(ForumRepositoryInterface::class,
 $container->singleton(\Daems\Domain\Forum\ForumReportRepositoryInterface::class,
     static fn(Container $c) => new \Daems\Infrastructure\Adapter\Persistence\Sql\SqlForumReportRepository($c->make(Connection::class)),
 );
+$container->singleton(\Daems\Domain\Forum\ForumModerationAuditRepositoryInterface::class,
+    static fn(Container $c) => new \Daems\Infrastructure\Adapter\Persistence\Sql\SqlForumModerationAuditRepository($c->make(Connection::class)),
+);
+$container->singleton(\Daems\Domain\Forum\ForumUserWarningRepositoryInterface::class,
+    static fn(Container $c) => new \Daems\Infrastructure\Adapter\Persistence\Sql\SqlForumUserWarningRepository($c->make(Connection::class)),
+);
 $container->bind(ListForumCategories::class,
     static fn(Container $c) => new ListForumCategories($c->make(ForumRepositoryInterface::class)),
 );
@@ -670,6 +676,142 @@ $container->bind(LikeForumPost::class,
 $container->bind(IncrementTopicView::class,
     static fn(Container $c) => new IncrementTopicView($c->make(ForumRepositoryInterface::class)),
 );
+$container->bind(\Daems\Application\Forum\ReportForumTarget\ReportForumTarget::class,
+    static fn(Container $c) => new \Daems\Application\Forum\ReportForumTarget\ReportForumTarget(
+        $c->make(ForumRepositoryInterface::class),
+        $c->make(\Daems\Domain\Forum\ForumReportRepositoryInterface::class),
+        $c->make(\Daems\Domain\Dismissal\AdminApplicationDismissalRepositoryInterface::class),
+    ),
+);
+
+// Forum admin (Task 21)
+$container->bind(\Daems\Application\Backstage\Forum\ListForumReportsForAdmin\ListForumReportsForAdmin::class,
+    static fn(Container $c) => new \Daems\Application\Backstage\Forum\ListForumReportsForAdmin\ListForumReportsForAdmin(
+        $c->make(\Daems\Domain\Forum\ForumReportRepositoryInterface::class),
+        $c->make(ForumRepositoryInterface::class),
+    ),
+);
+$container->bind(\Daems\Application\Backstage\Forum\GetForumReportDetail\GetForumReportDetail::class,
+    static fn(Container $c) => new \Daems\Application\Backstage\Forum\GetForumReportDetail\GetForumReportDetail(
+        $c->make(\Daems\Domain\Forum\ForumReportRepositoryInterface::class),
+        $c->make(ForumRepositoryInterface::class),
+    ),
+);
+$container->bind(\Daems\Application\Backstage\Forum\ResolveForumReportByDelete\ResolveForumReportByDelete::class,
+    static fn(Container $c) => new \Daems\Application\Backstage\Forum\ResolveForumReportByDelete\ResolveForumReportByDelete(
+        $c->make(ForumRepositoryInterface::class),
+        $c->make(\Daems\Domain\Forum\ForumReportRepositoryInterface::class),
+        $c->make(\Daems\Domain\Forum\ForumModerationAuditRepositoryInterface::class),
+    ),
+);
+$container->bind(\Daems\Application\Backstage\Forum\ResolveForumReportByLock\ResolveForumReportByLock::class,
+    static fn(Container $c) => new \Daems\Application\Backstage\Forum\ResolveForumReportByLock\ResolveForumReportByLock(
+        $c->make(ForumRepositoryInterface::class),
+        $c->make(\Daems\Domain\Forum\ForumReportRepositoryInterface::class),
+        $c->make(\Daems\Domain\Forum\ForumModerationAuditRepositoryInterface::class),
+    ),
+);
+$container->bind(\Daems\Application\Backstage\Forum\ResolveForumReportByWarn\ResolveForumReportByWarn::class,
+    static fn(Container $c) => new \Daems\Application\Backstage\Forum\ResolveForumReportByWarn\ResolveForumReportByWarn(
+        $c->make(ForumRepositoryInterface::class),
+        $c->make(\Daems\Domain\Forum\ForumReportRepositoryInterface::class),
+        $c->make(\Daems\Domain\Forum\ForumUserWarningRepositoryInterface::class),
+        $c->make(\Daems\Domain\Forum\ForumModerationAuditRepositoryInterface::class),
+    ),
+);
+$container->bind(\Daems\Application\Backstage\Forum\ResolveForumReportByEdit\ResolveForumReportByEdit::class,
+    static fn(Container $c) => new \Daems\Application\Backstage\Forum\ResolveForumReportByEdit\ResolveForumReportByEdit(
+        $c->make(ForumRepositoryInterface::class),
+        $c->make(\Daems\Domain\Forum\ForumReportRepositoryInterface::class),
+        $c->make(\Daems\Domain\Forum\ForumModerationAuditRepositoryInterface::class),
+    ),
+);
+$container->bind(\Daems\Application\Backstage\Forum\DismissForumReport\DismissForumReport::class,
+    static fn(Container $c) => new \Daems\Application\Backstage\Forum\DismissForumReport\DismissForumReport(
+        $c->make(\Daems\Domain\Forum\ForumReportRepositoryInterface::class),
+    ),
+);
+$container->bind(\Daems\Application\Backstage\Forum\ListForumTopicsForAdmin\ListForumTopicsForAdmin::class,
+    static fn(Container $c) => new \Daems\Application\Backstage\Forum\ListForumTopicsForAdmin\ListForumTopicsForAdmin(
+        $c->make(ForumRepositoryInterface::class),
+    ),
+);
+$container->bind(\Daems\Application\Backstage\Forum\PinForumTopic\PinForumTopic::class,
+    static fn(Container $c) => new \Daems\Application\Backstage\Forum\PinForumTopic\PinForumTopic(
+        $c->make(ForumRepositoryInterface::class),
+        $c->make(\Daems\Domain\Forum\ForumModerationAuditRepositoryInterface::class),
+    ),
+);
+$container->bind(\Daems\Application\Backstage\Forum\UnpinForumTopic\UnpinForumTopic::class,
+    static fn(Container $c) => new \Daems\Application\Backstage\Forum\UnpinForumTopic\UnpinForumTopic(
+        $c->make(ForumRepositoryInterface::class),
+        $c->make(\Daems\Domain\Forum\ForumModerationAuditRepositoryInterface::class),
+    ),
+);
+$container->bind(\Daems\Application\Backstage\Forum\LockForumTopic\LockForumTopic::class,
+    static fn(Container $c) => new \Daems\Application\Backstage\Forum\LockForumTopic\LockForumTopic(
+        $c->make(ForumRepositoryInterface::class),
+        $c->make(\Daems\Domain\Forum\ForumModerationAuditRepositoryInterface::class),
+    ),
+);
+$container->bind(\Daems\Application\Backstage\Forum\UnlockForumTopic\UnlockForumTopic::class,
+    static fn(Container $c) => new \Daems\Application\Backstage\Forum\UnlockForumTopic\UnlockForumTopic(
+        $c->make(ForumRepositoryInterface::class),
+        $c->make(\Daems\Domain\Forum\ForumModerationAuditRepositoryInterface::class),
+    ),
+);
+$container->bind(\Daems\Application\Backstage\Forum\DeleteForumTopicAsAdmin\DeleteForumTopicAsAdmin::class,
+    static fn(Container $c) => new \Daems\Application\Backstage\Forum\DeleteForumTopicAsAdmin\DeleteForumTopicAsAdmin(
+        $c->make(ForumRepositoryInterface::class),
+        $c->make(\Daems\Domain\Forum\ForumModerationAuditRepositoryInterface::class),
+    ),
+);
+$container->bind(\Daems\Application\Backstage\Forum\ListForumPostsForAdmin\ListForumPostsForAdmin::class,
+    static fn(Container $c) => new \Daems\Application\Backstage\Forum\ListForumPostsForAdmin\ListForumPostsForAdmin(
+        $c->make(ForumRepositoryInterface::class),
+    ),
+);
+$container->bind(\Daems\Application\Backstage\Forum\EditForumPostAsAdmin\EditForumPostAsAdmin::class,
+    static fn(Container $c) => new \Daems\Application\Backstage\Forum\EditForumPostAsAdmin\EditForumPostAsAdmin(
+        $c->make(ForumRepositoryInterface::class),
+        $c->make(\Daems\Domain\Forum\ForumModerationAuditRepositoryInterface::class),
+    ),
+);
+$container->bind(\Daems\Application\Backstage\Forum\DeleteForumPostAsAdmin\DeleteForumPostAsAdmin::class,
+    static fn(Container $c) => new \Daems\Application\Backstage\Forum\DeleteForumPostAsAdmin\DeleteForumPostAsAdmin(
+        $c->make(ForumRepositoryInterface::class),
+        $c->make(\Daems\Domain\Forum\ForumModerationAuditRepositoryInterface::class),
+    ),
+);
+$container->bind(\Daems\Application\Backstage\Forum\WarnForumUser\WarnForumUser::class,
+    static fn(Container $c) => new \Daems\Application\Backstage\Forum\WarnForumUser\WarnForumUser(
+        $c->make(\Daems\Domain\Forum\ForumUserWarningRepositoryInterface::class),
+    ),
+);
+$container->bind(\Daems\Application\Backstage\Forum\CreateForumCategoryAsAdmin\CreateForumCategoryAsAdmin::class,
+    static fn(Container $c) => new \Daems\Application\Backstage\Forum\CreateForumCategoryAsAdmin\CreateForumCategoryAsAdmin(
+        $c->make(ForumRepositoryInterface::class),
+        $c->make(\Daems\Domain\Forum\ForumModerationAuditRepositoryInterface::class),
+    ),
+);
+$container->bind(\Daems\Application\Backstage\Forum\UpdateForumCategoryAsAdmin\UpdateForumCategoryAsAdmin::class,
+    static fn(Container $c) => new \Daems\Application\Backstage\Forum\UpdateForumCategoryAsAdmin\UpdateForumCategoryAsAdmin(
+        $c->make(ForumRepositoryInterface::class),
+        $c->make(\Daems\Domain\Forum\ForumModerationAuditRepositoryInterface::class),
+    ),
+);
+$container->bind(\Daems\Application\Backstage\Forum\DeleteForumCategoryAsAdmin\DeleteForumCategoryAsAdmin::class,
+    static fn(Container $c) => new \Daems\Application\Backstage\Forum\DeleteForumCategoryAsAdmin\DeleteForumCategoryAsAdmin(
+        $c->make(ForumRepositoryInterface::class),
+        $c->make(\Daems\Domain\Forum\ForumModerationAuditRepositoryInterface::class),
+    ),
+);
+$container->bind(\Daems\Application\Backstage\Forum\ListForumModerationAuditForAdmin\ListForumModerationAuditForAdmin::class,
+    static fn(Container $c) => new \Daems\Application\Backstage\Forum\ListForumModerationAuditForAdmin\ListForumModerationAuditForAdmin(
+        $c->make(\Daems\Domain\Forum\ForumModerationAuditRepositoryInterface::class),
+    ),
+);
+
 $container->bind(ForumController::class,
     static fn(Container $c) => new ForumController(
         $c->make(ListForumCategories::class),
@@ -679,6 +821,7 @@ $container->bind(ForumController::class,
         $c->make(CreateForumPost::class),
         $c->make(LikeForumPost::class),
         $c->make(IncrementTopicView::class),
+        $c->make(\Daems\Application\Forum\ReportForumTarget\ReportForumTarget::class),
     ),
 );
 

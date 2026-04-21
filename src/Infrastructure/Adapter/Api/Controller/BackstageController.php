@@ -24,6 +24,48 @@ use Daems\Application\Backstage\DeleteProjectCommentAsAdmin\DeleteProjectComment
 use Daems\Application\Backstage\DeleteProjectCommentAsAdmin\DeleteProjectCommentAsAdminInput;
 use Daems\Application\Backstage\DismissApplication\DismissApplication;
 use Daems\Application\Backstage\DismissApplication\DismissApplicationInput;
+use Daems\Application\Backstage\Forum\CreateForumCategoryAsAdmin\CreateForumCategoryAsAdmin;
+use Daems\Application\Backstage\Forum\CreateForumCategoryAsAdmin\CreateForumCategoryAsAdminInput;
+use Daems\Application\Backstage\Forum\DeleteForumCategoryAsAdmin\DeleteForumCategoryAsAdmin;
+use Daems\Application\Backstage\Forum\DeleteForumCategoryAsAdmin\DeleteForumCategoryAsAdminInput;
+use Daems\Application\Backstage\Forum\DeleteForumPostAsAdmin\DeleteForumPostAsAdmin;
+use Daems\Application\Backstage\Forum\DeleteForumPostAsAdmin\DeleteForumPostAsAdminInput;
+use Daems\Application\Backstage\Forum\DeleteForumTopicAsAdmin\DeleteForumTopicAsAdmin;
+use Daems\Application\Backstage\Forum\DeleteForumTopicAsAdmin\DeleteForumTopicAsAdminInput;
+use Daems\Application\Backstage\Forum\DismissForumReport\DismissForumReport;
+use Daems\Application\Backstage\Forum\DismissForumReport\DismissForumReportInput;
+use Daems\Application\Backstage\Forum\EditForumPostAsAdmin\EditForumPostAsAdmin;
+use Daems\Application\Backstage\Forum\EditForumPostAsAdmin\EditForumPostAsAdminInput;
+use Daems\Application\Backstage\Forum\GetForumReportDetail\GetForumReportDetail;
+use Daems\Application\Backstage\Forum\GetForumReportDetail\GetForumReportDetailInput;
+use Daems\Application\Backstage\Forum\ListForumModerationAuditForAdmin\ListForumModerationAuditForAdmin;
+use Daems\Application\Backstage\Forum\ListForumModerationAuditForAdmin\ListForumModerationAuditForAdminInput;
+use Daems\Application\Backstage\Forum\ListForumPostsForAdmin\ListForumPostsForAdmin;
+use Daems\Application\Backstage\Forum\ListForumPostsForAdmin\ListForumPostsForAdminInput;
+use Daems\Application\Backstage\Forum\ListForumReportsForAdmin\ListForumReportsForAdmin;
+use Daems\Application\Backstage\Forum\ListForumReportsForAdmin\ListForumReportsForAdminInput;
+use Daems\Application\Backstage\Forum\ListForumTopicsForAdmin\ListForumTopicsForAdmin;
+use Daems\Application\Backstage\Forum\ListForumTopicsForAdmin\ListForumTopicsForAdminInput;
+use Daems\Application\Backstage\Forum\LockForumTopic\LockForumTopic;
+use Daems\Application\Backstage\Forum\LockForumTopic\LockForumTopicInput;
+use Daems\Application\Backstage\Forum\PinForumTopic\PinForumTopic;
+use Daems\Application\Backstage\Forum\PinForumTopic\PinForumTopicInput;
+use Daems\Application\Backstage\Forum\ResolveForumReportByDelete\ResolveForumReportByDelete;
+use Daems\Application\Backstage\Forum\ResolveForumReportByDelete\ResolveForumReportByDeleteInput;
+use Daems\Application\Backstage\Forum\ResolveForumReportByEdit\ResolveForumReportByEdit;
+use Daems\Application\Backstage\Forum\ResolveForumReportByEdit\ResolveForumReportByEditInput;
+use Daems\Application\Backstage\Forum\ResolveForumReportByLock\ResolveForumReportByLock;
+use Daems\Application\Backstage\Forum\ResolveForumReportByLock\ResolveForumReportByLockInput;
+use Daems\Application\Backstage\Forum\ResolveForumReportByWarn\ResolveForumReportByWarn;
+use Daems\Application\Backstage\Forum\ResolveForumReportByWarn\ResolveForumReportByWarnInput;
+use Daems\Application\Backstage\Forum\UnlockForumTopic\UnlockForumTopic;
+use Daems\Application\Backstage\Forum\UnlockForumTopic\UnlockForumTopicInput;
+use Daems\Application\Backstage\Forum\UnpinForumTopic\UnpinForumTopic;
+use Daems\Application\Backstage\Forum\UnpinForumTopic\UnpinForumTopicInput;
+use Daems\Application\Backstage\Forum\UpdateForumCategoryAsAdmin\UpdateForumCategoryAsAdmin;
+use Daems\Application\Backstage\Forum\UpdateForumCategoryAsAdmin\UpdateForumCategoryAsAdminInput;
+use Daems\Application\Backstage\Forum\WarnForumUser\WarnForumUser;
+use Daems\Application\Backstage\Forum\WarnForumUser\WarnForumUserInput;
 use Daems\Application\Backstage\GetMemberAudit\GetMemberAudit;
 use Daems\Application\Backstage\GetMemberAudit\GetMemberAuditInput;
 use Daems\Application\Backstage\ListEventRegistrations\ListEventRegistrations;
@@ -52,11 +94,17 @@ use Daems\Application\Backstage\UnregisterUserFromEvent\UnregisterUserFromEvent;
 use Daems\Application\Backstage\UnregisterUserFromEvent\UnregisterUserFromEventInput;
 use Daems\Application\Backstage\UpdateEvent\UpdateEvent;
 use Daems\Application\Backstage\UpdateEvent\UpdateEventInput;
+use Daems\Application\Forum\ListForumCategories\ListForumCategories;
+use Daems\Application\Forum\ListForumCategories\ListForumCategoriesInput;
 use Daems\Domain\Auth\ForbiddenException;
+use Daems\Domain\Forum\ForumPost;
+use Daems\Domain\Forum\ForumTopic;
+use Daems\Domain\Shared\ConflictException;
 use Daems\Domain\Shared\NotFoundException;
 use Daems\Domain\Shared\ValidationException;
 use Daems\Infrastructure\Framework\Http\Request;
 use Daems\Infrastructure\Framework\Http\Response;
+use InvalidArgumentException;
 
 final class BackstageController
 {
@@ -85,6 +133,28 @@ final class BackstageController
         private readonly RejectProjectProposal $rejectProposal,
         private readonly ListProjectCommentsForAdmin $listProjectComments,
         private readonly DeleteProjectCommentAsAdmin $deleteProjectComment,
+        private readonly ListForumReportsForAdmin $listForumReports,
+        private readonly GetForumReportDetail $getForumReport,
+        private readonly ResolveForumReportByDelete $resolveByDelete,
+        private readonly ResolveForumReportByLock $resolveByLock,
+        private readonly ResolveForumReportByWarn $resolveByWarn,
+        private readonly ResolveForumReportByEdit $resolveByEdit,
+        private readonly DismissForumReport $dismissForumReport,
+        private readonly ListForumTopicsForAdmin $listForumTopics,
+        private readonly PinForumTopic $pinForumTopic,
+        private readonly UnpinForumTopic $unpinForumTopic,
+        private readonly LockForumTopic $lockForumTopic,
+        private readonly UnlockForumTopic $unlockForumTopic,
+        private readonly DeleteForumTopicAsAdmin $deleteForumTopic,
+        private readonly ListForumPostsForAdmin $listForumPosts,
+        private readonly EditForumPostAsAdmin $editForumPost,
+        private readonly DeleteForumPostAsAdmin $deleteForumPost,
+        private readonly WarnForumUser $warnForumUser,
+        private readonly ListForumCategories $listForumCategories,
+        private readonly CreateForumCategoryAsAdmin $createForumCategory,
+        private readonly UpdateForumCategoryAsAdmin $updateForumCategory,
+        private readonly DeleteForumCategoryAsAdmin $deleteForumCategory,
+        private readonly ListForumModerationAuditForAdmin $listForumAudit,
     ) {}
 
     public function pendingApplications(Request $request): Response
@@ -532,6 +602,529 @@ final class BackstageController
         } catch (ForbiddenException) {
             return Response::json(['error' => 'forbidden'], 403);
         }
+    }
+
+    // ---------------------------------------------------------------
+    // Forum admin handlers (Task 21)
+    // ---------------------------------------------------------------
+
+    public function listForumReports(Request $request): Response
+    {
+        $acting = $request->requireActingUser();
+
+        /** @var array{status?:string, target_type?:string} $filters */
+        $filters = [];
+        $status = $request->string('status');
+        $targetType = $request->string('target_type');
+        if (is_string($status) && $status !== '') {
+            $filters['status'] = $status;
+        }
+        if (is_string($targetType) && $targetType !== '') {
+            $filters['target_type'] = $targetType;
+        }
+        $limitRaw = $request->string('limit');
+        $limit = is_numeric($limitRaw) ? (int) $limitRaw : 50;
+
+        try {
+            $out = $this->listForumReports->execute(new ListForumReportsForAdminInput($acting, $filters, $limit));
+        } catch (ForbiddenException) {
+            return Response::forbidden('Admin only');
+        }
+
+        return Response::json(['data' => array_map(static fn($a) => [
+            'compound_id'   => $a->compoundKey(),
+            'target_type'   => $a->targetType,
+            'target_id'     => $a->targetId,
+            'report_count'  => $a->reportCount,
+            'reason_counts' => $a->reasonCounts,
+            'earliest'      => $a->earliestCreatedAt,
+            'latest'        => $a->latestCreatedAt,
+            'status'        => $a->status,
+        ], $out->items)]);
+    }
+
+    /**
+     * @param array<string,string> $params
+     */
+    public function getForumReport(Request $request, array $params): Response
+    {
+        $acting = $request->requireActingUser();
+        $compoundId = (string) ($params['id'] ?? '');
+        if (!preg_match('/^(post|topic):([0-9a-f\-]{36})$/', $compoundId, $m)) {
+            return Response::badRequest('Invalid compound id');
+        }
+        $targetType = $m[1];
+        $targetId = $m[2];
+
+        try {
+            $out = $this->getForumReport->execute(new GetForumReportDetailInput($acting, $targetType, $targetId));
+        } catch (ForbiddenException) {
+            return Response::forbidden('Admin only');
+        } catch (NotFoundException) {
+            return Response::notFound('Report not found');
+        }
+
+        $aggregated = $out->aggregated;
+        return Response::json(['data' => [
+            'aggregated' => [
+                'compound_id'   => $aggregated->compoundKey(),
+                'target_type'   => $aggregated->targetType,
+                'target_id'     => $aggregated->targetId,
+                'report_count'  => $aggregated->reportCount,
+                'reason_counts' => $aggregated->reasonCounts,
+                'earliest'      => $aggregated->earliestCreatedAt,
+                'latest'        => $aggregated->latestCreatedAt,
+                'status'        => $aggregated->status,
+            ],
+            'raw_reports' => array_map(static fn($r) => [
+                'id'               => $r->id()->value(),
+                'reporter_user_id' => $r->reporterUserId(),
+                'reason_category'  => $r->reasonCategory(),
+                'reason_detail'    => $r->reasonDetail(),
+                'status'           => $r->status(),
+                'created_at'       => $r->createdAt(),
+            ], $out->rawReports),
+            'target_content' => $out->targetContent,
+        ]]);
+    }
+
+    /**
+     * @param array<string,string> $params
+     */
+    public function resolveForumReport(Request $request, array $params): Response
+    {
+        $acting = $request->requireActingUser();
+        $compoundId = (string) ($params['id'] ?? '');
+        if (!preg_match('/^(post|topic):([0-9a-f\-]{36})$/', $compoundId, $m)) {
+            return Response::badRequest('Invalid compound id');
+        }
+        $targetType = $m[1];
+        $targetId = $m[2];
+        $action = (string) ($request->string('action') ?? '');
+        $note = $request->string('note');
+
+        try {
+            switch ($action) {
+                case 'delete':
+                    $this->resolveByDelete->execute(
+                        new ResolveForumReportByDeleteInput($acting, $targetType, $targetId, $note),
+                    );
+                    break;
+                case 'lock':
+                    $this->resolveByLock->execute(
+                        new ResolveForumReportByLockInput($acting, $targetType, $targetId, $note),
+                    );
+                    break;
+                case 'warn':
+                    $this->resolveByWarn->execute(
+                        new ResolveForumReportByWarnInput($acting, $targetType, $targetId, $note),
+                    );
+                    break;
+                case 'edit':
+                    $newContent = (string) ($request->string('new_content') ?? '');
+                    $this->resolveByEdit->execute(
+                        new ResolveForumReportByEditInput($acting, $targetType, $targetId, $newContent, $note),
+                    );
+                    break;
+                default:
+                    return Response::badRequest('Unknown action');
+            }
+        } catch (ForbiddenException) {
+            return Response::forbidden('Admin only');
+        } catch (NotFoundException) {
+            return Response::notFound('Target not found');
+        } catch (InvalidArgumentException $e) {
+            return Response::badRequest($e->getMessage());
+        } catch (ConflictException $e) {
+            return Response::conflict($e->getMessage());
+        }
+
+        return Response::json(['data' => ['ok' => true]]);
+    }
+
+    /**
+     * @param array<string,string> $params
+     */
+    public function dismissForumReport(Request $request, array $params): Response
+    {
+        $acting = $request->requireActingUser();
+        $compoundId = (string) ($params['id'] ?? '');
+        if (!preg_match('/^(post|topic):([0-9a-f\-]{36})$/', $compoundId, $m)) {
+            return Response::badRequest('Invalid compound id');
+        }
+        $targetType = $m[1];
+        $targetId = $m[2];
+        $note = $request->string('note');
+
+        try {
+            $this->dismissForumReport->execute(
+                new DismissForumReportInput($acting, $targetType, $targetId, $note),
+            );
+        } catch (ForbiddenException) {
+            return Response::forbidden('Admin only');
+        } catch (NotFoundException) {
+            return Response::notFound('Report not found');
+        } catch (InvalidArgumentException $e) {
+            return Response::badRequest($e->getMessage());
+        }
+
+        return Response::json(['data' => ['ok' => true]]);
+    }
+
+    public function listForumTopicsAdmin(Request $request): Response
+    {
+        $acting = $request->requireActingUser();
+
+        $filters = [];
+        foreach (['category_id', 'q', 'pinned_only', 'locked_only'] as $key) {
+            $v = $request->input($key);
+            if ($v !== null && $v !== '') {
+                $filters[$key] = $v;
+            }
+        }
+        $limitRaw = $request->string('limit');
+        $limit = is_numeric($limitRaw) ? (int) $limitRaw : 100;
+
+        try {
+            $out = $this->listForumTopics->execute(new ListForumTopicsForAdminInput($acting, $limit, $filters));
+        } catch (ForbiddenException) {
+            return Response::forbidden('Admin only');
+        }
+
+        return Response::json(['data' => array_map(static fn(ForumTopic $t) => [
+            'id'               => $t->id()->value(),
+            'category_id'      => $t->categoryId(),
+            'slug'             => $t->slug(),
+            'title'            => $t->title(),
+            'author_name'      => $t->authorName(),
+            'user_id'          => $t->userId(),
+            'pinned'           => $t->pinned(),
+            'locked'           => $t->locked(),
+            'reply_count'      => $t->replyCount(),
+            'view_count'       => $t->viewCount(),
+            'last_activity_at' => $t->lastActivityAt(),
+            'created_at'       => $t->createdAt(),
+        ], $out->topics)]);
+    }
+
+    /**
+     * @param array<string,string> $params
+     */
+    public function pinForumTopic(Request $request, array $params): Response
+    {
+        $acting = $request->requireActingUser();
+        $id = (string) ($params['id'] ?? '');
+
+        try {
+            $this->pinForumTopic->execute(new PinForumTopicInput($acting, $id));
+        } catch (ForbiddenException) {
+            return Response::forbidden('Admin only');
+        } catch (NotFoundException) {
+            return Response::notFound('Topic not found');
+        }
+
+        return Response::json(['data' => ['ok' => true, 'id' => $id, 'pinned' => true]]);
+    }
+
+    /**
+     * @param array<string,string> $params
+     */
+    public function unpinForumTopic(Request $request, array $params): Response
+    {
+        $acting = $request->requireActingUser();
+        $id = (string) ($params['id'] ?? '');
+
+        try {
+            $this->unpinForumTopic->execute(new UnpinForumTopicInput($acting, $id));
+        } catch (ForbiddenException) {
+            return Response::forbidden('Admin only');
+        } catch (NotFoundException) {
+            return Response::notFound('Topic not found');
+        }
+
+        return Response::json(['data' => ['ok' => true, 'id' => $id, 'pinned' => false]]);
+    }
+
+    /**
+     * @param array<string,string> $params
+     */
+    public function lockForumTopic(Request $request, array $params): Response
+    {
+        $acting = $request->requireActingUser();
+        $id = (string) ($params['id'] ?? '');
+
+        try {
+            $this->lockForumTopic->execute(new LockForumTopicInput($acting, $id));
+        } catch (ForbiddenException) {
+            return Response::forbidden('Admin only');
+        } catch (NotFoundException) {
+            return Response::notFound('Topic not found');
+        }
+
+        return Response::json(['data' => ['ok' => true, 'id' => $id, 'locked' => true]]);
+    }
+
+    /**
+     * @param array<string,string> $params
+     */
+    public function unlockForumTopic(Request $request, array $params): Response
+    {
+        $acting = $request->requireActingUser();
+        $id = (string) ($params['id'] ?? '');
+
+        try {
+            $this->unlockForumTopic->execute(new UnlockForumTopicInput($acting, $id));
+        } catch (ForbiddenException) {
+            return Response::forbidden('Admin only');
+        } catch (NotFoundException) {
+            return Response::notFound('Topic not found');
+        }
+
+        return Response::json(['data' => ['ok' => true, 'id' => $id, 'locked' => false]]);
+    }
+
+    /**
+     * @param array<string,string> $params
+     */
+    public function deleteForumTopicAdmin(Request $request, array $params): Response
+    {
+        $acting = $request->requireActingUser();
+        $id = (string) ($params['id'] ?? '');
+
+        try {
+            $this->deleteForumTopic->execute(new DeleteForumTopicAsAdminInput($acting, $id));
+        } catch (ForbiddenException) {
+            return Response::forbidden('Admin only');
+        } catch (NotFoundException) {
+            return Response::notFound('Topic not found');
+        }
+
+        return Response::json(null, 204);
+    }
+
+    public function listForumPostsAdmin(Request $request): Response
+    {
+        $acting = $request->requireActingUser();
+
+        $filters = [];
+        foreach (['topic_id', 'q'] as $key) {
+            $v = $request->input($key);
+            if ($v !== null && $v !== '') {
+                $filters[$key] = $v;
+            }
+        }
+        $limitRaw = $request->string('limit');
+        $limit = is_numeric($limitRaw) ? (int) $limitRaw : 100;
+
+        try {
+            $out = $this->listForumPosts->execute(new ListForumPostsForAdminInput($acting, $limit, $filters));
+        } catch (ForbiddenException) {
+            return Response::forbidden('Admin only');
+        }
+
+        return Response::json(['data' => array_map(static fn(ForumPost $p) => [
+            'id'          => $p->id()->value(),
+            'topic_id'    => $p->topicId(),
+            'author_name' => $p->authorName(),
+            'user_id'     => $p->userId(),
+            'content'     => $p->content(),
+            'likes'       => $p->likes(),
+            'sort_order'  => $p->sortOrder(),
+            'created_at'  => $p->createdAt(),
+            'edited_at'   => $p->editedAt(),
+        ], $out->posts)]);
+    }
+
+    /**
+     * @param array<string,string> $params
+     */
+    public function editForumPostAdmin(Request $request, array $params): Response
+    {
+        $acting = $request->requireActingUser();
+        $id = (string) ($params['id'] ?? '');
+        $newContent = (string) ($request->string('new_content') ?? '');
+        $note = $request->string('note');
+
+        try {
+            $this->editForumPost->execute(new EditForumPostAsAdminInput($acting, $id, $newContent, $note));
+        } catch (ForbiddenException) {
+            return Response::forbidden('Admin only');
+        } catch (NotFoundException) {
+            return Response::notFound('Post not found');
+        } catch (InvalidArgumentException $e) {
+            return Response::badRequest($e->getMessage());
+        }
+
+        return Response::json(['data' => ['ok' => true, 'id' => $id]]);
+    }
+
+    /**
+     * @param array<string,string> $params
+     */
+    public function deleteForumPostAdmin(Request $request, array $params): Response
+    {
+        $acting = $request->requireActingUser();
+        $id = (string) ($params['id'] ?? '');
+
+        try {
+            $this->deleteForumPost->execute(new DeleteForumPostAsAdminInput($acting, $id));
+        } catch (ForbiddenException) {
+            return Response::forbidden('Admin only');
+        } catch (NotFoundException) {
+            return Response::notFound('Post not found');
+        }
+
+        return Response::json(null, 204);
+    }
+
+    /**
+     * @param array<string,string> $params
+     */
+    public function warnForumUser(Request $request, array $params): Response
+    {
+        $acting = $request->requireActingUser();
+        $userId = (string) ($params['id'] ?? '');
+        $reason = (string) ($request->string('reason') ?? '');
+
+        try {
+            $this->warnForumUser->execute(new WarnForumUserInput($acting, $userId, $reason));
+        } catch (ForbiddenException) {
+            return Response::forbidden('Admin only');
+        } catch (NotFoundException) {
+            return Response::notFound('User not found');
+        } catch (InvalidArgumentException $e) {
+            return Response::badRequest($e->getMessage());
+        }
+
+        return Response::json(['data' => ['ok' => true, 'user_id' => $userId]], 201);
+    }
+
+    public function listForumCategoriesAdmin(Request $request): Response
+    {
+        $acting = $request->requireActingUser();
+        if (!$acting->isAdminIn($acting->activeTenant) && !$acting->isPlatformAdmin) {
+            return Response::forbidden('Admin only');
+        }
+
+        $out = $this->listForumCategories->execute(new ListForumCategoriesInput($acting->activeTenant));
+        return Response::json(['data' => $out->categories]);
+    }
+
+    public function createForumCategoryAdmin(Request $request): Response
+    {
+        $acting = $request->requireActingUser();
+        $slug = (string) ($request->string('slug') ?? '');
+        $name = (string) ($request->string('name') ?? '');
+        $icon = (string) ($request->string('icon') ?? '');
+        $description = (string) ($request->string('description') ?? '');
+        $sortOrderRaw = $request->input('sort_order');
+        $sortOrder = is_numeric($sortOrderRaw) ? (int) $sortOrderRaw : 0;
+
+        try {
+            $out = $this->createForumCategory->execute(new CreateForumCategoryAsAdminInput(
+                $acting, $slug, $name, $icon, $description, $sortOrder,
+            ));
+        } catch (ForbiddenException) {
+            return Response::forbidden('Admin only');
+        } catch (InvalidArgumentException $e) {
+            return Response::badRequest($e->getMessage());
+        } catch (ConflictException $e) {
+            return Response::conflict($e->getMessage());
+        }
+
+        return Response::json(['data' => ['id' => $out->id, 'slug' => $out->slug]], 201);
+    }
+
+    /**
+     * @param array<string,string> $params
+     */
+    public function updateForumCategoryAdmin(Request $request, array $params): Response
+    {
+        $acting = $request->requireActingUser();
+        $id = (string) ($params['id'] ?? '');
+        $sortOrderRaw = $request->input('sort_order');
+
+        try {
+            $this->updateForumCategory->execute(new UpdateForumCategoryAsAdminInput(
+                $acting,
+                $id,
+                $request->string('slug'),
+                $request->string('name'),
+                $request->string('icon'),
+                $request->string('description'),
+                is_numeric($sortOrderRaw) ? (int) $sortOrderRaw : null,
+            ));
+        } catch (ForbiddenException) {
+            return Response::forbidden('Admin only');
+        } catch (NotFoundException) {
+            return Response::notFound('Category not found');
+        } catch (InvalidArgumentException $e) {
+            return Response::badRequest($e->getMessage());
+        } catch (ConflictException $e) {
+            return Response::conflict($e->getMessage());
+        }
+
+        return Response::json(['data' => ['ok' => true, 'id' => $id]]);
+    }
+
+    /**
+     * @param array<string,string> $params
+     */
+    public function deleteForumCategoryAdmin(Request $request, array $params): Response
+    {
+        $acting = $request->requireActingUser();
+        $id = (string) ($params['id'] ?? '');
+
+        try {
+            $this->deleteForumCategory->execute(new DeleteForumCategoryAsAdminInput($acting, $id));
+        } catch (ForbiddenException) {
+            return Response::forbidden('Admin only');
+        } catch (NotFoundException) {
+            return Response::notFound('Category not found');
+        } catch (ConflictException $e) {
+            return Response::conflict($e->getMessage());
+        }
+
+        return Response::json(null, 204);
+    }
+
+    public function listForumAudit(Request $request): Response
+    {
+        $acting = $request->requireActingUser();
+
+        /** @var array{action?:string, performer?:string} $filters */
+        $filters = [];
+        $action = $request->string('action');
+        $performer = $request->string('performer');
+        if (is_string($action) && $action !== '') {
+            $filters['action'] = $action;
+        }
+        if (is_string($performer) && $performer !== '') {
+            $filters['performer'] = $performer;
+        }
+        $limitRaw = $request->string('limit');
+        $limit = is_numeric($limitRaw) ? (int) $limitRaw : 200;
+
+        try {
+            $out = $this->listForumAudit->execute(
+                new ListForumModerationAuditForAdminInput($acting, $limit, $filters),
+            );
+        } catch (ForbiddenException) {
+            return Response::forbidden('Admin only');
+        }
+
+        return Response::json(['data' => array_map(static fn($e) => [
+            'id'                => $e->id()->value(),
+            'target_type'       => $e->targetType(),
+            'target_id'         => $e->targetId(),
+            'action'            => $e->action(),
+            'original_payload'  => $e->originalPayload(),
+            'new_payload'       => $e->newPayload(),
+            'reason'            => $e->reason(),
+            'performed_by'      => $e->performedBy(),
+            'related_report_id' => $e->relatedReportId(),
+            'created_at'        => $e->createdAt(),
+        ], $out->entries)]);
     }
 
     /**

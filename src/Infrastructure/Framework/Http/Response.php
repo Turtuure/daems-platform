@@ -55,6 +55,11 @@ final class Response
         return self::json(['error' => $message], 403);
     }
 
+    public static function conflict(string $message = 'Conflict.'): self
+    {
+        return self::json(['error' => $message], 409);
+    }
+
     public static function tooManyRequests(string $message, int $retryAfter): self
     {
         return new self(
