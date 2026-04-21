@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Daems\Infrastructure\Adapter\Persistence\Sql;
 
 use Daems\Domain\Locale\SupportedLocale;
+use Daems\Domain\Locale\TranslationMap;
 use Daems\Domain\Project\Project;
 use Daems\Domain\Project\ProjectComment;
 use Daems\Domain\Project\ProjectCommentId;
@@ -199,6 +200,13 @@ final class SqlProjectRepository implements ProjectRepositoryInterface
                 $project->featured() ? 1 : 0,
             ],
         );
+
+        foreach ($project->translations()->raw() as $locale => $row) {
+            if ($row === null || !SupportedLocale::isSupported($locale)) {
+                continue;
+            }
+            $this->upsertTranslationRow($project->id()->value(), $locale, $row);
+        }
     }
 
     public function deleteById(string $projectId): void
@@ -318,21 +326,69 @@ final class SqlProjectRepository implements ProjectRepositoryInterface
         $ownerIdRaw = $row['owner_id'] ?? null;
         $featuredRaw = $row['featured'] ?? 0;
 
+        $projectId = self::str($row, 'id');
+        $legacyTitle = self::str($row, 'title');
+        $legacySummary = self::str($row, 'summary');
+        $legacyDescription = self::str($row, 'description');
+        $translations = $this->loadTranslationMap($projectId, $legacyTitle, $legacySummary, $legacyDescription);
+
         return new Project(
-            ProjectId::fromString(self::str($row, 'id')),
+            ProjectId::fromString($projectId),
             TenantId::fromString(self::str($row, 'tenant_id')),
             self::str($row, 'slug'),
-            self::str($row, 'title'),
+            $legacyTitle,
             self::str($row, 'category'),
             self::str($row, 'icon'),
-            self::str($row, 'summary'),
-            self::str($row, 'description'),
+            $legacySummary,
+            $legacyDescription,
             self::str($row, 'status'),
             self::intOf($row, 'sort_order'),
             is_string($ownerIdRaw) && $ownerIdRaw !== '' ? UserId::fromString($ownerIdRaw) : null,
             (bool) (is_int($featuredRaw) ? $featuredRaw : (is_string($featuredRaw) && is_numeric($featuredRaw) ? (int) $featuredRaw : 0)),
             self::strOrDefault($row, 'created_at', ''),
+            $translations,
         );
+    }
+
+    /**
+     * Build TranslationMap from projects_i18n rows; fall back to legacy fi_FI row
+     * synthesized from legacy scalar columns if i18n table has nothing.
+     */
+    private function loadTranslationMap(
+        string $projectId,
+        string $legacyTitle,
+        string $legacySummary,
+        string $legacyDescription,
+    ): TranslationMap {
+        $rows = $this->db->query(
+            'SELECT locale, title, summary, description FROM projects_i18n WHERE project_id = ?',
+            [$projectId],
+        );
+        $map = [];
+        foreach (SupportedLocale::supportedValues() as $loc) {
+            $map[$loc] = null;
+        }
+        $hasI18nRow = false;
+        foreach ($rows as $r) {
+            $loc = isset($r['locale']) && is_string($r['locale']) ? $r['locale'] : null;
+            if ($loc === null || !SupportedLocale::isSupported($loc)) {
+                continue;
+            }
+            $hasI18nRow = true;
+            $map[$loc] = [
+                'title'       => isset($r['title']) && is_string($r['title']) ? $r['title'] : '',
+                'summary'     => isset($r['summary']) && is_string($r['summary']) ? $r['summary'] : '',
+                'description' => isset($r['description']) && is_string($r['description']) ? $r['description'] : '',
+            ];
+        }
+        if (!$hasI18nRow) {
+            $map[SupportedLocale::UI_DEFAULT] = [
+                'title'       => $legacyTitle,
+                'summary'     => $legacySummary,
+                'description' => $legacyDescription,
+            ];
+        }
+        return new TranslationMap($map);
     }
 
     /** @param array<string, mixed> $row */
@@ -407,6 +463,20 @@ final class SqlProjectRepository implements ProjectRepositoryInterface
         if ($exists === null) {
             throw new \DomainException('project_not_found_in_tenant');
         }
+        $this->upsertTranslationRow(
+            $projectId,
+            $locale->value(),
+            [
+                'title'       => (string) ($fields['title'] ?? ''),
+                'summary'     => (string) ($fields['summary'] ?? ''),
+                'description' => (string) ($fields['description'] ?? ''),
+            ],
+        );
+    }
+
+    /** @param array<string, ?string> $row */
+    private function upsertTranslationRow(string $projectId, string $locale, array $row): void
+    {
         $this->db->execute(
             'INSERT INTO projects_i18n (project_id, locale, title, summary, description)
              VALUES (?, ?, ?, ?, ?)
@@ -415,10 +485,10 @@ final class SqlProjectRepository implements ProjectRepositoryInterface
                 description=VALUES(description), updated_at=CURRENT_TIMESTAMP',
             [
                 $projectId,
-                $locale->value(),
-                (string) ($fields['title'] ?? ''),
-                (string) ($fields['summary'] ?? ''),
-                (string) ($fields['description'] ?? ''),
+                $locale,
+                (string) ($row['title'] ?? ''),
+                (string) ($row['summary'] ?? ''),
+                (string) ($row['description'] ?? ''),
             ],
         );
     }
