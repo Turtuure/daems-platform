@@ -27,11 +27,15 @@ final class ProjectTenantIsolationTest extends IsolationTestCase
 
     private function seedProject(string $tenantSlug, string $slug, string $title): void
     {
-        $stmt = $this->pdo()->prepare(
-            "INSERT INTO projects (id, tenant_id, slug, title, category, icon, summary, description, status, sort_order)
-             VALUES (?, (SELECT id FROM tenants WHERE slug = ?), ?, ?, 'cat', 'icon', 'sum', 'desc', 'active', 0)"
-        );
-        $stmt->execute([ProjectId::generate()->value(), $tenantSlug, $slug, $title]);
+        $projectId = ProjectId::generate()->value();
+        $this->pdo()->prepare(
+            "INSERT INTO projects (id, tenant_id, slug, category, icon, status, sort_order)
+             VALUES (?, (SELECT id FROM tenants WHERE slug = ?), ?, 'cat', 'icon', 'active', 0)"
+        )->execute([$projectId, $tenantSlug, $slug]);
+        $this->pdo()->prepare(
+            "INSERT INTO projects_i18n (project_id, locale, title, summary, description)
+             VALUES (?, 'fi_FI', ?, 'sum', 'desc')"
+        )->execute([$projectId, $title]);
     }
 
     public function test_admin_of_daems_cannot_see_sahegroup_projects(): void

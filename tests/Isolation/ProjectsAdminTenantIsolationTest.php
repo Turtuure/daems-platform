@@ -57,9 +57,13 @@ final class ProjectsAdminTenantIsolationTest extends IsolationTestCase
     {
         $id = Uuid7::generate()->value();
         $this->pdo()->prepare(
-            "INSERT INTO projects (id, tenant_id, slug, title, category, icon, summary, description, status, sort_order, featured)
-             VALUES (?, (SELECT id FROM tenants WHERE slug = ?), ?, ?, 'community', 'bi-folder', 'sum', 'desc text long enough', ?, 0, 0)"
-        )->execute([$id, $tenantSlug, $slug, $title, $status]);
+            "INSERT INTO projects (id, tenant_id, slug, category, icon, status, sort_order, featured)
+             VALUES (?, (SELECT id FROM tenants WHERE slug = ?), ?, 'community', 'bi-folder', ?, 0, 0)"
+        )->execute([$id, $tenantSlug, $slug, $status]);
+        $this->pdo()->prepare(
+            "INSERT INTO projects_i18n (project_id, locale, title, summary, description)
+             VALUES (?, 'fi_FI', ?, 'sum', 'desc text long enough')"
+        )->execute([$id, $title]);
         return $id;
     }
 

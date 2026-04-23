@@ -40,14 +40,19 @@ final class EventsAdminTenantIsolationTest extends IsolationTestCase
 
     /**
      * Seed an event row for the given tenant slug; returns the generated event ID.
+     * Translated columns now live in events_i18n (post-migration 054).
      */
     private function seedEvent(string $tenantSlug, string $slug, string $title): string
     {
         $id = Uuid7::generate()->value();
         $this->pdo()->prepare(
-            "INSERT INTO events (id, tenant_id, slug, title, type, event_date, status, description, is_online)
-             VALUES (?, (SELECT id FROM tenants WHERE slug = ?), ?, ?, 'upcoming', '2026-12-01', 'published', 'Isolation test description text.', 0)"
-        )->execute([$id, $tenantSlug, $slug, $title]);
+            "INSERT INTO events (id, tenant_id, slug, type, event_date, status, is_online)
+             VALUES (?, (SELECT id FROM tenants WHERE slug = ?), ?, 'upcoming', '2026-12-01', 'published', 0)"
+        )->execute([$id, $tenantSlug, $slug]);
+        $this->pdo()->prepare(
+            "INSERT INTO events_i18n (event_id, locale, title, description)
+             VALUES (?, 'fi_FI', ?, 'Isolation test description text.')"
+        )->execute([$id, $title]);
         return $id;
     }
 

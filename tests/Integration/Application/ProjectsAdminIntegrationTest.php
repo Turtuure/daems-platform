@@ -128,9 +128,13 @@ final class ProjectsAdminIntegrationTest extends MigrationTestCase
         $id = Uuid7::generate()->value();
         $this->pdo()->prepare(
             "INSERT INTO projects
-                (id, tenant_id, slug, title, category, icon, summary, description, status, sort_order, featured, created_at)
-             VALUES (?, ?, ?, ?, 'community', 'bi-folder', 'short summary', 'longer description for test', ?, 0, ?, ?)"
-        )->execute([$id, $this->tenantId, $slug, $title, $status, $featured ? 1 : 0, $createdAt]);
+                (id, tenant_id, slug, category, icon, status, sort_order, featured, created_at)
+             VALUES (?, ?, ?, 'community', 'bi-folder', ?, 0, ?, ?)"
+        )->execute([$id, $this->tenantId, $slug, $status, $featured ? 1 : 0, $createdAt]);
+        $this->pdo()->prepare(
+            "INSERT INTO projects_i18n (project_id, locale, title, summary, description)
+             VALUES (?, 'fi_FI', ?, 'short summary', 'longer description for test')"
+        )->execute([$id, $title]);
         return $id;
     }
 
@@ -158,14 +162,20 @@ final class ProjectsAdminIntegrationTest extends MigrationTestCase
             $this->actingAdmin(), $proposalId, 'Looks good, approved.',
         ));
 
-        // Project row exists, status=draft, owner_id = proposer.user_id
-        $row = $this->pdo()->prepare('SELECT * FROM projects WHERE id = ?');
+        // Project row exists, status=draft, owner_id = proposer.user_id.
+        // Title now lives in projects_i18n (post-migration 054).
+        $row = $this->pdo()->prepare(
+            "SELECT p.*, pi.title AS i18n_title
+             FROM projects p
+             LEFT JOIN projects_i18n pi ON pi.project_id = p.id AND pi.locale = 'fi_FI'
+             WHERE p.id = ?"
+        );
         $row->execute([$out->projectId]);
         $project = $row->fetch(\PDO::FETCH_ASSOC);
         self::assertIsArray($project);
         self::assertSame('draft', $project['status']);
         self::assertSame($this->proposalUserId, $project['owner_id']);
-        self::assertSame('Integration Approve Flow', $project['title']);
+        self::assertSame('Integration Approve Flow', $project['i18n_title']);
         self::assertSame('community', $project['category']);
         self::assertSame($out->slug, $project['slug']);
 
