@@ -73,16 +73,13 @@ final class SqlEventRepository implements EventRepositoryInterface
     {
         $this->db->execute(
             'INSERT INTO events
-                (id, tenant_id, slug, title, type, event_date, event_time, location, is_online, description, hero_image, gallery_json, status)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                (id, tenant_id, slug, type, event_date, event_time, is_online, hero_image, gallery_json, status)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
              ON DUPLICATE KEY UPDATE
-                title = VALUES(title),
                 type = VALUES(type),
                 event_date = VALUES(event_date),
                 event_time = VALUES(event_time),
-                location = VALUES(location),
                 is_online = VALUES(is_online),
-                description = VALUES(description),
                 hero_image = VALUES(hero_image),
                 gallery_json = VALUES(gallery_json),
                 status = VALUES(status)',
@@ -90,13 +87,10 @@ final class SqlEventRepository implements EventRepositoryInterface
                 $event->id()->value(),
                 $event->tenantId()->value(),
                 $event->slug(),
-                $event->title(),
                 $event->type(),
                 $event->date(),
                 $event->time(),
-                $event->location(),
                 $event->online() ? 1 : 0,
-                $event->description(),
                 $event->heroImage(),
                 json_encode($event->gallery()),
                 $event->status(),
@@ -117,7 +111,7 @@ final class SqlEventRepository implements EventRepositoryInterface
         if ($fields === []) {
             return;
         }
-        $allowed = ['title', 'type', 'event_date', 'event_time', 'location', 'is_online', 'description', 'hero_image', 'gallery_json'];
+        $allowed = ['type', 'event_date', 'event_time', 'is_online', 'hero_image', 'gallery_json'];
         $sets = [];
         $params = [];
         foreach ($fields as $col => $val) {
@@ -196,12 +190,19 @@ final class SqlEventRepository implements EventRepositoryInterface
     {
         /** @var array<array{event_id: string, slug: string, title: string, type: string, date: string}> $rows */
         $rows = $this->db->query(
-            'SELECT e.id AS event_id, e.slug, e.title, e.type, e.event_date AS date
+            'SELECT e.id AS event_id, e.slug,
+                    COALESCE(
+                        (SELECT title FROM events_i18n WHERE event_id = e.id AND locale = ?),
+                        (SELECT title FROM events_i18n WHERE event_id = e.id AND locale = ?),
+                        (SELECT title FROM events_i18n WHERE event_id = e.id LIMIT 1),
+                        ""
+                    ) AS title,
+                    e.type, e.event_date AS date
              FROM event_registrations er
              JOIN events e ON e.id = er.event_id
              WHERE er.user_id = ?
              ORDER BY e.event_date DESC',
-            [$userId],
+            [SupportedLocale::UI_DEFAULT, SupportedLocale::CONTENT_FALLBACK, $userId],
         );
 
         return $rows;
@@ -276,19 +277,19 @@ final class SqlEventRepository implements EventRepositoryInterface
         $galleryArr = is_array($gallery) ? array_values(array_filter($gallery, 'is_string')) : [];
 
         $eventId = self::str($row, 'id');
-        $translations = $this->loadTranslationMap($eventId, self::str($row, 'title'), self::strOrNull($row, 'location'), self::strOrNull($row, 'description'));
+        $translations = $this->loadTranslationMap($eventId);
 
         return new Event(
             EventId::fromString($eventId),
             TenantId::fromString(self::str($row, 'tenant_id')),
             self::str($row, 'slug'),
-            self::str($row, 'title'),
+            self::firstAvailable($translations, 'title') ?? '',
             self::str($row, 'type'),
             self::str($row, 'event_date'),
             self::strOrNull($row, 'event_time'),
-            self::strOrNull($row, 'location'),
+            self::firstAvailable($translations, 'location'),
             (bool) ($row['is_online'] ?? false),
-            self::strOrNull($row, 'description'),
+            self::firstAvailable($translations, 'description'),
             self::strOrNull($row, 'hero_image'),
             $galleryArr,
             self::str($row, 'status'),
@@ -297,15 +298,11 @@ final class SqlEventRepository implements EventRepositoryInterface
     }
 
     /**
-     * Build TranslationMap from events_i18n rows; fall back to legacy fi_FI row
-     * synthesized from legacy scalar columns if i18n table has nothing.
+     * Build TranslationMap from events_i18n rows. After A11 (migration 054)
+     * events_i18n is the sole source of truth — no legacy-column fallback.
      */
-    private function loadTranslationMap(
-        string $eventId,
-        string $legacyTitle,
-        ?string $legacyLocation,
-        ?string $legacyDescription,
-    ): TranslationMap {
+    private function loadTranslationMap(string $eventId): TranslationMap
+    {
         $rows = $this->db->query(
             'SELECT locale, title, location, description FROM events_i18n WHERE event_id = ?',
             [$eventId],
@@ -314,27 +311,35 @@ final class SqlEventRepository implements EventRepositoryInterface
         foreach (SupportedLocale::supportedValues() as $loc) {
             $map[$loc] = null;
         }
-        $hasI18nRow = false;
         foreach ($rows as $r) {
             $loc = isset($r['locale']) && is_string($r['locale']) ? $r['locale'] : null;
             if ($loc === null || !SupportedLocale::isSupported($loc)) {
                 continue;
             }
-            $hasI18nRow = true;
             $map[$loc] = [
                 'title'       => isset($r['title']) && is_string($r['title']) ? $r['title'] : '',
                 'location'    => isset($r['location']) && is_string($r['location']) ? $r['location'] : null,
                 'description' => isset($r['description']) && is_string($r['description']) ? $r['description'] : null,
             ];
         }
-        if (!$hasI18nRow) {
-            $map[SupportedLocale::UI_DEFAULT] = [
-                'title'       => $legacyTitle,
-                'location'    => $legacyLocation,
-                'description' => $legacyDescription,
-            ];
-        }
         return new TranslationMap($map);
+    }
+
+    private static function firstAvailable(TranslationMap $translations, string $field): ?string
+    {
+        foreach ([SupportedLocale::UI_DEFAULT, SupportedLocale::CONTENT_FALLBACK] as $loc) {
+            $row = $translations->rowFor(SupportedLocale::fromString($loc));
+            if ($row !== null && isset($row[$field]) && $row[$field] !== null && trim((string) $row[$field]) !== '') {
+                return (string) $row[$field];
+            }
+        }
+        foreach (SupportedLocale::supportedValues() as $loc) {
+            $row = $translations->rowFor(SupportedLocale::fromString($loc));
+            if ($row !== null && isset($row[$field]) && $row[$field] !== null && trim((string) $row[$field]) !== '') {
+                return (string) $row[$field];
+            }
+        }
+        return null;
     }
 
     /** @param array<string, mixed> $row */

@@ -26,11 +26,16 @@ final class EventTenantIsolationTest extends IsolationTestCase
 
     private function seedEvent(string $tenantSlug, string $slug, string $title): void
     {
+        $eventId = EventId::generate()->value();
         $stmt = $this->pdo()->prepare(
-            "INSERT INTO events (id, tenant_id, slug, title, type, event_date)
-             VALUES (?, (SELECT id FROM tenants WHERE slug = ?), ?, ?, 'upcoming', '2026-06-01')"
+            "INSERT INTO events (id, tenant_id, slug, type, event_date)
+             VALUES (?, (SELECT id FROM tenants WHERE slug = ?), ?, 'upcoming', '2026-06-01')"
         );
-        $stmt->execute([EventId::generate()->value(), $tenantSlug, $slug, $title]);
+        $stmt->execute([$eventId, $tenantSlug, $slug]);
+        $this->pdo()->prepare(
+            "INSERT INTO events_i18n (event_id, locale, title)
+             VALUES (?, 'fi_FI', ?)"
+        )->execute([$eventId, $title]);
     }
 
     public function test_list_isolates_by_tenant(): void

@@ -21,7 +21,7 @@ final class SqlProjectRepositoryI18nTest extends MigrationTestCase
     protected function setUp(): void
     {
         parent::setUp();
-        $this->runMigrationsUpTo(53);
+        $this->runMigrationsUpTo(56);
         $this->repo = new SqlProjectRepository(new Connection([
             'host'     => getenv('TEST_DB_HOST') ?: '127.0.0.1',
             'port'     => getenv('TEST_DB_PORT') ?: '3306',

@@ -8,6 +8,7 @@ use Daems\Domain\Event\Event;
 use Daems\Domain\Event\EventRegistration;
 use Daems\Domain\Event\EventRepositoryInterface;
 use Daems\Domain\Locale\SupportedLocale;
+use Daems\Domain\Locale\TranslationMap;
 use Daems\Domain\Tenant\TenantId;
 
 final class InMemoryEventRepository implements EventRepositoryInterface
@@ -207,11 +208,67 @@ final class InMemoryEventRepository implements EventRepositoryInterface
         if ($e === null || !$e->tenantId()->equals($tenantId)) {
             throw new \DomainException('event_not_found_in_tenant');
         }
-        $this->translations[$eventId][$locale->value()] = [
+        $newRow = [
             'title'       => isset($fields['title']) ? (string) $fields['title'] : '',
             'location'    => $fields['location'] ?? null,
             'description' => $fields['description'] ?? null,
         ];
+        $this->translations[$eventId][$locale->value()] = $newRow;
+
+        // Rebuild a fresh TranslationMap merging existing rows with the new write,
+        // matching SQL repo semantics where hydrate() reads from events_i18n.
+        $merged = $e->translations()->raw();
+        $merged[$locale->value()] = $newRow;
+        $newMap = new TranslationMap($merged);
+
+        $convenience = self::firstAvailableRow($newMap);
+        $title       = $convenience['title'] ?? '';
+        $location    = $convenience['location'] ?? null;
+        $description = $convenience['description'] ?? null;
+
+        $updated = new Event(
+            $e->id(), $e->tenantId(), $e->slug(),
+            $title, $e->type(), $e->date(),
+            $e->time(), $location, $e->online(),
+            $description, $e->heroImage(), $e->gallery(),
+            $e->status(), $newMap,
+        );
+        $this->byId[$eventId] = $updated;
+        $this->bySlug[$updated->slug()] = $updated;
+    }
+
+    /**
+     * Mirror SqlEventRepository::firstAvailable for each translatable field.
+     * @return array{title: string, location: ?string, description: ?string}
+     */
+    private static function firstAvailableRow(TranslationMap $translations): array
+    {
+        $out = ['title' => '', 'location' => null, 'description' => null];
+        foreach (Event::TRANSLATABLE_FIELDS as $field) {
+            $value = null;
+            foreach ([SupportedLocale::UI_DEFAULT, SupportedLocale::CONTENT_FALLBACK] as $loc) {
+                $row = $translations->rowFor(SupportedLocale::fromString($loc));
+                if ($row !== null && isset($row[$field]) && $row[$field] !== null && trim((string) $row[$field]) !== '') {
+                    $value = (string) $row[$field];
+                    break;
+                }
+            }
+            if ($value === null) {
+                foreach (SupportedLocale::supportedValues() as $loc) {
+                    $row = $translations->rowFor(SupportedLocale::fromString($loc));
+                    if ($row !== null && isset($row[$field]) && $row[$field] !== null && trim((string) $row[$field]) !== '') {
+                        $value = (string) $row[$field];
+                        break;
+                    }
+                }
+            }
+            if ($field === 'title') {
+                $out['title'] = $value ?? '';
+            } else {
+                $out[$field] = $value;
+            }
+        }
+        return $out;
     }
 
     public function seedAdminRegistration(

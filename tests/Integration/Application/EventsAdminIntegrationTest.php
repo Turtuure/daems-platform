@@ -112,8 +112,13 @@ final class EventsAdminIntegrationTest extends MigrationTestCase
 
         $eventId = $out->id;
 
-        // Assert DB has row with status='draft'
-        $stmt = $this->pdo()->prepare('SELECT status, title FROM events WHERE id = ?');
+        // Assert DB has row with status='draft'; title now lives in events_i18n.
+        $stmt = $this->pdo()->prepare(
+            "SELECT e.status, ei.title
+             FROM events e
+             LEFT JOIN events_i18n ei ON ei.event_id = e.id AND ei.locale = 'fi_FI'
+             WHERE e.id = ?"
+        );
         $stmt->execute([$eventId]);
         $row = $stmt->fetch(\PDO::FETCH_ASSOC);
         self::assertIsArray($row);
@@ -136,7 +141,9 @@ final class EventsAdminIntegrationTest extends MigrationTestCase
             gallery:     null,
         ));
 
-        $stmt2 = $this->pdo()->prepare('SELECT title FROM events WHERE id = ?');
+        $stmt2 = $this->pdo()->prepare(
+            "SELECT title FROM events_i18n WHERE event_id = ? AND locale = 'fi_FI'"
+        );
         $stmt2->execute([$eventId]);
         self::assertSame('Updated Title for Event', $stmt2->fetchColumn());
 
@@ -206,24 +213,24 @@ final class EventsAdminIntegrationTest extends MigrationTestCase
         $idGen    = $this->makeIdGenerator();
         $repo     = $this->eventRepo();
 
-        // Insert events in all three statuses directly so we can control status precisely
+        // Insert events in all three statuses directly so we can control status precisely.
+        // Translated columns now live in events_i18n (post-migration 054).
+        $insertEvent = "INSERT INTO events (id, tenant_id, slug, type, event_date, status, is_online)
+                        VALUES (?, ?, ?, 'upcoming', ?, ?, 0)";
+        $insertI18n = "INSERT INTO events_i18n (event_id, locale, title, location, description)
+                       VALUES (?, 'fi_FI', ?, NULL, ?)";
+
         $draftId = $idGen->generate();
-        $this->pdo()->prepare(
-            "INSERT INTO events (id, tenant_id, slug, title, type, event_date, status, description, is_online)
-             VALUES (?, ?, 'draft-evt', 'Draft Event', 'upcoming', '2026-11-01', 'draft', 'draft description text here', 0)"
-        )->execute([$draftId, $this->tenantId]);
+        $this->pdo()->prepare($insertEvent)->execute([$draftId, $this->tenantId, 'draft-evt', '2026-11-01', 'draft']);
+        $this->pdo()->prepare($insertI18n)->execute([$draftId, 'Draft Event', 'draft description text here']);
 
         $publishedId = $idGen->generate();
-        $this->pdo()->prepare(
-            "INSERT INTO events (id, tenant_id, slug, title, type, event_date, status, description, is_online)
-             VALUES (?, ?, 'published-evt', 'Published Event', 'upcoming', '2026-11-02', 'published', 'published description text here', 0)"
-        )->execute([$publishedId, $this->tenantId]);
+        $this->pdo()->prepare($insertEvent)->execute([$publishedId, $this->tenantId, 'published-evt', '2026-11-02', 'published']);
+        $this->pdo()->prepare($insertI18n)->execute([$publishedId, 'Published Event', 'published description text here']);
 
         $archivedId = $idGen->generate();
-        $this->pdo()->prepare(
-            "INSERT INTO events (id, tenant_id, slug, title, type, event_date, status, description, is_online)
-             VALUES (?, ?, 'archived-evt', 'Archived Event', 'upcoming', '2026-11-03', 'archived', 'archived description text here', 0)"
-        )->execute([$archivedId, $this->tenantId]);
+        $this->pdo()->prepare($insertEvent)->execute([$archivedId, $this->tenantId, 'archived-evt', '2026-11-03', 'archived']);
+        $this->pdo()->prepare($insertI18n)->execute([$archivedId, 'Archived Event', 'archived description text here']);
 
         $publicListUc = new ListEvents($repo);
         $out = $publicListUc->execute(new ListEventsInput($tenantId));

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Daems\Tests\Support\Fake;
 
 use Daems\Domain\Locale\SupportedLocale;
+use Daems\Domain\Locale\TranslationMap;
 use Daems\Domain\Project\Project;
 use Daems\Domain\Project\ProjectComment;
 use Daems\Domain\Project\ProjectParticipant;
@@ -311,11 +312,59 @@ final class InMemoryProjectRepository implements ProjectRepositoryInterface
         if ($found === null) {
             throw new \DomainException('project_not_found_in_tenant');
         }
-        $this->translations[$projectId][$locale->value()] = [
+        $newRow = [
             'title'       => isset($fields['title']) ? (string) $fields['title'] : '',
             'summary'     => isset($fields['summary']) ? (string) $fields['summary'] : '',
             'description' => isset($fields['description']) ? (string) $fields['description'] : '',
         ];
+        $this->translations[$projectId][$locale->value()] = $newRow;
+
+        // Rebuild a fresh TranslationMap merging existing rows with the new write,
+        // matching SQL repo semantics where hydrate() reads from projects_i18n.
+        $merged = $found->translations()->raw();
+        $merged[$locale->value()] = $newRow;
+        $newMap = new TranslationMap($merged);
+
+        $convenience = self::firstAvailableRow($newMap);
+        $updated = new Project(
+            $found->id(), $found->tenantId(), $found->slug(),
+            $convenience['title'], $found->category(), $found->icon(),
+            $convenience['summary'], $convenience['description'],
+            $found->status(), $found->sortOrder(),
+            $found->ownerId(), $found->featured(), $found->createdAt(),
+            $newMap,
+        );
+        $this->bySlug[$updated->slug()] = $updated;
+    }
+
+    /**
+     * Mirror SqlProjectRepository::firstAvailable for each translatable field.
+     * @return array{title: string, summary: string, description: string}
+     */
+    private static function firstAvailableRow(TranslationMap $translations): array
+    {
+        $out = ['title' => '', 'summary' => '', 'description' => ''];
+        foreach (Project::TRANSLATABLE_FIELDS as $field) {
+            $value = null;
+            foreach ([SupportedLocale::UI_DEFAULT, SupportedLocale::CONTENT_FALLBACK] as $loc) {
+                $row = $translations->rowFor(SupportedLocale::fromString($loc));
+                if ($row !== null && isset($row[$field]) && $row[$field] !== null && trim((string) $row[$field]) !== '') {
+                    $value = (string) $row[$field];
+                    break;
+                }
+            }
+            if ($value === null) {
+                foreach (SupportedLocale::supportedValues() as $loc) {
+                    $row = $translations->rowFor(SupportedLocale::fromString($loc));
+                    if ($row !== null && isset($row[$field]) && $row[$field] !== null && trim((string) $row[$field]) !== '') {
+                        $value = (string) $row[$field];
+                        break;
+                    }
+                }
+            }
+            $out[$field] = $value ?? '';
+        }
+        return $out;
     }
 
     /**

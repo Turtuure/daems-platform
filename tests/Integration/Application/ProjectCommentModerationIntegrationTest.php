@@ -79,14 +79,17 @@ final class ProjectCommentModerationIntegrationTest extends MigrationTestCase
 
     public function test_delete_comment_removes_row_and_writes_audit(): void
     {
-        // Seed project
+        // Seed project (translated columns now live in projects_i18n)
         $projectId = Uuid7::generate()->value();
         $this->pdo()->prepare(
             "INSERT INTO projects
-                (id, tenant_id, slug, title, category, icon, summary, description, status, sort_order, featured)
-             VALUES (?, ?, 'mod-project', 'Moderated Project', 'community', 'bi-folder', 'summary text',
-                     'longer description for moderation test', 'active', 0, 0)"
+                (id, tenant_id, slug, category, icon, status, sort_order, featured)
+             VALUES (?, ?, 'mod-project', 'community', 'bi-folder', 'active', 0, 0)"
         )->execute([$projectId, $this->tenantId]);
+        $this->pdo()->prepare(
+            "INSERT INTO projects_i18n (project_id, locale, title, summary, description)
+             VALUES (?, 'fi_FI', 'Moderated Project', 'summary text', 'longer description for moderation test')"
+        )->execute([$projectId]);
 
         // Seed comment
         $commentId = Uuid7::generate()->value();
