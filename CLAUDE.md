@@ -19,7 +19,7 @@ Open the **new terminal in `C:\laragon\www\daems-platform`** by default — this
 - `localhost` → `daems` tenant
 - `sahegroup.local` → `sahegroup` tenant
 
-## Current state (updated 2026-04-21)
+## Current state (updated 2026-04-23)
 
 Branch: `dev` (pushed to origin). All work lands here; never push without explicit ask.
 
@@ -30,6 +30,7 @@ Completed milestones (see `docs/superpowers/plans/` for plans, `docs/superpowers
 - **PR 4** — Backstage Applications + Members API (`2026-04-20-backstage-applications-and-members-api.md`): migrations 034–035
 - **2026-04-20** — Approve-flow + global toasts; Events admin; Projects admin; Forum moderation (migrations 036–050)
 - **PR 5** — Content i18n for events + projects + EventProposal (`2026-04-21-content-i18n-events-projects-design.md`): migrations 051–056; `Daems\Domain\Locale\*` value objects; locales `fi_FI|en_GB|sw_TZ`; per-field fallback via `EntityTranslationView`; admin locale-cards pattern; EventProposal mirrors ProjectProposal + `source_locale`
+- **A11 follow-up** (2026-04-23, branch `i18n-a11-cleanup`): migration 054 drops legacy `events.title/location/description` + `projects.title/summary/description`; `*_i18n` tables are sole source of truth; SqlEventRepository / SqlProjectRepository derive convenience scalars via firstAvailable() over translation map; UpdateEvent + AdminUpdateProject split chrome vs translation field updates; 7 fixture files split raw INSERTs into base + companion i18n inserts. Tests: 779 green, PHPStan lvl 9 = 0 errors.
 
 Active roadmap (`docs/planning/roadmap.md`, section 1 Admin Panel):
 1. ✅ Dashboard overview
@@ -39,8 +40,6 @@ Active roadmap (`docs/planning/roadmap.md`, section 1 Admin Panel):
 5. ✅ Projects admin (`/backstage/projects`)
 6. ✅ Forum moderation (`/backstage/forum`)
 7. ⏭️ **Settings** (`/backstage/settings`) — the only remaining sidebar item
-
-Outstanding technical debt — **A11 follow-up**: `SqlEventRepository` / `SqlProjectRepository` are hybrid (read/write both legacy columns + `*_i18n` tables). Migration 054 (drop legacy translated columns) not yet created. Dedicated plan: `docs/superpowers/plans/2026-04-21-a11-cleanup.md` (9 tasks, ~2-3h focused session, target branch `i18n-a11-cleanup`).
 
 ## i18n notes (PR 5)
 
