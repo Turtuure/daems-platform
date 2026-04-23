@@ -15,8 +15,29 @@ jobs:
       matrix:
         php: ["8.1", "8.3"]
 
+    services:
+      mysql:
+        image: mysql:8.4
+        env:
+          MYSQL_ROOT_PASSWORD: salasana
+          MYSQL_DATABASE: daems_db_test
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -psalasana"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=10
+
+    env:
+      TEST_DB_HOST: 127.0.0.1
+      TEST_DB_PORT: 3306
+      TEST_DB_USER: root
+      TEST_DB_PASS: salasana
+      TEST_DB_NAME: daems_db_test
+
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Set up PHP ${{ matrix.php }}
         uses: shivammathur/setup-php@v2
@@ -28,8 +49,30 @@ jobs:
       - name: Install dependencies
         run: composer install --no-interaction --prefer-dist
 
+      - name: Wait for MySQL
+        run: |
+          for i in $(seq 1 30); do
+            if mysqladmin ping -h 127.0.0.1 -P 3306 -uroot -psalasana --silent; then
+              echo "MySQL is up."
+              exit 0
+            fi
+            echo "Waiting for MySQL ($i/30)…"
+            sleep 2
+          done
+          echo "MySQL did not become ready in 60 s." >&2
+          exit 1
+
+      - name: Apply migrations to test DB
+        env:
+          DB_HOST: 127.0.0.1
+          DB_PORT: 3306
+          DB_USER: root
+          DB_PASS: salasana
+          DB_NAME: daems_db_test
+        run: php scripts/apply_pending_migrations.php
+
       - name: PHPStan
         run: vendor/bin/phpstan analyse --no-progress
 
-      - name: PHPUnit
+      - name: PHPUnit (full suite)
         run: vendor/bin/phpunit
