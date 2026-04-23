@@ -38,7 +38,7 @@ final class SqlProjectRepository implements ProjectRepositoryInterface
             $where[] = "status NOT IN ('archived','draft')";
         }
         if ($search !== null && $search !== '') {
-            $where[]  = '(title LIKE ? OR summary LIKE ?)';
+            $where[]  = 'EXISTS (SELECT 1 FROM projects_i18n pi WHERE pi.project_id = projects.id AND (pi.title LIKE ? OR pi.summary LIKE ?))';
             $params[] = '%' . $search . '%';
             $params[] = '%' . $search . '%';
         }
@@ -64,7 +64,7 @@ final class SqlProjectRepository implements ProjectRepositoryInterface
             $sql .= ' AND featured = 1';
         }
         if (isset($filters['q']) && $filters['q'] !== '') {
-            $sql .= ' AND (title LIKE ? OR summary LIKE ?)';
+            $sql .= ' AND EXISTS (SELECT 1 FROM projects_i18n pi WHERE pi.project_id = projects.id AND (pi.title LIKE ? OR pi.summary LIKE ?))';
             $params[] = '%' . $filters['q'] . '%';
             $params[] = '%' . $filters['q'] . '%';
         }
@@ -86,7 +86,7 @@ final class SqlProjectRepository implements ProjectRepositoryInterface
         if ($fields === []) {
             return;
         }
-        $allowed = ['title', 'category', 'icon', 'summary', 'description', 'status', 'sort_order', 'featured'];
+        $allowed = ['category', 'icon', 'status', 'sort_order', 'featured'];
         $sets = [];
         $params = [];
         foreach ($fields as $col => $val) {
@@ -129,7 +129,13 @@ final class SqlProjectRepository implements ProjectRepositoryInterface
     public function listRecentCommentsForTenant(TenantId $tenantId, int $limit = 100): array
     {
         $rows = $this->db->query(
-            'SELECT pc.id AS comment_id, pc.project_id AS project_id, p.title AS project_title,
+            'SELECT pc.id AS comment_id, pc.project_id AS project_id,
+                    COALESCE(
+                        (SELECT title FROM projects_i18n WHERE project_id = p.id AND locale = ?),
+                        (SELECT title FROM projects_i18n WHERE project_id = p.id AND locale = ?),
+                        (SELECT title FROM projects_i18n WHERE project_id = p.id LIMIT 1),
+                        ""
+                    ) AS project_title,
                     pc.author_name AS author_name, pc.content AS content,
                     DATE_FORMAT(pc.created_at, "%Y-%m-%d %H:%i:%s") AS created_at
              FROM project_comments pc
@@ -137,7 +143,7 @@ final class SqlProjectRepository implements ProjectRepositoryInterface
              WHERE p.tenant_id = ?
              ORDER BY pc.created_at DESC
              LIMIT ' . (int) $limit,
-            [$tenantId->value()],
+            [SupportedLocale::UI_DEFAULT, SupportedLocale::CONTENT_FALLBACK, $tenantId->value()],
         );
         $out = [];
         foreach ($rows as $row) {
@@ -173,15 +179,12 @@ final class SqlProjectRepository implements ProjectRepositoryInterface
     {
         $this->db->execute(
             'INSERT INTO projects
-                (id, tenant_id, owner_id, slug, title, category, icon, summary, description, status, sort_order, featured)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                (id, tenant_id, owner_id, slug, category, icon, status, sort_order, featured)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
              ON DUPLICATE KEY UPDATE
                 owner_id    = VALUES(owner_id),
-                title       = VALUES(title),
                 category    = VALUES(category),
                 icon        = VALUES(icon),
-                summary     = VALUES(summary),
-                description = VALUES(description),
                 status      = VALUES(status),
                 sort_order  = VALUES(sort_order),
                 featured    = VALUES(featured)',
@@ -190,11 +193,8 @@ final class SqlProjectRepository implements ProjectRepositoryInterface
                 $project->tenantId()->value(),
                 $project->ownerId()?->value(),
                 $project->slug(),
-                $project->title(),
                 $project->category(),
                 $project->icon(),
-                $project->summary(),
-                $project->description(),
                 $project->status(),
                 $project->sortOrder(),
                 $project->featured() ? 1 : 0,
@@ -327,20 +327,17 @@ final class SqlProjectRepository implements ProjectRepositoryInterface
         $featuredRaw = $row['featured'] ?? 0;
 
         $projectId = self::str($row, 'id');
-        $legacyTitle = self::str($row, 'title');
-        $legacySummary = self::str($row, 'summary');
-        $legacyDescription = self::str($row, 'description');
-        $translations = $this->loadTranslationMap($projectId, $legacyTitle, $legacySummary, $legacyDescription);
+        $translations = $this->loadTranslationMap($projectId);
 
         return new Project(
             ProjectId::fromString($projectId),
             TenantId::fromString(self::str($row, 'tenant_id')),
             self::str($row, 'slug'),
-            $legacyTitle,
+            self::firstAvailable($translations, 'title') ?? '',
             self::str($row, 'category'),
             self::str($row, 'icon'),
-            $legacySummary,
-            $legacyDescription,
+            self::firstAvailable($translations, 'summary') ?? '',
+            self::firstAvailable($translations, 'description') ?? '',
             self::str($row, 'status'),
             self::intOf($row, 'sort_order'),
             is_string($ownerIdRaw) && $ownerIdRaw !== '' ? UserId::fromString($ownerIdRaw) : null,
@@ -351,15 +348,11 @@ final class SqlProjectRepository implements ProjectRepositoryInterface
     }
 
     /**
-     * Build TranslationMap from projects_i18n rows; fall back to legacy fi_FI row
-     * synthesized from legacy scalar columns if i18n table has nothing.
+     * Build TranslationMap from projects_i18n rows. After A11 (migration 054)
+     * projects_i18n is the sole source of truth — no legacy-column fallback.
      */
-    private function loadTranslationMap(
-        string $projectId,
-        string $legacyTitle,
-        string $legacySummary,
-        string $legacyDescription,
-    ): TranslationMap {
+    private function loadTranslationMap(string $projectId): TranslationMap
+    {
         $rows = $this->db->query(
             'SELECT locale, title, summary, description FROM projects_i18n WHERE project_id = ?',
             [$projectId],
@@ -368,27 +361,35 @@ final class SqlProjectRepository implements ProjectRepositoryInterface
         foreach (SupportedLocale::supportedValues() as $loc) {
             $map[$loc] = null;
         }
-        $hasI18nRow = false;
         foreach ($rows as $r) {
             $loc = isset($r['locale']) && is_string($r['locale']) ? $r['locale'] : null;
             if ($loc === null || !SupportedLocale::isSupported($loc)) {
                 continue;
             }
-            $hasI18nRow = true;
             $map[$loc] = [
                 'title'       => isset($r['title']) && is_string($r['title']) ? $r['title'] : '',
                 'summary'     => isset($r['summary']) && is_string($r['summary']) ? $r['summary'] : '',
                 'description' => isset($r['description']) && is_string($r['description']) ? $r['description'] : '',
             ];
         }
-        if (!$hasI18nRow) {
-            $map[SupportedLocale::UI_DEFAULT] = [
-                'title'       => $legacyTitle,
-                'summary'     => $legacySummary,
-                'description' => $legacyDescription,
-            ];
-        }
         return new TranslationMap($map);
+    }
+
+    private static function firstAvailable(TranslationMap $translations, string $field): ?string
+    {
+        foreach ([SupportedLocale::UI_DEFAULT, SupportedLocale::CONTENT_FALLBACK] as $loc) {
+            $row = $translations->rowFor(SupportedLocale::fromString($loc));
+            if ($row !== null && isset($row[$field]) && $row[$field] !== null && trim((string) $row[$field]) !== '') {
+                return (string) $row[$field];
+            }
+        }
+        foreach (SupportedLocale::supportedValues() as $loc) {
+            $row = $translations->rowFor(SupportedLocale::fromString($loc));
+            if ($row !== null && isset($row[$field]) && $row[$field] !== null && trim((string) $row[$field]) !== '') {
+                return (string) $row[$field];
+            }
+        }
+        return null;
     }
 
     /** @param array<string, mixed> $row */
