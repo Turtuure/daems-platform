@@ -347,6 +347,11 @@ return static function (Router $router, Container $container): void {
         return $container->make(\Daems\Infrastructure\Adapter\Api\Controller\BackstageController::class)->updateTenantSettings($req);
     }, [TenantContextMiddleware::class, AuthMiddleware::class]);
 
+    // Me — public-profile privacy toggle (public_avatar_visible)
+    $router->post('/api/v1/me/privacy', static function (Request $req) use ($container): Response {
+        return $container->make(UserController::class)->updateMyPrivacy($req);
+    }, [TenantContextMiddleware::class, AuthMiddleware::class]);
+
     // Public — member verification (NO auth)
     $router->get('/api/v1/members/{number}', static function (Request $req, array $params) use ($container): Response {
         return $container->make(\Daems\Infrastructure\Adapter\Api\Controller\MemberController::class)->getPublicProfile($req, $params);
