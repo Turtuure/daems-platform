@@ -41,6 +41,7 @@ final class SearchIntegrationTest extends MigrationTestCase
         $this->seedEvents();
         $this->seedProjects();
         $this->seedInsights();
+        $this->seedForum();
     }
 
     private function seedEvents(): void
@@ -95,6 +96,28 @@ final class SearchIntegrationTest extends MigrationTestCase
             VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,NOW())")
             ->execute([$i2, $this->tenantId, 'future-post', 'Future Solar Post', 'tech', 'Tech', 0,
                 '2099-01-01', 'Sam', 3, 'x', '[]', 'body', 'body about solar']);
+    }
+
+    private function seedForum(): void
+    {
+        $pdo = $this->pdo();
+        $catId = Uuid7::generate()->value();
+        $pdo->prepare('INSERT INTO forum_categories (id, tenant_id, slug, name, icon, description, sort_order) VALUES (?,?,?,?,?,?,?)')
+            ->execute([$catId, $this->tenantId, 'general', 'General', 'chat', '', 1]);
+        $topicId = Uuid7::generate()->value();
+        $pdo->prepare("INSERT INTO forum_topics
+            (id, tenant_id, category_id, slug, title, author_name, avatar_initials, avatar_color, first_post_search_text, last_activity_at, last_activity_by, created_at)
+            VALUES (?,?,?,?,?,?,?,?,?,NOW(),'anon',NOW())")
+            ->execute([$topicId, $this->tenantId, $catId, 'welcome', 'Welcome to the forum',
+                'anon', 'AN', 'blue', 'Please discuss climate action here']);
+    }
+
+    public function test_forum_body_match_returns_hit(): void
+    {
+        $repo = new SqlSearchRepository($this->conn);
+        $hits = $repo->search($this->tenantId, 'climate', 'forum_topic', false, false, 5, 'fi_FI');
+        self::assertCount(1, $hits);
+        self::assertSame('forum_topic', $hits[0]->entityType);
     }
 
     public function test_finds_insight_by_search_text(): void

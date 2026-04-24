@@ -33,7 +33,10 @@ final class SqlSearchRepository implements SearchRepositoryInterface
         if ($wantAll || $type === 'insight') {
             $out = array_merge($out, $this->searchInsights($tenantId, $query, $includeUnpublished, $limitPerDomain));
         }
-        // forum_topic / member branches added in later tasks
+        if ($wantAll || $type === 'forum_topic') {
+            $out = array_merge($out, $this->searchForum($tenantId, $query, $limitPerDomain));
+        }
+        // member branch added in later tasks
         return $out;
     }
 
@@ -185,6 +188,45 @@ final class SqlSearchRepository implements SearchRepositoryInterface
                 localeCode: null,
                 status: 'published',
                 publishedAt: is_string($publishedDate) ? substr($publishedDate, 0, 10) : null,
+                relevance: is_numeric($relevanceRaw) ? (float) $relevanceRaw : 0.0,
+            );
+        }
+        return $hits;
+    }
+
+    /** @return SearchHit[] */
+    private function searchForum(string $tenantId, string $query, int $limit): array
+    {
+        $sql = "SELECT t.id, t.slug, t.created_at, t.title, t.first_post_search_text,
+                       c.slug AS category_slug,
+                       MATCH(t.title, t.first_post_search_text) AGAINST (:q1) AS relevance
+                FROM forum_topics t
+                JOIN forum_categories c ON c.id = t.category_id
+                WHERE t.tenant_id = :t
+                  AND MATCH(t.title, t.first_post_search_text) AGAINST (:q2)
+                ORDER BY relevance DESC
+                LIMIT {$limit}";
+        $rows = $this->db->query($sql, [
+            ':t'  => $tenantId,
+            ':q1' => $query,
+            ':q2' => $query,
+        ]);
+
+        $hits = [];
+        foreach ($rows as $r) {
+            $title = self::str($r, 'title', '');
+            $body = self::str($r, 'first_post_search_text', '');
+            $createdAt = $r['created_at'] ?? null;
+            $relevanceRaw = $r['relevance'] ?? 0;
+            $hits[] = new SearchHit(
+                entityType: 'forum_topic',
+                entityId: self::str($r, 'id'),
+                title: $title,
+                snippet: self::snippet($body, $query),
+                url: '/forums/' . self::str($r, 'category_slug') . '/' . self::str($r, 'slug'),
+                localeCode: null,
+                status: 'published',
+                publishedAt: is_string($createdAt) ? substr($createdAt, 0, 10) : null,
                 relevance: is_numeric($relevanceRaw) ? (float) $relevanceRaw : 0.0,
             );
         }
