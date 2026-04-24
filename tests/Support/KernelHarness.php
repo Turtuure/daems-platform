@@ -724,6 +724,17 @@ final class KernelHarness
             static fn(Container $c) => new \Daems\Infrastructure\Adapter\Api\Controller\MemberController(
                 $c->make(\Daems\Application\Member\GetPublicMemberProfile\GetPublicMemberProfile::class),
             ));
+        // Search
+        $container->bind(\Daems\Domain\Search\SearchRepositoryInterface::class,
+            static fn(Container $c) => new \Daems\Tests\Support\Fake\InMemorySearchRepository());
+        $container->bind(\Daems\Application\Search\Search\Search::class,
+            static fn(Container $c) => new \Daems\Application\Search\Search\Search(
+                $c->make(\Daems\Domain\Search\SearchRepositoryInterface::class),
+            ));
+        $container->bind(\Daems\Infrastructure\Adapter\Api\Controller\SearchController::class,
+            static fn(Container $c) => new \Daems\Infrastructure\Adapter\Api\Controller\SearchController(
+                $c->make(\Daems\Application\Search\Search\Search::class),
+            ));
         $container->bind(\Daems\Application\Backstage\GetEventWithAllTranslations\GetEventWithAllTranslations::class,
             static fn(Container $c) => new \Daems\Application\Backstage\GetEventWithAllTranslations\GetEventWithAllTranslations(
                 $c->make(EventRepositoryInterface::class),

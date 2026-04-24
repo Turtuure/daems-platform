@@ -483,6 +483,20 @@ $container->bind(\Daems\Infrastructure\Adapter\Api\Controller\MemberController::
     ),
 );
 
+// Search
+$container->bind(\Daems\Domain\Search\SearchRepositoryInterface::class,
+    static fn(Container $c) => new \Daems\Infrastructure\Adapter\Persistence\Sql\SqlSearchRepository(
+        $c->make(Connection::class),
+    ));
+$container->bind(\Daems\Application\Search\Search\Search::class,
+    static fn(Container $c) => new \Daems\Application\Search\Search\Search(
+        $c->make(\Daems\Domain\Search\SearchRepositoryInterface::class),
+    ));
+$container->bind(\Daems\Infrastructure\Adapter\Api\Controller\SearchController::class,
+    static fn(Container $c) => new \Daems\Infrastructure\Adapter\Api\Controller\SearchController(
+        $c->make(\Daems\Application\Search\Search\Search::class),
+    ));
+
 // i18n admin use cases
 $container->bind(\Daems\Application\Backstage\GetEventWithAllTranslations\GetEventWithAllTranslations::class,
     static fn(Container $c) => new \Daems\Application\Backstage\GetEventWithAllTranslations\GetEventWithAllTranslations(

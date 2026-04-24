@@ -357,6 +357,16 @@ return static function (Router $router, Container $container): void {
         return $container->make(\Daems\Infrastructure\Adapter\Api\Controller\MemberController::class)->getPublicProfile($req, $params);
     }, []);
 
+    // Public search (no auth). Locale middleware for i18n fallback resolution.
+    $router->get('/api/v1/search', static function (Request $req) use ($container): Response {
+        return $container->make(\Daems\Infrastructure\Adapter\Api\Controller\SearchController::class)->public($req);
+    }, [TenantContextMiddleware::class, LocaleMiddleware::class]);
+
+    // Backstage search (auth required; members domain gated inside controller).
+    $router->get('/api/v1/backstage/search', static function (Request $req) use ($container): Response {
+        return $container->make(\Daems\Infrastructure\Adapter\Api\Controller\SearchController::class)->backstage($req);
+    }, [TenantContextMiddleware::class, LocaleMiddleware::class, AuthMiddleware::class]);
+
     // Backstage — translations (events + projects)
     $router->get('/api/v1/backstage/events/{id}/translations', static function (Request $req, array $params) use ($container): Response {
         return $container->make(\Daems\Infrastructure\Adapter\Api\Controller\BackstageController::class)->getEventWithTranslations($req, $params);
