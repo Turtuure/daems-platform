@@ -467,6 +467,22 @@ $container->bind(\Daems\Application\Backstage\UpdateTenantSettings\UpdateTenantS
     ),
 );
 
+$container->bind(\Daems\Domain\Member\PublicMemberRepositoryInterface::class,
+    static fn(Container $c) => new \Daems\Infrastructure\Adapter\Persistence\Sql\SqlPublicMemberRepository(
+        $c->make(\Daems\Infrastructure\Framework\Database\Connection::class),
+    ),
+);
+$container->bind(\Daems\Application\Member\GetPublicMemberProfile\GetPublicMemberProfile::class,
+    static fn(Container $c) => new \Daems\Application\Member\GetPublicMemberProfile\GetPublicMemberProfile(
+        $c->make(\Daems\Domain\Member\PublicMemberRepositoryInterface::class),
+    ),
+);
+$container->bind(\Daems\Infrastructure\Adapter\Api\Controller\MemberController::class,
+    static fn(Container $c) => new \Daems\Infrastructure\Adapter\Api\Controller\MemberController(
+        $c->make(\Daems\Application\Member\GetPublicMemberProfile\GetPublicMemberProfile::class),
+    ),
+);
+
 // i18n admin use cases
 $container->bind(\Daems\Application\Backstage\GetEventWithAllTranslations\GetEventWithAllTranslations::class,
     static fn(Container $c) => new \Daems\Application\Backstage\GetEventWithAllTranslations\GetEventWithAllTranslations(
