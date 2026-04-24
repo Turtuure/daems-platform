@@ -352,8 +352,8 @@ return static function (Router $router, Container $container): void {
         return $container->make(UserController::class)->updateMyPrivacy($req);
     }, [TenantContextMiddleware::class, AuthMiddleware::class]);
 
-    // Public — member verification (NO auth)
-    $router->get('/api/v1/members/{number}', static function (Request $req, array $params) use ($container): Response {
+    // Public — member verification (NO auth). {id} is users.id (UUIDv7).
+    $router->get('/api/v1/members/{id}', static function (Request $req, array $params) use ($container): Response {
         return $container->make(\Daems\Infrastructure\Adapter\Api\Controller\MemberController::class)->getPublicProfile($req, $params);
     }, []);
 

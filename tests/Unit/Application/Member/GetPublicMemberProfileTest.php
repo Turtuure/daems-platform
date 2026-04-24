@@ -12,11 +12,15 @@ use PHPUnit\Framework\TestCase;
 
 final class GetPublicMemberProfileTest extends TestCase
 {
-    public function test_returns_profile_for_known_number(): void
+    private const USER_ID_A = '019d9f72-436e-7df6-9c33-ad9545952a8a';
+    private const USER_ID_B = '019d9f72-436e-7df6-9c33-ad9545952a8b';
+    private const USER_ID_UNKNOWN = '019d9f72-436e-7df6-9c33-ad9545952aff';
+
+    public function test_returns_profile_for_known_user_id(): void
     {
-        $repo = $this->fakeRepoWith('123', 'Sam', 'DAEMS', true, '/avatars/sam.webp');
+        $repo = $this->fakeRepoWith(self::USER_ID_A, '123', 'Sam', 'DAEMS', true, '/avatars/sam.webp');
         $uc = new GetPublicMemberProfile($repo);
-        $out = $uc->execute(new GetPublicMemberProfileInput('123'));
+        $out = $uc->execute(new GetPublicMemberProfileInput(self::USER_ID_A));
 
         self::assertSame('Sam', $out->name);
         self::assertSame('DAEMS', $out->tenantMemberNumberPrefix);
@@ -26,28 +30,28 @@ final class GetPublicMemberProfileTest extends TestCase
 
     public function test_returns_null_avatar_when_visibility_off(): void
     {
-        $repo = $this->fakeRepoWith('456', 'Juma', null, false, null);
+        $repo = $this->fakeRepoWith(self::USER_ID_B, '456', 'Juma', null, false, null);
         $uc = new GetPublicMemberProfile($repo);
-        $out = $uc->execute(new GetPublicMemberProfileInput('456'));
+        $out = $uc->execute(new GetPublicMemberProfileInput(self::USER_ID_B));
 
         self::assertFalse($out->publicAvatarVisible);
         self::assertNull($out->avatarUrl);
     }
 
-    public function test_throws_not_found_for_unknown_number(): void
+    public function test_throws_not_found_for_unknown_user_id(): void
     {
         $repo = new class implements PublicMemberRepositoryInterface {
-            public function findByMemberNumber(string $n): ?PublicMemberProfile { return null; }
+            public function findByUserId(string $id): ?PublicMemberProfile { return null; }
         };
         $uc = new GetPublicMemberProfile($repo);
         $this->expectException(NotFoundException::class);
-        $uc->execute(new GetPublicMemberProfileInput('999'));
+        $uc->execute(new GetPublicMemberProfileInput(self::USER_ID_UNKNOWN));
     }
 
-    private function fakeRepoWith(string $number, string $name, ?string $prefix, bool $avatarVisible, ?string $avatarUrl): PublicMemberRepositoryInterface
+    private function fakeRepoWith(string $userId, string $memberNumber, string $name, ?string $prefix, bool $avatarVisible, ?string $avatarUrl): PublicMemberRepositoryInterface
     {
         $profile = new PublicMemberProfile(
-            memberNumberRaw: $number,
+            memberNumberRaw: $memberNumber,
             name: $name,
             memberType: 'basic',
             role: 'member',
@@ -59,10 +63,13 @@ final class GetPublicMemberProfileTest extends TestCase
             avatarInitials: strtoupper(substr($name, 0, 2)),
             avatarUrl: $avatarUrl,
         );
-        return new class ($profile) implements PublicMemberRepositoryInterface {
-            public function __construct(private readonly PublicMemberProfile $p) {}
-            public function findByMemberNumber(string $n): ?PublicMemberProfile {
-                return $n === $this->p->memberNumberRaw ? $this->p : null;
+        return new class ($userId, $profile) implements PublicMemberRepositoryInterface {
+            public function __construct(
+                private readonly string $expectedId,
+                private readonly PublicMemberProfile $p,
+            ) {}
+            public function findByUserId(string $id): ?PublicMemberProfile {
+                return $id === $this->expectedId ? $this->p : null;
             }
         };
     }

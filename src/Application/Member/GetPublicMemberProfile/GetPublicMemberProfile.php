@@ -12,7 +12,7 @@ final class GetPublicMemberProfile
 
     public function execute(GetPublicMemberProfileInput $input): GetPublicMemberProfileOutput
     {
-        $profile = $this->repo->findByMemberNumber($input->memberNumber)
+        $profile = $this->repo->findByUserId($input->userId)
             ?? throw new NotFoundException('member_not_found');
         return GetPublicMemberProfileOutput::fromProfile($profile);
     }

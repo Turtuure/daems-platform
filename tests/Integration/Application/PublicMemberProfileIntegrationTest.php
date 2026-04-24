@@ -53,9 +53,10 @@ final class PublicMemberProfileIntegrationTest extends MigrationTestCase
     public function test_finds_existing_member_with_tenant_prefix(): void
     {
         $uc = new GetPublicMemberProfile(new SqlPublicMemberRepository($this->conn));
-        $out = $uc->execute(new GetPublicMemberProfileInput('000123'));
+        $out = $uc->execute(new GetPublicMemberProfileInput($this->userId));
 
         self::assertSame('Sam Hammersmith', $out->name);
+        self::assertSame('000123', $out->memberNumberRaw);
         self::assertSame('DAEMS', $out->tenantMemberNumberPrefix);
         self::assertSame('founding', $out->memberType);
         self::assertSame('member', $out->role);
@@ -65,11 +66,11 @@ final class PublicMemberProfileIntegrationTest extends MigrationTestCase
         self::assertSame('SH', $out->avatarInitials);
     }
 
-    public function test_throws_not_found_for_unknown_number(): void
+    public function test_throws_not_found_for_unknown_user_id(): void
     {
         $uc = new GetPublicMemberProfile(new SqlPublicMemberRepository($this->conn));
         $this->expectException(NotFoundException::class);
-        $uc->execute(new GetPublicMemberProfileInput('999999'));
+        $uc->execute(new GetPublicMemberProfileInput('019d9f72-0000-7000-8000-000000000000'));
     }
 
     public function test_returns_null_avatar_url_when_visibility_off(): void
@@ -78,7 +79,7 @@ final class PublicMemberProfileIntegrationTest extends MigrationTestCase
             ->execute([$this->userId]);
 
         $uc = new GetPublicMemberProfile(new SqlPublicMemberRepository($this->conn));
-        $out = $uc->execute(new GetPublicMemberProfileInput('000123'));
+        $out = $uc->execute(new GetPublicMemberProfileInput($this->userId));
 
         self::assertFalse($out->publicAvatarVisible);
         self::assertNull($out->avatarUrl);
