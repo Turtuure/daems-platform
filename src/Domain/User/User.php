@@ -23,6 +23,7 @@ final class User
         private readonly string $createdAt = '',
         private readonly bool $isPlatformAdmin = false,
         private readonly ?\DateTimeImmutable $deletedAt = null,
+        private readonly bool $publicAvatarVisible = true,
     ) {}
 
     public function id(): UserId { return $this->id; }
@@ -41,4 +42,5 @@ final class User
     public function createdAt(): string { return $this->createdAt; }
     public function isPlatformAdmin(): bool { return $this->isPlatformAdmin; }
     public function deletedAt(): ?\DateTimeImmutable { return $this->deletedAt; }
+    public function publicAvatarVisible(): bool { return $this->publicAvatarVisible; }
 }

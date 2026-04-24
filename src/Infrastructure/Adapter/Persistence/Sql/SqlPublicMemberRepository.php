@@ -28,26 +28,37 @@ final class SqlPublicMemberRepository implements PublicMemberRepositoryInterface
         );
         if ($row === null) return null;
 
-        $name = (string) ($row['name'] ?? '');
-        $initials = self::deriveInitials($name);
+        $name = self::strOr($row, 'name', '');
+        $userId = self::strOr($row, 'id', '');
         $visible = (bool) ($row['public_avatar_visible'] ?? 1);
-        $userId = (string) ($row['id'] ?? '');
 
         return new PublicMemberProfile(
-            memberNumberRaw: (string) ($row['member_number'] ?? ''),
+            memberNumberRaw: self::strOr($row, 'member_number', ''),
             name: $name,
-            memberType: (string) ($row['membership_type'] ?? 'basic'),
-            role: isset($row['role']) && is_string($row['role']) ? $row['role'] : null,
-            joinedAt: isset($row['membership_started_at']) && is_string($row['membership_started_at'])
-                ? substr($row['membership_started_at'], 0, 10) : null,
-            tenantSlug: (string) ($row['tenant_slug'] ?? ''),
-            tenantName: (string) ($row['tenant_name'] ?? ''),
-            tenantMemberNumberPrefix: isset($row['member_number_prefix']) && is_string($row['member_number_prefix'])
-                ? $row['member_number_prefix'] : null,
+            memberType: self::strOr($row, 'membership_type', 'basic'),
+            role: self::strOrNull($row, 'role'),
+            joinedAt: ($s = self::strOrNull($row, 'membership_started_at')) !== null ? substr($s, 0, 10) : null,
+            tenantSlug: self::strOr($row, 'tenant_slug', ''),
+            tenantName: self::strOr($row, 'tenant_name', ''),
+            tenantMemberNumberPrefix: self::strOrNull($row, 'member_number_prefix'),
             publicAvatarVisible: $visible,
-            avatarInitials: $initials,
+            avatarInitials: self::deriveInitials($name),
             avatarUrl: $visible ? self::avatarPublicUrl($userId) : null,
         );
+    }
+
+    /** @param array<string, mixed> $row */
+    private static function strOr(array $row, string $key, string $default): string
+    {
+        $v = $row[$key] ?? null;
+        return is_string($v) ? $v : $default;
+    }
+
+    /** @param array<string, mixed> $row */
+    private static function strOrNull(array $row, string $key): ?string
+    {
+        $v = $row[$key] ?? null;
+        return is_string($v) ? $v : null;
     }
 
     private static function deriveInitials(string $name): string
