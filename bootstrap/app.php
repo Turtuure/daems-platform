@@ -753,6 +753,12 @@ $container->bind(UserController::class,
         $c->make(ChangePassword::class),
         $c->make(GetUserActivity::class),
         $c->make(AnonymiseAccount::class),
+        $c->make(\Daems\Application\Profile\UpdateMyPublicProfilePrivacy\UpdateMyPublicProfilePrivacy::class),
+    ),
+);
+$container->bind(\Daems\Application\Profile\UpdateMyPublicProfilePrivacy\UpdateMyPublicProfilePrivacy::class,
+    static fn(Container $c) => new \Daems\Application\Profile\UpdateMyPublicProfilePrivacy\UpdateMyPublicProfilePrivacy(
+        $c->make(\Daems\Domain\User\UserRepositoryInterface::class),
     ),
 );
 
