@@ -1593,7 +1593,7 @@ The variable name `ctx` and the export-canvas detection depend on the existing `
 
 - [ ] **Step 4: Manual smoke (browser)**
 
-Open `http://daem-society.local/profile` as a logged-in member. Verify:
+Open `http://daems.local/profile` as a logged-in member. Verify:
 - QR is visible bottom-right on the card
 - Member № reads `DAEMS-123` (or whatever your prefix + number is)
 - (GSA only) Click "Download card" → resulting PNG includes the QR
@@ -1801,7 +1801,7 @@ cd /c/laragon/www/sites/daem-society && php -l public/pages/members/profile.php 
 
 Expected: both files lint clean.
 
-Manual smoke (incognito browser, no login): visit `http://daem-society.local/members/{seeded-number}`. Should render verified badge + name + fields. Visit `/members/9999999` → 404 page.
+Manual smoke (incognito browser, no login): visit `http://daems.local/members/{seeded-number}`. Should render verified badge + name + fields. Visit `/members/9999999` → 404 page.
 
 ```bash
 cd /c/laragon/www/sites/daem-society && \
