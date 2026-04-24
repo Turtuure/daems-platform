@@ -10,6 +10,7 @@
 Thumbs.db
 /.worktrees/
 /build/
+/.superpowers/
 
 # Local planning docs
 docs/planning/
