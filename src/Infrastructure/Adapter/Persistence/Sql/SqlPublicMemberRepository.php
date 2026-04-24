@@ -11,7 +11,7 @@ final class SqlPublicMemberRepository implements PublicMemberRepositoryInterface
 {
     public function __construct(private readonly Connection $db) {}
 
-    public function findByMemberNumber(string $memberNumber): ?PublicMemberProfile
+    public function findByUserId(string $userId): ?PublicMemberProfile
     {
         $row = $this->db->queryOne(
             'SELECT u.id, u.name, u.member_number, u.membership_type,
@@ -21,15 +21,15 @@ final class SqlPublicMemberRepository implements PublicMemberRepositoryInterface
              FROM users u
              JOIN user_tenants ut ON ut.user_id = u.id
              JOIN tenants t ON t.id = ut.tenant_id
-             WHERE u.member_number = ? AND u.deleted_at IS NULL
+             WHERE u.id = ? AND u.deleted_at IS NULL
              ORDER BY ut.joined_at ASC
              LIMIT 1',
-            [$memberNumber],
+            [$userId],
         );
         if ($row === null) return null;
 
         $name = self::strOr($row, 'name', '');
-        $userId = self::strOr($row, 'id', '');
+        $rowUserId = self::strOr($row, 'id', '');
         $visible = (bool) ($row['public_avatar_visible'] ?? 1);
 
         return new PublicMemberProfile(
@@ -43,7 +43,7 @@ final class SqlPublicMemberRepository implements PublicMemberRepositoryInterface
             tenantMemberNumberPrefix: self::strOrNull($row, 'member_number_prefix'),
             publicAvatarVisible: $visible,
             avatarInitials: self::deriveInitials($name),
-            avatarUrl: $visible ? self::avatarPublicUrl($userId) : null,
+            avatarUrl: $visible ? self::avatarPublicUrl($rowUserId) : null,
         );
     }
 

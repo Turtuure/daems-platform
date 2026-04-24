@@ -5,5 +5,5 @@ namespace Daems\Application\Member\GetPublicMemberProfile;
 
 final class GetPublicMemberProfileInput
 {
-    public function __construct(public readonly string $memberNumber) {}
+    public function __construct(public readonly string $userId) {}
 }

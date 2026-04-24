@@ -18,13 +18,13 @@ final class MemberController
     /** @param array<string, string> $params */
     public function getPublicProfile(Request $request, array $params): Response
     {
-        $number = (string) ($params['number'] ?? '');
-        if ($number === '') {
-            return Response::json(['error' => 'invalid_member_number'], 400);
+        $id = (string) ($params['id'] ?? '');
+        if ($id === '') {
+            return Response::json(['error' => 'invalid_member_id'], 400);
         }
 
         try {
-            $out = $this->getPublicMemberProfile->execute(new GetPublicMemberProfileInput($number));
+            $out = $this->getPublicMemberProfile->execute(new GetPublicMemberProfileInput($id));
         } catch (NotFoundException) {
             return Response::json(['error' => 'member_not_found'], 404);
         }
