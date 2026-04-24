@@ -196,6 +196,7 @@ final class KernelHarness
             public function findByDomain(string $domain): ?\Daems\Domain\Tenant\Tenant { return null; }
             /** @return list<\Daems\Domain\Tenant\Tenant> */
             public function findAll(): array { return []; }
+            public function updatePrefix(\Daems\Domain\Tenant\TenantId $tenantId, ?string $prefix): void {}
         });
         $container->singleton(AuthTokenRepositoryInterface::class, fn() => $this->tokens);
         $container->singleton(AuthLoginAttemptRepositoryInterface::class, fn() => $this->attempts);
@@ -587,7 +588,12 @@ final class KernelHarness
             $c->make(ChangePassword::class),
             $c->make(GetUserActivity::class),
             $c->make(AnonymiseAccount::class),
+            $c->make(\Daems\Application\Profile\UpdateMyPublicProfilePrivacy\UpdateMyPublicProfilePrivacy::class),
         ));
+        $container->bind(\Daems\Application\Profile\UpdateMyPublicProfilePrivacy\UpdateMyPublicProfilePrivacy::class,
+            static fn(Container $c) => new \Daems\Application\Profile\UpdateMyPublicProfilePrivacy\UpdateMyPublicProfilePrivacy(
+                $c->make(\Daems\Domain\User\UserRepositoryInterface::class),
+            ));
         $container->bind(ListProjectsForLocale::class,
             static fn(Container $c) => new ListProjectsForLocale($c->make(ProjectRepositoryInterface::class)));
         $container->bind(GetProjectBySlugForLocale::class,
@@ -699,7 +705,25 @@ final class KernelHarness
             $c->make(\Daems\Application\Backstage\ListEventProposalsForAdmin\ListEventProposalsForAdmin::class),
             $c->make(\Daems\Application\Backstage\ApproveEventProposal\ApproveEventProposal::class),
             $c->make(\Daems\Application\Backstage\RejectEventProposal\RejectEventProposal::class),
+            $c->make(\Daems\Application\Backstage\UpdateTenantSettings\UpdateTenantSettings::class),
         ));
+        $container->bind(\Daems\Application\Backstage\UpdateTenantSettings\UpdateTenantSettings::class,
+            static fn(Container $c) => new \Daems\Application\Backstage\UpdateTenantSettings\UpdateTenantSettings(
+                $c->make(\Daems\Domain\Tenant\TenantRepositoryInterface::class),
+            ));
+        // E2E uses SQL repo directly for public member lookups (no fake needed for read-only path).
+        $container->bind(\Daems\Domain\Member\PublicMemberRepositoryInterface::class,
+            static fn(Container $c) => new \Daems\Infrastructure\Adapter\Persistence\Sql\SqlPublicMemberRepository(
+                $c->make(\Daems\Infrastructure\Framework\Database\Connection::class),
+            ));
+        $container->bind(\Daems\Application\Member\GetPublicMemberProfile\GetPublicMemberProfile::class,
+            static fn(Container $c) => new \Daems\Application\Member\GetPublicMemberProfile\GetPublicMemberProfile(
+                $c->make(\Daems\Domain\Member\PublicMemberRepositoryInterface::class),
+            ));
+        $container->bind(\Daems\Infrastructure\Adapter\Api\Controller\MemberController::class,
+            static fn(Container $c) => new \Daems\Infrastructure\Adapter\Api\Controller\MemberController(
+                $c->make(\Daems\Application\Member\GetPublicMemberProfile\GetPublicMemberProfile::class),
+            ));
         $container->bind(\Daems\Application\Backstage\GetEventWithAllTranslations\GetEventWithAllTranslations::class,
             static fn(Container $c) => new \Daems\Application\Backstage\GetEventWithAllTranslations\GetEventWithAllTranslations(
                 $c->make(EventRepositoryInterface::class),

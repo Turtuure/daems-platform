@@ -457,6 +457,29 @@ $container->bind(\Daems\Infrastructure\Adapter\Api\Controller\BackstageControlle
         $c->make(\Daems\Application\Backstage\ListEventProposalsForAdmin\ListEventProposalsForAdmin::class),
         $c->make(\Daems\Application\Backstage\ApproveEventProposal\ApproveEventProposal::class),
         $c->make(\Daems\Application\Backstage\RejectEventProposal\RejectEventProposal::class),
+        $c->make(\Daems\Application\Backstage\UpdateTenantSettings\UpdateTenantSettings::class),
+    ),
+);
+
+$container->bind(\Daems\Application\Backstage\UpdateTenantSettings\UpdateTenantSettings::class,
+    static fn(Container $c) => new \Daems\Application\Backstage\UpdateTenantSettings\UpdateTenantSettings(
+        $c->make(\Daems\Domain\Tenant\TenantRepositoryInterface::class),
+    ),
+);
+
+$container->bind(\Daems\Domain\Member\PublicMemberRepositoryInterface::class,
+    static fn(Container $c) => new \Daems\Infrastructure\Adapter\Persistence\Sql\SqlPublicMemberRepository(
+        $c->make(\Daems\Infrastructure\Framework\Database\Connection::class),
+    ),
+);
+$container->bind(\Daems\Application\Member\GetPublicMemberProfile\GetPublicMemberProfile::class,
+    static fn(Container $c) => new \Daems\Application\Member\GetPublicMemberProfile\GetPublicMemberProfile(
+        $c->make(\Daems\Domain\Member\PublicMemberRepositoryInterface::class),
+    ),
+);
+$container->bind(\Daems\Infrastructure\Adapter\Api\Controller\MemberController::class,
+    static fn(Container $c) => new \Daems\Infrastructure\Adapter\Api\Controller\MemberController(
+        $c->make(\Daems\Application\Member\GetPublicMemberProfile\GetPublicMemberProfile::class),
     ),
 );
 
@@ -730,6 +753,12 @@ $container->bind(UserController::class,
         $c->make(ChangePassword::class),
         $c->make(GetUserActivity::class),
         $c->make(AnonymiseAccount::class),
+        $c->make(\Daems\Application\Profile\UpdateMyPublicProfilePrivacy\UpdateMyPublicProfilePrivacy::class),
+    ),
+);
+$container->bind(\Daems\Application\Profile\UpdateMyPublicProfilePrivacy\UpdateMyPublicProfilePrivacy::class,
+    static fn(Container $c) => new \Daems\Application\Profile\UpdateMyPublicProfilePrivacy\UpdateMyPublicProfilePrivacy(
+        $c->make(\Daems\Domain\User\UserRepositoryInterface::class),
     ),
 );
 

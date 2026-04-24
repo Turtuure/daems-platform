@@ -15,7 +15,7 @@ final class SqlTenantRepositoryTest extends MigrationTestCase
     protected function setUp(): void
     {
         parent::setUp();
-        $this->runMigrationsUpTo(19);
+        $this->runMigrationsUpTo(57);
         $this->repo = $this->buildRepo();
     }
 

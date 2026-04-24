@@ -12,6 +12,8 @@ use Daems\Application\User\GetProfile\GetProfile;
 use Daems\Application\User\GetProfile\GetProfileInput;
 use Daems\Application\User\GetUserActivity\GetUserActivity;
 use Daems\Application\User\GetUserActivity\GetUserActivityInput;
+use Daems\Application\Profile\UpdateMyPublicProfilePrivacy\UpdateMyPublicProfilePrivacy;
+use Daems\Application\Profile\UpdateMyPublicProfilePrivacy\UpdateMyPublicProfilePrivacyInput;
 use Daems\Application\User\UpdateProfile\UpdateProfile;
 use Daems\Application\User\UpdateProfile\UpdateProfileInput;
 use Daems\Domain\Auth\ForbiddenException;
@@ -28,7 +30,20 @@ final class UserController
         private readonly ChangePassword $changePassword,
         private readonly GetUserActivity $getUserActivity,
         private readonly AnonymiseAccount $anonymiseAccount,
+        private readonly UpdateMyPublicProfilePrivacy $updateMyPrivacy,
     ) {}
+
+    public function updateMyPrivacy(Request $request): Response
+    {
+        $actor = $request->requireActingUser();
+        $rawValue = $request->input('public_avatar_visible');
+        $value = filter_var($rawValue, FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE);
+        if ($value === null) {
+            return Response::json(['error' => 'invalid_value', 'errors' => ['public_avatar_visible' => 'must_be_boolean']], 422);
+        }
+        $out = $this->updateMyPrivacy->execute(new UpdateMyPublicProfilePrivacyInput($actor, $value));
+        return Response::json(['data' => ['public_avatar_visible' => $out->publicAvatarVisible]]);
+    }
 
     public function profile(Request $request, array $params): Response
     {

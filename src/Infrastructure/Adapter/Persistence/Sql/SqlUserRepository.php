@@ -126,6 +126,11 @@ final class SqlUserRepository implements UserRepositoryInterface
         $this->db->execute('UPDATE users SET password_hash = ? WHERE id = ?', [$newHash, $id]);
     }
 
+    public function updatePublicAvatarVisible(string $id, bool $visible): void
+    {
+        $this->db->execute('UPDATE users SET public_avatar_visible = ? WHERE id = ?', [$visible ? 1 : 0, $id]);
+    }
+
     public function deleteById(string $id): void
     {
         $this->db->execute('DELETE FROM users WHERE id = ?', [$id]);
@@ -175,6 +180,7 @@ final class SqlUserRepository implements UserRepositoryInterface
             createdAt:       $row['created_at'] ?? '',
             isPlatformAdmin: (bool) ($row['is_platform_admin'] ?? false),
             deletedAt:       $deletedAt,
+            publicAvatarVisible: (bool) ($row['public_avatar_visible'] ?? 1),
         );
     }
 }

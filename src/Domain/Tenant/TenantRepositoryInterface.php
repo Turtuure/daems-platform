@@ -14,4 +14,6 @@ interface TenantRepositoryInterface
 
     /** @return list<Tenant> */
     public function findAll(): array;
+
+    public function updatePrefix(TenantId $tenantId, ?string $prefix): void;
 }

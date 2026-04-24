@@ -18,7 +18,7 @@ final class SqlTenantRepository implements TenantRepositoryInterface
 
     public function findById(TenantId $id): ?Tenant
     {
-        $stmt = $this->pdo->prepare('SELECT id, slug, name, created_at FROM tenants WHERE id = ?');
+        $stmt = $this->pdo->prepare('SELECT id, slug, name, created_at, member_number_prefix FROM tenants WHERE id = ?');
         $stmt->execute([$id->value()]);
         $row = $stmt->fetch(PDO::FETCH_ASSOC);
         return is_array($row) ? $this->hydrate($row) : null;
@@ -26,7 +26,7 @@ final class SqlTenantRepository implements TenantRepositoryInterface
 
     public function findBySlug(string $slug): ?Tenant
     {
-        $stmt = $this->pdo->prepare('SELECT id, slug, name, created_at FROM tenants WHERE slug = ?');
+        $stmt = $this->pdo->prepare('SELECT id, slug, name, created_at, member_number_prefix FROM tenants WHERE slug = ?');
         $stmt->execute([$slug]);
         $row = $stmt->fetch(PDO::FETCH_ASSOC);
         return is_array($row) ? $this->hydrate($row) : null;
@@ -35,7 +35,7 @@ final class SqlTenantRepository implements TenantRepositoryInterface
     public function findByDomain(string $domain): ?Tenant
     {
         $stmt = $this->pdo->prepare(
-            'SELECT t.id, t.slug, t.name, t.created_at
+            'SELECT t.id, t.slug, t.name, t.created_at, t.member_number_prefix
              FROM tenants t
              JOIN tenant_domains td ON td.tenant_id = t.id
              WHERE td.domain = ? LIMIT 1'
@@ -48,7 +48,7 @@ final class SqlTenantRepository implements TenantRepositoryInterface
     /** @return list<Tenant> */
     public function findAll(): array
     {
-        $stmt = $this->pdo->query('SELECT id, slug, name, created_at FROM tenants ORDER BY slug');
+        $stmt = $this->pdo->query('SELECT id, slug, name, created_at, member_number_prefix FROM tenants ORDER BY slug');
         if ($stmt === false) {
             return [];
         }
@@ -71,11 +71,22 @@ final class SqlTenantRepository implements TenantRepositoryInterface
         $name    = is_string($row['name']        ?? null) ? $row['name']        : throw new DomainException('Corrupt tenants.name');
         $created = is_string($row['created_at']  ?? null) ? $row['created_at']  : throw new DomainException('Corrupt tenants.created_at');
 
+        $prefix  = isset($row['member_number_prefix']) && is_string($row['member_number_prefix'])
+            ? $row['member_number_prefix']
+            : null;
+
         return new Tenant(
             TenantId::fromString($id),
             TenantSlug::fromString($slug),
             $name,
             new DateTimeImmutable($created),
+            $prefix,
         );
+    }
+
+    public function updatePrefix(TenantId $tenantId, ?string $prefix): void
+    {
+        $stmt = $this->pdo->prepare('UPDATE tenants SET member_number_prefix = ? WHERE id = ?');
+        $stmt->execute([$prefix, $tenantId->value()]);
     }
 }

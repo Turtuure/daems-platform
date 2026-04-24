@@ -1,0 +1,19 @@
+<?php
+declare(strict_types=1);
+
+namespace Daems\Application\Member\GetPublicMemberProfile;
+
+use Daems\Domain\Member\PublicMemberRepositoryInterface;
+use Daems\Domain\Shared\NotFoundException;
+
+final class GetPublicMemberProfile
+{
+    public function __construct(private readonly PublicMemberRepositoryInterface $repo) {}
+
+    public function execute(GetPublicMemberProfileInput $input): GetPublicMemberProfileOutput
+    {
+        $profile = $this->repo->findByMemberNumber($input->memberNumber)
+            ?? throw new NotFoundException('member_not_found');
+        return GetPublicMemberProfileOutput::fromProfile($profile);
+    }
+}

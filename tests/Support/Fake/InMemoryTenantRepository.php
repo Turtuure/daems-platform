@@ -7,6 +7,8 @@ namespace Daems\Tests\Support\Fake;
 use Daems\Domain\Tenant\Tenant;
 use Daems\Domain\Tenant\TenantId;
 use Daems\Domain\Tenant\TenantRepositoryInterface;
+use Daems\Domain\Tenant\TenantSlug;
+use DateTimeImmutable;
 
 final class InMemoryTenantRepository implements TenantRepositoryInterface
 {
@@ -46,5 +48,40 @@ final class InMemoryTenantRepository implements TenantRepositoryInterface
     public function findAll(): array
     {
         return array_values($this->byId);
+    }
+
+    public function updatePrefix(TenantId $tenantId, ?string $prefix): void
+    {
+        $existing = $this->byId[$tenantId->value()] ?? null;
+        if ($existing === null) {
+            return;
+        }
+        $this->byId[$tenantId->value()] = new Tenant(
+            $existing->id,
+            $existing->slug,
+            $existing->name,
+            $existing->createdAt,
+            $prefix,
+        );
+    }
+
+    /** Test seed helper. */
+    public function seedTenant(TenantId $id, string $slug, string $name, ?string $prefix = null): void
+    {
+        $tenant = new Tenant(
+            $id,
+            TenantSlug::fromString($slug),
+            $name,
+            new DateTimeImmutable(),
+            $prefix,
+        );
+        $this->byId[$id->value()] = $tenant;
+        $this->idBySlug[$slug] = $id->value();
+    }
+
+    /** Test convenience: same as findById, expressive in tests. */
+    public function find(TenantId $id): ?Tenant
+    {
+        return $this->byId[$id->value()] ?? null;
     }
 }

@@ -108,6 +108,8 @@ use Daems\Application\Backstage\UnregisterUserFromEvent\UnregisterUserFromEvent;
 use Daems\Application\Backstage\UnregisterUserFromEvent\UnregisterUserFromEventInput;
 use Daems\Application\Backstage\UpdateEvent\UpdateEvent;
 use Daems\Application\Backstage\UpdateEvent\UpdateEventInput;
+use Daems\Application\Backstage\UpdateTenantSettings\UpdateTenantSettings;
+use Daems\Application\Backstage\UpdateTenantSettings\UpdateTenantSettingsInput;
 use Daems\Application\Forum\ListForumCategories\ListForumCategories;
 use Daems\Application\Forum\ListForumCategories\ListForumCategoriesInput;
 use Daems\Domain\Auth\ForbiddenException;
@@ -178,7 +180,27 @@ final class BackstageController
         private readonly ListEventProposalsForAdmin $listEventProposals,
         private readonly ApproveEventProposal $approveEventProposal,
         private readonly RejectEventProposal $rejectEventProposal,
+        private readonly UpdateTenantSettings $updateTenantSettings,
     ) {}
+
+    public function updateTenantSettings(Request $request): Response
+    {
+        $actor = $request->requireActingUser();
+        $rawPrefix = $request->input('member_number_prefix');
+        $prefix = is_string($rawPrefix) ? $rawPrefix : null;
+
+        try {
+            $out = $this->updateTenantSettings->execute(
+                new UpdateTenantSettingsInput($actor, $prefix),
+            );
+        } catch (ForbiddenException) {
+            return Response::json(['error' => 'forbidden'], 403);
+        } catch (ValidationException $e) {
+            return Response::json(['error' => 'validation_failed', 'errors' => $e->fields()], 422);
+        }
+
+        return Response::json(['data' => ['member_number_prefix' => $out->memberNumberPrefix]]);
+    }
 
     public function pendingApplications(Request $request): Response
     {
