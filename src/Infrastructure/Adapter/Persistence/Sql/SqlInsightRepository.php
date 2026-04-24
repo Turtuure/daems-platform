@@ -14,20 +14,21 @@ final class SqlInsightRepository implements InsightRepositoryInterface
 {
     public function __construct(private readonly Connection $db) {}
 
-    public function listForTenant(TenantId $tenantId, ?string $category = null): array
+    public function listForTenant(TenantId $tenantId, ?string $category = null, bool $includeUnpublished = false): array
     {
+        $where  = 'tenant_id = ?';
+        $params = [$tenantId->value()];
         if ($category !== null) {
-            $rows = $this->db->query(
-                'SELECT * FROM insights WHERE tenant_id = ? AND category = ? ORDER BY published_date DESC',
-                [$tenantId->value(), $category],
-            );
-        } else {
-            $rows = $this->db->query(
-                'SELECT * FROM insights WHERE tenant_id = ? ORDER BY published_date DESC',
-                [$tenantId->value()],
-            );
+            $where .= ' AND category = ?';
+            $params[] = $category;
         }
-
+        if (!$includeUnpublished) {
+            $where .= ' AND published_date <= CURDATE()';
+        }
+        $rows = $this->db->query(
+            "SELECT * FROM insights WHERE {$where} ORDER BY published_date DESC",
+            $params,
+        );
         return array_map($this->hydrate(...), $rows);
     }
 
@@ -39,6 +40,23 @@ final class SqlInsightRepository implements InsightRepositoryInterface
         );
 
         return $row !== null ? $this->hydrate($row) : null;
+    }
+
+    public function findByIdForTenant(InsightId $id, TenantId $tenantId): ?Insight
+    {
+        $row = $this->db->queryOne(
+            'SELECT * FROM insights WHERE id = ? AND tenant_id = ? LIMIT 1',
+            [$id->value(), $tenantId->value()],
+        );
+        return $row === null ? null : $this->hydrate($row);
+    }
+
+    public function delete(InsightId $id, TenantId $tenantId): void
+    {
+        $this->db->execute(
+            'DELETE FROM insights WHERE id = ? AND tenant_id = ?',
+            [$id->value(), $tenantId->value()],
+        );
     }
 
     public function save(Insight $insight): void
