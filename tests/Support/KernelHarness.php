@@ -196,6 +196,7 @@ final class KernelHarness
             public function findByDomain(string $domain): ?\Daems\Domain\Tenant\Tenant { return null; }
             /** @return list<\Daems\Domain\Tenant\Tenant> */
             public function findAll(): array { return []; }
+            public function updatePrefix(\Daems\Domain\Tenant\TenantId $tenantId, ?string $prefix): void {}
         });
         $container->singleton(AuthTokenRepositoryInterface::class, fn() => $this->tokens);
         $container->singleton(AuthLoginAttemptRepositoryInterface::class, fn() => $this->attempts);

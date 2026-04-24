@@ -31,14 +31,16 @@ final class GetAuthMe
         $expiresAt = $token !== null ? $token->expiresAt()->format(\DATE_ATOM) : null;
 
         return new GetAuthMeOutput(
-            userId:          $actor->id->value(),
-            name:            $user->name(),
-            email:           $actor->email,
-            isPlatformAdmin: $actor->isPlatformAdmin,
-            tenantSlug:      $tenant->slug->value(),
-            tenantName:      $tenant->name,
-            roleInTenant:    $actor->roleInActiveTenant?->value,
-            tokenExpiresAt:  $expiresAt,
+            userId:                   $actor->id->value(),
+            name:                     $user->name(),
+            email:                    $actor->email,
+            isPlatformAdmin:          $actor->isPlatformAdmin,
+            publicAvatarVisible:      $user->publicAvatarVisible(),
+            tenantSlug:               $tenant->slug->value(),
+            tenantName:               $tenant->name,
+            tenantMemberNumberPrefix: $tenant->memberNumberPrefix,
+            roleInTenant:             $actor->roleInActiveTenant?->value,
+            tokenExpiresAt:           $expiresAt,
         );
     }
 }
