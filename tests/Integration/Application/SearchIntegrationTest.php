@@ -40,6 +40,7 @@ final class SearchIntegrationTest extends MigrationTestCase
 
         $this->seedEvents();
         $this->seedProjects();
+        $this->seedInsights();
     }
 
     private function seedEvents(): void
@@ -74,6 +75,43 @@ final class SearchIntegrationTest extends MigrationTestCase
             ->execute([$p1, $this->tenantId, 'solar-roof', 'published', 'energy']);
         $pdo->prepare('INSERT INTO projects_i18n (project_id, locale, title, summary, description) VALUES (?,?,?,?,?)')
             ->execute([$p1, 'fi_FI', 'Aurinkokatto', 'Kerrostalon aurinkopaneelit', 'Tämä projekti asentaa paneeleita']);
+    }
+
+    private function seedInsights(): void
+    {
+        $pdo = $this->pdo();
+        $i1 = Uuid7::generate()->value();
+        $pdo->prepare("INSERT INTO insights
+            (id, tenant_id, slug, title, category, category_label, featured, published_date, author, reading_time, excerpt, tags_json, content, search_text, created_at)
+            VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,NOW())")
+            ->execute([$i1, $this->tenantId, 'solar-future', 'Solar Future', 'tech', 'Tech', 0,
+                '2026-01-15', 'Sam', 5, 'Solar panels are booming', '[]',
+                '<p>Long form HTML <strong>solar</strong> content</p>',
+                'Long form HTML solar content',
+            ]);
+        $i2 = Uuid7::generate()->value();
+        $pdo->prepare("INSERT INTO insights
+            (id, tenant_id, slug, title, category, category_label, featured, published_date, author, reading_time, excerpt, tags_json, content, search_text, created_at)
+            VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,NOW())")
+            ->execute([$i2, $this->tenantId, 'future-post', 'Future Solar Post', 'tech', 'Tech', 0,
+                '2099-01-01', 'Sam', 3, 'x', '[]', 'body', 'body about solar']);
+    }
+
+    public function test_finds_insight_by_search_text(): void
+    {
+        $repo = new SqlSearchRepository($this->conn);
+        $hits = $repo->search($this->tenantId, 'solar', 'insight', false, false, 5, 'fi_FI');
+        $titles = array_map(fn($h) => $h->title, $hits);
+        self::assertContains('Solar Future', $titles);
+        self::assertNotContains('Future Solar Post', $titles, 'Future-dated insights must be hidden in public search');
+    }
+
+    public function test_admin_sees_future_dated_insight(): void
+    {
+        $repo = new SqlSearchRepository($this->conn);
+        $hits = $repo->search($this->tenantId, 'solar', 'insight', true, true, 5, 'fi_FI');
+        $titles = array_map(fn($h) => $h->title, $hits);
+        self::assertContains('Future Solar Post', $titles);
     }
 
     public function test_finds_project_in_current_locale(): void

@@ -30,7 +30,10 @@ final class SqlSearchRepository implements SearchRepositoryInterface
         if ($wantAll || $type === 'project') {
             $out = array_merge($out, $this->searchProjects($tenantId, $query, $includeUnpublished, $limitPerDomain, $currentLocale));
         }
-        // insight / forum_topic / member branches added in later tasks
+        if ($wantAll || $type === 'insight') {
+            $out = array_merge($out, $this->searchInsights($tenantId, $query, $includeUnpublished, $limitPerDomain));
+        }
+        // forum_topic / member branches added in later tasks
         return $out;
     }
 
@@ -142,6 +145,46 @@ final class SqlSearchRepository implements SearchRepositoryInterface
                 localeCode: is_string($localeRaw) ? $localeRaw : null,
                 status: self::str($r, 'status'),
                 publishedAt: is_string($createdAt) ? substr($createdAt, 0, 10) : null,
+                relevance: is_numeric($relevanceRaw) ? (float) $relevanceRaw : 0.0,
+            );
+        }
+        return $hits;
+    }
+
+    /** @return SearchHit[] */
+    private function searchInsights(string $tenantId, string $query, bool $includeUnpublished, int $limit): array
+    {
+        $dateFilter = $includeUnpublished ? '' : ' AND published_date <= CURDATE()';
+        $sql = "SELECT id, slug, title, excerpt, search_text, published_date,
+                       MATCH(title, search_text) AGAINST (:q1) AS relevance
+                FROM insights
+                WHERE tenant_id = :t {$dateFilter}
+                  AND MATCH(title, search_text) AGAINST (:q2)
+                ORDER BY relevance DESC
+                LIMIT {$limit}";
+        $rows = $this->db->query($sql, [
+            ':t'  => $tenantId,
+            ':q1' => $query,
+            ':q2' => $query,
+        ]);
+
+        $hits = [];
+        foreach ($rows as $r) {
+            $title = self::str($r, 'title', '');
+            $excerpt = self::str($r, 'excerpt', '');
+            $searchText = self::str($r, 'search_text', '');
+            $snippetSource = $excerpt !== '' ? $excerpt : $searchText;
+            $publishedDate = $r['published_date'] ?? null;
+            $relevanceRaw = $r['relevance'] ?? 0;
+            $hits[] = new SearchHit(
+                entityType: 'insight',
+                entityId: self::str($r, 'id'),
+                title: $title,
+                snippet: self::snippet($snippetSource, $query),
+                url: '/insights/' . self::str($r, 'slug'),
+                localeCode: null,
+                status: 'published',
+                publishedAt: is_string($publishedDate) ? substr($publishedDate, 0, 10) : null,
                 relevance: is_numeric($relevanceRaw) ? (float) $relevanceRaw : 0.0,
             );
         }
