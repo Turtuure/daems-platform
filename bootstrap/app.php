@@ -457,6 +457,13 @@ $container->bind(\Daems\Infrastructure\Adapter\Api\Controller\BackstageControlle
         $c->make(\Daems\Application\Backstage\ListEventProposalsForAdmin\ListEventProposalsForAdmin::class),
         $c->make(\Daems\Application\Backstage\ApproveEventProposal\ApproveEventProposal::class),
         $c->make(\Daems\Application\Backstage\RejectEventProposal\RejectEventProposal::class),
+        $c->make(\Daems\Application\Backstage\UpdateTenantSettings\UpdateTenantSettings::class),
+    ),
+);
+
+$container->bind(\Daems\Application\Backstage\UpdateTenantSettings\UpdateTenantSettings::class,
+    static fn(Container $c) => new \Daems\Application\Backstage\UpdateTenantSettings\UpdateTenantSettings(
+        $c->make(\Daems\Domain\Tenant\TenantRepositoryInterface::class),
     ),
 );
 

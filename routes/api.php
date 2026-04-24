@@ -342,6 +342,11 @@ return static function (Router $router, Container $container): void {
         return $container->make(\Daems\Infrastructure\Adapter\Api\Controller\BackstageController::class)->rejectEventProposal($req, $params);
     }, [TenantContextMiddleware::class, AuthMiddleware::class]);
 
+    // Backstage — tenant settings (currently only member_number_prefix)
+    $router->post('/api/v1/backstage/tenant/settings', static function (Request $req) use ($container): Response {
+        return $container->make(\Daems\Infrastructure\Adapter\Api\Controller\BackstageController::class)->updateTenantSettings($req);
+    }, [TenantContextMiddleware::class, AuthMiddleware::class]);
+
     // Backstage — translations (events + projects)
     $router->get('/api/v1/backstage/events/{id}/translations', static function (Request $req, array $params) use ($container): Response {
         return $container->make(\Daems\Infrastructure\Adapter\Api\Controller\BackstageController::class)->getEventWithTranslations($req, $params);
