@@ -6,10 +6,10 @@ declare(strict_types=1);
 // by inspecting expected schema, and apply the rest.
 // Uses the migrations table pattern if available; falls back to heuristic checks.
 
-$host = '127.0.0.1';
-$db   = 'daems_db';
-$user = 'root';
-$pass = 'salasana';
+$host = getenv('DB_HOST') ?: '127.0.0.1';
+$db   = getenv('DB_NAME') ?: 'daems_db';
+$user = getenv('DB_USER') ?: 'root';
+$pass = getenv('DB_PASS') ?: 'salasana';
 
 $pdo = new PDO(
     "mysql:host={$host};dbname={$db};charset=utf8mb4",
