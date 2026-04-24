@@ -45,14 +45,18 @@ final class SearchController
     public function backstage(Request $request): Response
     {
         $actor    = $request->requireActingUser();
-        $tenantId = $this->requireTenant($request)->id->value();
+        $tenant   = $this->requireTenant($request);
+        $tenantId = $tenant->id->value();
         $q        = $request->string('q') ?? '';
         $type     = $request->string('type');
         $limitRaw = $request->query('limit');
         $limit    = is_numeric($limitRaw) ? (int) $limitRaw : 20;
         $locale   = $this->resolveLocale($request);
 
-        $isAdmin = $actor->isPlatformAdmin || $actor->isAdminIn($actor->activeTenant);
+        // Admin gate against the request's tenant, not the actor's default tenant.
+        // A user who is admin in tenant A but accesses backstage under Host B must
+        // NOT be treated as admin of B.
+        $isAdmin = $actor->isPlatformAdmin || $actor->isAdminIn($tenant->id);
 
         if ($type === 'members' && !$isAdmin) {
             return Response::json(['error' => 'forbidden'], 403);
