@@ -47,10 +47,16 @@ final class SqlSearchRepository implements SearchRepositoryInterface
     {
         $statusFilter = $includeUnpublished ? '' : " AND e.status='published'";
         $sql = "SELECT e.id, e.slug, e.status, e.event_date,
-                       COALESCE(i_cur.title, i_en.title) AS title,
-                       COALESCE(i_cur.description, i_en.description) AS description,
-                       COALESCE(i_cur.location, i_en.location) AS location,
-                       IF(i_cur.title IS NOT NULL, NULL, 'en_GB') AS locale_code,
+                       COALESCE(i_cur.title, i_en.title, i_fi.title, i_sw.title) AS title,
+                       COALESCE(i_cur.description, i_en.description, i_fi.description, i_sw.description) AS description,
+                       COALESCE(i_cur.location, i_en.location, i_fi.location, i_sw.location) AS location,
+                       CASE
+                           WHEN i_cur.title IS NOT NULL THEN NULL
+                           WHEN i_en.title  IS NOT NULL THEN 'en_GB'
+                           WHEN i_fi.title  IS NOT NULL THEN 'fi_FI'
+                           WHEN i_sw.title  IS NOT NULL THEN 'sw_TZ'
+                           ELSE NULL
+                       END AS locale_code,
                        GREATEST(
                            IFNULL(MATCH(i_fi.title, i_fi.location, i_fi.description) AGAINST (:q1), 0),
                            IFNULL(MATCH(i_en.title, i_en.location, i_en.description) AGAINST (:q2), 0),
@@ -104,10 +110,16 @@ final class SqlSearchRepository implements SearchRepositoryInterface
     {
         $statusFilter = $includeUnpublished ? '' : " AND p.status='published'";
         $sql = "SELECT p.id, p.slug, p.status, p.created_at,
-                       COALESCE(i_cur.title, i_en.title) AS title,
-                       COALESCE(i_cur.description, i_en.description) AS description,
-                       COALESCE(i_cur.summary, i_en.summary) AS summary,
-                       IF(i_cur.title IS NOT NULL, NULL, 'en_GB') AS locale_code,
+                       COALESCE(i_cur.title, i_en.title, i_fi.title, i_sw.title) AS title,
+                       COALESCE(i_cur.description, i_en.description, i_fi.description, i_sw.description) AS description,
+                       COALESCE(i_cur.summary, i_en.summary, i_fi.summary, i_sw.summary) AS summary,
+                       CASE
+                           WHEN i_cur.title IS NOT NULL THEN NULL
+                           WHEN i_en.title  IS NOT NULL THEN 'en_GB'
+                           WHEN i_fi.title  IS NOT NULL THEN 'fi_FI'
+                           WHEN i_sw.title  IS NOT NULL THEN 'sw_TZ'
+                           ELSE NULL
+                       END AS locale_code,
                        GREATEST(
                            IFNULL(MATCH(i_fi.title, i_fi.summary, i_fi.description) AGAINST (:q1), 0),
                            IFNULL(MATCH(i_en.title, i_en.summary, i_en.description) AGAINST (:q2), 0),
@@ -239,9 +251,11 @@ final class SqlSearchRepository implements SearchRepositoryInterface
     private function searchMembers(string $tenantId, string $query, int $limit): array
     {
         $pat = '%' . addcslashes($query, "%_\\") . '%';
-        $sql = "SELECT u.id, u.name, u.email, u.member_number, u.membership_type, ut.role
+        $sql = "SELECT u.id, u.name, u.email, u.member_number, u.membership_type,
+                       ut.role, t.member_number_prefix
                 FROM users u
                 JOIN user_tenants ut ON ut.user_id = u.id
+                JOIN tenants t       ON t.id       = ut.tenant_id
                 WHERE ut.tenant_id = :t
                   AND u.deleted_at IS NULL
                   AND (u.name LIKE :pat1 OR u.email LIKE :pat2)
@@ -257,11 +271,13 @@ final class SqlSearchRepository implements SearchRepositoryInterface
             $name       = self::str($r, 'name');
             $memberNum  = self::str($r, 'member_number', '');
             $role       = self::str($r, 'role', '');
+            $prefix     = self::str($r, 'member_number_prefix', '');
+            $formatted  = self::formatMemberNumber($memberNum, $prefix);
             $hits[] = new SearchHit(
                 entityType: 'member',
                 entityId: self::str($r, 'id'),
                 title: $name,
-                snippet: $name . ' · ' . $memberNum . ' · ' . $role,
+                snippet: $name . ($formatted !== '' ? ' · ' . $formatted : '') . ($role !== '' ? ' · ' . $role : ''),
                 url: '/backstage/members?q=' . urlencode($query),
                 localeCode: null,
                 status: 'active',
@@ -270,6 +286,24 @@ final class SqlSearchRepository implements SearchRepositoryInterface
             );
         }
         return $hits;
+    }
+
+    /**
+     * Format a raw member_number for display — strips leading zeros and joins
+     * with the tenant prefix via "-". Mirrors the frontend MemberNumberFormatter
+     * so backstage search results match the member-card display (e.g. "DAEMS-123").
+     */
+    private static function formatMemberNumber(string $raw, string $prefix): string
+    {
+        if ($raw === '') {
+            return '';
+        }
+        $stripped = ltrim($raw, '0');
+        if ($stripped === '') {
+            $stripped = '0';
+        }
+        $prefix = trim($prefix);
+        return $prefix === '' ? $stripped : $prefix . '-' . $stripped;
     }
 
     private static function snippet(string $haystack, string $needle): string

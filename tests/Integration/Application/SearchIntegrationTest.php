@@ -33,8 +33,8 @@ final class SearchIntegrationTest extends MigrationTestCase
         $this->adminUserId = Uuid7::generate()->value();
 
         $pdo = $this->pdo();
-        $pdo->prepare('INSERT INTO tenants (id, slug, name, created_at) VALUES (?,?,?,NOW())')
-            ->execute([$this->tenantId, 'daems-st', 'Daems ST']);
+        $pdo->prepare('INSERT INTO tenants (id, slug, name, member_number_prefix, created_at) VALUES (?,?,?,?,NOW())')
+            ->execute([$this->tenantId, 'daems-st', 'Daems ST', 'DAEMS']);
         $pdo->prepare('INSERT INTO tenants (id, slug, name, created_at) VALUES (?,?,?,NOW())')
             ->execute([$this->otherTenantId, 'sahegroup-st', 'SaheGroup ST']);
 
@@ -67,6 +67,14 @@ final class SearchIntegrationTest extends MigrationTestCase
             ->execute([$e3, $this->otherTenantId, 'sahegroup-summer', 'upcoming', 'published', '2026-06-15']);
         $pdo->prepare('INSERT INTO events_i18n (event_id, locale, title, location, description) VALUES (?,?,?,?,?)')
             ->execute([$e3, 'fi_FI', 'Summer Dar es Salaam', 'Dar es Salaam', 'SaheGroup event']);
+
+        // Event translated only to sw_TZ — covers the fallback-locale-badge
+        // case where the current locale AND en_GB are both missing.
+        $e4 = Uuid7::generate()->value();
+        $pdo->prepare('INSERT INTO events (id, tenant_id, slug, type, status, event_date, created_at) VALUES (?,?,?,?,?,?,NOW())')
+            ->execute([$e4, $this->tenantId, 'sw-only', 'upcoming', 'published', '2026-08-01']);
+        $pdo->prepare('INSERT INTO events_i18n (event_id, locale, title, location, description) VALUES (?,?,?,?,?)')
+            ->execute([$e4, 'sw_TZ', 'Kiswahili Mkutano', 'Dodoma', 'Tukio la kipekee']);
     }
 
     private function seedProjects(): void
@@ -201,5 +209,26 @@ final class SearchIntegrationTest extends MigrationTestCase
         $admin = $repo->search($this->tenantId, 'Luonnos', 'event', true, true, 5, 'fi_FI');
         self::assertCount(1, $admin);
         self::assertSame('draft', $admin[0]->status);
+    }
+
+    public function test_sw_tz_only_event_is_flagged_with_sw_tz_locale_code(): void
+    {
+        $repo = new SqlSearchRepository($this->conn);
+        // Current locale fi_FI; event has NO fi_FI and NO en_GB translation — only sw_TZ.
+        // Must find it and mark localeCode as 'sw_TZ' so the UI can badge the fallback.
+        $hits = $repo->search($this->tenantId, 'Mkutano', 'event', false, false, 5, 'fi_FI');
+        self::assertCount(1, $hits);
+        self::assertSame('Kiswahili Mkutano', $hits[0]->title);
+        self::assertSame('sw_TZ', $hits[0]->localeCode);
+    }
+
+    public function test_members_snippet_includes_tenant_prefixed_number(): void
+    {
+        $repo = new SqlSearchRepository($this->conn);
+        // Tenant 'daems-st' has member_number_prefix='DAEMS'. Raw number '000777' must
+        // render as 'DAEMS-777' in the search snippet.
+        $hits = $repo->search($this->tenantId, 'Kimi', 'member', true, true, 5, 'fi_FI');
+        self::assertCount(1, $hits);
+        self::assertStringContainsString('DAEMS-777', $hits[0]->snippet);
     }
 }
