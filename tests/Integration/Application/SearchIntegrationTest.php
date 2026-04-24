@@ -42,6 +42,7 @@ final class SearchIntegrationTest extends MigrationTestCase
         $this->seedProjects();
         $this->seedInsights();
         $this->seedForum();
+        $this->seedMembers();
     }
 
     private function seedEvents(): void
@@ -110,6 +111,36 @@ final class SearchIntegrationTest extends MigrationTestCase
             VALUES (?,?,?,?,?,?,?,?,?,NOW(),'anon',NOW())")
             ->execute([$topicId, $this->tenantId, $catId, 'welcome', 'Welcome to the forum',
                 'anon', 'AN', 'blue', 'Please discuss climate action here']);
+    }
+
+    private function seedMembers(): void
+    {
+        $pdo = $this->pdo();
+        $pdo->prepare("INSERT INTO users (id, name, email, password_hash, date_of_birth, is_platform_admin, member_number, public_avatar_visible, membership_type, created_at)
+                       VALUES (?,?,?,?,?,0,?,1,?,NOW())")
+            ->execute([$this->adminUserId, 'Kimi Räikkönen', 'kimi@daems.local',
+                password_hash('x', PASSWORD_BCRYPT), '1979-10-17', '000777', 'full']);
+        $pdo->prepare("INSERT INTO user_tenants (user_id, tenant_id, role, joined_at) VALUES (?,?,?,NOW())")
+            ->execute([$this->adminUserId, $this->tenantId, 'member']);
+    }
+
+    public function test_members_search_is_admin_only(): void
+    {
+        $repo = new SqlSearchRepository($this->conn);
+        // includeUnpublished=true but actingUserIsAdmin=false → members branch should NOT run
+        $nonAdmin = $repo->search($this->tenantId, 'Kimi', 'member', true, false, 5, 'fi_FI');
+        self::assertCount(0, $nonAdmin);
+
+        $admin = $repo->search($this->tenantId, 'Kimi', 'member', true, true, 5, 'fi_FI');
+        self::assertCount(1, $admin);
+        self::assertSame('member', $admin[0]->entityType);
+    }
+
+    public function test_members_search_matches_email(): void
+    {
+        $repo = new SqlSearchRepository($this->conn);
+        $hits = $repo->search($this->tenantId, 'kimi@daems.local', 'member', true, true, 5, 'fi_FI');
+        self::assertCount(1, $hits);
     }
 
     public function test_forum_body_match_returns_hit(): void

@@ -36,7 +36,9 @@ final class SqlSearchRepository implements SearchRepositoryInterface
         if ($wantAll || $type === 'forum_topic') {
             $out = array_merge($out, $this->searchForum($tenantId, $query, $limitPerDomain));
         }
-        // member branch added in later tasks
+        if ($actingUserIsAdmin && ($wantAll || $type === 'member')) {
+            $out = array_merge($out, $this->searchMembers($tenantId, $query, $limitPerDomain));
+        }
         return $out;
     }
 
@@ -228,6 +230,43 @@ final class SqlSearchRepository implements SearchRepositoryInterface
                 status: 'published',
                 publishedAt: is_string($createdAt) ? substr($createdAt, 0, 10) : null,
                 relevance: is_numeric($relevanceRaw) ? (float) $relevanceRaw : 0.0,
+            );
+        }
+        return $hits;
+    }
+
+    /** @return SearchHit[] */
+    private function searchMembers(string $tenantId, string $query, int $limit): array
+    {
+        $pat = '%' . addcslashes($query, "%_\\") . '%';
+        $sql = "SELECT u.id, u.name, u.email, u.member_number, u.membership_type, ut.role
+                FROM users u
+                JOIN user_tenants ut ON ut.user_id = u.id
+                WHERE ut.tenant_id = :t
+                  AND u.deleted_at IS NULL
+                  AND (u.name LIKE :pat1 OR u.email LIKE :pat2)
+                LIMIT {$limit}";
+        $rows = $this->db->query($sql, [
+            ':t'    => $tenantId,
+            ':pat1' => $pat,
+            ':pat2' => $pat,
+        ]);
+
+        $hits = [];
+        foreach ($rows as $r) {
+            $name       = self::str($r, 'name');
+            $memberNum  = self::str($r, 'member_number', '');
+            $role       = self::str($r, 'role', '');
+            $hits[] = new SearchHit(
+                entityType: 'member',
+                entityId: self::str($r, 'id'),
+                title: $name,
+                snippet: $name . ' · ' . $memberNum . ' · ' . $role,
+                url: '/backstage/members?q=' . urlencode($query),
+                localeCode: null,
+                status: 'active',
+                publishedAt: null,
+                relevance: 1.0,
             );
         }
         return $hits;
