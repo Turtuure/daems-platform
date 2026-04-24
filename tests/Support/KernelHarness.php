@@ -705,6 +705,19 @@ final class KernelHarness
             static fn(Container $c) => new \Daems\Application\Backstage\UpdateTenantSettings\UpdateTenantSettings(
                 $c->make(\Daems\Domain\Tenant\TenantRepositoryInterface::class),
             ));
+        // E2E uses SQL repo directly for public member lookups (no fake needed for read-only path).
+        $container->bind(\Daems\Domain\Member\PublicMemberRepositoryInterface::class,
+            static fn(Container $c) => new \Daems\Infrastructure\Adapter\Persistence\Sql\SqlPublicMemberRepository(
+                $c->make(\Daems\Infrastructure\Framework\Database\Connection::class),
+            ));
+        $container->bind(\Daems\Application\Member\GetPublicMemberProfile\GetPublicMemberProfile::class,
+            static fn(Container $c) => new \Daems\Application\Member\GetPublicMemberProfile\GetPublicMemberProfile(
+                $c->make(\Daems\Domain\Member\PublicMemberRepositoryInterface::class),
+            ));
+        $container->bind(\Daems\Infrastructure\Adapter\Api\Controller\MemberController::class,
+            static fn(Container $c) => new \Daems\Infrastructure\Adapter\Api\Controller\MemberController(
+                $c->make(\Daems\Application\Member\GetPublicMemberProfile\GetPublicMemberProfile::class),
+            ));
         $container->bind(\Daems\Application\Backstage\GetEventWithAllTranslations\GetEventWithAllTranslations::class,
             static fn(Container $c) => new \Daems\Application\Backstage\GetEventWithAllTranslations\GetEventWithAllTranslations(
                 $c->make(EventRepositoryInterface::class),
