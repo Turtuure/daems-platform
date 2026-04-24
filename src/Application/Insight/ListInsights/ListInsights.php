@@ -15,7 +15,11 @@ final class ListInsights
 
     public function execute(ListInsightsInput $input): ListInsightsOutput
     {
-        $insights = $this->insights->listForTenant($input->tenantId, $input->category);
+        $insights = $this->insights->listForTenant(
+            $input->tenantId,
+            $input->category,
+            $input->includeUnpublished,
+        );
 
         return new ListInsightsOutput(
             array_map(fn(Insight $i) => $this->toArray($i), $insights),

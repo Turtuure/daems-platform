@@ -458,6 +458,27 @@ $container->bind(\Daems\Infrastructure\Adapter\Api\Controller\BackstageControlle
         $c->make(\Daems\Application\Backstage\ApproveEventProposal\ApproveEventProposal::class),
         $c->make(\Daems\Application\Backstage\RejectEventProposal\RejectEventProposal::class),
         $c->make(\Daems\Application\Backstage\UpdateTenantSettings\UpdateTenantSettings::class),
+        $c->make(\Daems\Application\Insight\CreateInsight\CreateInsight::class),
+        $c->make(\Daems\Application\Insight\UpdateInsight\UpdateInsight::class),
+        $c->make(\Daems\Application\Insight\DeleteInsight\DeleteInsight::class),
+        $c->make(\Daems\Application\Insight\ListInsights\ListInsights::class),
+        $c->make(\Daems\Domain\Insight\InsightRepositoryInterface::class),
+    ),
+);
+
+$container->bind(\Daems\Application\Insight\CreateInsight\CreateInsight::class,
+    static fn(Container $c) => new \Daems\Application\Insight\CreateInsight\CreateInsight(
+        $c->make(\Daems\Domain\Insight\InsightRepositoryInterface::class),
+    ),
+);
+$container->bind(\Daems\Application\Insight\UpdateInsight\UpdateInsight::class,
+    static fn(Container $c) => new \Daems\Application\Insight\UpdateInsight\UpdateInsight(
+        $c->make(\Daems\Domain\Insight\InsightRepositoryInterface::class),
+    ),
+);
+$container->bind(\Daems\Application\Insight\DeleteInsight\DeleteInsight::class,
+    static fn(Container $c) => new \Daems\Application\Insight\DeleteInsight\DeleteInsight(
+        $c->make(\Daems\Domain\Insight\InsightRepositoryInterface::class),
     ),
 );
 
