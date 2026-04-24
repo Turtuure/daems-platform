@@ -39,6 +39,7 @@ final class SearchIntegrationTest extends MigrationTestCase
             ->execute([$this->otherTenantId, 'sahegroup-st', 'SaheGroup ST']);
 
         $this->seedEvents();
+        $this->seedProjects();
     }
 
     private function seedEvents(): void
@@ -63,6 +64,24 @@ final class SearchIntegrationTest extends MigrationTestCase
             ->execute([$e3, $this->otherTenantId, 'sahegroup-summer', 'upcoming', 'published', '2026-06-15']);
         $pdo->prepare('INSERT INTO events_i18n (event_id, locale, title, location, description) VALUES (?,?,?,?,?)')
             ->execute([$e3, 'fi_FI', 'Summer Dar es Salaam', 'Dar es Salaam', 'SaheGroup event']);
+    }
+
+    private function seedProjects(): void
+    {
+        $pdo = $this->pdo();
+        $p1 = Uuid7::generate()->value();
+        $pdo->prepare("INSERT INTO projects (id, tenant_id, slug, status, category, created_at) VALUES (?,?,?,?,?,NOW())")
+            ->execute([$p1, $this->tenantId, 'solar-roof', 'published', 'energy']);
+        $pdo->prepare('INSERT INTO projects_i18n (project_id, locale, title, summary, description) VALUES (?,?,?,?,?)')
+            ->execute([$p1, 'fi_FI', 'Aurinkokatto', 'Kerrostalon aurinkopaneelit', 'Tämä projekti asentaa paneeleita']);
+    }
+
+    public function test_finds_project_in_current_locale(): void
+    {
+        $repo = new SqlSearchRepository($this->conn);
+        $hits = $repo->search($this->tenantId, 'aurinkokatto', 'project', false, false, 5, 'fi_FI');
+        self::assertCount(1, $hits);
+        self::assertSame('project', $hits[0]->entityType);
     }
 
     public function test_finds_event_in_current_locale(): void

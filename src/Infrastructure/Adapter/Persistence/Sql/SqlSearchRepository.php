@@ -27,7 +27,10 @@ final class SqlSearchRepository implements SearchRepositoryInterface
         if ($wantAll || $type === 'event') {
             $out = array_merge($out, $this->searchEvents($tenantId, $query, $includeUnpublished, $limitPerDomain, $currentLocale));
         }
-        // project / insight / forum_topic / member branches added in later tasks
+        if ($wantAll || $type === 'project') {
+            $out = array_merge($out, $this->searchProjects($tenantId, $query, $includeUnpublished, $limitPerDomain, $currentLocale));
+        }
+        // insight / forum_topic / member branches added in later tasks
         return $out;
     }
 
@@ -82,6 +85,63 @@ final class SqlSearchRepository implements SearchRepositoryInterface
                 localeCode: is_string($localeRaw) ? $localeRaw : null,
                 status: self::str($r, 'status'),
                 publishedAt: is_string($eventDate) ? substr($eventDate, 0, 10) : null,
+                relevance: is_numeric($relevanceRaw) ? (float) $relevanceRaw : 0.0,
+            );
+        }
+        return $hits;
+    }
+
+    /** @return SearchHit[] */
+    private function searchProjects(string $tenantId, string $query, bool $includeUnpublished, int $limit, string $locale): array
+    {
+        $statusFilter = $includeUnpublished ? '' : " AND p.status='published'";
+        $sql = "SELECT p.id, p.slug, p.status, p.created_at,
+                       COALESCE(i_cur.title, i_en.title) AS title,
+                       COALESCE(i_cur.description, i_en.description) AS description,
+                       COALESCE(i_cur.summary, i_en.summary) AS summary,
+                       IF(i_cur.title IS NOT NULL, NULL, 'en_GB') AS locale_code,
+                       GREATEST(
+                           IFNULL(MATCH(i_fi.title, i_fi.summary, i_fi.description) AGAINST (:q1), 0),
+                           IFNULL(MATCH(i_en.title, i_en.summary, i_en.description) AGAINST (:q2), 0),
+                           IFNULL(MATCH(i_sw.title, i_sw.summary, i_sw.description) AGAINST (:q3), 0)
+                       ) AS relevance
+                FROM projects p
+                LEFT JOIN projects_i18n i_cur ON i_cur.project_id = p.id AND i_cur.locale = :locale
+                LEFT JOIN projects_i18n i_en  ON i_en.project_id  = p.id AND i_en.locale  = 'en_GB'
+                LEFT JOIN projects_i18n i_fi  ON i_fi.project_id  = p.id AND i_fi.locale  = 'fi_FI'
+                LEFT JOIN projects_i18n i_sw  ON i_sw.project_id  = p.id AND i_sw.locale  = 'sw_TZ'
+                WHERE p.tenant_id = :t {$statusFilter}
+                  AND (
+                      MATCH(i_fi.title, i_fi.summary, i_fi.description) AGAINST (:q4)
+                   OR MATCH(i_en.title, i_en.summary, i_en.description) AGAINST (:q5)
+                   OR MATCH(i_sw.title, i_sw.summary, i_sw.description) AGAINST (:q6)
+                  )
+                ORDER BY relevance DESC
+                LIMIT {$limit}";
+        $rows = $this->db->query($sql, [
+            ':t' => $tenantId,
+            ':q1' => $query, ':q2' => $query, ':q3' => $query,
+            ':q4' => $query, ':q5' => $query, ':q6' => $query,
+            ':locale' => $locale,
+        ]);
+
+        $hits = [];
+        foreach ($rows as $r) {
+            $title = self::str($r, 'title', '');
+            $description = self::str($r, 'description', '');
+            $summary = self::str($r, 'summary', '');
+            $localeRaw = $r['locale_code'] ?? null;
+            $createdAt = $r['created_at'] ?? null;
+            $relevanceRaw = $r['relevance'] ?? 0;
+            $hits[] = new SearchHit(
+                entityType: 'project',
+                entityId: self::str($r, 'id'),
+                title: $title,
+                snippet: self::snippet($description . ' ' . $summary, $query),
+                url: '/projects/' . self::str($r, 'slug'),
+                localeCode: is_string($localeRaw) ? $localeRaw : null,
+                status: self::str($r, 'status'),
+                publishedAt: is_string($createdAt) ? substr($createdAt, 0, 10) : null,
                 relevance: is_numeric($relevanceRaw) ? (float) $relevanceRaw : 0.0,
             );
         }
