@@ -43,11 +43,13 @@ final class SqlInsightRepository implements InsightRepositoryInterface
 
     public function save(Insight $insight): void
     {
+        $searchText = trim((string) preg_replace('/\s+/', ' ', strip_tags($insight->content())));
+
         $this->db->execute(
             'INSERT INTO insights
                 (id, tenant_id, slug, title, category, category_label, featured, published_date,
-                 author, reading_time, excerpt, hero_image, tags_json, content)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                 author, reading_time, excerpt, hero_image, tags_json, content, search_text)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
              ON DUPLICATE KEY UPDATE
                 title          = VALUES(title),
                 category       = VALUES(category),
@@ -59,7 +61,8 @@ final class SqlInsightRepository implements InsightRepositoryInterface
                 excerpt        = VALUES(excerpt),
                 hero_image     = VALUES(hero_image),
                 tags_json      = VALUES(tags_json),
-                content        = VALUES(content)',
+                content        = VALUES(content),
+                search_text    = VALUES(search_text)',
             [
                 $insight->id()->value(),
                 $insight->tenantId()->value(),
@@ -75,6 +78,7 @@ final class SqlInsightRepository implements InsightRepositoryInterface
                 $insight->heroImage(),
                 json_encode($insight->tags()),
                 $insight->content(),
+                $searchText,
             ],
         );
     }

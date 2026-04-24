@@ -197,6 +197,19 @@ final class SqlForumRepository implements ForumRepositoryInterface
                 $post->editedAt(),
             ],
         );
+
+        $minRow = $this->db->queryOne(
+            'SELECT MIN(sort_order) AS min_sort FROM forum_posts WHERE topic_id = ?',
+            [$post->topicId()],
+        );
+        $minSortRaw = $minRow['min_sort'] ?? null;
+        $minSort = is_int($minSortRaw) ? $minSortRaw : (is_string($minSortRaw) && is_numeric($minSortRaw) ? (int) $minSortRaw : 0);
+        if ($minSort === (int) $post->sortOrder()) {
+            $this->db->execute(
+                'UPDATE forum_topics SET first_post_search_text = ? WHERE id = ?',
+                [$post->content(), $post->topicId()],
+            );
+        }
     }
 
     public function recordTopicReply(string $topicId, string $lastActivityAt, string $lastActivityBy): void
