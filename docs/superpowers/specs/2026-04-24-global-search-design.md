@@ -17,7 +17,7 @@ One canonical backend; two frontends (public + backstage) sharing one typeahead 
 1. **Scope**: all 5 domains (events, projects, forum topics, insights, members) in this PR.
 2. **Insights backstage admin**: tracked as separate follow-up PR — not in this spec.
 3. **UX pattern**: hybrid — typeahead dropdown in top-bar + dedicated `/search?q=` results page.
-4. **Localization**: match in any locale, display the user's current locale (fallback to en_GB when the current-locale translation is missing). Results badge `(en)`/`(sw)` when displayed text comes from a fallback.
+4. **Localization** (applies to i18n domains only — events and projects): match in any locale, display the user's current locale (fallback to en_GB when the current-locale translation is missing). Results badge `(en)`/`(sw)` when displayed text comes from a fallback. Non-i18n domains (insights, forum topics, members) have no locale fallback — their stored strings are returned as-is.
 5. **Tenant scope**: always scoped to the current Host's tenant. Platform admins do NOT search across tenants.
 6. **Forum body**: search topic `title` + the first post's `content` (the post with the lowest `sort_order` per topic). Other replies are not indexed.
 7. **Ranking**: MySQL FULLTEXT `NATURAL LANGUAGE MODE` relevance; no cross-domain weighting.
@@ -174,7 +174,7 @@ SearchController::public
   ▼
 Search::execute(tenant=daems, query='summer', type=null, includeUnpublished=false, isAdmin=false, limitPerDomain=5, locale=fi_FI)
   ▼
-SqlSearchRepository::search
+SqlSearchRepository::search                                 # SQL below is illustrative — exact joins/ordering finalised in planning
   ├─ events: SELECT e.id, e.slug, e.start_at, e.status, COALESCE(i_fi.title, i_en.title) AS title, ... ,
   │                 MATCH(i_fi.title, i_fi.location, i_fi.description) AGAINST(?) AS score_fi,
   │                 MATCH(i_en.title, i_en.location, i_en.description) AGAINST(?) AS score_en
