@@ -382,6 +382,51 @@ final class SqlForumRepository implements ForumRepositoryInterface
         );
     }
 
+    public function countTopicsForTenant(TenantId $tenantId): int
+    {
+        $row = $this->db->queryOne(
+            'SELECT COUNT(*) AS c FROM forum_topics WHERE tenant_id = ?',
+            [$tenantId->value()],
+        );
+        return self::intOf($row ?? [], 'c');
+    }
+
+    /** @return list<array{date: string, value: int}> */
+    public function dailyNewTopicsForTenant(TenantId $tenantId): array
+    {
+        $base = new \DateTimeImmutable('today');
+        $days = [];
+        for ($i = 29; $i >= 0; $i--) {
+            $days[$base->modify("-{$i} days")->format('Y-m-d')] = 0;
+        }
+        $rows = $this->db->query(
+            'SELECT DATE(created_at) AS d, COUNT(*) AS c FROM forum_topics
+             WHERE tenant_id = ? AND created_at >= DATE_SUB(CURDATE(), INTERVAL 29 DAY)
+             GROUP BY DATE(created_at)',
+            [$tenantId->value()],
+        );
+        foreach ($rows as $row) {
+            $d = is_string($row['d'] ?? null) ? (string) $row['d'] : '';
+            if (isset($days[$d])) {
+                $days[$d] = self::intOf($row, 'c');
+            }
+        }
+        $out = [];
+        foreach ($days as $date => $value) {
+            $out[] = ['date' => $date, 'value' => $value];
+        }
+        return $out;
+    }
+
+    public function countCategoriesForTenant(TenantId $tenantId): int
+    {
+        $row = $this->db->queryOne(
+            'SELECT COUNT(*) AS c FROM forum_categories WHERE tenant_id = ?',
+            [$tenantId->value()],
+        );
+        return self::intOf($row ?? [], 'c');
+    }
+
     /** @param array<string, mixed> $row */
     private function hydrateCategory(array $row): ForumCategory
     {

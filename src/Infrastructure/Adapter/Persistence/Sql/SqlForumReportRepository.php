@@ -184,6 +184,42 @@ final class SqlForumReportRepository implements ForumReportRepositoryInterface
         return is_string($c) && is_numeric($c) ? (int) $c : 0;
     }
 
+    public function countOpenReportsForTenant(TenantId $tenantId): int
+    {
+        $row = $this->db->queryOne(
+            "SELECT COUNT(*) AS c FROM forum_reports WHERE tenant_id = ? AND status = 'open'",
+            [$tenantId->value()],
+        );
+        return self::intOf($row ?? [], 'c');
+    }
+
+    /** @return list<array{date: string, value: int}> */
+    public function dailyNewReportsForTenant(TenantId $tenantId): array
+    {
+        $base = new \DateTimeImmutable('today');
+        $days = [];
+        for ($i = 29; $i >= 0; $i--) {
+            $days[$base->modify("-{$i} days")->format('Y-m-d')] = 0;
+        }
+        $rows = $this->db->query(
+            'SELECT DATE(created_at) AS d, COUNT(*) AS c FROM forum_reports
+             WHERE tenant_id = ? AND created_at >= DATE_SUB(CURDATE(), INTERVAL 29 DAY)
+             GROUP BY DATE(created_at)',
+            [$tenantId->value()],
+        );
+        foreach ($rows as $row) {
+            $d = is_string($row['d'] ?? null) ? (string) $row['d'] : '';
+            if (isset($days[$d])) {
+                $days[$d] = self::intOf($row, 'c');
+            }
+        }
+        $out = [];
+        foreach ($days as $date => $value) {
+            $out[] = ['date' => $date, 'value' => $value];
+        }
+        return $out;
+    }
+
     /** @param array<string,mixed> $row */
     private function hydrate(array $row): ForumReport
     {
