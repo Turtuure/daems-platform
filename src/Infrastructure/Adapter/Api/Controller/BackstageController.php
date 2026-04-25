@@ -92,6 +92,8 @@ use Daems\Application\Backstage\ListMembers\ListMembers;
 use Daems\Application\Backstage\ListMembers\ListMembersInput;
 use Daems\Application\Backstage\Applications\ListApplicationsStats\ListApplicationsStats;
 use Daems\Application\Backstage\Applications\ListApplicationsStats\ListApplicationsStatsInput;
+use Daems\Application\Backstage\Events\ListEventsStats\ListEventsStats;
+use Daems\Application\Backstage\Events\ListEventsStats\ListEventsStatsInput;
 use Daems\Application\Backstage\Members\ListMembersStats\ListMembersStats;
 use Daems\Application\Backstage\Members\ListMembersStats\ListMembersStatsInput;
 use Daems\Application\Backstage\ListPendingApplications\ListPendingApplications;
@@ -195,6 +197,7 @@ final class BackstageController
         private readonly ListForumStats $listForumStats,
         private readonly ListMembersStats $listMembersStats,
         private readonly ListApplicationsStats $listApplicationsStats,
+        private readonly ListEventsStats $listEventsStats,
         private readonly GetEventWithAllTranslations $getEventWithAllTranslations,
         private readonly UpdateEventTranslation $updateEventTranslation,
         private readonly GetProjectWithAllTranslations $getProjectWithAllTranslations,
@@ -1258,6 +1261,23 @@ final class BackstageController
 
         try {
             $out = $this->listApplicationsStats->execute(new ListApplicationsStatsInput(
+                acting:   $acting,
+                tenantId: $tenant->id,
+            ));
+        } catch (ForbiddenException) {
+            return Response::forbidden('Admin only');
+        }
+
+        return Response::json(['data' => $out->stats]);
+    }
+
+    public function statsEvents(Request $request): Response
+    {
+        $acting = $request->requireActingUser();
+        $tenant = $this->requireTenant($request);
+
+        try {
+            $out = $this->listEventsStats->execute(new ListEventsStatsInput(
                 acting:   $acting,
                 tenantId: $tenant->id,
             ));
