@@ -20,6 +20,14 @@ final class GetInsight
             return new GetInsightOutput(null);
         }
 
+        // Public read: hide drafts (no publish date) and not-yet-published
+        // (publish date in the future). Backstage uses InsightRepository
+        // directly via findByIdForTenant so this guard doesn't affect editing.
+        $publishDate = $insight->date();
+        if ($publishDate === null || $publishDate > date('Y-m-d')) {
+            return new GetInsightOutput(null);
+        }
+
         return new GetInsightOutput([
             'id'             => $insight->id()->value(),
             'slug'           => $insight->slug(),
