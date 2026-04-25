@@ -49,6 +49,13 @@ final class EventsStatsEndpointTest extends TestCase
         self::assertCount(30, $body['data']['drafts']['sparkline']);
         self::assertCount(30, $body['data']['registrations_30d']['sparkline']);
         self::assertCount(30, $body['data']['pending_proposals']['sparkline']);
+
+        // upcoming is the only forward-window stat — pin its date endpoints to catch
+        // any future regression that flips the loop direction.
+        $today        = (new \DateTimeImmutable('today'))->format('Y-m-d');
+        $todayPlus29  = (new \DateTimeImmutable('today'))->modify('+29 days')->format('Y-m-d');
+        self::assertSame($today,       $body['data']['upcoming']['sparkline'][0]['date']);
+        self::assertSame($todayPlus29, $body['data']['upcoming']['sparkline'][29]['date']);
     }
 
     public function test_non_admin_gets_403(): void
