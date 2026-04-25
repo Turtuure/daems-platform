@@ -451,6 +451,7 @@ $container->bind(\Daems\Infrastructure\Adapter\Api\Controller\BackstageControlle
         $c->make(\Daems\Application\Backstage\Forum\DeleteForumCategoryAsAdmin\DeleteForumCategoryAsAdmin::class),
         $c->make(\Daems\Application\Backstage\Forum\ListForumModerationAuditForAdmin\ListForumModerationAuditForAdmin::class),
         $c->make(\Daems\Application\Backstage\Forum\ListForumStats\ListForumStats::class),
+        $c->make(\Daems\Application\Backstage\Members\ListMembersStats\ListMembersStats::class),
         $c->make(\Daems\Application\Backstage\GetEventWithAllTranslations\GetEventWithAllTranslations::class),
         $c->make(\Daems\Application\Backstage\UpdateEventTranslation\UpdateEventTranslation::class),
         $c->make(\Daems\Application\Backstage\GetProjectWithAllTranslations\GetProjectWithAllTranslations::class),
@@ -983,6 +984,12 @@ $container->bind(\Daems\Application\Backstage\Forum\ListForumStats\ListForumStat
         $c->make(\Daems\Domain\Forum\ForumRepositoryInterface::class),
         $c->make(\Daems\Domain\Forum\ForumReportRepositoryInterface::class),
         $c->make(\Daems\Domain\Forum\ForumModerationAuditRepositoryInterface::class),
+    ),
+);
+$container->bind(\Daems\Application\Backstage\Members\ListMembersStats\ListMembersStats::class,
+    static fn(Container $c) => new \Daems\Application\Backstage\Members\ListMembersStats\ListMembersStats(
+        $c->make(\Daems\Domain\Tenant\UserTenantRepositoryInterface::class),
+        $c->make(\Daems\Domain\Membership\MemberStatusAuditRepositoryInterface::class),
     ),
 );
 
