@@ -7,6 +7,7 @@ namespace Daems\Infrastructure\Adapter\Persistence\Sql;
 use Daems\Domain\Dismissal\AdminApplicationDismissal;
 use Daems\Domain\Dismissal\AdminApplicationDismissalRepositoryInterface;
 use Daems\Domain\Tenant\TenantId;
+use Daems\Domain\User\UserId;
 use PDO;
 
 final class SqlAdminApplicationDismissalRepository implements AdminApplicationDismissalRepositoryInterface
@@ -46,6 +47,18 @@ final class SqlAdminApplicationDismissalRepository implements AdminApplicationDi
             'SELECT app_id FROM admin_application_dismissals WHERE admin_id = ?'
         );
         $stmt->execute([$adminId]);
+        return array_values(array_map(
+            static fn (array $r): string => (string) $r['app_id'],
+            $stmt->fetchAll(PDO::FETCH_ASSOC) ?: []
+        ));
+    }
+
+    public function dismissedAppIdsFor(UserId $adminId): array
+    {
+        $stmt = $this->pdo->prepare(
+            'SELECT app_id FROM admin_application_dismissals WHERE admin_id = ?'
+        );
+        $stmt->execute([$adminId->value()]);
         return array_values(array_map(
             static fn (array $r): string => (string) $r['app_id'],
             $stmt->fetchAll(PDO::FETCH_ASSOC) ?: []

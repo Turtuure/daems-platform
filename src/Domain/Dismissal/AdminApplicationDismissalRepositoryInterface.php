@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Daems\Domain\Dismissal;
 
 use Daems\Domain\Tenant\TenantId;
+use Daems\Domain\User\UserId;
 
 interface AdminApplicationDismissalRepositoryInterface
 {
@@ -17,6 +18,19 @@ interface AdminApplicationDismissalRepositoryInterface
 
     /** @return list<string> app_ids dismissed by this admin */
     public function listAppIdsDismissedByAdmin(string $adminId): array;
+
+    /**
+     * Returns the list of app_ids that the given admin has dismissed.
+     * Used by ListNotificationsStats use case to compute "pending_you" by
+     * subtracting the count from the total pending across all 4 sources.
+     *
+     * NOT tenant-scoped: dismissals are per-actor. The (admin_id, app_id)
+     * UNIQUE constraint guarantees disjoint id-sets across admins regardless
+     * of tenant.
+     *
+     * @return list<string>
+     */
+    public function dismissedAppIdsFor(UserId $adminId): array;
 
     /**
      * Clears all admin dismissals for the given (app_type, app_id) so every admin re-sees the toast.

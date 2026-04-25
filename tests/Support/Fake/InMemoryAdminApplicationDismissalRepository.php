@@ -8,6 +8,7 @@ use DateTimeImmutable;
 use Daems\Domain\Dismissal\AdminApplicationDismissal;
 use Daems\Domain\Dismissal\AdminApplicationDismissalRepositoryInterface;
 use Daems\Domain\Tenant\TenantId;
+use Daems\Domain\User\UserId;
 
 final class InMemoryAdminApplicationDismissalRepository implements AdminApplicationDismissalRepositoryInterface
 {
@@ -50,6 +51,18 @@ final class InMemoryAdminApplicationDismissalRepository implements AdminApplicat
             array_filter(
                 $this->rows,
                 static fn (AdminApplicationDismissal $d): bool => $d->adminId === $adminId
+            )
+        ));
+    }
+
+    public function dismissedAppIdsFor(UserId $adminId): array
+    {
+        $id = $adminId->value();
+        return array_values(array_map(
+            static fn (AdminApplicationDismissal $d): string => $d->appId,
+            array_filter(
+                $this->rows,
+                static fn (AdminApplicationDismissal $d): bool => $d->adminId === $id
             )
         ));
     }
