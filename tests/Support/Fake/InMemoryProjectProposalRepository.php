@@ -86,4 +86,41 @@ final class InMemoryProjectProposalRepository implements ProjectProposalReposito
             }
         }
     }
+
+    public function pendingStatsForTenant(TenantId $tenantId): array
+    {
+        // Value: all-time pending count for tenant.
+        $value = 0;
+        foreach ($this->byId as $p) {
+            if (!$p->tenantId()->equals($tenantId)) {
+                continue;
+            }
+            if ($p->status() === 'pending') {
+                $value++;
+            }
+        }
+
+        // Sparkline: BACKWARD 30 days of created_at, ALL statuses (incoming volume).
+        $base = new \DateTimeImmutable('today');
+        $days = [];
+        for ($i = 29; $i >= 0; $i--) {
+            $days[$base->modify("-{$i} days")->format('Y-m-d')] = 0;
+        }
+        foreach ($this->byId as $p) {
+            if (!$p->tenantId()->equals($tenantId)) {
+                continue;
+            }
+            // createdAt is "Y-m-d H:i:s"; take date part.
+            $d = substr($p->createdAt(), 0, 10);
+            if (isset($days[$d])) {
+                $days[$d]++;
+            }
+        }
+        $sparkline = [];
+        foreach ($days as $date => $value2) {
+            $sparkline[] = ['date' => $date, 'value' => $value2];
+        }
+
+        return ['value' => $value, 'sparkline' => $sparkline];
+    }
 }

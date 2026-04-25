@@ -23,4 +23,9 @@ interface ProjectProposalRepositoryInterface
         ?string $note,
         \DateTimeImmutable $now,
     ): void;
+
+    /**
+     * @return array{value: int, sparkline: list<array{date: string, value: int}>}
+     */
+    public function pendingStatsForTenant(TenantId $tenantId): array;
 }
