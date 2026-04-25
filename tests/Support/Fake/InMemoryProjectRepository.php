@@ -337,6 +337,43 @@ final class InMemoryProjectRepository implements ProjectRepositoryInterface
         $this->bySlug[$updated->slug()] = $updated;
     }
 
+    public function statsForTenant(TenantId $tenantId): array
+    {
+        $active = 0;
+        $drafts = 0;
+        $featured = 0;
+
+        foreach ($this->bySlug as $p) {
+            if (!$p->tenantId()->equals($tenantId)) {
+                continue;
+            }
+            if ($p->status() === 'active') {
+                $active++;
+                if ($p->featured()) {
+                    $featured++;
+                }
+            } elseif ($p->status() === 'draft') {
+                $drafts++;
+            }
+        }
+
+        // Zero-fill 30-day backward sparkline; bucket today's totals into the last entry.
+        $base = new \DateTimeImmutable('today');
+        $activeSpark = [];
+        $draftSpark = [];
+        for ($i = 29; $i >= 0; $i--) {
+            $date = $base->modify("-{$i} days")->format('Y-m-d');
+            $activeSpark[] = ['date' => $date, 'value' => $i === 0 ? $active : 0];
+            $draftSpark[]  = ['date' => $date, 'value' => $i === 0 ? $drafts : 0];
+        }
+
+        return [
+            'active'   => ['value' => $active,   'sparkline' => $activeSpark],
+            'drafts'   => ['value' => $drafts,   'sparkline' => $draftSpark],
+            'featured' => ['value' => $featured, 'sparkline' => []],
+        ];
+    }
+
     /**
      * Mirror SqlProjectRepository::firstAvailable for each translatable field.
      * @return array{title: string, summary: string, description: string}

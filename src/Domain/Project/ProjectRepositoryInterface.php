@@ -75,4 +75,18 @@ interface ProjectRepositoryInterface
         SupportedLocale $locale,
         array $fields,
     ): void;
+
+    /**
+     * Backstage KPI slice for the projects domain. Returns three KPIs:
+     *   - active:   COUNT WHERE status='active'              + 30d backward sparkline by created_at
+     *   - drafts:   COUNT WHERE status='draft'               + 30d backward sparkline by created_at
+     *   - featured: COUNT WHERE status='active' AND featured=1 + empty sparkline (curation toggle)
+     *
+     * @return array{
+     *   active:   array{value: int, sparkline: list<array{date: string, value: int}>},
+     *   drafts:   array{value: int, sparkline: list<array{date: string, value: int}>},
+     *   featured: array{value: int, sparkline: list<array{date: string, value: int}>}
+     * }
+     */
+    public function statsForTenant(TenantId $tenantId): array;
 }

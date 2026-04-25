@@ -475,6 +475,100 @@ final class SqlProjectRepository implements ProjectRepositoryInterface
         );
     }
 
+    public function statsForTenant(TenantId $tenantId): array
+    {
+        $tid = $tenantId->value();
+
+        // Single roundtrip: active + drafts + featured counts.
+        $totals = $this->db->queryOne(
+            "SELECT
+                COALESCE(SUM(CASE WHEN status = 'active' THEN 1 ELSE 0 END), 0) AS active_n,
+                COALESCE(SUM(CASE WHEN status = 'draft' THEN 1 ELSE 0 END), 0) AS draft_n,
+                COALESCE(SUM(CASE WHEN status = 'active' AND featured = 1 THEN 1 ELSE 0 END), 0) AS featured_n
+             FROM projects
+             WHERE tenant_id = ?",
+            [$tid],
+        ) ?? [];
+
+        // Active sparkline: BACKWARD 30 days by DATE(created_at), filtered to status='active'.
+        $activeSpark = $this->dailySeriesBackward(
+            "SELECT DATE(created_at) AS d, COUNT(*) AS n
+               FROM projects
+              WHERE tenant_id = ?
+                AND status = 'active'
+                AND created_at >= (CURDATE() - INTERVAL 29 DAY)
+              GROUP BY DATE(created_at)",
+            [$tid],
+        );
+
+        // Drafts sparkline: same window, status='draft'.
+        $draftSpark = $this->dailySeriesBackward(
+            "SELECT DATE(created_at) AS d, COUNT(*) AS n
+               FROM projects
+              WHERE tenant_id = ?
+                AND status = 'draft'
+                AND created_at >= (CURDATE() - INTERVAL 29 DAY)
+              GROUP BY DATE(created_at)",
+            [$tid],
+        );
+
+        return [
+            'active' => [
+                'value'     => self::statsAsInt($totals, 'active_n'),
+                'sparkline' => $activeSpark,
+            ],
+            'drafts' => [
+                'value'     => self::statsAsInt($totals, 'draft_n'),
+                'sparkline' => $draftSpark,
+            ],
+            'featured' => [
+                'value'     => self::statsAsInt($totals, 'featured_n'),
+                'sparkline' => [], // curation toggle has no temporal series
+            ],
+        ];
+    }
+
+    /**
+     * Run a daily-count query and zero-fill into a 30-entry BACKWARD sparkline
+     * (today-29 first, today last).
+     *
+     * @param list<scalar|null> $params
+     * @return list<array{date: string, value: int}>
+     */
+    private function dailySeriesBackward(string $sql, array $params): array
+    {
+        $base = new \DateTimeImmutable('today');
+        $days = [];
+        for ($i = 29; $i >= 0; $i--) {
+            $days[$base->modify("-{$i} days")->format('Y-m-d')] = 0;
+        }
+        foreach ($this->db->query($sql, $params) as $row) {
+            $d = isset($row['d']) && is_string($row['d']) ? $row['d'] : '';
+            if ($d === '' || !isset($days[$d])) {
+                continue;
+            }
+            $days[$d] += self::statsAsInt($row, 'n');
+        }
+        $out = [];
+        foreach ($days as $date => $value) {
+            $out[] = ['date' => $date, 'value' => $value];
+        }
+        return $out;
+    }
+
+    /** @param array<string, mixed> $row */
+    private static function statsAsInt(array $row, string $key): int
+    {
+        $v = $row[$key] ?? null;
+        if (is_int($v)) {
+            return $v;
+        }
+        if (is_string($v) && is_numeric($v)) {
+            return (int) $v;
+        }
+        return 0;
+    }
+
     /** @param array<string, ?string> $row */
     private function upsertTranslationRow(string $projectId, string $locale, array $row): void
     {
