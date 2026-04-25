@@ -118,6 +118,8 @@ use Daems\Application\Insight\DeleteInsight\DeleteInsight;
 use Daems\Application\Insight\DeleteInsight\DeleteInsightInput;
 use Daems\Application\Insight\ListInsights\ListInsights;
 use Daems\Application\Insight\ListInsights\ListInsightsInput;
+use Daems\Application\Insight\ListInsightStats\ListInsightStats;
+use Daems\Application\Insight\ListInsightStats\ListInsightStatsInput;
 use Daems\Application\Insight\UpdateInsight\UpdateInsight;
 use Daems\Application\Insight\UpdateInsight\UpdateInsightInput;
 use Daems\Domain\Auth\ForbiddenException;
@@ -196,6 +198,7 @@ final class BackstageController
         private readonly UpdateInsight $updateInsight,
         private readonly DeleteInsight $deleteInsight,
         private readonly ListInsights $listInsights,
+        private readonly ListInsightStats $listInsightStats,
         private readonly InsightRepositoryInterface $insightRepo,
     ) {}
 
@@ -1497,6 +1500,18 @@ final class BackstageController
             return Response::json(['error' => 'not_found'], 404);
         }
         return Response::json(['data' => ['deleted' => true]]);
+    }
+
+    public function statsInsights(Request $request): Response
+    {
+        $tenant = $this->requireTenant($request);
+        $this->requireInsightsAdmin($request, $tenant);
+
+        $out = $this->listInsightStats->execute(new ListInsightStatsInput(
+            tenantId: $tenant->id,
+        ));
+
+        return Response::json(['data' => $out->stats]);
     }
 
     private function requireInsightsAdmin(Request $request, Tenant $tenant): void
