@@ -52,6 +52,13 @@ final class ProjectsStatsEndpointTest extends TestCase
         // metric. Pin the empty array to catch any future regression that
         // accidentally adds a sparkline here.
         self::assertSame([], $body['data']['featured']['sparkline']);
+
+        // KernelHarness seeds no project rows in setUp, so all 4 values must be 0.
+        // This pins value-threading from use case to controller envelope.
+        self::assertSame(0, $body['data']['active']['value']);
+        self::assertSame(0, $body['data']['drafts']['value']);
+        self::assertSame(0, $body['data']['featured']['value']);
+        self::assertSame(0, $body['data']['pending_proposals']['value']);
     }
 
     public function test_non_admin_gets_403(): void
