@@ -33,12 +33,12 @@ final class ApplicationsStatsTenantIsolationTest extends IsolationTestCase
         );
     }
 
-    private function seedMemberApp(string $tenantSlug, string $email, string $status, ?string $decidedAt = null): void
+    private function seedMemberApp(string $tenantSlug, string $email, string $status, ?string $createdAt = null, ?string $decidedAt = null): void
     {
         $stmt = $this->pdo()->prepare(
             "INSERT INTO member_applications
-                (id, tenant_id, name, email, date_of_birth, country, motivation, how_heard, status, decided_at)
-             VALUES (?, (SELECT id FROM tenants WHERE slug = ?), ?, ?, '1990-01-01', 'FI', 'm', NULL, ?, ?)"
+                (id, tenant_id, name, email, date_of_birth, country, motivation, how_heard, status, created_at, decided_at)
+             VALUES (?, (SELECT id FROM tenants WHERE slug = ?), ?, ?, '1990-01-01', 'FI', 'm', NULL, ?, COALESCE(?, NOW()), ?)"
         );
         $stmt->execute([
             Uuid7::generate()->value(),
@@ -46,6 +46,7 @@ final class ApplicationsStatsTenantIsolationTest extends IsolationTestCase
             'M-' . $email,
             $email,
             $status,
+            $createdAt,
             $decidedAt,
         ]);
     }
@@ -72,19 +73,20 @@ final class ApplicationsStatsTenantIsolationTest extends IsolationTestCase
         // Asymmetric seeds — a leaky impl (e.g. ignoring tenant_id) cannot pass.
         //
         // daems:
-        //   member apps:    2 pending, 1 approved (decided 1h ago)
+        //   member apps:    2 pending, 1 approved (created 3h ago, decided 1h ago → 2h response)
         //   supporter apps: 1 pending
-        //   → pending = 3, approved_30d = 1, rejected_30d = 0
+        //   → pending = 3, approved_30d = 1, rejected_30d = 0, avg_response_hours = 2
         //
         // sahegroup:
         //   member apps:    1 pending
         //   supporter apps: 0
         //   → pending = 1, approved_30d = 0, rejected_30d = 0
-        $oneHourAgo = (new \DateTimeImmutable('-1 hour'))->format('Y-m-d H:i:s');
+        $threeHoursAgo = (new \DateTimeImmutable('-3 hours'))->format('Y-m-d H:i:s');
+        $oneHourAgo    = (new \DateTimeImmutable('-1 hour'))->format('Y-m-d H:i:s');
 
         $this->seedMemberApp('daems',     'd-m1@example.test', 'pending');
         $this->seedMemberApp('daems',     'd-m2@example.test', 'pending');
-        $this->seedMemberApp('daems',     'd-m3@example.test', 'approved', $oneHourAgo);
+        $this->seedMemberApp('daems',     'd-m3@example.test', 'approved', createdAt: $threeHoursAgo, decidedAt: $oneHourAgo);
         $this->seedSupporterApp('daems',  'd-s1@example.test', 'pending');
 
         $this->seedMemberApp('sahegroup', 's-m1@example.test', 'pending');
@@ -110,13 +112,16 @@ final class ApplicationsStatsTenantIsolationTest extends IsolationTestCase
         )->stats;
 
         // daems: 2 member pending + 1 supporter pending = 3, 1 approved member, 0 rejected.
+        // avg_response_hours: created 3h ago, decided 1h ago → 2 hours.
         self::assertSame(3, $daems['pending']['value']);
         self::assertSame(1, $daems['approved_30d']['value']);
         self::assertSame(0, $daems['rejected_30d']['value']);
+        self::assertSame(2, $daems['avg_response_hours']['value']);
 
         // sahegroup: 1 member pending only — sahegroup must NOT see daems' rows.
         self::assertSame(1, $sahe['pending']['value']);
         self::assertSame(0, $sahe['approved_30d']['value']);
         self::assertSame(0, $sahe['rejected_30d']['value']);
+        self::assertSame(0, $sahe['avg_response_hours']['value']); // no decisions
     }
 }
