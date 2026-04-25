@@ -70,7 +70,9 @@ final class UpdateInsight
         if (trim($in->category) === '') {
             $errors['category'] = 'required';
         }
-        if (!\DateTime::createFromFormat('Y-m-d', $in->publishedDate)) {
+        // null published_date = draft (not yet published or scheduled).
+        // Only validate the format when a value is provided.
+        if ($in->publishedDate !== null && !\DateTime::createFromFormat('Y-m-d', $in->publishedDate)) {
             $errors['published_date'] = 'invalid_format';
         }
         if ($errors !== []) {

@@ -18,7 +18,7 @@ final class UpdateInsightInput
         public readonly string $category,
         public readonly string $categoryLabel,
         public readonly bool $featured,
-        public readonly string $publishedDate,
+        public readonly ?string $publishedDate,
         public readonly string $author,
         public readonly string $excerpt,
         public readonly ?string $heroImage,

@@ -227,7 +227,7 @@ final class SqlInsightRepository implements InsightRepositoryInterface
             self::str($row, 'category'),
             self::str($row, 'category_label'),
             (bool) ($row['featured'] ?? false),
-            self::str($row, 'published_date'),
+            self::strOrNull($row, 'published_date'),
             self::str($row, 'author'),
             self::intCol($row, 'reading_time'),
             self::str($row, 'excerpt'),

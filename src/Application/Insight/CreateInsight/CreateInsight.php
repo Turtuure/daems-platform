@@ -65,7 +65,9 @@ final class CreateInsight
         if (trim($in->category) === '') {
             $errors['category'] = 'required';
         }
-        if (!self::isDate($in->publishedDate)) {
+        // null published_date = draft (not yet published or scheduled).
+        // Only validate the format when a value is provided.
+        if ($in->publishedDate !== null && !self::isDate($in->publishedDate)) {
             $errors['published_date'] = 'invalid_format';
         }
         if ($errors !== []) {

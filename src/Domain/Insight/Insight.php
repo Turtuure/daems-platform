@@ -16,7 +16,7 @@ final class Insight
         private readonly string $category,
         private readonly string $categoryLabel,
         private readonly bool $featured,
-        private readonly string $date,
+        private readonly ?string $date,
         private readonly string $author,
         private readonly int $readingTime,
         private readonly string $excerpt,
@@ -32,7 +32,8 @@ final class Insight
     public function category(): string { return $this->category; }
     public function categoryLabel(): string { return $this->categoryLabel; }
     public function featured(): bool { return $this->featured; }
-    public function date(): string { return $this->date; }
+    public function date(): ?string { return $this->date; }
+    public function isDraft(): bool { return $this->date === null; }
     public function author(): string { return $this->author; }
     public function readingTime(): int { return $this->readingTime; }
     public function excerpt(): string { return $this->excerpt; }
