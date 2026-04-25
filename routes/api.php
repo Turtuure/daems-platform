@@ -418,6 +418,10 @@ return static function (Router $router, Container $container): void {
     }, [TenantContextMiddleware::class, AuthMiddleware::class]);
 
     // Backstage — Forum admin (Task 21)
+    $router->get('/api/v1/backstage/forum/stats', static function (Request $req) use ($container): Response {
+        return $container->make(\Daems\Infrastructure\Adapter\Api\Controller\BackstageController::class)->statsForum($req);
+    }, [TenantContextMiddleware::class, AuthMiddleware::class]);
+
     $router->get('/api/v1/backstage/forum/reports', static function (Request $req) use ($container): Response {
         return $container->make(\Daems\Infrastructure\Adapter\Api\Controller\BackstageController::class)->listForumReports($req);
     }, [TenantContextMiddleware::class, AuthMiddleware::class]);
