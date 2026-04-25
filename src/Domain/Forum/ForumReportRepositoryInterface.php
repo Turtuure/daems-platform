@@ -42,4 +42,17 @@ interface ForumReportRepositoryInterface
     ): void;
 
     public function countOpenForTenant(TenantId $tenantId): int;
+
+    /**
+     * Count reports with status='open' for a tenant.
+     */
+    public function countOpenReportsForTenant(\Daems\Domain\Tenant\TenantId $tenantId): int;
+
+    /**
+     * Daily count of newly-created reports for a tenant, last 30 days.
+     * Returns exactly 30 entries: index 0 = 29 days ago, index 29 = today.
+     *
+     * @return list<array{date: string, value: int}>
+     */
+    public function dailyNewReportsForTenant(\Daems\Domain\Tenant\TenantId $tenantId): array;
 }

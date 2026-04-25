@@ -71,4 +71,25 @@ interface ForumRepositoryInterface
     public function updateCategoryForTenant(ForumCategory $category): void;
 
     public function deleteCategoryForTenant(string $categoryId, TenantId $tenantId): void;
+
+    /**
+     * Count topics for a tenant. Used by the backstage dashboard KPI.
+     */
+    public function countTopicsForTenant(\Daems\Domain\Tenant\TenantId $tenantId): int;
+
+    /**
+     * Daily count of newly-created topics for a tenant, last 30 days.
+     * Returns exactly 30 entries: index 0 = 29 days ago, index 29 = today.
+     * Missing days are zero-filled.
+     *
+     * @return list<array{date: string, value: int}>
+     */
+    public function dailyNewTopicsForTenant(\Daems\Domain\Tenant\TenantId $tenantId): array;
+
+    /**
+     * Count categories visible to the tenant.
+     * If categories are tenant-shared (no tenant_id column), implementations
+     * should return the global count.
+     */
+    public function countCategoriesForTenant(\Daems\Domain\Tenant\TenantId $tenantId): int;
 }
