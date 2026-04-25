@@ -352,6 +352,10 @@ return static function (Router $router, Container $container): void {
         return $container->make(\Daems\Infrastructure\Adapter\Api\Controller\BackstageController::class)->listInsights($req);
     }, [TenantContextMiddleware::class, AuthMiddleware::class]);
 
+    $router->get('/api/v1/backstage/insights/stats', static function (Request $req) use ($container): Response {
+        return $container->make(\Daems\Infrastructure\Adapter\Api\Controller\BackstageController::class)->statsInsights($req);
+    }, [TenantContextMiddleware::class, AuthMiddleware::class]);
+
     $router->post('/api/v1/backstage/insights', static function (Request $req) use ($container): Response {
         return $container->make(\Daems\Infrastructure\Adapter\Api\Controller\BackstageController::class)->createInsight($req);
     }, [TenantContextMiddleware::class, AuthMiddleware::class]);
