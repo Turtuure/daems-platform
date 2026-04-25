@@ -60,6 +60,47 @@ final class InMemoryUserTenantRepository implements UserTenantRepositoryInterfac
         }
     }
 
+    /**
+     * @return array{
+     *   total_members: array{value: int, sparkline: list<array{date: string, value: int}>},
+     *   new_members:   array{value: int, sparkline: list<array{date: string, value: int}>},
+     *   supporters:    array{value: int, sparkline: list<array{date: string, value: int}>},
+     *   inactive:      array{value: int, sparkline: list<array{date: string, value: int}>}
+     * }
+     */
+    public function membershipStatsForTenant(TenantId $tenantId): array
+    {
+        // Count attached memberships (active) for this tenant. Supporters role
+        // here approximates the SQL membership_type='supporter' check — the
+        // fake does not track user.membership_type, so role is the closest
+        // signal we have.
+        $totalMembers = 0;
+        $supporters   = 0;
+        $tenantSuffix = ':' . $tenantId->value();
+        foreach ($this->roles as $key => $role) {
+            if (str_ends_with($key, $tenantSuffix)) {
+                $totalMembers++;
+                if ($role === UserTenantRole::Supporter) {
+                    $supporters++;
+                }
+            }
+        }
+
+        // 30-day zero-filled sparkline (today = last entry).
+        $base = new \DateTimeImmutable('today');
+        $emptySeries = [];
+        for ($i = 29; $i >= 0; $i--) {
+            $emptySeries[] = ['date' => $base->modify("-{$i} days")->format('Y-m-d'), 'value' => 0];
+        }
+
+        return [
+            'total_members' => ['value' => $totalMembers, 'sparkline' => $emptySeries],
+            'new_members'   => ['value' => $totalMembers, 'sparkline' => $emptySeries], // fake: all joins counted as "new"
+            'supporters'    => ['value' => $supporters,   'sparkline' => $emptySeries],
+            'inactive'      => ['value' => 0,             'sparkline' => []], // filled by use case from audit repo
+        ];
+    }
+
     private function key(UserId $userId, TenantId $tenantId): string
     {
         return $userId->value() . ':' . $tenantId->value();
