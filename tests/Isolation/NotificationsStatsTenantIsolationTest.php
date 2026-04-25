@@ -93,7 +93,7 @@ final class NotificationsStatsTenantIsolationTest extends IsolationTestCase
 
         // ---------- daems pending ----------
         $m1 = $this->seedMemberApp($daemsTenant, status: 'pending', createdDaysAgo: 12, decidedDaysAgo: null);
-        $this->seedMemberApp($daemsTenant, status: 'pending', createdDaysAgo: 1, decidedDaysAgo: null);
+        $m2 = $this->seedMemberApp($daemsTenant, status: 'pending', createdDaysAgo: 1, decidedDaysAgo: null);
         $this->seedSupporterApp($daemsTenant, status: 'pending', createdDaysAgo: 2, decidedDaysAgo: null);
         $p1 = $this->seedProjectProposal($daemsTenant, status: 'pending', createdDaysAgo: 3, decidedDaysAgo: null);
         $this->seedForumReport($daemsTenant, status: 'open', createdDaysAgo: 4, resolvedDaysAgo: null);
@@ -107,7 +107,17 @@ final class NotificationsStatsTenantIsolationTest extends IsolationTestCase
         $this->seedDismissal($daemsAdmin->id->value(), $p1, 'project_proposal');
 
         // ---------- sahegroup ----------
-        $this->seedMemberApp($saheTenant, status: 'pending', createdDaysAgo: 1, decidedDaysAgo: null);
+        $saheM1 = $this->seedMemberApp($saheTenant, status: 'pending', createdDaysAgo: 1, decidedDaysAgo: null);
+        // Older sahegroup pending row — proves daems' oldest_pending_d=12 is NOT
+        // contaminated by sahegroup's 20d row (i.e. the MAX(DATEDIFF(...)) query
+        // is correctly tenant-scoped).
+        $this->seedMemberApp($saheTenant, status: 'pending', createdDaysAgo: 20, decidedDaysAgo: null);
+
+        // ---------- cross-actor dismissal (per-actor scoping proof) ----------
+        // saheAdmin dismisses one of daems' pending rows. If the use case
+        // accidentally subtracted dismissals across all actors (or treated
+        // dismissals as per-tenant), daems' pending_you would drop below 3.
+        $this->seedDismissal($saheAdmin->id->value(), $m2, 'member');
 
         // ---------- act ----------
         $daems = $this->usecase->execute(
@@ -135,13 +145,16 @@ final class NotificationsStatsTenantIsolationTest extends IsolationTestCase
         self::assertSame([], $daems['oldest_pending_d']['sparkline']);
 
         // ---------- sahegroup assertions ----------
-        // sahegroup admin MUST NOT see daems' rows. Only the 1 sahegroup pending
-        // member app counts; 0 dismissals (their actor never dismissed anything);
-        // 0 cleared, oldest = 1d.
-        self::assertSame(1, $sahe['pending_all']['value']);
+        // sahegroup admin MUST NOT see daems' rows. 2 sahegroup pending rows
+        // (1d + 20d); 1 dismissal by saheAdmin against daems' m2 (which doesn't
+        // count toward sahegroup's pending_you because m2 isn't IN sahegroup's
+        // pending set — but the dismissal-id IS subtracted from total).
+        // pending_all = 2; pending_you = max(0, 2 - 1) = 1; cleared = 0;
+        // oldest = 20d.
+        self::assertSame(2, $sahe['pending_all']['value']);
         self::assertSame(1, $sahe['pending_you']['value']);
         self::assertSame(0, $sahe['cleared_30d']['value']);
-        self::assertSame(1, $sahe['oldest_pending_d']['value']);
+        self::assertSame(20, $sahe['oldest_pending_d']['value']);
     }
 
     // --- seed helpers ----------------------------------------------------------
