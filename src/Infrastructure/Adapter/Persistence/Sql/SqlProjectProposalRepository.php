@@ -8,10 +8,13 @@ use Daems\Domain\Project\ProjectProposal;
 use Daems\Domain\Project\ProjectProposalId;
 use Daems\Domain\Project\ProjectProposalRepositoryInterface;
 use Daems\Domain\Tenant\TenantId;
+use Daems\Infrastructure\Adapter\Persistence\Sql\Concerns\DailyStatsHelpers;
 use Daems\Infrastructure\Framework\Database\Connection;
 
 final class SqlProjectProposalRepository implements ProjectProposalRepositoryInterface
 {
+    use DailyStatsHelpers;
+
     public function __construct(private readonly Connection $db) {}
 
     public function save(ProjectProposal $proposal): void
@@ -86,12 +89,12 @@ final class SqlProjectProposalRepository implements ProjectProposalRepositoryInt
               WHERE tenant_id = ? AND status = ?',
             [$tid, 'pending'],
         ) ?? [];
-        $value = self::statsAsInt($countRow, 'n');
+        $value = self::asStatsInt($countRow, 'n');
 
         // Sparkline: BACKWARD 30 days of created_at — INCOMING volume across
         // all statuses (a proposal counts in the day it was submitted, even if
         // later approved or rejected).
-        $sparkline = $this->dailySeriesBackward(
+        $rows = $this->db->query(
             'SELECT DATE(created_at) AS d, COUNT(*) AS n
                FROM project_proposals
               WHERE tenant_id = ?
@@ -99,6 +102,7 @@ final class SqlProjectProposalRepository implements ProjectProposalRepositoryInt
               GROUP BY DATE(created_at)',
             [$tid],
         );
+        $sparkline = self::buildDailySeries30dBackward($rows);
 
         return ['value' => $value, 'sparkline' => $sparkline];
     }
@@ -116,11 +120,11 @@ final class SqlProjectProposalRepository implements ProjectProposalRepositoryInt
             [$tid],
         ) ?? [];
 
-        $pendingCount = self::statsAsInt($countRow, 'n');
-        $oldestAge    = self::statsAsInt($countRow, 'oldest');
+        $pendingCount = self::asStatsInt($countRow, 'n');
+        $oldestAge    = self::asStatsInt($countRow, 'oldest');
 
         // Sparkline: 30-day BACKWARD by created_at, ALL statuses (incoming volume).
-        $sparkline = $this->dailySeriesBackward(
+        $rows = $this->db->query(
             'SELECT DATE(created_at) AS d, COUNT(*) AS n
                FROM project_proposals
               WHERE tenant_id = ?
@@ -128,53 +132,13 @@ final class SqlProjectProposalRepository implements ProjectProposalRepositoryInt
               GROUP BY DATE(created_at)',
             [$tid],
         );
+        $sparkline = self::buildDailySeries30dBackward($rows);
 
         return [
             'pending_count'           => $pendingCount,
             'created_at_daily_30d'    => $sparkline,
             'oldest_pending_age_days' => $oldestAge,
         ];
-    }
-
-    /**
-     * Run a daily-count query and zero-fill into a 30-entry BACKWARD sparkline
-     * (today-29 first, today last).
-     *
-     * @param list<scalar|null> $params
-     * @return list<array{date: string, value: int}>
-     */
-    private function dailySeriesBackward(string $sql, array $params): array
-    {
-        $base = new \DateTimeImmutable('today');
-        $days = [];
-        for ($i = 29; $i >= 0; $i--) {
-            $days[$base->modify("-{$i} days")->format('Y-m-d')] = 0;
-        }
-        foreach ($this->db->query($sql, $params) as $row) {
-            $d = isset($row['d']) && is_string($row['d']) ? $row['d'] : '';
-            if ($d === '' || !isset($days[$d])) {
-                continue;
-            }
-            $days[$d] += self::statsAsInt($row, 'n');
-        }
-        $out = [];
-        foreach ($days as $date => $value) {
-            $out[] = ['date' => $date, 'value' => $value];
-        }
-        return $out;
-    }
-
-    /** @param array<string, mixed> $row */
-    private static function statsAsInt(array $row, string $key): int
-    {
-        $v = $row[$key] ?? null;
-        if (is_int($v)) {
-            return $v;
-        }
-        if (is_string($v) && is_numeric($v)) {
-            return (int) $v;
-        }
-        return 0;
     }
 
     /** @param array<string, mixed> $row */

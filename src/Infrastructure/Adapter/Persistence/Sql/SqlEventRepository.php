@@ -11,10 +11,13 @@ use Daems\Domain\Event\EventRepositoryInterface;
 use Daems\Domain\Locale\SupportedLocale;
 use Daems\Domain\Locale\TranslationMap;
 use Daems\Domain\Tenant\TenantId;
+use Daems\Infrastructure\Adapter\Persistence\Sql\Concerns\DailyStatsHelpers;
 use Daems\Infrastructure\Framework\Database\Connection;
 
 final class SqlEventRepository implements EventRepositoryInterface
 {
+    use DailyStatsHelpers;
+
     public function __construct(private readonly Connection $db) {}
 
     public function listForTenant(TenantId $tenantId, ?string $type = null): array
@@ -255,7 +258,7 @@ final class SqlEventRepository implements EventRepositoryInterface
             if ($d === '') {
                 continue;
             }
-            $upByDate[$d] = self::statsAsInt($r, 'n');
+            $upByDate[$d] = self::asStatsInt($r, 'n');
         }
         $today = new \DateTimeImmutable('today');
         $upSpark = [];
@@ -265,7 +268,7 @@ final class SqlEventRepository implements EventRepositoryInterface
         }
 
         // Drafts sparkline: BACKWARD 30 days (today-29..today) of draft events grouped by DATE(created_at).
-        $drSpark = $this->dailySeriesBackward(
+        $drRows = $this->db->query(
             "SELECT DATE(created_at) AS d, COUNT(*) AS n
                FROM events
               WHERE tenant_id = ?
@@ -274,14 +277,15 @@ final class SqlEventRepository implements EventRepositoryInterface
               GROUP BY DATE(created_at)",
             [$tid],
         );
+        $drSpark = self::buildDailySeries30dBackward($drRows);
 
         return [
             'upcoming' => [
-                'value'     => self::statsAsInt($totals, 'upcoming'),
+                'value'     => self::asStatsInt($totals, 'upcoming'),
                 'sparkline' => $upSpark,
             ],
             'drafts' => [
-                'value'     => self::statsAsInt($totals, 'drafts'),
+                'value'     => self::asStatsInt($totals, 'drafts'),
                 'sparkline' => $drSpark,
             ],
         ];
@@ -299,10 +303,10 @@ final class SqlEventRepository implements EventRepositoryInterface
                 AND registered_at >= (NOW() - INTERVAL 30 DAY)",
             [$tid],
         ) ?? [];
-        $value = self::statsAsInt($countRow, 'n');
+        $value = self::asStatsInt($countRow, 'n');
 
         // Sparkline: BACKWARD 30 days (today-29..today) of registrations by DATE(registered_at).
-        $sparkline = $this->dailySeriesBackward(
+        $rows = $this->db->query(
             "SELECT DATE(registered_at) AS d, COUNT(*) AS n
                FROM event_registrations
               WHERE tenant_id = ?
@@ -310,49 +314,9 @@ final class SqlEventRepository implements EventRepositoryInterface
               GROUP BY DATE(registered_at)",
             [$tid],
         );
+        $sparkline = self::buildDailySeries30dBackward($rows);
 
         return ['value' => $value, 'sparkline' => $sparkline];
-    }
-
-    /**
-     * Run a daily-count query and zero-fill into a 30-entry BACKWARD sparkline
-     * (today-29 first, today last).
-     *
-     * @param list<scalar|null> $params
-     * @return list<array{date: string, value: int}>
-     */
-    private function dailySeriesBackward(string $sql, array $params): array
-    {
-        $base = new \DateTimeImmutable('today');
-        $days = [];
-        for ($i = 29; $i >= 0; $i--) {
-            $days[$base->modify("-{$i} days")->format('Y-m-d')] = 0;
-        }
-        foreach ($this->db->query($sql, $params) as $row) {
-            $d = isset($row['d']) && is_string($row['d']) ? $row['d'] : '';
-            if ($d === '' || !isset($days[$d])) {
-                continue;
-            }
-            $days[$d] += self::statsAsInt($row, 'n');
-        }
-        $out = [];
-        foreach ($days as $date => $value) {
-            $out[] = ['date' => $date, 'value' => $value];
-        }
-        return $out;
-    }
-
-    /** @param array<string, mixed> $row */
-    private static function statsAsInt(array $row, string $key): int
-    {
-        $v = $row[$key] ?? null;
-        if (is_int($v)) {
-            return $v;
-        }
-        if (is_string($v) && is_numeric($v)) {
-            return (int) $v;
-        }
-        return 0;
     }
 
     public function saveTranslation(

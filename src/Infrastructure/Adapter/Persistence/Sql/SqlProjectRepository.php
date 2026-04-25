@@ -16,10 +16,13 @@ use Daems\Domain\Project\ProjectUpdate;
 use Daems\Domain\Project\ProjectUpdateId;
 use Daems\Domain\Tenant\TenantId;
 use Daems\Domain\User\UserId;
+use Daems\Infrastructure\Adapter\Persistence\Sql\Concerns\DailyStatsHelpers;
 use Daems\Infrastructure\Framework\Database\Connection;
 
 final class SqlProjectRepository implements ProjectRepositoryInterface
 {
+    use DailyStatsHelpers;
+
     public function __construct(private readonly Connection $db) {}
 
     public function listForTenant(TenantId $tenantId, ?string $category = null, ?string $status = null, ?string $search = null): array
@@ -339,7 +342,7 @@ final class SqlProjectRepository implements ProjectRepositoryInterface
             self::firstAvailable($translations, 'summary') ?? '',
             self::firstAvailable($translations, 'description') ?? '',
             self::str($row, 'status'),
-            self::intOf($row, 'sort_order'),
+            self::asStatsInt($row, 'sort_order'),
             is_string($ownerIdRaw) && $ownerIdRaw !== '' ? UserId::fromString($ownerIdRaw) : null,
             (bool) (is_int($featuredRaw) ? $featuredRaw : (is_string($featuredRaw) && is_numeric($featuredRaw) ? (int) $featuredRaw : 0)),
             self::strOrDefault($row, 'created_at', ''),
@@ -403,7 +406,7 @@ final class SqlProjectRepository implements ProjectRepositoryInterface
             self::str($row, 'avatar_initials'),
             self::strOrDefault($row, 'avatar_color', ''),
             self::str($row, 'content'),
-            self::intOf($row, 'likes'),
+            self::asStatsInt($row, 'likes'),
             self::str($row, 'created_at'),
         );
     }
@@ -436,19 +439,6 @@ final class SqlProjectRepository implements ProjectRepositoryInterface
     {
         $v = $row[$key] ?? null;
         return is_string($v) ? $v : $default;
-    }
-
-    /** @param array<string, mixed> $row */
-    private static function intOf(array $row, string $key): int
-    {
-        $v = $row[$key] ?? null;
-        if (is_int($v)) {
-            return $v;
-        }
-        if (is_string($v) && is_numeric($v)) {
-            return (int) $v;
-        }
-        return 0;
     }
 
     public function saveTranslation(
@@ -491,7 +481,7 @@ final class SqlProjectRepository implements ProjectRepositoryInterface
         ) ?? [];
 
         // Active sparkline: BACKWARD 30 days by DATE(created_at), filtered to status='active'.
-        $activeSpark = $this->dailySeriesBackward(
+        $activeRows = $this->db->query(
             "SELECT DATE(created_at) AS d, COUNT(*) AS n
                FROM projects
               WHERE tenant_id = ?
@@ -500,9 +490,10 @@ final class SqlProjectRepository implements ProjectRepositoryInterface
               GROUP BY DATE(created_at)",
             [$tid],
         );
+        $activeSpark = self::buildDailySeries30dBackward($activeRows);
 
         // Drafts sparkline: same window, status='draft'.
-        $draftSpark = $this->dailySeriesBackward(
+        $draftRows = $this->db->query(
             "SELECT DATE(created_at) AS d, COUNT(*) AS n
                FROM projects
               WHERE tenant_id = ?
@@ -511,62 +502,22 @@ final class SqlProjectRepository implements ProjectRepositoryInterface
               GROUP BY DATE(created_at)",
             [$tid],
         );
+        $draftSpark = self::buildDailySeries30dBackward($draftRows);
 
         return [
             'active' => [
-                'value'     => self::statsAsInt($totals, 'active_n'),
+                'value'     => self::asStatsInt($totals, 'active_n'),
                 'sparkline' => $activeSpark,
             ],
             'drafts' => [
-                'value'     => self::statsAsInt($totals, 'draft_n'),
+                'value'     => self::asStatsInt($totals, 'draft_n'),
                 'sparkline' => $draftSpark,
             ],
             'featured' => [
-                'value'     => self::statsAsInt($totals, 'featured_n'),
+                'value'     => self::asStatsInt($totals, 'featured_n'),
                 'sparkline' => [], // curation toggle has no temporal series
             ],
         ];
-    }
-
-    /**
-     * Run a daily-count query and zero-fill into a 30-entry BACKWARD sparkline
-     * (today-29 first, today last).
-     *
-     * @param list<scalar|null> $params
-     * @return list<array{date: string, value: int}>
-     */
-    private function dailySeriesBackward(string $sql, array $params): array
-    {
-        $base = new \DateTimeImmutable('today');
-        $days = [];
-        for ($i = 29; $i >= 0; $i--) {
-            $days[$base->modify("-{$i} days")->format('Y-m-d')] = 0;
-        }
-        foreach ($this->db->query($sql, $params) as $row) {
-            $d = isset($row['d']) && is_string($row['d']) ? $row['d'] : '';
-            if ($d === '' || !isset($days[$d])) {
-                continue;
-            }
-            $days[$d] += self::statsAsInt($row, 'n');
-        }
-        $out = [];
-        foreach ($days as $date => $value) {
-            $out[] = ['date' => $date, 'value' => $value];
-        }
-        return $out;
-    }
-
-    /** @param array<string, mixed> $row */
-    private static function statsAsInt(array $row, string $key): int
-    {
-        $v = $row[$key] ?? null;
-        if (is_int($v)) {
-            return $v;
-        }
-        if (is_string($v) && is_numeric($v)) {
-            return (int) $v;
-        }
-        return 0;
     }
 
     /** @param array<string, ?string> $row */

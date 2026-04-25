@@ -9,10 +9,13 @@ use Daems\Domain\Membership\MemberApplicationId;
 use Daems\Domain\Membership\MemberApplicationRepositoryInterface;
 use Daems\Domain\Tenant\TenantId;
 use Daems\Domain\User\UserId;
+use Daems\Infrastructure\Adapter\Persistence\Sql\Concerns\DailyStatsHelpers;
 use Daems\Infrastructure\Framework\Database\Connection;
 
 final class SqlMemberApplicationRepository implements MemberApplicationRepositoryInterface
 {
+    use DailyStatsHelpers;
+
     public function __construct(private readonly Connection $db) {}
 
     public function save(MemberApplication $app): void
@@ -116,14 +119,14 @@ final class SqlMemberApplicationRepository implements MemberApplicationRepositor
             [$tid],
         ) ?? [];
 
-        $pendingValue       = self::asInt($totalsRow, 'pending');
-        $approvedValue      = self::asInt($totalsRow, 'approved_30d');
-        $rejectedValue      = self::asInt($totalsRow, 'rejected_30d');
-        $decidedCount       = self::asInt($totalsRow, 'decided_count');
-        $decidedTotalHours  = self::asInt($totalsRow, 'decided_total_hours');
+        $pendingValue       = self::asStatsInt($totalsRow, 'pending');
+        $approvedValue      = self::asStatsInt($totalsRow, 'approved_30d');
+        $rejectedValue      = self::asStatsInt($totalsRow, 'rejected_30d');
+        $decidedCount       = self::asStatsInt($totalsRow, 'decided_count');
+        $decidedTotalHours  = self::asStatsInt($totalsRow, 'decided_total_hours');
 
         // Pending sparkline (created_at, status = 'pending').
-        $pendingSpark = $this->dailySeries(
+        $pendingRows = $this->db->query(
             "SELECT DATE(created_at) AS d, COUNT(*) AS n
                FROM member_applications
               WHERE tenant_id = ? AND status = 'pending'
@@ -131,9 +134,10 @@ final class SqlMemberApplicationRepository implements MemberApplicationRepositor
               GROUP BY DATE(created_at)",
             [$tid],
         );
+        $pendingSpark = self::buildDailySeries30dBackward($pendingRows);
 
         // Approved sparkline (decided_at, status = 'approved').
-        $approvedSpark = $this->dailySeries(
+        $approvedRows = $this->db->query(
             "SELECT DATE(decided_at) AS d, COUNT(*) AS n
                FROM member_applications
               WHERE tenant_id = ? AND status = 'approved'
@@ -141,9 +145,10 @@ final class SqlMemberApplicationRepository implements MemberApplicationRepositor
               GROUP BY DATE(decided_at)",
             [$tid],
         );
+        $approvedSpark = self::buildDailySeries30dBackward($approvedRows);
 
         // Rejected sparkline (decided_at, status = 'rejected').
-        $rejectedSpark = $this->dailySeries(
+        $rejectedRows = $this->db->query(
             "SELECT DATE(decided_at) AS d, COUNT(*) AS n
                FROM member_applications
               WHERE tenant_id = ? AND status = 'rejected'
@@ -151,6 +156,7 @@ final class SqlMemberApplicationRepository implements MemberApplicationRepositor
               GROUP BY DATE(decided_at)",
             [$tid],
         );
+        $rejectedSpark = self::buildDailySeries30dBackward($rejectedRows);
 
         return [
             'pending'             => ['value' => $pendingValue,  'sparkline' => $pendingSpark],
@@ -174,11 +180,11 @@ final class SqlMemberApplicationRepository implements MemberApplicationRepositor
             [$tid],
         ) ?? [];
 
-        $pendingCount = self::asInt($countRow, 'n');
-        $oldestAge    = self::asInt($countRow, 'oldest');
+        $pendingCount = self::asStatsInt($countRow, 'n');
+        $oldestAge    = self::asStatsInt($countRow, 'oldest');
 
         // Sparkline: 30-day BACKWARD by created_at, ALL statuses (incoming volume).
-        $sparkline = $this->dailySeries(
+        $rows = $this->db->query(
             'SELECT DATE(created_at) AS d, COUNT(*) AS n
                FROM member_applications
               WHERE tenant_id = ?
@@ -186,59 +192,13 @@ final class SqlMemberApplicationRepository implements MemberApplicationRepositor
               GROUP BY DATE(created_at)',
             [$tid],
         );
+        $sparkline = self::buildDailySeries30dBackward($rows);
 
         return [
             'pending_count'           => $pendingCount,
             'created_at_daily_30d'    => $sparkline,
             'oldest_pending_age_days' => $oldestAge,
         ];
-    }
-
-    /**
-     * Run a daily-count query and zero-fill into a 30-entry sparkline (today = last entry).
-     *
-     * @param list<scalar|null> $params
-     * @return list<array{date: string, value: int}>
-     */
-    private function dailySeries(string $sql, array $params): array
-    {
-        $base = new \DateTimeImmutable('today');
-        $days = [];
-        for ($i = 29; $i >= 0; $i--) {
-            $days[$base->modify("-{$i} days")->format('Y-m-d')] = 0;
-        }
-
-        foreach ($this->db->query($sql, $params) as $row) {
-            $d = is_string($row['d'] ?? null) ? (string) $row['d'] : '';
-            if ($d === '' || !isset($days[$d])) {
-                continue;
-            }
-            $n = $row['n'] ?? null;
-            if (is_int($n)) {
-                $days[$d] += $n;
-            } elseif (is_string($n) && is_numeric($n)) {
-                $days[$d] += (int) $n;
-            }
-        }
-
-        $out = [];
-        foreach ($days as $date => $value) {
-            $out[] = ['date' => $date, 'value' => $value];
-        }
-        return $out;
-    }
-
-    /** @param array<string, mixed> $row */
-    private static function asInt(array $row, string $key): int
-    {
-        $v = $row[$key] ?? null;
-        if (is_int($v)) {
-            return $v;
-        }
-        if (is_string($v) && is_numeric($v)) {
-            return (int) $v;
-        }
-        return 0;
     }
 
     /** @param array<string, mixed> $row */

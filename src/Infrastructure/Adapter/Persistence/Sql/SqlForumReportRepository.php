@@ -10,10 +10,13 @@ use Daems\Domain\Forum\ForumReport;
 use Daems\Domain\Forum\ForumReportId;
 use Daems\Domain\Forum\ForumReportRepositoryInterface;
 use Daems\Domain\Tenant\TenantId;
+use Daems\Infrastructure\Adapter\Persistence\Sql\Concerns\DailyStatsHelpers;
 use Daems\Infrastructure\Framework\Database\Connection;
 
 final class SqlForumReportRepository implements ForumReportRepositoryInterface
 {
+    use DailyStatsHelpers;
+
     public function __construct(private readonly Connection $db) {}
 
     public function upsert(ForumReport $report): void
@@ -90,7 +93,7 @@ final class SqlForumReportRepository implements ForumReportRepositoryInterface
             $out[] = new AggregatedForumReport(
                 self::str($r, 'target_type'),
                 self::str($r, 'target_id'),
-                self::intOf($r, 'report_count'),
+                self::asStatsInt($r, 'report_count'),
                 $counts,
                 $ids,
                 self::str($r, 'earliest'),
@@ -190,7 +193,7 @@ final class SqlForumReportRepository implements ForumReportRepositoryInterface
             "SELECT COUNT(*) AS c FROM forum_reports WHERE tenant_id = ? AND status = 'open'",
             [$tenantId->value()],
         );
-        return self::intOf($row ?? [], 'c');
+        return self::asStatsInt($row ?? [], 'c');
     }
 
     /** @return list<array{date: string, value: int}> */
@@ -210,7 +213,7 @@ final class SqlForumReportRepository implements ForumReportRepositoryInterface
         foreach ($rows as $row) {
             $d = is_string($row['d'] ?? null) ? (string) $row['d'] : '';
             if (isset($days[$d])) {
-                $days[$d] = self::intOf($row, 'c');
+                $days[$d] = self::asStatsInt($row, 'c');
             }
         }
         $out = [];
@@ -233,15 +236,10 @@ final class SqlForumReportRepository implements ForumReportRepositoryInterface
             [$tid],
         ) ?? [];
 
-        $pendingCount = self::intOf($countRow, 'n');
-        $oldestAge    = self::intOf($countRow, 'oldest');
+        $pendingCount = self::asStatsInt($countRow, 'n');
+        $oldestAge    = self::asStatsInt($countRow, 'oldest');
 
         // Sparkline: 30-day BACKWARD by created_at, ALL statuses (incoming volume).
-        $base = new \DateTimeImmutable('today');
-        $days = [];
-        for ($i = 29; $i >= 0; $i--) {
-            $days[$base->modify("-{$i} days")->format('Y-m-d')] = 0;
-        }
         $rows = $this->db->query(
             'SELECT DATE(created_at) AS d, COUNT(*) AS n
                FROM forum_reports
@@ -250,17 +248,7 @@ final class SqlForumReportRepository implements ForumReportRepositoryInterface
               GROUP BY DATE(created_at)',
             [$tid],
         );
-        foreach ($rows as $row) {
-            $d = is_string($row['d'] ?? null) ? (string) $row['d'] : '';
-            if ($d === '' || !isset($days[$d])) {
-                continue;
-            }
-            $days[$d] += self::intOf($row, 'n');
-        }
-        $sparkline = [];
-        foreach ($days as $date => $value) {
-            $sparkline[] = ['date' => $date, 'value' => $value];
-        }
+        $sparkline = self::buildDailySeries30dBackward($rows);
 
         return [
             'pending_count'           => $pendingCount,
@@ -306,16 +294,4 @@ final class SqlForumReportRepository implements ForumReportRepositoryInterface
         return is_string($v) ? $v : null;
     }
 
-    /** @param array<string, mixed> $row */
-    private static function intOf(array $row, string $key): int
-    {
-        $v = $row[$key] ?? null;
-        if (is_int($v)) {
-            return $v;
-        }
-        if (is_string($v) && is_numeric($v)) {
-            return (int) $v;
-        }
-        return 0;
-    }
 }
