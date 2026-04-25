@@ -161,6 +161,39 @@ final class SqlMemberApplicationRepository implements MemberApplicationRepositor
         ];
     }
 
+    public function notificationStatsForTenant(TenantId $tenantId): array
+    {
+        $tid = $tenantId->value();
+
+        // Single roundtrip: pending count + oldest pending age (days).
+        $countRow = $this->db->queryOne(
+            "SELECT COUNT(*) AS n,
+                    COALESCE(MAX(DATEDIFF(NOW(), created_at)), 0) AS oldest
+               FROM member_applications
+              WHERE tenant_id = ? AND status = 'pending'",
+            [$tid],
+        ) ?? [];
+
+        $pendingCount = self::asInt($countRow, 'n');
+        $oldestAge    = self::asInt($countRow, 'oldest');
+
+        // Sparkline: 30-day BACKWARD by created_at, ALL statuses (incoming volume).
+        $sparkline = $this->dailySeries(
+            'SELECT DATE(created_at) AS d, COUNT(*) AS n
+               FROM member_applications
+              WHERE tenant_id = ?
+                AND created_at >= (CURDATE() - INTERVAL 29 DAY)
+              GROUP BY DATE(created_at)',
+            [$tid],
+        );
+
+        return [
+            'pending_count'           => $pendingCount,
+            'created_at_daily_30d'    => $sparkline,
+            'oldest_pending_age_days' => $oldestAge,
+        ];
+    }
+
     /**
      * Run a daily-count query and zero-fill into a 30-entry sparkline (today = last entry).
      *

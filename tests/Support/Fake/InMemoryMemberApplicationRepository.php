@@ -114,4 +114,31 @@ final class InMemoryMemberApplicationRepository implements MemberApplicationRepo
             'decided_total_hours' => $decidedTotalHours,
         ];
     }
+
+    public function notificationStatsForTenant(\Daems\Domain\Tenant\TenantId $tenantId): array
+    {
+        // Derive pending count from in-memory state. Sparkline + oldest-age are
+        // zero-stubs (the fake doesn't track per-day created_at granularity).
+        $pending = 0;
+        foreach ($this->applications as $a) {
+            if ($a->tenantId()->equals($tenantId) && $a->status() === 'pending') {
+                $pending++;
+            }
+        }
+
+        $today  = new \DateTimeImmutable('today');
+        $spark  = [];
+        for ($i = 29; $i >= 0; $i--) {
+            $spark[] = [
+                'date'  => $today->modify('-' . $i . ' days')->format('Y-m-d'),
+                'value' => 0,
+            ];
+        }
+
+        return [
+            'pending_count'           => $pending,
+            'created_at_daily_30d'    => $spark,
+            'oldest_pending_age_days' => 0,
+        ];
+    }
 }

@@ -49,4 +49,21 @@ interface MemberApplicationRepositoryInterface
      * }
      */
     public function statsForTenant(TenantId $tenantId): array;
+
+    /**
+     * Tenant-scoped slice for the unified Notifications inbox KPI strip.
+     *
+     * - `pending_count`           = current count of `status = 'pending'` rows
+     * - `created_at_daily_30d`    = 30-day daily count of newly-created rows
+     *                               (across all statuses — incoming volume)
+     * - `oldest_pending_age_days` = age in days of the oldest still-`pending` row;
+     *                               0 when no pending rows
+     *
+     * @return array{
+     *   pending_count: int,
+     *   created_at_daily_30d: list<array{date: string, value: int}>,
+     *   oldest_pending_age_days: int
+     * }
+     */
+    public function notificationStatsForTenant(TenantId $tenantId): array;
 }

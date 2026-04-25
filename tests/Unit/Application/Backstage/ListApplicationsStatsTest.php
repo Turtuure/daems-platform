@@ -236,6 +236,24 @@ final class ListApplicationsStatsTest extends TestCase
                     'decided_total_hours' => $this->decidedTotalHours,
                 ];
             }
+
+            public function notificationStatsForTenant(TenantId $tenantId): array
+            {
+                $today = new DateTimeImmutable('today');
+                $spark = [];
+                for ($i = 29; $i >= 0; $i--) {
+                    $spark[] = [
+                        'date'  => $today->modify('-' . $i . ' days')->format('Y-m-d'),
+                        'value' => 0,
+                    ];
+                }
+
+                return [
+                    'pending_count'           => 0,
+                    'created_at_daily_30d'    => $spark,
+                    'oldest_pending_age_days' => 0,
+                ];
+            }
         };
     }
 
@@ -285,6 +303,24 @@ final class ListApplicationsStatsTest extends TestCase
                     'rejected_30d'        => ['value' => 0, 'sparkline' => $spark],
                     'decided_count'       => $this->decidedCount,
                     'decided_total_hours' => $this->decidedTotalHours,
+                ];
+            }
+
+            public function notificationStatsForTenant(TenantId $tenantId): array
+            {
+                $today = new DateTimeImmutable('today');
+                $spark = [];
+                for ($i = 29; $i >= 0; $i--) {
+                    $spark[] = [
+                        'date'  => $today->modify('-' . $i . ' days')->format('Y-m-d'),
+                        'value' => 0,
+                    ];
+                }
+
+                return [
+                    'pending_count'           => 0,
+                    'created_at_daily_30d'    => $spark,
+                    'oldest_pending_age_days' => 0,
                 ];
             }
         };

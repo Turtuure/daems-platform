@@ -220,6 +220,55 @@ final class SqlForumReportRepository implements ForumReportRepositoryInterface
         return $out;
     }
 
+    public function notificationStatsForTenant(TenantId $tenantId): array
+    {
+        $tid = $tenantId->value();
+
+        // Single roundtrip: open count + oldest open age (days).
+        $countRow = $this->db->queryOne(
+            "SELECT COUNT(*) AS n,
+                    COALESCE(MAX(DATEDIFF(NOW(), created_at)), 0) AS oldest
+               FROM forum_reports
+              WHERE tenant_id = ? AND status = 'open'",
+            [$tid],
+        ) ?? [];
+
+        $pendingCount = self::intOf($countRow, 'n');
+        $oldestAge    = self::intOf($countRow, 'oldest');
+
+        // Sparkline: 30-day BACKWARD by created_at, ALL statuses (incoming volume).
+        $base = new \DateTimeImmutable('today');
+        $days = [];
+        for ($i = 29; $i >= 0; $i--) {
+            $days[$base->modify("-{$i} days")->format('Y-m-d')] = 0;
+        }
+        $rows = $this->db->query(
+            'SELECT DATE(created_at) AS d, COUNT(*) AS n
+               FROM forum_reports
+              WHERE tenant_id = ?
+                AND created_at >= (CURDATE() - INTERVAL 29 DAY)
+              GROUP BY DATE(created_at)',
+            [$tid],
+        );
+        foreach ($rows as $row) {
+            $d = is_string($row['d'] ?? null) ? (string) $row['d'] : '';
+            if ($d === '' || !isset($days[$d])) {
+                continue;
+            }
+            $days[$d] += self::intOf($row, 'n');
+        }
+        $sparkline = [];
+        foreach ($days as $date => $value) {
+            $sparkline[] = ['date' => $date, 'value' => $value];
+        }
+
+        return [
+            'pending_count'           => $pendingCount,
+            'created_at_daily_30d'    => $sparkline,
+            'oldest_pending_age_days' => $oldestAge,
+        ];
+    }
+
     /** @param array<string,mixed> $row */
     private function hydrate(array $row): ForumReport
     {

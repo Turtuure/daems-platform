@@ -55,4 +55,21 @@ interface ForumReportRepositoryInterface
      * @return list<array{date: string, value: int}>
      */
     public function dailyNewReportsForTenant(\Daems\Domain\Tenant\TenantId $tenantId): array;
+
+    /**
+     * Tenant-scoped slice for the unified Notifications inbox KPI strip.
+     *
+     * - `pending_count`           = current count of `status = 'open'` rows
+     * - `created_at_daily_30d`    = 30-day daily count of newly-created rows
+     *                               (across all statuses — incoming volume)
+     * - `oldest_pending_age_days` = age in days of the oldest still-`open` row;
+     *                               0 when no open rows
+     *
+     * @return array{
+     *   pending_count: int,
+     *   created_at_daily_30d: list<array{date: string, value: int}>,
+     *   oldest_pending_age_days: int
+     * }
+     */
+    public function notificationStatsForTenant(\Daems\Domain\Tenant\TenantId $tenantId): array;
 }
