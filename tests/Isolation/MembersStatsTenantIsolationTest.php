@@ -19,7 +19,7 @@ final class MembersStatsTenantIsolationTest extends IsolationTestCase
         $this->repo = new SqlUserTenantRepository($this->pdo());
     }
 
-    private function seedMember(string $tenantSlug, string $email): UserId
+    private function seedMember(string $tenantSlug, string $email, string $membershipType = 'individual', string $membershipStatus = 'active'): void
     {
         $id = Uuid7::generate()->value();
         $this->pdo()->prepare(
@@ -29,26 +29,32 @@ final class MembersStatsTenantIsolationTest extends IsolationTestCase
                  membership_type, membership_status)
              VALUES (?, ?, ?, 'x', '1990-01-01',
                      '', '', '', '', '',
-                     'individual', 'active')"
-        )->execute([$id, 'M-' . $email, $email]);
+                     ?, ?)"
+        )->execute([$id, 'M-' . $email, $email, $membershipType, $membershipStatus]);
 
-        $userId = UserId::fromString($id);
-        $this->repo->attach($userId, $this->tenantId($tenantSlug), UserTenantRole::Member);
-        return $userId;
+        $this->repo->attach(UserId::fromString($id), $this->tenantId($tenantSlug), UserTenantRole::Member);
     }
 
-    public function test_member_count_for_daems_excludes_sahegroup_members(): void
+    public function test_membership_stats_isolated_per_tenant_with_asymmetric_seeds(): void
     {
-        // 2 members in daems, 2 in sahegroup. Admin in daems queries.
+        // Asymmetric seeding so a leaky implementation (e.g. ignoring tenant_id) cannot pass:
+        //   daems:     3 members, 1 supporter (membership_type), 1 inactive (membership_status)
+        //   sahegroup: 2 members, 0 supporters,                  0 inactive
         $this->seedMember('daems',     'd1@example.test');
-        $this->seedMember('daems',     'd2@example.test');
+        $this->seedMember('daems',     'd2@example.test', membershipType: 'supporter');
+        $this->seedMember('daems',     'd3@example.test', membershipStatus: 'inactive');
         $this->seedMember('sahegroup', 's1@example.test');
         $this->seedMember('sahegroup', 's2@example.test');
 
         $daems = $this->repo->membershipStatsForTenant($this->tenantId('daems'));
         $sahe  = $this->repo->membershipStatsForTenant($this->tenantId('sahegroup'));
 
-        self::assertSame(2, $daems['total_members']['value']);
+        self::assertSame(3, $daems['total_members']['value']);
+        self::assertSame(1, $daems['supporters']['value']);
+        self::assertSame(1, $daems['inactive']['value']);
+
         self::assertSame(2, $sahe['total_members']['value']);
+        self::assertSame(0, $sahe['supporters']['value']);
+        self::assertSame(0, $sahe['inactive']['value']);
     }
 }
