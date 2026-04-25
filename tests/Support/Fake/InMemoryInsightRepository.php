@@ -59,10 +59,66 @@ final class InMemoryInsightRepository implements InsightRepositoryInterface
 
     public function statsForTenant(TenantId $tenantId): array
     {
+        $base  = new \DateTimeImmutable('today');
+        $today = $base->format('Y-m-d');
+
+        $publishedDays = [];
+        $featuredDays  = [];
+        $scheduledDays = [];
+        for ($i = 29; $i >= 0; $i--) {
+            $d = $base->modify("-{$i} days")->format('Y-m-d');
+            $publishedDays[$d] = 0;
+            $featuredDays[$d]  = 0;
+        }
+        for ($i = 1; $i <= 30; $i++) {
+            $scheduledDays[$base->modify("+{$i} days")->format('Y-m-d')] = 0;
+        }
+
+        $publishedTotal = 0;
+        $scheduledTotal = 0;
+        $featuredTotal  = 0;
+
+        foreach ($this->bySlug as $insight) {
+            if ($insight->tenantId()->value() !== $tenantId->value()) {
+                continue;
+            }
+            $date = $insight->date();
+            if ($date <= $today) {
+                $publishedTotal++;
+                if (isset($publishedDays[$date])) {
+                    $publishedDays[$date]++;
+                }
+                if ($insight->featured()) {
+                    $featuredTotal++;
+                    if (isset($featuredDays[$date])) {
+                        $featuredDays[$date]++;
+                    }
+                }
+            } else {
+                $scheduledTotal++;
+                if (isset($scheduledDays[$date])) {
+                    $scheduledDays[$date]++;
+                }
+            }
+        }
+
         return [
-            'published' => ['value' => 0, 'sparkline' => []],
-            'scheduled' => ['value' => 0, 'sparkline' => []],
-            'featured'  => ['value' => 0, 'sparkline' => []],
+            'published' => ['value' => $publishedTotal, 'sparkline' => self::seriesFromMap($publishedDays)],
+            'scheduled' => ['value' => $scheduledTotal, 'sparkline' => self::seriesFromMap($scheduledDays)],
+            'featured'  => ['value' => $featuredTotal,  'sparkline' => self::seriesFromMap($featuredDays)],
         ];
+    }
+
+    /**
+     * @param array<string, int> $map
+     * @return list<array{date: string, value: int}>
+     */
+    private static function seriesFromMap(array $map): array
+    {
+        $out = [];
+        foreach ($map as $date => $value) {
+            $out[] = ['date' => $date, 'value' => $value];
+        }
+        return $out;
     }
 }
