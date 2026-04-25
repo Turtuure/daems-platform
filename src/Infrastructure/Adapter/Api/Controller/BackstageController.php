@@ -90,6 +90,8 @@ use Daems\Application\Backstage\ListEventsForAdmin\ListEventsForAdmin;
 use Daems\Application\Backstage\ListEventsForAdmin\ListEventsForAdminInput;
 use Daems\Application\Backstage\ListMembers\ListMembers;
 use Daems\Application\Backstage\ListMembers\ListMembersInput;
+use Daems\Application\Backstage\Applications\ListApplicationsStats\ListApplicationsStats;
+use Daems\Application\Backstage\Applications\ListApplicationsStats\ListApplicationsStatsInput;
 use Daems\Application\Backstage\Members\ListMembersStats\ListMembersStats;
 use Daems\Application\Backstage\Members\ListMembersStats\ListMembersStatsInput;
 use Daems\Application\Backstage\ListPendingApplications\ListPendingApplications;
@@ -192,6 +194,7 @@ final class BackstageController
         private readonly ListForumModerationAuditForAdmin $listForumAudit,
         private readonly ListForumStats $listForumStats,
         private readonly ListMembersStats $listMembersStats,
+        private readonly ListApplicationsStats $listApplicationsStats,
         private readonly GetEventWithAllTranslations $getEventWithAllTranslations,
         private readonly UpdateEventTranslation $updateEventTranslation,
         private readonly GetProjectWithAllTranslations $getProjectWithAllTranslations,
@@ -1238,6 +1241,23 @@ final class BackstageController
 
         try {
             $out = $this->listMembersStats->execute(new ListMembersStatsInput(
+                acting:   $acting,
+                tenantId: $tenant->id,
+            ));
+        } catch (ForbiddenException) {
+            return Response::forbidden('Admin only');
+        }
+
+        return Response::json(['data' => $out->stats]);
+    }
+
+    public function statsApplications(Request $request): Response
+    {
+        $acting = $request->requireActingUser();
+        $tenant = $this->requireTenant($request);
+
+        try {
+            $out = $this->listApplicationsStats->execute(new ListApplicationsStatsInput(
                 acting:   $acting,
                 tenantId: $tenant->id,
             ));

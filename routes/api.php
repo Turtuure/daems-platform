@@ -246,6 +246,10 @@ return static function (Router $router, Container $container): void {
         return $container->make(\Daems\Infrastructure\Adapter\Api\Controller\BackstageController::class)->listPendingForAdmin($req);
     }, [TenantContextMiddleware::class, AuthMiddleware::class]);
 
+    $router->get('/api/v1/backstage/applications/stats', static function (Request $req) use ($container): Response {
+        return $container->make(\Daems\Infrastructure\Adapter\Api\Controller\BackstageController::class)->statsApplications($req);
+    }, [TenantContextMiddleware::class, AuthMiddleware::class]);
+
     $router->post('/api/v1/backstage/applications/{type}/{id}/dismiss', static function (Request $req, array $params) use ($container): Response {
         return $container->make(\Daems\Infrastructure\Adapter\Api\Controller\BackstageController::class)->dismissApplication($req, $params);
     }, [TenantContextMiddleware::class, AuthMiddleware::class]);

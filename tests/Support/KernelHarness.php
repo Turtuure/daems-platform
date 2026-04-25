@@ -420,6 +420,10 @@ final class KernelHarness
             $c->make(UserTenantRepositoryInterface::class),
             $c->make(\Daems\Domain\Membership\MemberStatusAuditRepositoryInterface::class),
         ));
+        $container->bind(\Daems\Application\Backstage\Applications\ListApplicationsStats\ListApplicationsStats::class, static fn(Container $c) => new \Daems\Application\Backstage\Applications\ListApplicationsStats\ListApplicationsStats(
+            $c->make(MemberApplicationRepositoryInterface::class),
+            $c->make(SupporterApplicationRepositoryInterface::class),
+        ));
 
         $container->bind(ListEvents::class, static fn(Container $c) => new ListEvents($c->make(EventRepositoryInterface::class)));
         $container->bind(GetEvent::class, static fn(Container $c) => new GetEvent($c->make(EventRepositoryInterface::class)));
@@ -709,6 +713,7 @@ final class KernelHarness
             $c->make(\Daems\Application\Backstage\Forum\ListForumModerationAuditForAdmin\ListForumModerationAuditForAdmin::class),
             $c->make(\Daems\Application\Backstage\Forum\ListForumStats\ListForumStats::class),
             $c->make(\Daems\Application\Backstage\Members\ListMembersStats\ListMembersStats::class),
+            $c->make(\Daems\Application\Backstage\Applications\ListApplicationsStats\ListApplicationsStats::class),
             $c->make(\Daems\Application\Backstage\GetEventWithAllTranslations\GetEventWithAllTranslations::class),
             $c->make(\Daems\Application\Backstage\UpdateEventTranslation\UpdateEventTranslation::class),
             $c->make(\Daems\Application\Backstage\GetProjectWithAllTranslations\GetProjectWithAllTranslations::class),
