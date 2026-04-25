@@ -125,6 +125,108 @@ final class EventStatsTest extends MigrationTestCase
         self::assertSame(1, $stats['drafts']['sparkline'][29]['value']);
     }
 
+    public function test_event_registration_stats_shape_and_value_count(): void
+    {
+        $tenantId = $this->tenantId('daems');
+        $eventId  = $this->insertEvent($tenantId, 'published', eventDateOffsetDays: 5);
+
+        // 5 registrations within last 30d: 1 today, 4 spread across 1d/7d/15d/29d ago.
+        $this->insertRegistration($tenantId, $eventId, daysAgo: 0);
+        $this->insertRegistration($tenantId, $eventId, daysAgo: 1);
+        $this->insertRegistration($tenantId, $eventId, daysAgo: 7);
+        $this->insertRegistration($tenantId, $eventId, daysAgo: 15);
+        $this->insertRegistration($tenantId, $eventId, daysAgo: 29);
+
+        // 2 registrations OUTSIDE the 30d window (40d ago) — must NOT count.
+        $this->insertRegistration($tenantId, $eventId, daysAgo: 40);
+        $this->insertRegistration($tenantId, $eventId, daysAgo: 40);
+
+        $stats = $this->repo->dailyRegistrationsForTenant($tenantId);
+
+        self::assertSame(5, $stats['value']);
+
+        self::assertCount(30, $stats['sparkline']);
+        self::assertSame(['date', 'value'], array_keys($stats['sparkline'][0]));
+
+        $today = new \DateTimeImmutable('today');
+        // Sparkline is BACKWARD: index 0 = today-29, index 29 = today.
+        self::assertSame($today->modify('-29 days')->format('Y-m-d'), $stats['sparkline'][0]['date']);
+        self::assertSame($today->format('Y-m-d'),                     $stats['sparkline'][29]['date']);
+
+        // Today bucket: 1 registration (the days_ago=0 row).
+        self::assertSame(1, $stats['sparkline'][29]['value']);
+        // -1d bucket (index 28): 1.
+        self::assertSame(1, $stats['sparkline'][28]['value']);
+        // -7d bucket (index 22): 1.
+        self::assertSame(1, $stats['sparkline'][22]['value']);
+        // -29d bucket (index 0): 1.
+        self::assertSame(1, $stats['sparkline'][0]['value']);
+        // -2d bucket (index 27): zero.
+        self::assertSame(0, $stats['sparkline'][27]['value']);
+    }
+
+    public function test_event_registration_stats_isolated_per_tenant(): void
+    {
+        $daems = $this->tenantId('daems');
+        $sahe  = $this->tenantId('sahegroup');
+
+        $daemsEvent = $this->insertEvent($daems, 'published', eventDateOffsetDays: 0);
+        $saheEvent  = $this->insertEvent($sahe,  'published', eventDateOffsetDays: 0);
+
+        // 3 registrations in daems, 2 in sahegroup, all within last 30d.
+        $this->insertRegistration($daems, $daemsEvent, daysAgo: 0);
+        $this->insertRegistration($daems, $daemsEvent, daysAgo: 3);
+        $this->insertRegistration($daems, $daemsEvent, daysAgo: 10);
+
+        $this->insertRegistration($sahe, $saheEvent, daysAgo: 1);
+        $this->insertRegistration($sahe, $saheEvent, daysAgo: 5);
+
+        $daemsStats = $this->repo->dailyRegistrationsForTenant($daems);
+        $saheStats  = $this->repo->dailyRegistrationsForTenant($sahe);
+
+        self::assertSame(3, $daemsStats['value']);
+        self::assertSame(2, $saheStats['value']);
+    }
+
+    /**
+     * Insert a row into event_registrations + an accompanying users row,
+     * with registered_at set to N days before today.
+     */
+    private function insertRegistration(TenantId $tenantId, string $eventId, int $daysAgo): string
+    {
+        $regId  = Uuid7::generate()->value();
+        $userId = Uuid7::generate()->value();
+
+        // Minimal user row (users.id is FK target for event_registrations.user_id).
+        $this->pdo()->prepare(
+            'INSERT INTO users (id, name, email, password_hash, date_of_birth, created_at)
+             VALUES (?, ?, ?, ?, ?, NOW())'
+        )->execute([
+            $userId,
+            'Reg User ' . substr($userId, 0, 6),
+            'reg-' . str_replace('-', '', $userId) . '@example.test',
+            password_hash('x', PASSWORD_BCRYPT),
+            '1990-01-01',
+        ]);
+
+        $when = (new \DateTimeImmutable('today'))
+            ->modify("-{$daysAgo} days")
+            ->format('Y-m-d H:i:s');
+
+        $this->pdo()->prepare(
+            'INSERT INTO event_registrations (id, tenant_id, event_id, user_id, registered_at)
+             VALUES (?, ?, ?, ?, ?)'
+        )->execute([
+            $regId,
+            $tenantId->value(),
+            $eventId,
+            $userId,
+            $when,
+        ]);
+
+        return $regId;
+    }
+
     private function tenantId(string $slug): TenantId
     {
         $stmt = $this->pdo()->prepare('SELECT id FROM tenants WHERE slug = ?');

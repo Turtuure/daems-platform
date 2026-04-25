@@ -319,6 +319,40 @@ final class InMemoryEventRepository implements EventRepositoryInterface
         ];
     }
 
+    public function dailyRegistrationsForTenant(TenantId $tenantId): array
+    {
+        $today = new \DateTimeImmutable('today');
+        $cutoff = $today->modify('-29 days')->format('Y-m-d');
+
+        $value   = 0;
+        $byDate  = [];
+
+        foreach ($this->registrations as $r) {
+            // Tenant is derived via the parent event (mirror SQL FK semantics).
+            $event = $this->byId[$r->eventId()] ?? null;
+            if ($event === null || !$event->tenantId()->equals($tenantId)) {
+                continue;
+            }
+            $when = $r->registeredAt();
+            // value: rolling 30 days from today (inclusive boundary today-30 by SQL semantic;
+            // for InMemory parity we use today-29 .. today, same as sparkline window).
+            $whenDate = substr($when, 0, 10);
+            if ($whenDate < $cutoff) {
+                continue;
+            }
+            $value++;
+            $byDate[$whenDate] = ($byDate[$whenDate] ?? 0) + 1;
+        }
+
+        $sparkline = [];
+        for ($i = 29; $i >= 0; $i--) {
+            $d = $today->modify("-{$i} days")->format('Y-m-d');
+            $sparkline[] = ['date' => $d, 'value' => $byDate[$d] ?? 0];
+        }
+
+        return ['value' => $value, 'sparkline' => $sparkline];
+    }
+
     public function seedAdminRegistration(
         string $eventId,
         string $userId,

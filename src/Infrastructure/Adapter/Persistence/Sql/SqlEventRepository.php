@@ -287,6 +287,33 @@ final class SqlEventRepository implements EventRepositoryInterface
         ];
     }
 
+    public function dailyRegistrationsForTenant(TenantId $tenantId): array
+    {
+        $tid = $tenantId->value();
+
+        // Count: registrations within last 30 days (rolling, NOW()-based).
+        $countRow = $this->db->queryOne(
+            "SELECT COUNT(*) AS n
+               FROM event_registrations
+              WHERE tenant_id = ?
+                AND registered_at >= (NOW() - INTERVAL 30 DAY)",
+            [$tid],
+        ) ?? [];
+        $value = self::statsAsInt($countRow, 'n');
+
+        // Sparkline: BACKWARD 30 days (today-29..today) of registrations by DATE(registered_at).
+        $sparkline = $this->dailySeriesBackward(
+            "SELECT DATE(registered_at) AS d, COUNT(*) AS n
+               FROM event_registrations
+              WHERE tenant_id = ?
+                AND registered_at >= (CURDATE() - INTERVAL 29 DAY)
+              GROUP BY DATE(registered_at)",
+            [$tid],
+        );
+
+        return ['value' => $value, 'sparkline' => $sparkline];
+    }
+
     /**
      * Run a daily-count query and zero-fill into a 30-entry BACKWARD sparkline
      * (today-29 first, today last).

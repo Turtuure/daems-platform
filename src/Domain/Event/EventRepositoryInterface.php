@@ -71,4 +71,15 @@ interface EventRepositoryInterface
      * }
      */
     public function statsForTenant(TenantId $tenantId): array;
+
+    /**
+     * Registrations KPI for the backstage dashboard.
+     *
+     * - value     = COUNT(*) FROM event_registrations WHERE tenant_id = ?
+     *               AND registered_at >= NOW() - INTERVAL 30 DAY
+     * - sparkline = BACKWARD 30 days (today-29..today) of event_registrations by DATE(registered_at)
+     *
+     * @return array{value: int, sparkline: list<array{date: string, value: int}>}
+     */
+    public function dailyRegistrationsForTenant(TenantId $tenantId): array;
 }
