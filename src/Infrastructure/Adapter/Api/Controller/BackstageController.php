@@ -54,6 +54,8 @@ use Daems\Application\Backstage\Forum\GetForumReportDetail\GetForumReportDetail;
 use Daems\Application\Backstage\Forum\GetForumReportDetail\GetForumReportDetailInput;
 use Daems\Application\Backstage\Forum\ListForumModerationAuditForAdmin\ListForumModerationAuditForAdmin;
 use Daems\Application\Backstage\Forum\ListForumModerationAuditForAdmin\ListForumModerationAuditForAdminInput;
+use Daems\Application\Backstage\Forum\ListForumStats\ListForumStats;
+use Daems\Application\Backstage\Forum\ListForumStats\ListForumStatsInput;
 use Daems\Application\Backstage\Forum\ListForumPostsForAdmin\ListForumPostsForAdmin;
 use Daems\Application\Backstage\Forum\ListForumPostsForAdmin\ListForumPostsForAdminInput;
 use Daems\Application\Backstage\Forum\ListForumReportsForAdmin\ListForumReportsForAdmin;
@@ -186,6 +188,7 @@ final class BackstageController
         private readonly UpdateForumCategoryAsAdmin $updateForumCategory,
         private readonly DeleteForumCategoryAsAdmin $deleteForumCategory,
         private readonly ListForumModerationAuditForAdmin $listForumAudit,
+        private readonly ListForumStats $listForumStats,
         private readonly GetEventWithAllTranslations $getEventWithAllTranslations,
         private readonly UpdateEventTranslation $updateEventTranslation,
         private readonly GetProjectWithAllTranslations $getProjectWithAllTranslations,
@@ -1191,6 +1194,38 @@ final class BackstageController
             'related_report_id' => $e->relatedReportId(),
             'created_at'        => $e->createdAt(),
         ], $out->entries)]);
+    }
+
+    public function statsForum(Request $request): Response
+    {
+        $acting = $request->requireActingUser();
+        $tenant = $this->requireTenant($request);
+
+        try {
+            $out = $this->listForumStats->execute(new ListForumStatsInput(
+                acting:   $acting,
+                tenantId: $tenant->id,
+            ));
+        } catch (ForbiddenException) {
+            return Response::forbidden('Admin only');
+        }
+
+        return Response::json([
+            'data' => [
+                'open_reports' => $out->stats['open_reports'],
+                'topics'       => $out->stats['topics'],
+                'categories'   => $out->stats['categories'],
+                'mod_actions'  => $out->stats['mod_actions'],
+                'recent_audit' => array_map(static fn ($e) => [
+                    'when'        => $e->createdAt(),
+                    'actor_id'    => $e->performedBy(),
+                    'action'      => $e->action(),
+                    'target_type' => $e->targetType(),
+                    'target_id'   => $e->targetId(),
+                    'reason'      => $e->reason(),
+                ], $out->recentAudit),
+            ],
+        ]);
     }
 
     /**
