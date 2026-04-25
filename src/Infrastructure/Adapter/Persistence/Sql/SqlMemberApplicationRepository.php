@@ -201,6 +201,20 @@ final class SqlMemberApplicationRepository implements MemberApplicationRepositor
         ];
     }
 
+    public function clearedDailyForTenant(TenantId $tenantId): array
+    {
+        $rows = $this->db->query(
+            'SELECT DATE(decided_at) AS d, COUNT(*) AS n
+               FROM member_applications
+              WHERE tenant_id = ?
+                AND decided_at IS NOT NULL
+                AND decided_at >= (CURDATE() - INTERVAL 29 DAY)
+              GROUP BY DATE(decided_at)',
+            [$tenantId->value()],
+        );
+        return self::buildDailySeries30dBackward($rows);
+    }
+
     /** @param array<string, mixed> $row */
     private function hydrate(array $row): MemberApplication
     {

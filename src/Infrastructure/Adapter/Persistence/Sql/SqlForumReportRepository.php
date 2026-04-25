@@ -257,6 +257,22 @@ final class SqlForumReportRepository implements ForumReportRepositoryInterface
         ];
     }
 
+    public function clearedDailyForTenant(TenantId $tenantId): array
+    {
+        // forum_reports.resolved_at is set when status moves from 'open' to either
+        // 'resolved' or 'dismissed' — the natural closure timestamp on this table.
+        $rows = $this->db->query(
+            'SELECT DATE(resolved_at) AS d, COUNT(*) AS n
+               FROM forum_reports
+              WHERE tenant_id = ?
+                AND resolved_at IS NOT NULL
+                AND resolved_at >= (CURDATE() - INTERVAL 29 DAY)
+              GROUP BY DATE(resolved_at)',
+            [$tenantId->value()],
+        );
+        return self::buildDailySeries30dBackward($rows);
+    }
+
     /** @param array<string,mixed> $row */
     private function hydrate(array $row): ForumReport
     {

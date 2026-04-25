@@ -254,6 +254,19 @@ final class ListApplicationsStatsTest extends TestCase
                     'oldest_pending_age_days' => 0,
                 ];
             }
+
+            public function clearedDailyForTenant(TenantId $tenantId): array
+            {
+                $today = new DateTimeImmutable('today');
+                $out   = [];
+                for ($i = 29; $i >= 0; $i--) {
+                    $out[] = [
+                        'date'  => $today->modify('-' . $i . ' days')->format('Y-m-d'),
+                        'value' => 0,
+                    ];
+                }
+                return $out;
+            }
         };
     }
 
@@ -322,6 +335,19 @@ final class ListApplicationsStatsTest extends TestCase
                     'created_at_daily_30d'    => $spark,
                     'oldest_pending_age_days' => 0,
                 ];
+            }
+
+            public function clearedDailyForTenant(TenantId $tenantId): array
+            {
+                $today = new DateTimeImmutable('today');
+                $out   = [];
+                for ($i = 29; $i >= 0; $i--) {
+                    $out[] = [
+                        'date'  => $today->modify('-' . $i . ' days')->format('Y-m-d'),
+                        'value' => 0,
+                    ];
+                }
+                return $out;
             }
         };
     }

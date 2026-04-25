@@ -282,4 +282,21 @@ final class InMemoryForumReportRepository implements ForumReportRepositoryInterf
             'oldest_pending_age_days' => 0,
         ];
     }
+
+    public function clearedDailyForTenant(TenantId $tenantId): array
+    {
+        // The fake doesn't track per-day resolved_at granularity; emit a 30-entry
+        // zero-filled backward series. The cleared_30d KPI is summed across the 4
+        // sources at the use case layer — per-source InMemory state isn't worth
+        // deriving here.
+        $today = new \DateTimeImmutable('today');
+        $out   = [];
+        for ($i = 29; $i >= 0; $i--) {
+            $out[] = [
+                'date'  => $today->modify('-' . $i . ' days')->format('Y-m-d'),
+                'value' => 0,
+            ];
+        }
+        return $out;
+    }
 }

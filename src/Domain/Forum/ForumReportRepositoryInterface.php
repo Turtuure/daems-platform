@@ -72,4 +72,14 @@ interface ForumReportRepositoryInterface
      * }
      */
     public function notificationStatsForTenant(\Daems\Domain\Tenant\TenantId $tenantId): array;
+
+    /**
+     * Daily count of cleared events (resolved or dismissed reports) for the tenant
+     * in last 30 days, grouped by `DATE(resolved_at)`, zero-filled to 30 backward
+     * entries (today-29 .. today). Used by ListNotificationsStats use case to
+     * compute the cleared_30d KPI.
+     *
+     * @return list<array{date: string, value: int}>
+     */
+    public function clearedDailyForTenant(\Daems\Domain\Tenant\TenantId $tenantId): array;
 }

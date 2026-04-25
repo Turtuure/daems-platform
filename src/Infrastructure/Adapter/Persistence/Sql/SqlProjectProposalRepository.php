@@ -141,6 +141,20 @@ final class SqlProjectProposalRepository implements ProjectProposalRepositoryInt
         ];
     }
 
+    public function clearedDailyForTenant(TenantId $tenantId): array
+    {
+        $rows = $this->db->query(
+            'SELECT DATE(decided_at) AS d, COUNT(*) AS n
+               FROM project_proposals
+              WHERE tenant_id = ?
+                AND decided_at IS NOT NULL
+                AND decided_at >= (CURDATE() - INTERVAL 29 DAY)
+              GROUP BY DATE(decided_at)',
+            [$tenantId->value()],
+        );
+        return self::buildDailySeries30dBackward($rows);
+    }
+
     /** @param array<string, mixed> $row */
     private function hydrate(array $row): ProjectProposal
     {
