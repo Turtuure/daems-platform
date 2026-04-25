@@ -230,6 +230,10 @@ return static function (Router $router, Container $container): void {
         return $container->make(\Daems\Infrastructure\Adapter\Api\Controller\BackstageController::class)->members($req);
     }, [TenantContextMiddleware::class, AuthMiddleware::class]);
 
+    $router->get('/api/v1/backstage/members/stats', static function (Request $req) use ($container): Response {
+        return $container->make(\Daems\Infrastructure\Adapter\Api\Controller\BackstageController::class)->statsMembers($req);
+    }, [TenantContextMiddleware::class, AuthMiddleware::class]);
+
     $router->post('/api/v1/backstage/members/{id}/status', static function (Request $req, array $params) use ($container): Response {
         return $container->make(\Daems\Infrastructure\Adapter\Api\Controller\BackstageController::class)->changeMemberStatus($req, $params);
     }, [TenantContextMiddleware::class, AuthMiddleware::class]);
@@ -420,10 +424,6 @@ return static function (Router $router, Container $container): void {
     // Backstage — Forum admin (Task 21)
     $router->get('/api/v1/backstage/forum/stats', static function (Request $req) use ($container): Response {
         return $container->make(\Daems\Infrastructure\Adapter\Api\Controller\BackstageController::class)->statsForum($req);
-    }, [TenantContextMiddleware::class, AuthMiddleware::class]);
-
-    $router->get('/api/v1/backstage/members/stats', static function (Request $req) use ($container): Response {
-        return $container->make(\Daems\Infrastructure\Adapter\Api\Controller\BackstageController::class)->statsMembers($req);
     }, [TenantContextMiddleware::class, AuthMiddleware::class]);
 
     $router->get('/api/v1/backstage/forum/reports', static function (Request $req) use ($container): Response {
