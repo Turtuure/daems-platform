@@ -295,6 +295,11 @@ return static function (Router $router, Container $container): void {
         return $container->make(\Daems\Infrastructure\Adapter\Api\Controller\MediaController::class)->deleteEventImage($req, $params);
     }, [TenantContextMiddleware::class, AuthMiddleware::class]);
 
+    // Backstage — Notifications
+    $router->get('/api/v1/backstage/notifications/stats', static function (Request $req) use ($container): Response {
+        return $container->make(\Daems\Infrastructure\Adapter\Api\Controller\BackstageController::class)->statsNotifications($req);
+    }, [TenantContextMiddleware::class, AuthMiddleware::class]);
+
     // Backstage — Projects admin
     $router->get('/api/v1/backstage/projects/stats', static function (Request $req) use ($container): Response {
         return $container->make(\Daems\Infrastructure\Adapter\Api\Controller\BackstageController::class)->statsProjects($req);
