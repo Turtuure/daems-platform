@@ -462,6 +462,7 @@ $container->bind(\Daems\Infrastructure\Adapter\Api\Controller\BackstageControlle
         $c->make(\Daems\Application\Insight\UpdateInsight\UpdateInsight::class),
         $c->make(\Daems\Application\Insight\DeleteInsight\DeleteInsight::class),
         $c->make(\Daems\Application\Insight\ListInsights\ListInsights::class),
+        $c->make(\Daems\Application\Insight\ListInsightStats\ListInsightStats::class),
         $c->make(\Daems\Domain\Insight\InsightRepositoryInterface::class),
     ),
 );
@@ -481,6 +482,10 @@ $container->bind(\Daems\Application\Insight\DeleteInsight\DeleteInsight::class,
         $c->make(\Daems\Domain\Insight\InsightRepositoryInterface::class),
     ),
 );
+$container->bind(\Daems\Application\Insight\ListInsightStats\ListInsightStats::class,
+    static fn(Container $c) => new \Daems\Application\Insight\ListInsightStats\ListInsightStats(
+        $c->make(\Daems\Domain\Insight\InsightRepositoryInterface::class),
+    ));
 
 $container->bind(\Daems\Application\Backstage\UpdateTenantSettings\UpdateTenantSettings::class,
     static fn(Container $c) => new \Daems\Application\Backstage\UpdateTenantSettings\UpdateTenantSettings(
