@@ -6,6 +6,7 @@ namespace Daems\Infrastructure\Adapter\Persistence\Sql;
 
 use Daems\Domain\Membership\MemberStatusAudit;
 use Daems\Domain\Membership\MemberStatusAuditRepositoryInterface;
+use Daems\Domain\Tenant\TenantId;
 use Daems\Infrastructure\Framework\Database\Connection;
 
 final class SqlMemberStatusAuditRepository implements MemberStatusAuditRepositoryInterface
@@ -29,5 +30,46 @@ final class SqlMemberStatusAuditRepository implements MemberStatusAuditRepositor
                 $audit->createdAt->format('Y-m-d H:i:s'),
             ],
         );
+    }
+
+    /**
+     * @return list<array{date: string, value: int}>
+     */
+    public function dailyTransitionsForTenant(TenantId $tenantId, string $newStatus): array
+    {
+        // Sparkline template: 30 entries, today = last entry.
+        $base = new \DateTimeImmutable('today');
+        $days = [];
+        for ($i = 29; $i >= 0; $i--) {
+            $days[$base->modify("-{$i} days")->format('Y-m-d')] = 0;
+        }
+
+        $rows = $this->db->query(
+            'SELECT DATE(created_at) AS d, COUNT(*) AS n
+             FROM member_status_audit
+             WHERE tenant_id = ? AND new_status = ?
+               AND created_at >= (CURDATE() - INTERVAL 29 DAY)
+             GROUP BY DATE(created_at)',
+            [$tenantId->value(), $newStatus],
+        );
+
+        foreach ($rows as $row) {
+            $d = is_string($row['d'] ?? null) ? (string) $row['d'] : '';
+            if ($d === '' || !isset($days[$d])) {
+                continue;
+            }
+            $n = $row['n'] ?? null;
+            if (is_int($n)) {
+                $days[$d] += $n;
+            } elseif (is_string($n) && is_numeric($n)) {
+                $days[$d] += (int) $n;
+            }
+        }
+
+        $out = [];
+        foreach ($days as $date => $value) {
+            $out[] = ['date' => $date, 'value' => $value];
+        }
+        return $out;
     }
 }
