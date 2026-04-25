@@ -146,6 +146,23 @@ final class NotificationsStatsTenantIsolationTest extends IsolationTestCase
 
     // --- seed helpers ----------------------------------------------------------
 
+    /**
+     * Anchor seed timestamps to MySQL's notion of "today" at noon. PHP's clock
+     * may be in a different timezone than the DB (PHP UTC vs MySQL SYSTEM),
+     * which causes DATEDIFF(NOW(), createdAt) to be off-by-one near midnight.
+     * Computing the date in SQL eliminates the skew.
+     */
+    private function daysAgoAtNoon(int $daysAgo): string
+    {
+        $stmt = $this->pdo()->prepare(
+            'SELECT DATE_FORMAT(DATE_SUB(CURDATE(), INTERVAL ? DAY), "%Y-%m-%d 12:00:00")'
+        );
+        $stmt->execute([$daysAgo]);
+        /** @var string $value */
+        $value = $stmt->fetchColumn();
+        return $value;
+    }
+
     private function seedMemberApp(
         TenantId $tenantId,
         string $status,
@@ -153,10 +170,10 @@ final class NotificationsStatsTenantIsolationTest extends IsolationTestCase
         ?int $decidedDaysAgo,
     ): string {
         $id        = Uuid7::generate()->value();
-        $createdAt = (new \DateTimeImmutable('now'))->modify("-{$createdDaysAgo} days")->format('Y-m-d H:i:s');
+        $createdAt = $this->daysAgoAtNoon($createdDaysAgo);
         $decidedAt = $decidedDaysAgo === null
             ? null
-            : (new \DateTimeImmutable('now'))->modify("-{$decidedDaysAgo} days")->format('Y-m-d H:i:s');
+            : $this->daysAgoAtNoon($decidedDaysAgo);
 
         $this->pdo()->prepare(
             'INSERT INTO member_applications
@@ -187,10 +204,10 @@ final class NotificationsStatsTenantIsolationTest extends IsolationTestCase
         ?int $decidedDaysAgo,
     ): string {
         $id        = Uuid7::generate()->value();
-        $createdAt = (new \DateTimeImmutable('now'))->modify("-{$createdDaysAgo} days")->format('Y-m-d H:i:s');
+        $createdAt = $this->daysAgoAtNoon($createdDaysAgo);
         $decidedAt = $decidedDaysAgo === null
             ? null
-            : (new \DateTimeImmutable('now'))->modify("-{$decidedDaysAgo} days")->format('Y-m-d H:i:s');
+            : $this->daysAgoAtNoon($decidedDaysAgo);
 
         $this->pdo()->prepare(
             'INSERT INTO supporter_applications
@@ -233,10 +250,10 @@ final class NotificationsStatsTenantIsolationTest extends IsolationTestCase
             '1990-01-01',
         ]);
 
-        $createdAt = (new \DateTimeImmutable('now'))->modify("-{$createdDaysAgo} days")->format('Y-m-d H:i:s');
+        $createdAt = $this->daysAgoAtNoon($createdDaysAgo);
         $decidedAt = $decidedDaysAgo === null
             ? null
-            : (new \DateTimeImmutable('now'))->modify("-{$decidedDaysAgo} days")->format('Y-m-d H:i:s');
+            : $this->daysAgoAtNoon($decidedDaysAgo);
         $decidedBy = $decidedAt === null ? null : Uuid7::generate()->value();
 
         $this->pdo()->prepare(
@@ -271,10 +288,10 @@ final class NotificationsStatsTenantIsolationTest extends IsolationTestCase
         ?int $resolvedDaysAgo,
     ): string {
         $id         = Uuid7::generate()->value();
-        $createdAt  = (new \DateTimeImmutable('now'))->modify("-{$createdDaysAgo} days")->format('Y-m-d H:i:s');
+        $createdAt  = $this->daysAgoAtNoon($createdDaysAgo);
         $resolvedAt = $resolvedDaysAgo === null
             ? null
-            : (new \DateTimeImmutable('now'))->modify("-{$resolvedDaysAgo} days")->format('Y-m-d H:i:s');
+            : $this->daysAgoAtNoon($resolvedDaysAgo);
         $resolvedBy = $resolvedAt === null ? null : Uuid7::generate()->value();
         $resolutionAction = $resolvedAt === null ? null : ($status === 'dismissed' ? 'dismissed' : 'deleted');
 
