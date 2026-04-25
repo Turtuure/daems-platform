@@ -56,4 +56,19 @@ interface EventRepositoryInterface
         SupportedLocale $locale,
         array $fields,
     ): void;
+
+    /**
+     * KPI strip stats for the backstage dashboard.
+     *
+     * - upcoming.value     = COUNT(*) WHERE status='published' AND event_date >= today
+     *   upcoming.sparkline = FORWARD 30 days (today..today+29) of published events by event_date
+     * - drafts.value       = COUNT(*) WHERE status='draft'
+     *   drafts.sparkline   = BACKWARD 30 days (today-29..today) of draft events by created_at
+     *
+     * @return array{
+     *   upcoming: array{value: int, sparkline: list<array{date: string, value: int}>},
+     *   drafts:   array{value: int, sparkline: list<array{date: string, value: int}>}
+     * }
+     */
+    public function statsForTenant(TenantId $tenantId): array;
 }

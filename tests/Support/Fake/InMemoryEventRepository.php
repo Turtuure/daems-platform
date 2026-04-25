@@ -271,6 +271,54 @@ final class InMemoryEventRepository implements EventRepositoryInterface
         return $out;
     }
 
+    public function statsForTenant(TenantId $tenantId): array
+    {
+        $today = new \DateTimeImmutable('today');
+
+        $upcomingValue = 0;
+        $draftsValue   = 0;
+        $upByDate      = [];
+        $drByDate      = [];
+
+        foreach ($this->byId as $e) {
+            if (!$e->tenantId()->equals($tenantId)) {
+                continue;
+            }
+            $status = $e->status();
+            if ($status === 'published') {
+                $eventDate = $e->date();
+                if ($eventDate >= $today->format('Y-m-d')) {
+                    $upcomingValue++;
+                    $upByDate[$eventDate] = ($upByDate[$eventDate] ?? 0) + 1;
+                }
+            } elseif ($status === 'draft') {
+                $draftsValue++;
+                // InMemory has no created_at — bucket draft into today's slot for fidelity.
+                $createdDate = $today->format('Y-m-d');
+                $drByDate[$createdDate] = ($drByDate[$createdDate] ?? 0) + 1;
+            }
+        }
+
+        // Forward 30-day sparkline for upcoming.
+        $upSpark = [];
+        for ($i = 0; $i < 30; $i++) {
+            $d = $today->modify("+{$i} days")->format('Y-m-d');
+            $upSpark[] = ['date' => $d, 'value' => $upByDate[$d] ?? 0];
+        }
+
+        // Backward 30-day sparkline for drafts.
+        $drSpark = [];
+        for ($i = 29; $i >= 0; $i--) {
+            $d = $today->modify("-{$i} days")->format('Y-m-d');
+            $drSpark[] = ['date' => $d, 'value' => $drByDate[$d] ?? 0];
+        }
+
+        return [
+            'upcoming' => ['value' => $upcomingValue, 'sparkline' => $upSpark],
+            'drafts'   => ['value' => $draftsValue,   'sparkline' => $drSpark],
+        ];
+    }
+
     public function seedAdminRegistration(
         string $eventId,
         string $userId,

@@ -224,6 +224,110 @@ final class SqlEventRepository implements EventRepositoryInterface
         return $rows;
     }
 
+    public function statsForTenant(TenantId $tenantId): array
+    {
+        $tid = $tenantId->value();
+
+        // Single roundtrip: upcoming + drafts counts.
+        // CURDATE() keeps MySQL as the timezone authority for boundary decisions.
+        $totals = $this->db->queryOne(
+            "SELECT
+                COALESCE(SUM(CASE WHEN status = 'published' AND event_date >= CURDATE() THEN 1 ELSE 0 END), 0) AS upcoming,
+                COALESCE(SUM(CASE WHEN status = 'draft' THEN 1 ELSE 0 END), 0) AS drafts
+             FROM events
+             WHERE tenant_id = ?",
+            [$tid],
+        ) ?? [];
+
+        // Upcoming sparkline: FORWARD 30 days (today..today+29) of published events grouped by event_date.
+        $upRows = $this->db->query(
+            "SELECT event_date AS d, COUNT(*) AS n
+               FROM events
+              WHERE tenant_id = ?
+                AND status = 'published'
+                AND event_date BETWEEN CURDATE() AND (CURDATE() + INTERVAL 29 DAY)
+              GROUP BY event_date",
+            [$tid],
+        );
+        $upByDate = [];
+        foreach ($upRows as $r) {
+            $d = isset($r['d']) && is_string($r['d']) ? $r['d'] : '';
+            if ($d === '') {
+                continue;
+            }
+            $upByDate[$d] = self::statsAsInt($r, 'n');
+        }
+        $today = new \DateTimeImmutable('today');
+        $upSpark = [];
+        for ($i = 0; $i < 30; $i++) {
+            $d = $today->modify("+{$i} days")->format('Y-m-d');
+            $upSpark[] = ['date' => $d, 'value' => $upByDate[$d] ?? 0];
+        }
+
+        // Drafts sparkline: BACKWARD 30 days (today-29..today) of draft events grouped by DATE(created_at).
+        $drSpark = $this->dailySeriesBackward(
+            "SELECT DATE(created_at) AS d, COUNT(*) AS n
+               FROM events
+              WHERE tenant_id = ?
+                AND status = 'draft'
+                AND created_at >= (CURDATE() - INTERVAL 29 DAY)
+              GROUP BY DATE(created_at)",
+            [$tid],
+        );
+
+        return [
+            'upcoming' => [
+                'value'     => self::statsAsInt($totals, 'upcoming'),
+                'sparkline' => $upSpark,
+            ],
+            'drafts' => [
+                'value'     => self::statsAsInt($totals, 'drafts'),
+                'sparkline' => $drSpark,
+            ],
+        ];
+    }
+
+    /**
+     * Run a daily-count query and zero-fill into a 30-entry BACKWARD sparkline
+     * (today-29 first, today last).
+     *
+     * @param list<scalar|null> $params
+     * @return list<array{date: string, value: int}>
+     */
+    private function dailySeriesBackward(string $sql, array $params): array
+    {
+        $base = new \DateTimeImmutable('today');
+        $days = [];
+        for ($i = 29; $i >= 0; $i--) {
+            $days[$base->modify("-{$i} days")->format('Y-m-d')] = 0;
+        }
+        foreach ($this->db->query($sql, $params) as $row) {
+            $d = isset($row['d']) && is_string($row['d']) ? $row['d'] : '';
+            if ($d === '' || !isset($days[$d])) {
+                continue;
+            }
+            $days[$d] += self::statsAsInt($row, 'n');
+        }
+        $out = [];
+        foreach ($days as $date => $value) {
+            $out[] = ['date' => $date, 'value' => $value];
+        }
+        return $out;
+    }
+
+    /** @param array<string, mixed> $row */
+    private static function statsAsInt(array $row, string $key): int
+    {
+        $v = $row[$key] ?? null;
+        if (is_int($v)) {
+            return $v;
+        }
+        if (is_string($v) && is_numeric($v)) {
+            return (int) $v;
+        }
+        return 0;
+    }
+
     public function saveTranslation(
         TenantId $tenantId,
         string $eventId,
