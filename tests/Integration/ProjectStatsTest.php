@@ -34,24 +34,15 @@ final class ProjectStatsTest extends MigrationTestCase
     {
         $tenantId = $this->tenantId('daems');
 
-        // 3 active rows (today, -3d, -29d). Two of them set featured=1.
-        $a1 = $this->insertProject($tenantId, 'active', createdDaysAgo: 0,  featured: true);
-        $a2 = $this->insertProject($tenantId, 'active', createdDaysAgo: 3,  featured: false);
-        $a3 = $this->insertProject($tenantId, 'active', createdDaysAgo: 29, featured: false);
+        // 3 active rows (today, -3d, -29d); 2 of them featured.
+        $this->insertProject($tenantId, 'active', createdDaysAgo: 0,  featured: true);
+        $this->insertProject($tenantId, 'active', createdDaysAgo: 3,  featured: true);
+        $this->insertProject($tenantId, 'active', createdDaysAgo: 29, featured: false);
 
-        // 1 featured but with -5d created_at (and active) — adds the 2nd featured.
-        $f2 = $this->insertProject($tenantId, 'active', createdDaysAgo: 5, featured: true);
-
-        // Wait — re-reading the brief: 3 active total, 2 of which are featured. Drop $f2.
-        $this->pdo()->prepare('DELETE FROM projects WHERE id = ?')->execute([$f2]);
-
-        // Make $a2 featured so we have exactly 2 featured among the 3 active rows.
-        $this->pdo()->prepare('UPDATE projects SET featured = 1 WHERE id = ?')->execute([$a2]);
-
-        // 1 draft (today)
+        // 1 draft (today).
         $this->insertProject($tenantId, 'draft', createdDaysAgo: 0);
 
-        // 1 archived — must not count anywhere
+        // 1 archived — must not count anywhere.
         $this->insertProject($tenantId, 'archived', createdDaysAgo: 0);
 
         $stats = $this->repo->statsForTenant($tenantId);
