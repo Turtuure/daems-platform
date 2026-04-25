@@ -337,4 +337,17 @@ final class InMemoryForumRepository implements ForumRepositoryInterface
             }
         }
     }
+
+    public function countTopicsForTenant(TenantId $tenantId): int { return 0; }
+
+    public function dailyNewTopicsForTenant(TenantId $tenantId): array
+    {
+        $out = []; $base = new \DateTimeImmutable('today');
+        for ($i = 29; $i >= 0; $i--) {
+            $out[] = ['date' => $base->modify("-{$i} days")->format('Y-m-d'), 'value' => 0];
+        }
+        return $out;
+    }
+
+    public function countCategoriesForTenant(TenantId $tenantId): int { return 0; }
 }

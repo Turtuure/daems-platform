@@ -44,4 +44,17 @@ final class InMemoryForumModerationAuditRepository implements ForumModerationAud
 
         return array_values(array_slice($filtered, max(0, $offset), $limit));
     }
+
+    public function countActionsLast30dForTenant(TenantId $tenantId): int { return 0; }
+
+    public function dailyActionCountForTenant(TenantId $tenantId): array
+    {
+        $out = []; $base = new \DateTimeImmutable('today');
+        for ($i = 29; $i >= 0; $i--) {
+            $out[] = ['date' => $base->modify("-{$i} days")->format('Y-m-d'), 'value' => 0];
+        }
+        return $out;
+    }
+
+    public function recentForTenant(TenantId $tenantId, int $limit = 5): array { return []; }
 }

@@ -244,4 +244,15 @@ final class InMemoryForumReportRepository implements ForumReportRepositoryInterf
         );
         $this->upsert($report);
     }
+
+    public function countOpenReportsForTenant(TenantId $tenantId): int { return 0; }
+
+    public function dailyNewReportsForTenant(TenantId $tenantId): array
+    {
+        $out = []; $base = new \DateTimeImmutable('today');
+        for ($i = 29; $i >= 0; $i--) {
+            $out[] = ['date' => $base->modify("-{$i} days")->format('Y-m-d'), 'value' => 0];
+        }
+        return $out;
+    }
 }
