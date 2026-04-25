@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Daems\Tests\Integration\Persistence;
 
-use Daems\Domain\Insight\InsightId;
 use Daems\Domain\Shared\ValueObject\Uuid7;
 use Daems\Infrastructure\Adapter\Persistence\Sql\SqlInsightRepository;
 use Daems\Infrastructure\Framework\Database\Connection;

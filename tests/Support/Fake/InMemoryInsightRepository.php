@@ -56,4 +56,13 @@ final class InMemoryInsightRepository implements InsightRepositoryInterface
             }
         }
     }
+
+    public function statsForTenant(TenantId $tenantId): array
+    {
+        return [
+            'published' => ['value' => 0, 'sparkline' => []],
+            'scheduled' => ['value' => 0, 'sparkline' => []],
+            'featured'  => ['value' => 0, 'sparkline' => []],
+        ];
+    }
 }

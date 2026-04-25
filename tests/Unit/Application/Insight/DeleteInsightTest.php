@@ -73,6 +73,7 @@ final class DeleteInsightTest extends TestCase
             }
             public function save(Insight $i): void {}
             public function delete(InsightId $id, TenantId $t): void { $this->deleted = true; }
+            public function statsForTenant(TenantId $t): array { return ['published' => ['value' => 0, 'sparkline' => []], 'scheduled' => ['value' => 0, 'sparkline' => []], 'featured' => ['value' => 0, 'sparkline' => []]]; }
         };
     }
 }

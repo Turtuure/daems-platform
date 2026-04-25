@@ -110,20 +110,28 @@ final class SqlInsightRepository implements InsightRepositoryInterface
      */
     public function statsForTenant(TenantId $tenantId): array
     {
-        $today = (new \DateTimeImmutable('today'))->format('Y-m-d');
+        // $base drives sparkline key construction (PHP clock).
+        // SQL date comparisons use CURDATE() directly so MySQL's clock is
+        // authoritative for published/scheduled boundaries. A sub-second
+        // timezone skew between PHP and MySQL could shift sparkline bucket
+        // labels vs. SQL counts, but both run on the same host in practice.
+        $base  = new \DateTimeImmutable('today');
+        $today = $base->format('Y-m-d');
 
         // Build zero-filled date templates: 30 entries each
         $publishedDays = [];
         $scheduledDays = [];
         for ($i = 29; $i >= 0; $i--) {
-            $publishedDays[(new \DateTimeImmutable("-{$i} days"))->format('Y-m-d')] = 0;
+            $publishedDays[$base->modify("-{$i} days")->format('Y-m-d')] = 0;
         }
         for ($i = 1; $i <= 30; $i++) {
-            $scheduledDays[(new \DateTimeImmutable("+{$i} days"))->format('Y-m-d')] = 0;
+            $scheduledDays[$base->modify("+{$i} days")->format('Y-m-d')] = 0;
         }
         $featuredDays = $publishedDays; // same key range as published
 
-        // Aggregate sparkline counts per published_date + featured flag
+        // Aggregate sparkline counts per published_date + featured flag.
+        // CURDATE() is used in SQL so MySQL's timezone is authoritative for
+        // the published/scheduled boundary.
         $sql = <<<SQL
             SELECT
                 published_date,
@@ -132,14 +140,14 @@ final class SqlInsightRepository implements InsightRepositoryInterface
             FROM insights
             WHERE tenant_id = ?
               AND (
-                   (published_date BETWEEN DATE_SUB(?, INTERVAL 29 DAY) AND ?)
-                OR (published_date BETWEEN DATE_ADD(?, INTERVAL 1 DAY) AND DATE_ADD(?, INTERVAL 30 DAY))
+                   (published_date BETWEEN DATE_SUB(CURDATE(), INTERVAL 29 DAY) AND CURDATE())
+                OR (published_date BETWEEN DATE_ADD(CURDATE(), INTERVAL 1 DAY) AND DATE_ADD(CURDATE(), INTERVAL 30 DAY))
               )
             GROUP BY published_date, featured
         SQL;
         $rows = $this->db->query(
             $sql,
-            [$tenantId->value(), $today, $today, $today, $today],
+            [$tenantId->value()],
         );
 
         foreach ($rows as $row) {
@@ -161,15 +169,16 @@ final class SqlInsightRepository implements InsightRepositoryInterface
             }
         }
 
-        // Accurate totals (full history, not limited to 30-day window)
+        // Accurate totals (full history, not limited to 30-day window).
+        // CURDATE() keeps MySQL as the timezone authority for boundary decisions.
         $totals = $this->db->query(
             'SELECT
-                SUM(CASE WHEN published_date <= ? THEN 1 ELSE 0 END) AS published,
-                SUM(CASE WHEN published_date >  ? THEN 1 ELSE 0 END) AS scheduled,
-                SUM(CASE WHEN published_date <= ? AND featured = 1 THEN 1 ELSE 0 END) AS featured
+                SUM(CASE WHEN published_date <= CURDATE() THEN 1 ELSE 0 END) AS published,
+                SUM(CASE WHEN published_date >  CURDATE() THEN 1 ELSE 0 END) AS scheduled,
+                SUM(CASE WHEN published_date <= CURDATE() AND featured = 1 THEN 1 ELSE 0 END) AS featured
              FROM insights
              WHERE tenant_id = ?',
-            [$today, $today, $today, $tenantId->value()],
+            [$tenantId->value()],
         );
         $totalRow = $totals[0] ?? [];
 
