@@ -428,6 +428,10 @@ final class KernelHarness
             $c->make(EventRepositoryInterface::class),
             $c->make(\Daems\Domain\Event\EventProposalRepositoryInterface::class),
         ));
+        $container->bind(\Daems\Application\Backstage\Projects\ListProjectsStats\ListProjectsStats::class, static fn(Container $c) => new \Daems\Application\Backstage\Projects\ListProjectsStats\ListProjectsStats(
+            $c->make(ProjectRepositoryInterface::class),
+            $c->make(ProjectProposalRepositoryInterface::class),
+        ));
 
         $container->bind(ListEvents::class, static fn(Container $c) => new ListEvents($c->make(EventRepositoryInterface::class)));
         $container->bind(GetEvent::class, static fn(Container $c) => new GetEvent($c->make(EventRepositoryInterface::class)));
@@ -719,6 +723,7 @@ final class KernelHarness
             $c->make(\Daems\Application\Backstage\Members\ListMembersStats\ListMembersStats::class),
             $c->make(\Daems\Application\Backstage\Applications\ListApplicationsStats\ListApplicationsStats::class),
             $c->make(\Daems\Application\Backstage\Events\ListEventsStats\ListEventsStats::class),
+            $c->make(\Daems\Application\Backstage\Projects\ListProjectsStats\ListProjectsStats::class),
             $c->make(\Daems\Application\Backstage\GetEventWithAllTranslations\GetEventWithAllTranslations::class),
             $c->make(\Daems\Application\Backstage\UpdateEventTranslation\UpdateEventTranslation::class),
             $c->make(\Daems\Application\Backstage\GetProjectWithAllTranslations\GetProjectWithAllTranslations::class),

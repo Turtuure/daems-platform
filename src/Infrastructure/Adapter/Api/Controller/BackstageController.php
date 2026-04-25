@@ -94,6 +94,8 @@ use Daems\Application\Backstage\Applications\ListApplicationsStats\ListApplicati
 use Daems\Application\Backstage\Applications\ListApplicationsStats\ListApplicationsStatsInput;
 use Daems\Application\Backstage\Events\ListEventsStats\ListEventsStats;
 use Daems\Application\Backstage\Events\ListEventsStats\ListEventsStatsInput;
+use Daems\Application\Backstage\Projects\ListProjectsStats\ListProjectsStats;
+use Daems\Application\Backstage\Projects\ListProjectsStats\ListProjectsStatsInput;
 use Daems\Application\Backstage\Members\ListMembersStats\ListMembersStats;
 use Daems\Application\Backstage\Members\ListMembersStats\ListMembersStatsInput;
 use Daems\Application\Backstage\ListPendingApplications\ListPendingApplications;
@@ -198,6 +200,7 @@ final class BackstageController
         private readonly ListMembersStats $listMembersStats,
         private readonly ListApplicationsStats $listApplicationsStats,
         private readonly ListEventsStats $listEventsStats,
+        private readonly ListProjectsStats $listProjectsStats,
         private readonly GetEventWithAllTranslations $getEventWithAllTranslations,
         private readonly UpdateEventTranslation $updateEventTranslation,
         private readonly GetProjectWithAllTranslations $getProjectWithAllTranslations,
@@ -1278,6 +1281,23 @@ final class BackstageController
 
         try {
             $out = $this->listEventsStats->execute(new ListEventsStatsInput(
+                acting:   $acting,
+                tenantId: $tenant->id,
+            ));
+        } catch (ForbiddenException) {
+            return Response::forbidden('Admin only');
+        }
+
+        return Response::json(['data' => $out->stats]);
+    }
+
+    public function statsProjects(Request $request): Response
+    {
+        $acting = $request->requireActingUser();
+        $tenant = $this->requireTenant($request);
+
+        try {
+            $out = $this->listProjectsStats->execute(new ListProjectsStatsInput(
                 acting:   $acting,
                 tenantId: $tenant->id,
             ));

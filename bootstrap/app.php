@@ -454,6 +454,7 @@ $container->bind(\Daems\Infrastructure\Adapter\Api\Controller\BackstageControlle
         $c->make(\Daems\Application\Backstage\Members\ListMembersStats\ListMembersStats::class),
         $c->make(\Daems\Application\Backstage\Applications\ListApplicationsStats\ListApplicationsStats::class),
         $c->make(\Daems\Application\Backstage\Events\ListEventsStats\ListEventsStats::class),
+        $c->make(\Daems\Application\Backstage\Projects\ListProjectsStats\ListProjectsStats::class),
         $c->make(\Daems\Application\Backstage\GetEventWithAllTranslations\GetEventWithAllTranslations::class),
         $c->make(\Daems\Application\Backstage\UpdateEventTranslation\UpdateEventTranslation::class),
         $c->make(\Daems\Application\Backstage\GetProjectWithAllTranslations\GetProjectWithAllTranslations::class),
@@ -1004,6 +1005,12 @@ $container->bind(\Daems\Application\Backstage\Events\ListEventsStats\ListEventsS
     static fn(Container $c) => new \Daems\Application\Backstage\Events\ListEventsStats\ListEventsStats(
         $c->make(\Daems\Domain\Event\EventRepositoryInterface::class),
         $c->make(\Daems\Domain\Event\EventProposalRepositoryInterface::class),
+    ),
+);
+$container->bind(\Daems\Application\Backstage\Projects\ListProjectsStats\ListProjectsStats::class,
+    static fn(Container $c) => new \Daems\Application\Backstage\Projects\ListProjectsStats\ListProjectsStats(
+        $c->make(\Daems\Domain\Project\ProjectRepositoryInterface::class),
+        $c->make(\Daems\Domain\Project\ProjectProposalRepositoryInterface::class),
     ),
 );
 

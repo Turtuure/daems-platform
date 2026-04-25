@@ -296,6 +296,10 @@ return static function (Router $router, Container $container): void {
     }, [TenantContextMiddleware::class, AuthMiddleware::class]);
 
     // Backstage — Projects admin
+    $router->get('/api/v1/backstage/projects/stats', static function (Request $req) use ($container): Response {
+        return $container->make(\Daems\Infrastructure\Adapter\Api\Controller\BackstageController::class)->statsProjects($req);
+    }, [TenantContextMiddleware::class, AuthMiddleware::class]);
+
     $router->get('/api/v1/backstage/projects', static function (Request $req) use ($container): Response {
         return $container->make(\Daems\Infrastructure\Adapter\Api\Controller\BackstageController::class)->listProjectsAdmin($req);
     }, [TenantContextMiddleware::class, AuthMiddleware::class]);
