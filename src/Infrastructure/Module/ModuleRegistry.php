@@ -4,9 +4,14 @@ declare(strict_types=1);
 namespace Daems\Infrastructure\Module;
 
 use Composer\Autoload\ClassLoader;
+use Daems\Infrastructure\Framework\Container\Container;
+use Daems\Infrastructure\Framework\Http\Router;
 
 final class ModuleRegistry
 {
+    public const PROD = 'prod';
+    public const TEST = 'test';
+
     /** @var array<string, ModuleManifest> */
     private array $modules = [];
 
@@ -66,5 +71,63 @@ final class ModuleRegistry
         foreach ($this->modules as $manifest) {
             $loader->addPsr4($manifest->namespace(), $manifest->absoluteSrcPath());
         }
+    }
+
+    /**
+     * Invoke each discovered module's bindings file. The file must `return`
+     * a closure that takes the Container.
+     *
+     * @param self::PROD|self::TEST $mode  PROD loads bindings.php; TEST tries
+     *                                     bindings.test.php first and falls
+     *                                     back to bindings.php if absent.
+     */
+    public function registerBindings(Container $container, string $mode = self::PROD): void
+    {
+        foreach ($this->modules as $manifest) {
+            $path = $mode === self::TEST && is_file($manifest->absoluteTestBindingsPath())
+                  ? $manifest->absoluteTestBindingsPath()
+                  : $manifest->absoluteBindingsPath();
+            if (!is_file($path)) {
+                throw new \RuntimeException("Module '{$manifest->name()}' bindings file not found: {$path}");
+            }
+            $closure = require $path;
+            if (!$closure instanceof \Closure) {
+                throw new \RuntimeException("Module '{$manifest->name()}' bindings file must return a Closure");
+            }
+            $closure($container);
+        }
+    }
+
+    /**
+     * Invoke each discovered module's routes file. The file must `return`
+     * a closure that takes (Router, Container).
+     */
+    public function registerRoutes(Router $router, Container $container): void
+    {
+        foreach ($this->modules as $manifest) {
+            $path = $manifest->absoluteRoutesPath();
+            if (!is_file($path)) {
+                throw new \RuntimeException("Module '{$manifest->name()}' routes file not found: {$path}");
+            }
+            $closure = require $path;
+            if (!$closure instanceof \Closure) {
+                throw new \RuntimeException("Module '{$manifest->name()}' routes file must return a Closure");
+            }
+            $closure($router, $container);
+        }
+    }
+
+    /**
+     * Return absolute paths to each module's migrations directory.
+     *
+     * @return list<string>
+     */
+    public function migrationPaths(): array
+    {
+        $paths = [];
+        foreach ($this->modules as $manifest) {
+            $paths[] = $manifest->absoluteMigrationsPath();
+        }
+        return $paths;
     }
 }

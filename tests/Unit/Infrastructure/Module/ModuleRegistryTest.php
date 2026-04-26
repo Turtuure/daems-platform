@@ -129,6 +129,89 @@ final class ModuleRegistryTest extends TestCase
         $loader->unregister();
     }
 
+    public function test_register_bindings_invokes_module_binding_closure(): void
+    {
+        $modDir = $this->tmp . '/foo';
+        mkdir($modDir . '/backend', 0777, true);
+        file_put_contents($modDir . '/module.json', json_encode([
+            'name' => 'foo', 'version' => '1.0.0', 'namespace' => 'DaemsModule\\Foo\\',
+            'src_path' => 'backend/src/', 'bindings' => 'backend/bindings.php',
+            'routes' => 'backend/routes.php', 'migrations_path' => 'backend/migrations/',
+        ]));
+        file_put_contents($modDir . '/backend/bindings.php',
+            "<?php return function (\$container) { \$container->bind('foo.invoked', fn() => 'yes'); };"
+        );
+
+        $container = new \Daems\Infrastructure\Framework\Container\Container();
+        $r = new ModuleRegistry();
+        $r->discover($this->tmp);
+        $r->registerBindings($container, ModuleRegistry::PROD);
+        self::assertSame('yes', $container->make('foo.invoked'));
+    }
+
+    public function test_register_bindings_in_test_mode_uses_test_bindings_file(): void
+    {
+        $modDir = $this->tmp . '/foo';
+        mkdir($modDir . '/backend', 0777, true);
+        file_put_contents($modDir . '/module.json', json_encode([
+            'name' => 'foo', 'version' => '1.0.0', 'namespace' => 'DaemsModule\\Foo\\',
+            'src_path' => 'backend/src/', 'bindings' => 'backend/bindings.php',
+            'routes' => 'backend/routes.php', 'migrations_path' => 'backend/migrations/',
+        ]));
+        file_put_contents($modDir . '/backend/bindings.php',
+            "<?php return function (\$c) { \$c->bind('foo.flavor', fn() => 'prod'); };"
+        );
+        file_put_contents($modDir . '/backend/bindings.test.php',
+            "<?php return function (\$c) { \$c->bind('foo.flavor', fn() => 'test'); };"
+        );
+
+        $container = new \Daems\Infrastructure\Framework\Container\Container();
+        $r = new ModuleRegistry();
+        $r->discover($this->tmp);
+        $r->registerBindings($container, ModuleRegistry::TEST);
+        self::assertSame('test', $container->make('foo.flavor'));
+    }
+
+    public function test_register_bindings_in_test_mode_falls_back_to_prod_when_no_test_file(): void
+    {
+        $modDir = $this->tmp . '/foo';
+        mkdir($modDir . '/backend', 0777, true);
+        file_put_contents($modDir . '/module.json', json_encode([
+            'name' => 'foo', 'version' => '1.0.0', 'namespace' => 'DaemsModule\\Foo\\',
+            'src_path' => 'backend/src/', 'bindings' => 'backend/bindings.php',
+            'routes' => 'backend/routes.php', 'migrations_path' => 'backend/migrations/',
+        ]));
+        file_put_contents($modDir . '/backend/bindings.php',
+            "<?php return function (\$c) { \$c->bind('foo.flavor', fn() => 'prod'); };"
+        );
+
+        $container = new \Daems\Infrastructure\Framework\Container\Container();
+        $r = new ModuleRegistry();
+        $r->discover($this->tmp);
+        $r->registerBindings($container, ModuleRegistry::TEST);
+        self::assertSame('prod', $container->make('foo.flavor'));
+    }
+
+    public function test_migration_paths_lists_each_modules_migrations_dir(): void
+    {
+        foreach (['a', 'b'] as $name) {
+            $d = $this->tmp . '/' . $name;
+            mkdir($d . '/backend/migrations', 0777, true);
+            file_put_contents($d . '/module.json', json_encode([
+                'name' => $name, 'version' => '1.0.0',
+                'namespace' => 'DaemsModule\\' . ucfirst($name) . '\\',
+                'src_path' => 'backend/src/', 'bindings' => 'backend/bindings.php',
+                'routes' => 'backend/routes.php', 'migrations_path' => 'backend/migrations/',
+            ]));
+        }
+        $r = new ModuleRegistry();
+        $r->discover($this->tmp);
+        $paths = $r->migrationPaths();
+        self::assertCount(2, $paths);
+        self::assertStringContainsString('/a/backend/migrations/', $paths[0]);
+        self::assertStringContainsString('/b/backend/migrations/', $paths[1]);
+    }
+
     private function rrmdir(string $dir): void
     {
         if (!is_dir($dir)) return;
