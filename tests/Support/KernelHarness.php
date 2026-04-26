@@ -186,6 +186,13 @@ final class KernelHarness
         $container = new Container();
         $this->container = $container;
 
+        // Module registry — discover modules under modules/* with TEST bindings.
+        $composerLoader = require dirname(__DIR__, 2) . '/vendor/autoload.php';
+        $moduleRegistry = new \Daems\Infrastructure\Module\ModuleRegistry();
+        $moduleRegistry->discover(dirname(__DIR__, 3) . '/modules');
+        $moduleRegistry->registerAutoloader($composerLoader);
+        $container->bind(\Daems\Infrastructure\Module\ModuleRegistry::class, fn() => $moduleRegistry);
+
         $container->singleton(LoggerInterface::class, static fn(): LoggerInterface => $logger);
         $container->singleton(Clock::class, fn(): Clock => $this->clock);
         $container->singleton(UserRepositoryInterface::class, fn() => $this->users);
@@ -869,6 +876,9 @@ final class KernelHarness
             },
         ));
         $container->bind(LocaleMiddleware::class, static fn() => new LocaleMiddleware());
+
+        // Module bindings (TEST mode — uses bindings.test.php if present, else bindings.php).
+        $moduleRegistry->registerBindings($container, \Daems\Infrastructure\Module\ModuleRegistry::TEST);
 
         $container->singleton(Router::class, static function () use ($container): Router {
             $router = new Router(static fn(string $class): mixed => $container->make($class));

@@ -13,7 +13,8 @@
   },
   "autoload-dev": {
     "psr-4": {
-      "Daems\\Tests\\": "tests/"
+      "Daems\\Tests\\": "tests/",
+      "DaemsModule\\Insights\\": "../modules/insights/backend/src/"
     }
   },
   "require-dev": {

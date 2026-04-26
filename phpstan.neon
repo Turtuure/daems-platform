@@ -2,6 +2,7 @@ parameters:
     level: 9
     paths:
         - src
+        - ../modules/insights/backend/src
     phpVersion: 80100
     ignoreErrors:
         -

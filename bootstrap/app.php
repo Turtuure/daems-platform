@@ -117,7 +117,16 @@ use Daems\Domain\Tenant\UserTenantRepositoryInterface;
     }
 })();
 
+// Module registry — discover external modules under C:\laragon\www\modules\* at boot.
+// Phase 1 (insights pilot): autoloader registered before any binding so cross-module
+// type references resolve. Bindings and routes are registered after core bindings.
+$composerLoader = require __DIR__ . '/../vendor/autoload.php';
+$moduleRegistry = new \Daems\Infrastructure\Module\ModuleRegistry();
+$moduleRegistry->discover(__DIR__ . '/../../modules');
+$moduleRegistry->registerAutoloader($composerLoader);
+
 $container = new Container();
+$container->bind(\Daems\Infrastructure\Module\ModuleRegistry::class, fn() => $moduleRegistry);
 
 // Database (lazy singleton — only connects when first used)
 $container->singleton(Connection::class, static function (): Connection {
@@ -1121,6 +1130,9 @@ $container->bind(ProjectController::class,
         $c->make(GetProjectBySlugForLocale::class),
     ),
 );
+
+// Module bindings — invoke each discovered module's bindings.php.
+$moduleRegistry->registerBindings($container, \Daems\Infrastructure\Module\ModuleRegistry::PROD);
 
 // Router
 $container->singleton(Router::class, static function () use ($container): Router {

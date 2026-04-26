@@ -532,4 +532,8 @@ return static function (Router $router, Container $container): void {
     $router->post('/api/v1/auth/invites/redeem', static function (Request $req) use ($container): Response {
         return $container->make(AuthController::class)->redeemInvite($req);
     }, [TenantContextMiddleware::class]);
+
+    // Module routes — invoke each discovered module's routes.php.
+    $moduleRegistry = $container->make(\Daems\Infrastructure\Module\ModuleRegistry::class);
+    $moduleRegistry->registerRoutes($router, $container);
 };
