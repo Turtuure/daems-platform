@@ -2,9 +2,12 @@
 
 declare(strict_types=1);
 
-// One-off dev helper: list migrations 001–NNN, check which are already applied
-// by inspecting expected schema, and apply the rest.
-// Uses the migrations table pattern if available; falls back to heuristic checks.
+// Migration runner: scan core + module migration dirs, apply pending .sql/.php
+// files, record by filename in schema_migrations.
+//
+// Filename ordering: alphabetical across ALL dirs. Module migrations are
+// expected to be named '<module>_NNN_<desc>.{sql,php}' so they sort
+// independently of core migrations (NNN_<desc>.{sql,php}).
 
 $host = getenv('DB_HOST') ?: '127.0.0.1';
 $db   = getenv('DB_NAME') ?: 'daems_db';
@@ -29,10 +32,31 @@ $pdo->exec(
 $applied = $pdo->query('SELECT filename FROM schema_migrations')->fetchAll(PDO::FETCH_COLUMN);
 $applied = array_flip($applied);
 
-$files = glob(__DIR__ . '/../database/migrations/*.sql') ?: [];
-sort($files);
+// Discover migration dirs: core + each module's backend/migrations/.
+$dirs = [__DIR__ . '/../database/migrations'];
 
-$runOne = static function (PDO $pdo, string $file): void {
+// Boot the registry to fetch module dirs without going through full app bootstrap.
+require __DIR__ . '/../vendor/autoload.php';
+$registry = new \Daems\Infrastructure\Module\ModuleRegistry();
+$registry->discover(__DIR__ . '/../../modules');
+foreach ($registry->migrationPaths() as $modPath) {
+    if (is_dir($modPath)) {
+        $dirs[] = rtrim($modPath, '/\\');
+    }
+}
+
+// Glob .sql and .php files in each dir, then sort the combined list alphabetically by basename.
+$files = [];
+foreach ($dirs as $dir) {
+    foreach ((array) glob($dir . '/*.{sql,php}', GLOB_BRACE) as $f) {
+        if (is_string($f)) {
+            $files[] = $f;
+        }
+    }
+}
+usort($files, static fn(string $a, string $b): int => basename($a) <=> basename($b));
+
+$runSql = static function (PDO $pdo, string $file): void {
     $sql = (string) file_get_contents($file);
     $statements = preg_split('/;[\r\n]+/', $sql) ?: [];
     foreach ($statements as $stmt) {
@@ -51,6 +75,13 @@ $runOne = static function (PDO $pdo, string $file): void {
     }
 };
 
+$runPhp = static function (PDO $pdo, string $file): void {
+    // PHP migration files manage their own DB connection today (legacy form).
+    // Standard contract going forward: file may either (a) connect itself, or
+    // (b) reference a $pdo variable provided by the runner.
+    require $file;
+};
+
 $ranAny = false;
 foreach ($files as $file) {
     $base = basename($file);
@@ -59,7 +90,11 @@ foreach ($files as $file) {
     }
     echo "Applying {$base} … ";
     try {
-        $runOne($pdo, $file);
+        if (str_ends_with($file, '.sql')) {
+            $runSql($pdo, $file);
+        } else {
+            $runPhp($pdo, $file);
+        }
         $stmt = $pdo->prepare('INSERT INTO schema_migrations (filename) VALUES (?)');
         $stmt->execute([$base]);
         echo "OK\n";
