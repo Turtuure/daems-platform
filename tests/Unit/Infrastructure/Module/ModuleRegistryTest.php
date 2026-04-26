@@ -98,6 +98,37 @@ final class ModuleRegistryTest extends TestCase
         (new ModuleRegistry())->discover($this->tmp);
     }
 
+    public function test_register_autoloader_maps_module_namespace_to_src_dir(): void
+    {
+        $modDir = $this->tmp . '/widgets';
+        mkdir($modDir . '/backend/src', 0777, true);
+        file_put_contents($modDir . '/module.json', json_encode([
+            'name' => 'widgets',
+            'version' => '1.0.0',
+            'namespace' => 'DaemsModule\\Widgets\\',
+            'src_path' => 'backend/src/',
+            'bindings' => 'backend/bindings.php',
+            'routes' => 'backend/routes.php',
+            'migrations_path' => 'backend/migrations/',
+        ]));
+        file_put_contents($modDir . '/backend/src/Hello.php',
+            "<?php namespace DaemsModule\\Widgets; class Hello { public function name(): string { return 'widgets'; } }"
+        );
+
+        $loader = new \Composer\Autoload\ClassLoader();
+        $loader->register();
+
+        $r = new ModuleRegistry();
+        $r->discover($this->tmp);
+        $r->registerAutoloader($loader);
+
+        self::assertTrue(class_exists('DaemsModule\\Widgets\\Hello'));
+        $obj = new \DaemsModule\Widgets\Hello();
+        self::assertSame('widgets', $obj->name());
+
+        $loader->unregister();
+    }
+
     private function rrmdir(string $dir): void
     {
         if (!is_dir($dir)) return;

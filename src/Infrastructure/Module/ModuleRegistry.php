@@ -3,6 +3,8 @@ declare(strict_types=1);
 
 namespace Daems\Infrastructure\Module;
 
+use Composer\Autoload\ClassLoader;
+
 final class ModuleRegistry
 {
     /** @var array<string, ModuleManifest> */
@@ -52,5 +54,17 @@ final class ModuleRegistry
     public function get(string $name): ?ModuleManifest
     {
         return $this->modules[$name] ?? null;
+    }
+
+    /**
+     * Register each discovered module's namespace with Composer's runtime
+     * ClassLoader. After this returns, classes under DaemsModule\<Name>\
+     * become resolvable to files under modules/<name>/<src_path>.
+     */
+    public function registerAutoloader(ClassLoader $loader): void
+    {
+        foreach ($this->modules as $manifest) {
+            $loader->addPsr4($manifest->namespace(), $manifest->absoluteSrcPath());
+        }
     }
 }
