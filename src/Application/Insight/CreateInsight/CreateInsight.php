@@ -30,7 +30,7 @@ final class CreateInsight
             category: $in->category,
             categoryLabel: $in->categoryLabel,
             featured: $in->featured,
-            date: $in->publishedDate,
+            date: self::normalizeDateTime($in->publishedDate),
             author: $in->author,
             readingTime: self::computeReadingTime($in->content),
             excerpt: $in->excerpt,
@@ -67,7 +67,7 @@ final class CreateInsight
         }
         // null published_date = draft (not yet published or scheduled).
         // Only validate the format when a value is provided.
-        if ($in->publishedDate !== null && !self::isDate($in->publishedDate)) {
+        if ($in->publishedDate !== null && self::normalizeDateTime($in->publishedDate) === null) {
             $errors['published_date'] = 'invalid_format';
         }
         if ($errors !== []) {
@@ -75,9 +75,35 @@ final class CreateInsight
         }
     }
 
-    private static function isDate(string $s): bool
+    /**
+     * Accept any of:
+     *   Y-m-d                 (treated as midnight that day)
+     *   Y-m-d H:i             (HTML datetime-local without seconds)
+     *   Y-m-d H:i:s
+     *   Y-m-d\TH:i            (HTML datetime-local with literal T)
+     *   Y-m-d\TH:i:s
+     * Returns the canonical 'Y-m-d H:i:s' for storage, or null if no
+     * format matched (signal to the caller that validation failed).
+     */
+    public static function normalizeDateTime(?string $s): ?string
     {
-        return (bool) \DateTime::createFromFormat('Y-m-d', $s);
+        if ($s === null || trim($s) === '') {
+            return null;
+        }
+        $formats = [
+            'Y-m-d\TH:i:s',
+            'Y-m-d\TH:i',
+            'Y-m-d H:i:s',
+            'Y-m-d H:i',
+            'Y-m-d',
+        ];
+        foreach ($formats as $fmt) {
+            $dt = \DateTime::createFromFormat($fmt, $s);
+            if ($dt !== false) {
+                return $dt->format('Y-m-d H:i:s');
+            }
+        }
+        return null;
     }
 
     public static function computeReadingTime(string $content): int

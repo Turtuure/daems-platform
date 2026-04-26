@@ -23,7 +23,7 @@ final class SqlInsightRepository implements InsightRepositoryInterface
             $params[] = $category;
         }
         if (!$includeUnpublished) {
-            $where .= ' AND published_date <= CURDATE()';
+            $where .= ' AND published_date <= NOW()';
         }
         $rows = $this->db->query(
             "SELECT * FROM insights WHERE {$where} ORDER BY published_date DESC",
@@ -129,21 +129,21 @@ final class SqlInsightRepository implements InsightRepositoryInterface
         }
         $featuredDays = $publishedDays; // same key range as published
 
-        // Aggregate sparkline counts per published_date + featured flag.
-        // CURDATE() is used in SQL so MySQL's timezone is authoritative for
-        // the published/scheduled boundary.
+        // Aggregate sparkline counts per published-day + featured flag.
+        // DATE(published_date) collapses datetime to its calendar day; the
+        // 30-day window is calendar-relative so this stays correct.
         $sql = <<<SQL
             SELECT
-                published_date,
+                DATE(published_date) AS published_day,
                 featured,
                 COUNT(*) AS cnt
             FROM insights
             WHERE tenant_id = ?
               AND (
-                   (published_date BETWEEN DATE_SUB(CURDATE(), INTERVAL 29 DAY) AND CURDATE())
-                OR (published_date BETWEEN DATE_ADD(CURDATE(), INTERVAL 1 DAY) AND DATE_ADD(CURDATE(), INTERVAL 30 DAY))
+                   (DATE(published_date) BETWEEN DATE_SUB(CURDATE(), INTERVAL 29 DAY) AND CURDATE())
+                OR (DATE(published_date) BETWEEN DATE_ADD(CURDATE(), INTERVAL 1 DAY) AND DATE_ADD(CURDATE(), INTERVAL 30 DAY))
               )
-            GROUP BY published_date, featured
+            GROUP BY DATE(published_date), featured
         SQL;
         $rows = $this->db->query(
             $sql,
@@ -151,7 +151,7 @@ final class SqlInsightRepository implements InsightRepositoryInterface
         );
 
         foreach ($rows as $row) {
-            $date     = self::str($row, 'published_date');
+            $date     = self::str($row, 'published_day');
             $featured = self::intCol($row, 'featured') === 1;
             $cnt      = self::intCol($row, 'cnt');
 
@@ -170,12 +170,14 @@ final class SqlInsightRepository implements InsightRepositoryInterface
         }
 
         // Accurate totals (full history, not limited to 30-day window).
-        // CURDATE() keeps MySQL as the timezone authority for boundary decisions.
+        // NOW() keeps MySQL as the time authority for the boundary decision —
+        // matters now that published_date is a DATETIME (an item scheduled
+        // for 17:00 today should count as 'scheduled' all morning).
         $totals = $this->db->query(
             'SELECT
-                SUM(CASE WHEN published_date <= CURDATE() THEN 1 ELSE 0 END) AS published,
-                SUM(CASE WHEN published_date >  CURDATE() THEN 1 ELSE 0 END) AS scheduled,
-                SUM(CASE WHEN published_date <= CURDATE() AND featured = 1 THEN 1 ELSE 0 END) AS featured
+                SUM(CASE WHEN published_date <= NOW() THEN 1 ELSE 0 END) AS published,
+                SUM(CASE WHEN published_date >  NOW() THEN 1 ELSE 0 END) AS scheduled,
+                SUM(CASE WHEN published_date <= NOW() AND featured = 1 THEN 1 ELSE 0 END) AS featured
              FROM insights
              WHERE tenant_id = ?',
             [$tenantId->value()],

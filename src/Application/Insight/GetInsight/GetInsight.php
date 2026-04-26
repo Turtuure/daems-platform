@@ -20,11 +20,13 @@ final class GetInsight
             return new GetInsightOutput(null);
         }
 
-        // Public read: hide drafts (no publish date) and not-yet-published
-        // (publish date in the future). Backstage uses InsightRepository
+        // Public read: hide drafts (no publish datetime) and not-yet-published
+        // (publish datetime in the future). Backstage uses InsightRepository
         // directly via findByIdForTenant so this guard doesn't affect editing.
+        // Compares ISO datetime strings: '2026-04-26 09:00:00' ordering is
+        // correct as long as both sides use the same Y-m-d H:i:s format.
         $publishDate = $insight->date();
-        if ($publishDate === null || $publishDate > date('Y-m-d')) {
+        if ($publishDate === null || $publishDate > date('Y-m-d H:i:s')) {
             return new GetInsightOutput(null);
         }
 

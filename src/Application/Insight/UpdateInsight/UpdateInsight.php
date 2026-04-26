@@ -35,7 +35,7 @@ final class UpdateInsight
             category: $in->category,
             categoryLabel: $in->categoryLabel,
             featured: $in->featured,
-            date: $in->publishedDate,
+            date: CreateInsight::normalizeDateTime($in->publishedDate),
             author: $in->author,
             readingTime: CreateInsight::computeReadingTime($in->content),
             excerpt: $in->excerpt,
@@ -71,8 +71,10 @@ final class UpdateInsight
             $errors['category'] = 'required';
         }
         // null published_date = draft (not yet published or scheduled).
-        // Only validate the format when a value is provided.
-        if ($in->publishedDate !== null && !\DateTime::createFromFormat('Y-m-d', $in->publishedDate)) {
+        // Only validate the format when a value is provided. The normalizer
+        // accepts Y-m-d, Y-m-d H:i, Y-m-d H:i:s, and the HTML datetime-local
+        // T-separator variants; null return means no format matched.
+        if ($in->publishedDate !== null && CreateInsight::normalizeDateTime($in->publishedDate) === null) {
             $errors['published_date'] = 'invalid_format';
         }
         if ($errors !== []) {
