@@ -1,0 +1,56 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://daems.fi/schemas/module-manifest.schema.json",
+  "title": "DAEMS module manifest",
+  "type": "object",
+  "required": ["name", "version", "namespace", "src_path", "bindings", "routes", "migrations_path"],
+  "additionalProperties": false,
+  "properties": {
+    "name": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9-]*$",
+      "description": "Kebab-case identifier; URL prefix; tenant_modules.module_name value."
+    },
+    "version": {
+      "type": "string",
+      "pattern": "^\\d+\\.\\d+\\.\\d+(?:[-+].*)?$",
+      "description": "Semver."
+    },
+    "description": {
+      "type": "string"
+    },
+    "namespace": {
+      "type": "string",
+      "pattern": "^DaemsModule\\\\[A-Z][A-Za-z0-9]*\\\\$",
+      "description": "PSR-4 namespace prefix. Must start with DaemsModule\\ and end with \\."
+    },
+    "src_path": {
+      "type": "string",
+      "description": "Relative path under module dir where the namespace is rooted."
+    },
+    "bindings": {
+      "type": "string",
+      "pattern": "\\.php$"
+    },
+    "routes": {
+      "type": "string",
+      "pattern": "\\.php$"
+    },
+    "migrations_path": {
+      "type": "string"
+    },
+    "frontend": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "public_pages": { "type": "string" },
+        "backstage_pages": { "type": "string" },
+        "assets": { "type": "string" }
+      }
+    },
+    "requires": {
+      "type": "object",
+      "additionalProperties": { "type": "string" }
+    }
+  }
+}
