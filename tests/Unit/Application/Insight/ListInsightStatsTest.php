@@ -28,7 +28,7 @@ final class ListInsightStatsTest extends TestCase
                 return [
                     'published' => ['value' => 0, 'sparkline' => []],
                     'scheduled' => ['value' => 0, 'sparkline' => []],
-                    'featured'  => ['value' => 0, 'sparkline' => []],
+                    'featured'  => ['value' => 0, 'sparkline' => [], 'sparkline_scheduled' => []],
                 ];
             }
         };
@@ -46,7 +46,7 @@ final class ListInsightStatsTest extends TestCase
         $payload = [
             'published' => ['value' => 5, 'sparkline' => [['date' => '2026-04-25', 'value' => 1]]],
             'scheduled' => ['value' => 2, 'sparkline' => []],
-            'featured'  => ['value' => 1, 'sparkline' => []],
+            'featured'  => ['value' => 1, 'sparkline' => [], 'sparkline_scheduled' => []],
         ];
         $repo = new class($payload) implements InsightRepositoryInterface {
             public function __construct(private array $payload) {}

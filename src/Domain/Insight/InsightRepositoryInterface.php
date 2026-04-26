@@ -33,15 +33,18 @@ interface InsightRepositoryInterface
      * @return array{
      *   published: array{value: int, sparkline: list<array{date: string, value: int}>},
      *   scheduled: array{value: int, sparkline: list<array{date: string, value: int}>},
-     *   featured:  array{value: int, sparkline: list<array{date: string, value: int}>}
+     *   featured:  array{
+     *     value: int,
+     *     sparkline: list<array{date: string, value: int}>,
+     *     sparkline_scheduled: list<array{date: string, value: int}>
+     *   }
      * }
      *
      * Sparkline arrays are exactly 30 entries:
-     *   - published: count of insights whose published_date falls on each of the
-     *     last 30 days (today = entry 29, 29 days ago = entry 0).
-     *   - scheduled: count of insights whose published_date falls on each of the
-     *     next 30 days (today+1 = entry 0, today+30 = entry 29).
-     *   - featured:  same window as published, but only featured = 1.
+     *   - published:                  count per last 30 days (today = entry 29, 29 days ago = entry 0).
+     *   - scheduled:                  count per next 30 days (today+1 = entry 0, today+30 = entry 29).
+     *   - featured.sparkline:         past-30 published-and-featured (same window as published).
+     *   - featured.sparkline_scheduled: next-30 scheduled-and-featured (same window as scheduled).
      *
      * Missing days are zero-filled. Date strings are 'YYYY-MM-DD'.
      */

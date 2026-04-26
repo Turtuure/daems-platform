@@ -105,7 +105,11 @@ final class SqlInsightRepository implements InsightRepositoryInterface
      * @return array{
      *   published: array{value: int, sparkline: list<array{date: string, value: int}>},
      *   scheduled: array{value: int, sparkline: list<array{date: string, value: int}>},
-     *   featured:  array{value: int, sparkline: list<array{date: string, value: int}>}
+     *   featured:  array{
+     *     value: int,
+     *     sparkline: list<array{date: string, value: int}>,
+     *     sparkline_scheduled: list<array{date: string, value: int}>
+     *   }
      * }
      */
     public function statsForTenant(TenantId $tenantId): array
@@ -127,7 +131,8 @@ final class SqlInsightRepository implements InsightRepositoryInterface
         for ($i = 1; $i <= 30; $i++) {
             $scheduledDays[$base->modify("+{$i} days")->format('Y-m-d')] = 0;
         }
-        $featuredDays = $publishedDays; // same key range as published
+        $featuredDays          = $publishedDays; // same key range as published
+        $featuredScheduledDays = $scheduledDays; // mirrors next-30-days window
 
         // Aggregate sparkline counts per published-day + featured flag.
         // DATE(published_date) collapses datetime to its calendar day; the
@@ -166,6 +171,9 @@ final class SqlInsightRepository implements InsightRepositoryInterface
                 if (isset($scheduledDays[$date])) {
                     $scheduledDays[$date] += $cnt;
                 }
+                if ($featured && isset($featuredScheduledDays[$date])) {
+                    $featuredScheduledDays[$date] += $cnt;
+                }
             }
         }
 
@@ -198,8 +206,9 @@ final class SqlInsightRepository implements InsightRepositoryInterface
                 'sparkline' => self::seriesFromMap($scheduledDays),
             ],
             'featured' => [
-                'value'     => self::nullableIntCol($totalRow, 'featured'),
-                'sparkline' => self::seriesFromMap($featuredDays),
+                'value'               => self::nullableIntCol($totalRow, 'featured'),
+                'sparkline'           => self::seriesFromMap($featuredDays),
+                'sparkline_scheduled' => self::seriesFromMap($featuredScheduledDays),
             ],
         ];
     }

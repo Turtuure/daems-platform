@@ -134,7 +134,7 @@ final class UpdateInsightTest extends TestCase
             }
             public function save(Insight $i): void {}
             public function delete(InsightId $id, TenantId $t): void {}
-            public function statsForTenant(TenantId $t): array { return ['published' => ['value' => 0, 'sparkline' => []], 'scheduled' => ['value' => 0, 'sparkline' => []], 'featured' => ['value' => 0, 'sparkline' => []]]; }
+            public function statsForTenant(TenantId $t): array { return ['published' => ['value' => 0, 'sparkline' => []], 'scheduled' => ['value' => 0, 'sparkline' => []], 'featured' => ['value' => 0, 'sparkline' => [], 'sparkline_scheduled' => []]]; }
         };
     }
 }

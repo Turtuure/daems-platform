@@ -62,16 +62,19 @@ final class InMemoryInsightRepository implements InsightRepositoryInterface
         $base  = new \DateTimeImmutable('today');
         $today = $base->format('Y-m-d');
 
-        $publishedDays = [];
-        $featuredDays  = [];
-        $scheduledDays = [];
+        $publishedDays         = [];
+        $featuredDays          = [];
+        $scheduledDays         = [];
+        $featuredScheduledDays = [];
         for ($i = 29; $i >= 0; $i--) {
             $d = $base->modify("-{$i} days")->format('Y-m-d');
             $publishedDays[$d] = 0;
             $featuredDays[$d]  = 0;
         }
         for ($i = 1; $i <= 30; $i++) {
-            $scheduledDays[$base->modify("+{$i} days")->format('Y-m-d')] = 0;
+            $d = $base->modify("+{$i} days")->format('Y-m-d');
+            $scheduledDays[$d]         = 0;
+            $featuredScheduledDays[$d] = 0;
         }
 
         $publishedTotal = 0;
@@ -99,13 +102,20 @@ final class InMemoryInsightRepository implements InsightRepositoryInterface
                 if (isset($scheduledDays[$date])) {
                     $scheduledDays[$date]++;
                 }
+                if ($insight->featured() && isset($featuredScheduledDays[$date])) {
+                    $featuredScheduledDays[$date]++;
+                }
             }
         }
 
         return [
             'published' => ['value' => $publishedTotal, 'sparkline' => self::seriesFromMap($publishedDays)],
             'scheduled' => ['value' => $scheduledTotal, 'sparkline' => self::seriesFromMap($scheduledDays)],
-            'featured'  => ['value' => $featuredTotal,  'sparkline' => self::seriesFromMap($featuredDays)],
+            'featured'  => [
+                'value'               => $featuredTotal,
+                'sparkline'           => self::seriesFromMap($featuredDays),
+                'sparkline_scheduled' => self::seriesFromMap($featuredScheduledDays),
+            ],
         ];
     }
 
