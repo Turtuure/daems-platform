@@ -131,6 +131,14 @@ final class SqlUserRepository implements UserRepositoryInterface
         $this->db->execute('UPDATE users SET public_avatar_visible = ? WHERE id = ?', [$visible ? 1 : 0, $id]);
     }
 
+    public function updateTimeFormatOverride(string $id, ?string $format): void
+    {
+        if ($format !== null && $format !== '12' && $format !== '24') {
+            throw new \DomainException("Invalid time_format_override: {$format}");
+        }
+        $this->db->execute('UPDATE users SET time_format_override = ? WHERE id = ?', [$format, $id]);
+    }
+
     public function deleteById(string $id): void
     {
         $this->db->execute('DELETE FROM users WHERE id = ?', [$id]);
@@ -181,6 +189,9 @@ final class SqlUserRepository implements UserRepositoryInterface
             isPlatformAdmin: (bool) ($row['is_platform_admin'] ?? false),
             deletedAt:       $deletedAt,
             publicAvatarVisible: (bool) ($row['public_avatar_visible'] ?? 1),
+            timeFormatOverride:  isset($row['time_format_override']) && ($row['time_format_override'] === '12' || $row['time_format_override'] === '24')
+                ? (string) $row['time_format_override']
+                : null,
         );
     }
 }

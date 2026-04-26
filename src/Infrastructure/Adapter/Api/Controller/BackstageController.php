@@ -226,9 +226,12 @@ final class BackstageController
         $rawPrefix = $request->input('member_number_prefix');
         $prefix = is_string($rawPrefix) ? $rawPrefix : null;
 
+        $rawFmt = $request->input('default_time_format');
+        $defaultTimeFormat = ($rawFmt === '12' || $rawFmt === '24') ? (string) $rawFmt : null;
+
         try {
             $out = $this->updateTenantSettings->execute(
-                new UpdateTenantSettingsInput($actor, $prefix),
+                new UpdateTenantSettingsInput($actor, $prefix, $defaultTimeFormat),
             );
         } catch (ForbiddenException) {
             return Response::json(['error' => 'forbidden'], 403);
@@ -236,7 +239,10 @@ final class BackstageController
             return Response::json(['error' => 'validation_failed', 'errors' => $e->fields()], 422);
         }
 
-        return Response::json(['data' => ['member_number_prefix' => $out->memberNumberPrefix]]);
+        return Response::json(['data' => [
+            'member_number_prefix' => $out->memberNumberPrefix,
+            'default_time_format'  => $out->defaultTimeFormat,
+        ]]);
     }
 
     public function pendingApplications(Request $request): Response

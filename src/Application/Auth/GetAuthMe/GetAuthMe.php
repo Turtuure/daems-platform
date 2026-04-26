@@ -30,15 +30,22 @@ final class GetAuthMe
         $token = $this->tokens->findByHash($hash);
         $expiresAt = $token !== null ? $token->expiresAt()->format(\DATE_ATOM) : null;
 
+        $userOverride         = $user->timeFormatOverride();
+        $tenantDefaultTime    = $tenant->defaultTimeFormat;
+        $effectiveTimeFormat  = $userOverride ?? $tenantDefaultTime;
+
         return new GetAuthMeOutput(
             userId:                   $actor->id->value(),
             name:                     $user->name(),
             email:                    $actor->email,
             isPlatformAdmin:          $actor->isPlatformAdmin,
             publicAvatarVisible:      $user->publicAvatarVisible(),
+            timeFormatOverride:       $userOverride,
             tenantSlug:               $tenant->slug->value(),
             tenantName:               $tenant->name,
             tenantMemberNumberPrefix: $tenant->memberNumberPrefix,
+            tenantDefaultTimeFormat:  $tenantDefaultTime,
+            effectiveTimeFormat:      $effectiveTimeFormat,
             roleInTenant:             $actor->roleInActiveTenant?->value,
             tokenExpiresAt:           $expiresAt,
         );

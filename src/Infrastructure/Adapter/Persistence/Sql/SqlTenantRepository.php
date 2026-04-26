@@ -18,7 +18,7 @@ final class SqlTenantRepository implements TenantRepositoryInterface
 
     public function findById(TenantId $id): ?Tenant
     {
-        $stmt = $this->pdo->prepare('SELECT id, slug, name, created_at, member_number_prefix FROM tenants WHERE id = ?');
+        $stmt = $this->pdo->prepare('SELECT id, slug, name, created_at, member_number_prefix, default_time_format FROM tenants WHERE id = ?');
         $stmt->execute([$id->value()]);
         $row = $stmt->fetch(PDO::FETCH_ASSOC);
         return is_array($row) ? $this->hydrate($row) : null;
@@ -26,7 +26,7 @@ final class SqlTenantRepository implements TenantRepositoryInterface
 
     public function findBySlug(string $slug): ?Tenant
     {
-        $stmt = $this->pdo->prepare('SELECT id, slug, name, created_at, member_number_prefix FROM tenants WHERE slug = ?');
+        $stmt = $this->pdo->prepare('SELECT id, slug, name, created_at, member_number_prefix, default_time_format FROM tenants WHERE slug = ?');
         $stmt->execute([$slug]);
         $row = $stmt->fetch(PDO::FETCH_ASSOC);
         return is_array($row) ? $this->hydrate($row) : null;
@@ -35,7 +35,7 @@ final class SqlTenantRepository implements TenantRepositoryInterface
     public function findByDomain(string $domain): ?Tenant
     {
         $stmt = $this->pdo->prepare(
-            'SELECT t.id, t.slug, t.name, t.created_at, t.member_number_prefix
+            'SELECT t.id, t.slug, t.name, t.created_at, t.member_number_prefix, t.default_time_format
              FROM tenants t
              JOIN tenant_domains td ON td.tenant_id = t.id
              WHERE td.domain = ? LIMIT 1'
@@ -48,7 +48,7 @@ final class SqlTenantRepository implements TenantRepositoryInterface
     /** @return list<Tenant> */
     public function findAll(): array
     {
-        $stmt = $this->pdo->query('SELECT id, slug, name, created_at, member_number_prefix FROM tenants ORDER BY slug');
+        $stmt = $this->pdo->query('SELECT id, slug, name, created_at, member_number_prefix, default_time_format FROM tenants ORDER BY slug');
         if ($stmt === false) {
             return [];
         }
@@ -75,12 +75,16 @@ final class SqlTenantRepository implements TenantRepositoryInterface
             ? $row['member_number_prefix']
             : null;
 
+        $tf = $row['default_time_format'] ?? '24';
+        $defaultTimeFormat = ($tf === '12' || $tf === '24') ? (string) $tf : '24';
+
         return new Tenant(
             TenantId::fromString($id),
             TenantSlug::fromString($slug),
             $name,
             new DateTimeImmutable($created),
             $prefix,
+            $defaultTimeFormat,
         );
     }
 
@@ -88,5 +92,14 @@ final class SqlTenantRepository implements TenantRepositoryInterface
     {
         $stmt = $this->pdo->prepare('UPDATE tenants SET member_number_prefix = ? WHERE id = ?');
         $stmt->execute([$prefix, $tenantId->value()]);
+    }
+
+    public function updateDefaultTimeFormat(TenantId $tenantId, string $format): void
+    {
+        if ($format !== '12' && $format !== '24') {
+            throw new DomainException("Invalid time format: {$format}");
+        }
+        $stmt = $this->pdo->prepare('UPDATE tenants SET default_time_format = ? WHERE id = ?');
+        $stmt->execute([$format, $tenantId->value()]);
     }
 }

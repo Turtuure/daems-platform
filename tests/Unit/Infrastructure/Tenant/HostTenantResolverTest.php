@@ -39,6 +39,7 @@ final class HostTenantResolverTest extends TestCase
             }
             public function findAll(): array { return [$this->daems]; }
             public function updatePrefix(TenantId $tenantId, ?string $prefix): void {}
+            public function updateDefaultTimeFormat(TenantId $tenantId, string $format): void {}
         };
     }
 

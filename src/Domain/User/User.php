@@ -24,6 +24,8 @@ final class User
         private readonly bool $isPlatformAdmin = false,
         private readonly ?\DateTimeImmutable $deletedAt = null,
         private readonly bool $publicAvatarVisible = true,
+        /** '12', '24', or null = inherit tenant default. */
+        private readonly ?string $timeFormatOverride = null,
     ) {}
 
     public function id(): UserId { return $this->id; }
@@ -43,4 +45,5 @@ final class User
     public function isPlatformAdmin(): bool { return $this->isPlatformAdmin; }
     public function deletedAt(): ?\DateTimeImmutable { return $this->deletedAt; }
     public function publicAvatarVisible(): bool { return $this->publicAvatarVisible; }
+    public function timeFormatOverride(): ?string { return $this->timeFormatOverride; }
 }

@@ -14,5 +14,7 @@ final class Tenant
         public readonly string $name,
         public readonly DateTimeImmutable $createdAt,
         public readonly ?string $memberNumberPrefix = null,
+        /** Tenant-wide default for the backstage TimePicker: '12' or '24'. */
+        public readonly string $defaultTimeFormat = '24',
     ) {}
 }

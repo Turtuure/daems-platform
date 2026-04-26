@@ -14,6 +14,8 @@ use Daems\Application\User\GetUserActivity\GetUserActivity;
 use Daems\Application\User\GetUserActivity\GetUserActivityInput;
 use Daems\Application\Profile\UpdateMyPublicProfilePrivacy\UpdateMyPublicProfilePrivacy;
 use Daems\Application\Profile\UpdateMyPublicProfilePrivacy\UpdateMyPublicProfilePrivacyInput;
+use Daems\Application\Profile\UpdateMyTimeFormat\UpdateMyTimeFormat;
+use Daems\Application\Profile\UpdateMyTimeFormat\UpdateMyTimeFormatInput;
 use Daems\Application\User\UpdateProfile\UpdateProfile;
 use Daems\Application\User\UpdateProfile\UpdateProfileInput;
 use Daems\Domain\Auth\ForbiddenException;
@@ -31,7 +33,30 @@ final class UserController
         private readonly GetUserActivity $getUserActivity,
         private readonly AnonymiseAccount $anonymiseAccount,
         private readonly UpdateMyPublicProfilePrivacy $updateMyPrivacy,
+        private readonly UpdateMyTimeFormat $updateMyTimeFormat,
     ) {}
+
+    public function updateMyTimeFormat(Request $request): Response
+    {
+        $actor = $request->requireActingUser();
+        $raw   = $request->input('time_format');
+        // Accept '12' | '24' | null/empty (clear → inherit)
+        $value = null;
+        if ($raw === '12' || $raw === '24') {
+            $value = $raw;
+        } elseif ($raw !== null && $raw !== '') {
+            return Response::json(['error' => 'invalid_value', 'errors' => ['time_format' => 'must_be_12_or_24_or_null']], 422);
+        }
+        try {
+            $out = $this->updateMyTimeFormat->execute(new UpdateMyTimeFormatInput($actor, $value));
+        } catch (ValidationException $e) {
+            return Response::json(['error' => 'validation_failed', 'errors' => $e->fields()], 422);
+        }
+        return Response::json(['data' => [
+            'time_format_override' => $out->timeFormatOverride,
+            'effective'            => $out->effectiveTimeFormat,
+        ]]);
+    }
 
     public function updateMyPrivacy(Request $request): Response
     {

@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(tasklist //FI \"IMAGENAME eq node.exe\" //FO CSV)",
+      "Bash(tasklist //FI \"IMAGENAME eq claude.exe\" //FO CSV)",
+      "Bash(tasklist //FO CSV)",
+      "Bash(wmic process *)"
+    ]
+  }
+}

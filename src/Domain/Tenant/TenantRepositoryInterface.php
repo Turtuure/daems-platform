@@ -16,4 +16,6 @@ interface TenantRepositoryInterface
     public function findAll(): array;
 
     public function updatePrefix(TenantId $tenantId, ?string $prefix): void;
+
+    public function updateDefaultTimeFormat(TenantId $tenantId, string $format): void;
 }

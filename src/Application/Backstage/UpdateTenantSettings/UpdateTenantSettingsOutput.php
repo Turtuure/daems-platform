@@ -7,5 +7,6 @@ final class UpdateTenantSettingsOutput
 {
     public function __construct(
         public readonly ?string $memberNumberPrefix,
+        public readonly string $defaultTimeFormat,
     ) {}
 }

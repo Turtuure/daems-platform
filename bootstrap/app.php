@@ -800,11 +800,18 @@ $container->bind(UserController::class,
         $c->make(GetUserActivity::class),
         $c->make(AnonymiseAccount::class),
         $c->make(\Daems\Application\Profile\UpdateMyPublicProfilePrivacy\UpdateMyPublicProfilePrivacy::class),
+        $c->make(\Daems\Application\Profile\UpdateMyTimeFormat\UpdateMyTimeFormat::class),
     ),
 );
 $container->bind(\Daems\Application\Profile\UpdateMyPublicProfilePrivacy\UpdateMyPublicProfilePrivacy::class,
     static fn(Container $c) => new \Daems\Application\Profile\UpdateMyPublicProfilePrivacy\UpdateMyPublicProfilePrivacy(
         $c->make(\Daems\Domain\User\UserRepositoryInterface::class),
+    ),
+);
+$container->bind(\Daems\Application\Profile\UpdateMyTimeFormat\UpdateMyTimeFormat::class,
+    static fn(Container $c) => new \Daems\Application\Profile\UpdateMyTimeFormat\UpdateMyTimeFormat(
+        $c->make(\Daems\Domain\User\UserRepositoryInterface::class),
+        $c->make(\Daems\Domain\Tenant\TenantRepositoryInterface::class),
     ),
 );
 

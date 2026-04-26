@@ -10,5 +10,7 @@ final class UpdateTenantSettingsInput
     public function __construct(
         public readonly ActingUser $actor,
         public readonly ?string $memberNumberPrefix,
+        /** '12' | '24' | null (null = no change). */
+        public readonly ?string $defaultTimeFormat = null,
     ) {}
 }

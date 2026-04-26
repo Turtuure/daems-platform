@@ -62,6 +62,23 @@ final class InMemoryTenantRepository implements TenantRepositoryInterface
             $existing->name,
             $existing->createdAt,
             $prefix,
+            $existing->defaultTimeFormat,
+        );
+    }
+
+    public function updateDefaultTimeFormat(TenantId $tenantId, string $format): void
+    {
+        $existing = $this->byId[$tenantId->value()] ?? null;
+        if ($existing === null) {
+            return;
+        }
+        $this->byId[$tenantId->value()] = new Tenant(
+            $existing->id,
+            $existing->slug,
+            $existing->name,
+            $existing->createdAt,
+            $existing->memberNumberPrefix,
+            $format,
         );
     }
 

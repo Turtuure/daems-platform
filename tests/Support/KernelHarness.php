@@ -197,6 +197,7 @@ final class KernelHarness
             /** @return list<\Daems\Domain\Tenant\Tenant> */
             public function findAll(): array { return []; }
             public function updatePrefix(\Daems\Domain\Tenant\TenantId $tenantId, ?string $prefix): void {}
+            public function updateDefaultTimeFormat(\Daems\Domain\Tenant\TenantId $tenantId, string $format): void {}
         });
         $container->singleton(AuthTokenRepositoryInterface::class, fn() => $this->tokens);
         $container->singleton(AuthLoginAttemptRepositoryInterface::class, fn() => $this->attempts);
@@ -617,10 +618,16 @@ final class KernelHarness
             $c->make(GetUserActivity::class),
             $c->make(AnonymiseAccount::class),
             $c->make(\Daems\Application\Profile\UpdateMyPublicProfilePrivacy\UpdateMyPublicProfilePrivacy::class),
+            $c->make(\Daems\Application\Profile\UpdateMyTimeFormat\UpdateMyTimeFormat::class),
         ));
         $container->bind(\Daems\Application\Profile\UpdateMyPublicProfilePrivacy\UpdateMyPublicProfilePrivacy::class,
             static fn(Container $c) => new \Daems\Application\Profile\UpdateMyPublicProfilePrivacy\UpdateMyPublicProfilePrivacy(
                 $c->make(\Daems\Domain\User\UserRepositoryInterface::class),
+            ));
+        $container->bind(\Daems\Application\Profile\UpdateMyTimeFormat\UpdateMyTimeFormat::class,
+            static fn(Container $c) => new \Daems\Application\Profile\UpdateMyTimeFormat\UpdateMyTimeFormat(
+                $c->make(\Daems\Domain\User\UserRepositoryInterface::class),
+                $c->make(\Daems\Domain\Tenant\TenantRepositoryInterface::class),
             ));
         $container->bind(ListProjectsForLocale::class,
             static fn(Container $c) => new ListProjectsForLocale($c->make(ProjectRepositoryInterface::class)));

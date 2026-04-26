@@ -34,6 +34,9 @@ interface UserRepositoryInterface
 
     public function updatePublicAvatarVisible(string $id, bool $visible): void;
 
+    /** $format must be '12', '24', or null (clear → inherit tenant default). */
+    public function updateTimeFormatOverride(string $id, ?string $format): void;
+
     public function deleteById(string $id): void;
 
     public function anonymise(string $userId, \DateTimeImmutable $now): void;
