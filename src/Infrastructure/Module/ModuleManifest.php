@@ -5,6 +5,7 @@ namespace Daems\Infrastructure\Module;
 
 final class ModuleManifest
 {
+    /** @param array<string, string> $requires */
     private function __construct(
         private readonly string $name,
         private readonly string $version,
@@ -18,10 +19,13 @@ final class ModuleManifest
         private readonly ?string $absolutePublicPagesPath,
         private readonly ?string $absoluteBackstagePagesPath,
         private readonly ?string $absoluteAssetsPath,
+        private readonly array $requires,
     ) {}
 
     /**
      * @param array<string, mixed> $data
+     * @throws ManifestValidationException if any field is missing, empty, or
+     *         fails its format constraint.
      */
     public static function fromArray(array $data, string $moduleDir): self
     {
@@ -44,7 +48,11 @@ final class ModuleManifest
         }
 
         $base = rtrim($moduleDir, '/\\');
-        $abs = static fn(string $rel): string => $base . '/' . ltrim($rel, '/');
+        // Normalize Windows backslashes in JSON-supplied paths to forward
+        // slashes before concatenation. Module authors should write forward
+        // slashes per JSON convention; this guard catches the mistake instead
+        // of producing mixed-separator paths that misbehave downstream.
+        $abs = static fn(string $rel): string => $base . '/' . ltrim(str_replace('\\', '/', $rel), '/');
 
         /** @var string $bindingsRel */
         $bindingsRel = $data['bindings'];
@@ -76,6 +84,33 @@ final class ModuleManifest
         /** @var string|null $assets */
         $assets = isset($frontend['assets']) && is_string($frontend['assets']) ? $frontend['assets'] : null;
 
+        // Optional fields are either absent or non-empty — empty strings are
+        // a manifest authoring mistake that would silently produce no-op paths.
+        foreach (['public_pages' => $publicPages, 'backstage_pages' => $backstagePages, 'assets' => $assets] as $optName => $optVal) {
+            if ($optVal === '') {
+                throw new ManifestValidationException("module.json: frontend.{$optName} cannot be empty if provided");
+            }
+        }
+
+        // Phase 1 stores requires for forward compatibility — runtime
+        // enforcement (dependency resolution + cascade-disable) lands in
+        // Phase 2+ when the module loader gains tenant-aware gating.
+        $requires = [];
+        if (isset($data['requires'])) {
+            if (!is_array($data['requires'])) {
+                throw new ManifestValidationException("module.json: requires must be an object mapping dependency name → version constraint");
+            }
+            foreach ($data['requires'] as $depName => $depVersion) {
+                if (!is_string($depName) || !preg_match('/^[a-z][a-z0-9-]*$/', $depName)) {
+                    throw new ManifestValidationException("module.json: requires key must be kebab-case identifier, got: " . (is_string($depName) ? "'{$depName}'" : gettype($depName)));
+                }
+                if (!is_string($depVersion) || $depVersion === '') {
+                    throw new ManifestValidationException("module.json: requires['{$depName}'] must be a non-empty string version constraint");
+                }
+                $requires[$depName] = $depVersion;
+            }
+        }
+
         return new self(
             name: $name,
             version: $version,
@@ -89,6 +124,7 @@ final class ModuleManifest
             absolutePublicPagesPath: $publicPages !== null ? $abs($publicPages) : null,
             absoluteBackstagePagesPath: $backstagePages !== null ? $abs($backstagePages) : null,
             absoluteAssetsPath: $assets !== null ? $abs($assets) : null,
+            requires: $requires,
         );
     }
 
@@ -104,4 +140,7 @@ final class ModuleManifest
     public function absolutePublicPagesPath(): ?string { return $this->absolutePublicPagesPath; }
     public function absoluteBackstagePagesPath(): ?string { return $this->absoluteBackstagePagesPath; }
     public function absoluteAssetsPath(): ?string { return $this->absoluteAssetsPath; }
+
+    /** @return array<string, string> */
+    public function requires(): array { return $this->requires; }
 }

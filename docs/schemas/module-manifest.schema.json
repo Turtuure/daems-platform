@@ -50,7 +50,11 @@
     },
     "requires": {
       "type": "object",
-      "additionalProperties": { "type": "string" }
+      "description": "Map of dependency name → version constraint. Keys must be kebab-case identifiers (matching the dependency module's name field, plus the reserved 'core' key for the platform itself). Phase 1 stores these but does not enforce; runtime cascade-disable lands in Phase 2+.",
+      "propertyNames": {
+        "pattern": "^[a-z][a-z0-9-]*$"
+      },
+      "additionalProperties": { "type": "string", "minLength": 1 }
     }
   }
 }

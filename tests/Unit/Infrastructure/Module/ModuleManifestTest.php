@@ -73,4 +73,83 @@ final class ModuleManifestTest extends TestCase
             'migrations_path' => 'm/',
         ], '/path');
     }
+
+    public function test_normalizes_windows_backslashes_in_paths(): void
+    {
+        $m = ModuleManifest::fromArray([
+            'name' => 'x',
+            'version' => '1.0.0',
+            'namespace' => 'DaemsModule\\X\\',
+            'src_path' => 'backend\\src\\',
+            'bindings' => 'backend\\bindings.php',
+            'routes' => 'backend\\routes.php',
+            'migrations_path' => 'backend\\migrations\\',
+        ], '/path/to/x');
+        // Backslashes in JSON-supplied paths must collapse to forward slashes
+        // before concatenation — no mixed-separator output.
+        self::assertSame('/path/to/x/backend/src/', $m->absoluteSrcPath());
+        self::assertSame('/path/to/x/backend/bindings.php', $m->absoluteBindingsPath());
+        self::assertSame('/path/to/x/backend/migrations/', $m->absoluteMigrationsPath());
+    }
+
+    public function test_throws_on_empty_optional_frontend_field(): void
+    {
+        $this->expectException(ManifestValidationException::class);
+        $this->expectExceptionMessageMatches('/frontend.public_pages.*empty/i');
+        ModuleManifest::fromArray([
+            'name' => 'x',
+            'version' => '1.0.0',
+            'namespace' => 'DaemsModule\\X\\',
+            'src_path' => 'backend/src/',
+            'bindings' => 'b.php',
+            'routes' => 'r.php',
+            'migrations_path' => 'm/',
+            'frontend' => ['public_pages' => ''],
+        ], '/path');
+    }
+
+    public function test_parses_requires_map(): void
+    {
+        $m = ModuleManifest::fromArray([
+            'name' => 'x',
+            'version' => '1.0.0',
+            'namespace' => 'DaemsModule\\X\\',
+            'src_path' => 'backend/src/',
+            'bindings' => 'b.php',
+            'routes' => 'r.php',
+            'migrations_path' => 'm/',
+            'requires' => ['core' => '>=1.0.0', 'forum' => '^1.2'],
+        ], '/path');
+        self::assertSame(['core' => '>=1.0.0', 'forum' => '^1.2'], $m->requires());
+    }
+
+    public function test_requires_defaults_to_empty_array_when_absent(): void
+    {
+        $m = ModuleManifest::fromArray([
+            'name' => 'x',
+            'version' => '1.0.0',
+            'namespace' => 'DaemsModule\\X\\',
+            'src_path' => 'backend/src/',
+            'bindings' => 'b.php',
+            'routes' => 'r.php',
+            'migrations_path' => 'm/',
+        ], '/path');
+        self::assertSame([], $m->requires());
+    }
+
+    public function test_throws_on_non_kebab_requires_key(): void
+    {
+        $this->expectException(ManifestValidationException::class);
+        $this->expectExceptionMessageMatches('/requires.*kebab-case/i');
+        ModuleManifest::fromArray([
+            'name' => 'x',
+            'version' => '1.0.0',
+            'namespace' => 'DaemsModule\\X\\',
+            'src_path' => 'backend/src/',
+            'bindings' => 'b.php',
+            'routes' => 'r.php',
+            'migrations_path' => 'm/',
+            'requires' => ['Core With Spaces' => '>=1.0.0'],
+        ], '/path');
+    }
 }
