@@ -170,14 +170,18 @@ final class SqlInsightRepository implements InsightRepositoryInterface
         }
 
         // Accurate totals (full history, not limited to 30-day window).
-        // NOW() keeps MySQL as the time authority for the boundary decision —
-        // matters now that published_date is a DATETIME (an item scheduled
-        // for 17:00 today should count as 'scheduled' all morning).
+        // NOW() keeps MySQL as the time authority for the published/scheduled
+        // boundary — matters now that published_date is a DATETIME (an item
+        // scheduled for 17:00 today should count as 'scheduled' all morning).
+        // 'featured' counts ALL featured insights regardless of state (drafts,
+        // scheduled, published) — the editor's intent to highlight is
+        // independent of the publish lifecycle, and gating on NOW() made the
+        // KPI read 0 even when a featured piece was queued for next month.
         $totals = $this->db->query(
             'SELECT
                 SUM(CASE WHEN published_date <= NOW() THEN 1 ELSE 0 END) AS published,
                 SUM(CASE WHEN published_date >  NOW() THEN 1 ELSE 0 END) AS scheduled,
-                SUM(CASE WHEN published_date <= NOW() AND featured = 1 THEN 1 ELSE 0 END) AS featured
+                SUM(CASE WHEN featured = 1 THEN 1 ELSE 0 END) AS featured
              FROM insights
              WHERE tenant_id = ?',
             [$tenantId->value()],
