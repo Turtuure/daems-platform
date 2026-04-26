@@ -35,7 +35,11 @@ final class ListInsights
             'category'       => $i->category(),
             'category_label' => $i->categoryLabel(),
             'featured'       => $i->featured(),
+            // Both keys exposed for backwards compat:
+            //   'date'           — legacy, consumed by daem-society public /insights page
+            //   'published_date' — canonical schema name, consumed by backstage list JS
             'date'           => $i->date(),
+            'published_date' => $i->date(),
             'author'         => $i->author(),
             'reading_time'   => $i->readingTime(),
             'excerpt'        => $i->excerpt(),
