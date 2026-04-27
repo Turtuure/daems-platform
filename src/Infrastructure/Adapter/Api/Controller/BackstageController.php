@@ -4,38 +4,24 @@ declare(strict_types=1);
 
 namespace Daems\Infrastructure\Adapter\Api\Controller;
 
-use Daems\Application\Backstage\AdminUpdateProject\AdminUpdateProject;
-use Daems\Application\Backstage\AdminUpdateProject\AdminUpdateProjectInput;
 use Daems\Application\Backstage\ApproveEventProposal\ApproveEventProposal;
 use Daems\Application\Backstage\ApproveEventProposal\ApproveEventProposalInput;
-use Daems\Application\Backstage\ApproveProjectProposal\ApproveProjectProposal;
-use Daems\Application\Backstage\ApproveProjectProposal\ApproveProjectProposalInput;
 use Daems\Application\Backstage\GetEventWithAllTranslations\GetEventWithAllTranslations;
 use Daems\Application\Backstage\GetEventWithAllTranslations\GetEventWithAllTranslationsInput;
-use Daems\Application\Backstage\GetProjectWithAllTranslations\GetProjectWithAllTranslations;
-use Daems\Application\Backstage\GetProjectWithAllTranslations\GetProjectWithAllTranslationsInput;
 use Daems\Application\Backstage\ListEventProposalsForAdmin\ListEventProposalsForAdmin;
 use Daems\Application\Backstage\ListEventProposalsForAdmin\ListEventProposalsForAdminInput;
 use Daems\Application\Backstage\RejectEventProposal\RejectEventProposal;
 use Daems\Application\Backstage\RejectEventProposal\RejectEventProposalInput;
 use Daems\Application\Backstage\UpdateEventTranslation\UpdateEventTranslation;
 use Daems\Application\Backstage\UpdateEventTranslation\UpdateEventTranslationInput;
-use Daems\Application\Backstage\UpdateProjectTranslation\UpdateProjectTranslation;
-use Daems\Application\Backstage\UpdateProjectTranslation\UpdateProjectTranslationInput;
 use Daems\Application\Backstage\ArchiveEvent\ArchiveEvent;
 use Daems\Application\Backstage\ArchiveEvent\ArchiveEventInput;
 use Daems\Application\Backstage\ChangeMemberStatus\ChangeMemberStatus;
 use Daems\Application\Backstage\ChangeMemberStatus\ChangeMemberStatusInput;
-use Daems\Application\Backstage\ChangeProjectStatus\ChangeProjectStatus;
-use Daems\Application\Backstage\ChangeProjectStatus\ChangeProjectStatusInput;
 use Daems\Application\Backstage\CreateEvent\CreateEvent;
 use Daems\Application\Backstage\CreateEvent\CreateEventInput;
-use Daems\Application\Backstage\CreateProjectAsAdmin\CreateProjectAsAdmin;
-use Daems\Application\Backstage\CreateProjectAsAdmin\CreateProjectAsAdminInput;
 use Daems\Application\Backstage\DecideApplication\DecideApplication;
 use Daems\Application\Backstage\DecideApplication\DecideApplicationInput;
-use Daems\Application\Backstage\DeleteProjectCommentAsAdmin\DeleteProjectCommentAsAdmin;
-use Daems\Application\Backstage\DeleteProjectCommentAsAdmin\DeleteProjectCommentAsAdminInput;
 use Daems\Application\Backstage\DismissApplication\DismissApplication;
 use Daems\Application\Backstage\DismissApplication\DismissApplicationInput;
 use Daems\Application\Backstage\GetMemberAudit\GetMemberAudit;
@@ -50,8 +36,6 @@ use Daems\Application\Backstage\Applications\ListApplicationsStats\ListApplicati
 use Daems\Application\Backstage\Applications\ListApplicationsStats\ListApplicationsStatsInput;
 use Daems\Application\Backstage\Events\ListEventsStats\ListEventsStats;
 use Daems\Application\Backstage\Events\ListEventsStats\ListEventsStatsInput;
-use Daems\Application\Backstage\Projects\ListProjectsStats\ListProjectsStats;
-use Daems\Application\Backstage\Projects\ListProjectsStats\ListProjectsStatsInput;
 use Daems\Application\Backstage\Notifications\ListNotificationsStats\ListNotificationsStats;
 use Daems\Application\Backstage\Notifications\ListNotificationsStats\ListNotificationsStatsInput;
 use Daems\Application\Backstage\Members\ListMembersStats\ListMembersStats;
@@ -60,18 +44,10 @@ use Daems\Application\Backstage\ListPendingApplications\ListPendingApplications;
 use Daems\Application\Backstage\ListPendingApplications\ListPendingApplicationsForAdmin;
 use Daems\Application\Backstage\ListPendingApplications\ListPendingApplicationsForAdminInput;
 use Daems\Application\Backstage\ListPendingApplications\ListPendingApplicationsInput;
-use Daems\Application\Backstage\ListProjectCommentsForAdmin\ListProjectCommentsForAdmin;
-use Daems\Application\Backstage\ListProjectCommentsForAdmin\ListProjectCommentsForAdminInput;
-use Daems\Application\Backstage\ListProjectsForAdmin\ListProjectsForAdmin;
-use Daems\Application\Backstage\ListProjectsForAdmin\ListProjectsForAdminInput;
 use Daems\Application\Backstage\ListProposalsForAdmin\ListProposalsForAdmin;
 use Daems\Application\Backstage\ListProposalsForAdmin\ListProposalsForAdminInput;
 use Daems\Application\Backstage\PublishEvent\PublishEvent;
 use Daems\Application\Backstage\PublishEvent\PublishEventInput;
-use Daems\Application\Backstage\RejectProjectProposal\RejectProjectProposal;
-use Daems\Application\Backstage\RejectProjectProposal\RejectProjectProposalInput;
-use Daems\Application\Backstage\SetProjectFeatured\SetProjectFeatured;
-use Daems\Application\Backstage\SetProjectFeatured\SetProjectFeaturedInput;
 use Daems\Application\Backstage\UnregisterUserFromEvent\UnregisterUserFromEvent;
 use Daems\Application\Backstage\UnregisterUserFromEvent\UnregisterUserFromEventInput;
 use Daems\Application\Backstage\UpdateEvent\UpdateEvent;
@@ -105,25 +81,13 @@ final class BackstageController
         private readonly ArchiveEvent $archiveEvent,
         private readonly ListEventRegistrations $listEventRegistrations,
         private readonly UnregisterUserFromEvent $unregisterUserFromEvent,
-        private readonly ListProjectsForAdmin $listProjects,
-        private readonly CreateProjectAsAdmin $createProject,
-        private readonly AdminUpdateProject $updateProject,
-        private readonly ChangeProjectStatus $changeProjectStatus,
-        private readonly SetProjectFeatured $setProjectFeatured,
         private readonly ListProposalsForAdmin $listProposals,
-        private readonly ApproveProjectProposal $approveProposal,
-        private readonly RejectProjectProposal $rejectProposal,
-        private readonly ListProjectCommentsForAdmin $listProjectComments,
-        private readonly DeleteProjectCommentAsAdmin $deleteProjectComment,
         private readonly ListMembersStats $listMembersStats,
         private readonly ListApplicationsStats $listApplicationsStats,
         private readonly ListEventsStats $listEventsStats,
-        private readonly ListProjectsStats $listProjectsStats,
         private readonly ListNotificationsStats $listNotificationsStats,
         private readonly GetEventWithAllTranslations $getEventWithAllTranslations,
         private readonly UpdateEventTranslation $updateEventTranslation,
-        private readonly GetProjectWithAllTranslations $getProjectWithAllTranslations,
-        private readonly UpdateProjectTranslation $updateProjectTranslation,
         private readonly ListEventProposalsForAdmin $listEventProposals,
         private readonly ApproveEventProposal $approveEventProposal,
         private readonly RejectEventProposal $rejectEventProposal,
@@ -413,190 +377,12 @@ final class BackstageController
         }
     }
 
-    public function listProjectsAdmin(Request $request): Response
-    {
-        $acting = $request->requireActingUser();
-        try {
-            $featuredRaw = $request->input('featured');
-            $out = $this->listProjects->execute(new ListProjectsForAdminInput(
-                $acting,
-                $request->string('status'),
-                $request->string('category'),
-                $featuredRaw !== null ? (bool) $featuredRaw : null,
-                $request->string('q'),
-            ));
-            return Response::json($out->toArray());
-        } catch (ForbiddenException) {
-            return Response::json(['error' => 'forbidden'], 403);
-        }
-    }
-
-    public function createProjectAdmin(Request $request): Response
-    {
-        $acting = $request->requireActingUser();
-        try {
-            $out = $this->createProject->execute(new CreateProjectAsAdminInput(
-                $acting,
-                (string) $request->string('title'),
-                (string) $request->string('category'),
-                $request->string('icon'),
-                (string) $request->string('summary'),
-                (string) $request->string('description'),
-                $request->string('owner_id'),
-            ));
-            return Response::json(['data' => $out->toArray()], 201);
-        } catch (ForbiddenException) {
-            return Response::json(['error' => 'forbidden'], 403);
-        } catch (ValidationException $e) {
-            return Response::json(['error' => 'validation_failed', 'errors' => $e->fields()], 422);
-        }
-    }
-
-    /**
-     * @param array<string,string> $params
-     */
-    public function updateProjectAdmin(Request $request, array $params): Response
-    {
-        $acting = $request->requireActingUser();
-        $id = (string) ($params['id'] ?? '');
-        try {
-            $sortOrderRaw = $request->input('sort_order');
-            $out = $this->updateProject->execute(new AdminUpdateProjectInput(
-                $acting, $id,
-                $request->string('title'),
-                $request->string('category'),
-                $request->string('icon'),
-                $request->string('summary'),
-                $request->string('description'),
-                is_numeric($sortOrderRaw) ? (int) $sortOrderRaw : null,
-            ));
-            return Response::json(['data' => $out->toArray()]);
-        } catch (ForbiddenException) {
-            return Response::json(['error' => 'forbidden'], 403);
-        } catch (NotFoundException) {
-            return Response::json(['error' => 'not_found'], 404);
-        } catch (ValidationException $e) {
-            return Response::json(['error' => 'validation_failed', 'errors' => $e->fields()], 422);
-        }
-    }
-
-    /**
-     * @param array<string,string> $params
-     */
-    public function changeProjectStatus(Request $request, array $params): Response
-    {
-        $acting = $request->requireActingUser();
-        $id = (string) ($params['id'] ?? '');
-        $status = (string) $request->string('status');
-        try {
-            $this->changeProjectStatus->execute(new ChangeProjectStatusInput($acting, $id, $status));
-            return Response::json(['data' => ['id' => $id, 'status' => $status]]);
-        } catch (ForbiddenException) {
-            return Response::json(['error' => 'forbidden'], 403);
-        } catch (NotFoundException) {
-            return Response::json(['error' => 'not_found'], 404);
-        } catch (ValidationException $e) {
-            return Response::json(['error' => 'validation_failed', 'errors' => $e->fields()], 422);
-        }
-    }
-
-    /**
-     * @param array<string,string> $params
-     */
-    public function setProjectFeatured(Request $request, array $params): Response
-    {
-        $acting = $request->requireActingUser();
-        $id = (string) ($params['id'] ?? '');
-        $featured = (bool) $request->input('featured');
-        try {
-            $this->setProjectFeatured->execute(new SetProjectFeaturedInput($acting, $id, $featured));
-            return Response::json(['data' => ['id' => $id, 'featured' => $featured]]);
-        } catch (ForbiddenException) {
-            return Response::json(['error' => 'forbidden'], 403);
-        } catch (NotFoundException) {
-            return Response::json(['error' => 'not_found'], 404);
-        }
-    }
-
     public function listProposalsAdmin(Request $request): Response
     {
         $acting = $request->requireActingUser();
         try {
             $out = $this->listProposals->execute(new ListProposalsForAdminInput($acting));
             return Response::json($out->toArray());
-        } catch (ForbiddenException) {
-            return Response::json(['error' => 'forbidden'], 403);
-        }
-    }
-
-    /**
-     * @param array<string,string> $params
-     */
-    public function approveProposal(Request $request, array $params): Response
-    {
-        $acting = $request->requireActingUser();
-        $id = (string) ($params['id'] ?? '');
-        try {
-            $out = $this->approveProposal->execute(new ApproveProjectProposalInput(
-                $acting, $id, $request->string('note'),
-            ));
-            return Response::json(['data' => $out->toArray()], 201);
-        } catch (ForbiddenException) {
-            return Response::json(['error' => 'forbidden'], 403);
-        } catch (NotFoundException) {
-            return Response::json(['error' => 'not_found'], 404);
-        } catch (ValidationException $e) {
-            return Response::json(['error' => 'validation_failed', 'errors' => $e->fields()], 422);
-        }
-    }
-
-    /**
-     * @param array<string,string> $params
-     */
-    public function rejectProposal(Request $request, array $params): Response
-    {
-        $acting = $request->requireActingUser();
-        $id = (string) ($params['id'] ?? '');
-        try {
-            $this->rejectProposal->execute(new RejectProjectProposalInput(
-                $acting, $id, $request->string('note'),
-            ));
-            return Response::json(null, 204);
-        } catch (ForbiddenException) {
-            return Response::json(['error' => 'forbidden'], 403);
-        } catch (NotFoundException) {
-            return Response::json(['error' => 'not_found'], 404);
-        } catch (ValidationException $e) {
-            return Response::json(['error' => 'validation_failed', 'errors' => $e->fields()], 422);
-        }
-    }
-
-    public function listProjectComments(Request $request): Response
-    {
-        $acting = $request->requireActingUser();
-        $limitRaw = $request->query('limit');
-        $limit = is_numeric($limitRaw) ? (int) $limitRaw : null;
-        try {
-            $out = $this->listProjectComments->execute(new ListProjectCommentsForAdminInput($acting, $limit));
-            return Response::json($out->toArray());
-        } catch (ForbiddenException) {
-            return Response::json(['error' => 'forbidden'], 403);
-        }
-    }
-
-    /**
-     * @param array<string,string> $params
-     */
-    public function deleteProjectComment(Request $request, array $params): Response
-    {
-        $acting = $request->requireActingUser();
-        $projectId = (string) ($params['id'] ?? '');
-        $commentId = (string) ($params['comment_id'] ?? '');
-        try {
-            $this->deleteProjectComment->execute(new DeleteProjectCommentAsAdminInput(
-                $acting, $projectId, $commentId, $request->string('reason'),
-            ));
-            return Response::json(null, 204);
         } catch (ForbiddenException) {
             return Response::json(['error' => 'forbidden'], 403);
         }
@@ -643,23 +429,6 @@ final class BackstageController
 
         try {
             $out = $this->listEventsStats->execute(new ListEventsStatsInput(
-                acting:   $acting,
-                tenantId: $tenant->id,
-            ));
-        } catch (ForbiddenException) {
-            return Response::forbidden('Admin only');
-        }
-
-        return Response::json(['data' => $out->stats]);
-    }
-
-    public function statsProjects(Request $request): Response
-    {
-        $acting = $request->requireActingUser();
-        $tenant = $this->requireTenant($request);
-
-        try {
-            $out = $this->listProjectsStats->execute(new ListProjectsStatsInput(
                 acting:   $acting,
                 tenantId: $tenant->id,
             ));
@@ -748,52 +517,6 @@ final class BackstageController
         try {
             $out = $this->updateEventTranslation->execute(
                 new UpdateEventTranslationInput($tenantId, $eventId, $localeRaw, $body, $acting),
-            );
-        } catch (ForbiddenException) {
-            return Response::json(['error' => 'forbidden'], 403);
-        } catch (InvalidLocaleException) {
-            return Response::json(['error' => 'invalid_locale'], 400);
-        } catch (NotFoundException) {
-            return Response::json(['error' => 'not_found'], 404);
-        } catch (\DomainException $e) {
-            return Response::json(['error' => $e->getMessage()], 400);
-        }
-        return Response::json(['data' => ['coverage' => $out->coverage]]);
-    }
-
-    // --- i18n: project translations ---
-
-    /** @param array<string, string> $params */
-    public function getProjectWithTranslations(Request $request, array $params): Response
-    {
-        $tenantId = $this->requireTenant($request)->id;
-        $acting = $request->requireActingUser();
-        $projectId = (string) ($params['id'] ?? '');
-
-        try {
-            $out = $this->getProjectWithAllTranslations->execute(
-                new GetProjectWithAllTranslationsInput($tenantId, $projectId, $acting),
-            );
-        } catch (ForbiddenException) {
-            return Response::json(['error' => 'forbidden'], 403);
-        } catch (NotFoundException) {
-            return Response::json(['error' => 'not_found'], 404);
-        }
-        return Response::json(['data' => $out->project]);
-    }
-
-    /** @param array<string, string> $params */
-    public function updateProjectTranslation(Request $request, array $params): Response
-    {
-        $tenantId = $this->requireTenant($request)->id;
-        $acting = $request->requireActingUser();
-        $projectId = (string) ($params['id'] ?? '');
-        $localeRaw = (string) ($params['locale'] ?? '');
-        $body = $request->all();
-
-        try {
-            $out = $this->updateProjectTranslation->execute(
-                new UpdateProjectTranslationInput($tenantId, $projectId, $localeRaw, $body, $acting),
             );
         } catch (ForbiddenException) {
             return Response::json(['error' => 'forbidden'], 403);
