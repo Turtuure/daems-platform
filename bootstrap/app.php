@@ -7,7 +7,6 @@ use Daems\Application\Event\GetEventBySlugForLocale\GetEventBySlugForLocale;
 use Daems\Application\Event\ListEvents\ListEvents;
 use Daems\Application\Event\ListEventsForLocale\ListEventsForLocale;
 use Daems\Application\Event\SubmitEventProposal\SubmitEventProposal;
-use Daems\Application\Forum\ListForumCategories\ListForumCategories;
 use Daems\Application\Admin\GetAdminStats\GetAdminStats;
 use Daems\Application\Auth\GetAuthMe\GetAuthMe;
 use Daems\Application\Auth\LoginUser\LoginUser;
@@ -424,29 +423,6 @@ $container->bind(\Daems\Infrastructure\Adapter\Api\Controller\BackstageControlle
         $c->make(\Daems\Application\Backstage\RejectProjectProposal\RejectProjectProposal::class),
         $c->make(\Daems\Application\Backstage\ListProjectCommentsForAdmin\ListProjectCommentsForAdmin::class),
         $c->make(\Daems\Application\Backstage\DeleteProjectCommentAsAdmin\DeleteProjectCommentAsAdmin::class),
-        $c->make(\Daems\Application\Backstage\Forum\ListForumReportsForAdmin\ListForumReportsForAdmin::class),
-        $c->make(\Daems\Application\Backstage\Forum\GetForumReportDetail\GetForumReportDetail::class),
-        $c->make(\Daems\Application\Backstage\Forum\ResolveForumReportByDelete\ResolveForumReportByDelete::class),
-        $c->make(\Daems\Application\Backstage\Forum\ResolveForumReportByLock\ResolveForumReportByLock::class),
-        $c->make(\Daems\Application\Backstage\Forum\ResolveForumReportByWarn\ResolveForumReportByWarn::class),
-        $c->make(\Daems\Application\Backstage\Forum\ResolveForumReportByEdit\ResolveForumReportByEdit::class),
-        $c->make(\Daems\Application\Backstage\Forum\DismissForumReport\DismissForumReport::class),
-        $c->make(\Daems\Application\Backstage\Forum\ListForumTopicsForAdmin\ListForumTopicsForAdmin::class),
-        $c->make(\Daems\Application\Backstage\Forum\PinForumTopic\PinForumTopic::class),
-        $c->make(\Daems\Application\Backstage\Forum\UnpinForumTopic\UnpinForumTopic::class),
-        $c->make(\Daems\Application\Backstage\Forum\LockForumTopic\LockForumTopic::class),
-        $c->make(\Daems\Application\Backstage\Forum\UnlockForumTopic\UnlockForumTopic::class),
-        $c->make(\Daems\Application\Backstage\Forum\DeleteForumTopicAsAdmin\DeleteForumTopicAsAdmin::class),
-        $c->make(\Daems\Application\Backstage\Forum\ListForumPostsForAdmin\ListForumPostsForAdmin::class),
-        $c->make(\Daems\Application\Backstage\Forum\EditForumPostAsAdmin\EditForumPostAsAdmin::class),
-        $c->make(\Daems\Application\Backstage\Forum\DeleteForumPostAsAdmin\DeleteForumPostAsAdmin::class),
-        $c->make(\Daems\Application\Backstage\Forum\WarnForumUser\WarnForumUser::class),
-        $c->make(ListForumCategories::class),
-        $c->make(\Daems\Application\Backstage\Forum\CreateForumCategoryAsAdmin\CreateForumCategoryAsAdmin::class),
-        $c->make(\Daems\Application\Backstage\Forum\UpdateForumCategoryAsAdmin\UpdateForumCategoryAsAdmin::class),
-        $c->make(\Daems\Application\Backstage\Forum\DeleteForumCategoryAsAdmin\DeleteForumCategoryAsAdmin::class),
-        $c->make(\Daems\Application\Backstage\Forum\ListForumModerationAuditForAdmin\ListForumModerationAuditForAdmin::class),
-        $c->make(\Daems\Application\Backstage\Forum\ListForumStats\ListForumStats::class),
         $c->make(\Daems\Application\Backstage\Members\ListMembersStats\ListMembersStats::class),
         $c->make(\Daems\Application\Backstage\Applications\ListApplicationsStats\ListApplicationsStats::class),
         $c->make(\Daems\Application\Backstage\Events\ListEventsStats\ListEventsStats::class),
