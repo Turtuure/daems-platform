@@ -621,4 +621,29 @@ final class KernelHarness
     {
         return $this->request($method, $uri, $body, ['Authorization' => 'Bearer ' . $token], $ip);
     }
+
+    /**
+     * Cross-domain accessor for module-owned InMemory fakes.
+     *
+     * After module extraction, fakes for Projects (and any future module) live
+     * in `modules/<name>/backend/tests/Support/` and are bound to their domain
+     * port via `bindings.test.php`. Tests in core that legitimately exercise
+     * cross-domain flows (e.g. F007 identity spoofing across Project endpoints)
+     * still need direct access to the same repo instance the API uses, so they
+     * can seed state and inspect side effects.
+     *
+     * Resolves through the container — guaranteed to be the SAME singleton the
+     * production code path receives. New module fakes get added by extending
+     * the match below.
+     */
+    public function __get(string $name): mixed
+    {
+        return match ($name) {
+            'projects'     => $this->container->make(\Daems\Domain\Project\ProjectRepositoryInterface::class),
+            'proposals'    => $this->container->make(\Daems\Domain\Project\ProjectProposalRepositoryInterface::class),
+            'commentAudit' => $this->container->make(\Daems\Domain\Project\ProjectCommentModerationAuditRepositoryInterface::class),
+            'forum'        => $this->container->make(\Daems\Domain\Forum\ForumRepositoryInterface::class),
+            default        => throw new \LogicException("Undefined property: KernelHarness::\${$name}"),
+        };
+    }
 }
