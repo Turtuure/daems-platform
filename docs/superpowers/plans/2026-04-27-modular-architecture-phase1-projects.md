@@ -383,34 +383,34 @@ Path: `database/migrations/066_rename_project_migrations_in_schema_migrations_ta
 SET @smt := (SELECT COUNT(*) FROM information_schema.tables
              WHERE table_schema = DATABASE() AND table_name = 'schema_migrations');
 
-SET @sql := IF(@smt > 0, "UPDATE schema_migrations SET migration = 'project_001_create_projects_table.sql' WHERE migration = '003_create_projects_table.sql'", 'DO 0');
+SET @sql := IF(@smt > 0, "UPDATE schema_migrations SET filename = 'project_001_create_projects_table.sql' WHERE filename = '003_create_projects_table.sql'", 'DO 0');
 PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
 
-SET @sql := IF(@smt > 0, "UPDATE schema_migrations SET migration = 'project_002_create_project_extras.sql' WHERE migration = '009_create_project_extras.sql'", 'DO 0');
+SET @sql := IF(@smt > 0, "UPDATE schema_migrations SET filename = 'project_002_create_project_extras.sql' WHERE filename = '009_create_project_extras.sql'", 'DO 0');
 PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
 
-SET @sql := IF(@smt > 0, "UPDATE schema_migrations SET migration = 'project_003_create_project_proposals.sql' WHERE migration = '010_create_project_proposals.sql'", 'DO 0');
+SET @sql := IF(@smt > 0, "UPDATE schema_migrations SET filename = 'project_003_create_project_proposals.sql' WHERE filename = '010_create_project_proposals.sql'", 'DO 0');
 PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
 
-SET @sql := IF(@smt > 0, "UPDATE schema_migrations SET migration = 'project_004_add_owner_id_to_projects.sql' WHERE migration = '016_add_owner_id_to_projects.sql'", 'DO 0');
+SET @sql := IF(@smt > 0, "UPDATE schema_migrations SET filename = 'project_004_add_owner_id_to_projects.sql' WHERE filename = '016_add_owner_id_to_projects.sql'", 'DO 0');
 PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
 
-SET @sql := IF(@smt > 0, "UPDATE schema_migrations SET migration = 'project_005_add_tenant_id_to_projects.sql' WHERE migration = '027_add_tenant_id_to_projects.sql'", 'DO 0');
+SET @sql := IF(@smt > 0, "UPDATE schema_migrations SET filename = 'project_005_add_tenant_id_to_projects.sql' WHERE filename = '027_add_tenant_id_to_projects.sql'", 'DO 0');
 PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
 
-SET @sql := IF(@smt > 0, "UPDATE schema_migrations SET migration = 'project_006_add_tenant_id_to_project_extras.sql' WHERE migration = '031_add_tenant_id_to_project_extras.sql'", 'DO 0');
+SET @sql := IF(@smt > 0, "UPDATE schema_migrations SET filename = 'project_006_add_tenant_id_to_project_extras.sql' WHERE filename = '031_add_tenant_id_to_project_extras.sql'", 'DO 0');
 PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
 
-SET @sql := IF(@smt > 0, "UPDATE schema_migrations SET migration = 'project_007_add_featured_to_projects.sql' WHERE migration = '044_add_featured_to_projects.sql'", 'DO 0');
+SET @sql := IF(@smt > 0, "UPDATE schema_migrations SET filename = 'project_007_add_featured_to_projects.sql' WHERE filename = '044_add_featured_to_projects.sql'", 'DO 0');
 PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
 
-SET @sql := IF(@smt > 0, "UPDATE schema_migrations SET migration = 'project_008_add_decision_metadata_to_project_proposals.sql' WHERE migration = '046_add_decision_metadata_to_project_proposals.sql'", 'DO 0');
+SET @sql := IF(@smt > 0, "UPDATE schema_migrations SET filename = 'project_008_add_decision_metadata_to_project_proposals.sql' WHERE filename = '046_add_decision_metadata_to_project_proposals.sql'", 'DO 0');
 PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
 
-SET @sql := IF(@smt > 0, "UPDATE schema_migrations SET migration = 'project_009_create_projects_i18n.sql' WHERE migration = '052_create_projects_i18n.sql'", 'DO 0');
+SET @sql := IF(@smt > 0, "UPDATE schema_migrations SET filename = 'project_009_create_projects_i18n.sql' WHERE filename = '052_create_projects_i18n.sql'", 'DO 0');
 PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
 
-SET @sql := IF(@smt > 0, "UPDATE schema_migrations SET migration = 'project_010_add_source_locale_to_project_proposals.sql' WHERE migration = '055_add_source_locale_to_project_proposals.sql'", 'DO 0');
+SET @sql := IF(@smt > 0, "UPDATE schema_migrations SET filename = 'project_010_add_source_locale_to_project_proposals.sql' WHERE filename = '055_add_source_locale_to_project_proposals.sql'", 'DO 0');
 PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
 ```
 
