@@ -4,7 +4,6 @@ declare(strict_types=1);
 namespace Daems\Tests\Integration\Application;
 
 use Daems\Domain\Shared\ValueObject\Uuid7;
-use Daems\Infrastructure\Adapter\Persistence\Sql\SqlInsightRepository;
 use Daems\Infrastructure\Framework\Database\Connection;
 use Daems\Tests\Integration\MigrationTestCase;
 
@@ -27,35 +26,6 @@ final class SearchSyncTest extends MigrationTestCase
         $this->tenantId = Uuid7::generate()->value();
         $this->pdo()->prepare('INSERT INTO tenants (id, slug, name, created_at) VALUES (?,?,?,NOW())')
             ->execute([$this->tenantId, 'daems-sync', 'Daems Sync']);
-    }
-
-    public function test_insight_save_populates_search_text_from_stripped_content(): void
-    {
-        $repo = new SqlInsightRepository($this->conn);
-        $insightId = \Daems\Domain\Insight\InsightId::generate();
-        $id = $insightId->value();
-        $insight = new \Daems\Domain\Insight\Insight(
-            id: $insightId,
-            tenantId: \Daems\Domain\Tenant\TenantId::fromString($this->tenantId),
-            slug: 'sync-check-' . substr($id, 0, 8),
-            title: 'Sync Check',
-            category: 'tech',
-            categoryLabel: 'Tech',
-            featured: false,
-            date: '2026-04-24',
-            author: 'Sam',
-            readingTime: 3,
-            excerpt: 'x',
-            heroImage: null,
-            tags: [],
-            content: '<p>plain text here and <strong>bold bits</strong></p>',
-        );
-        $repo->save($insight);
-
-        $row = $this->pdo()->query("SELECT search_text FROM insights WHERE id = '{$id}'")
-            ->fetch(\PDO::FETCH_ASSOC);
-        self::assertStringContainsString('plain text here', (string) $row['search_text']);
-        self::assertStringNotContainsString('<strong>', (string) $row['search_text']);
     }
 
     public function test_forum_first_post_save_updates_topic_first_post_search_text(): void

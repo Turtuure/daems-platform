@@ -37,7 +37,26 @@ abstract class MigrationTestCase extends TestCase
 
     protected function runMigration(string $filename): void
     {
+        // Resolve filename: core migrations live in database/migrations/; module
+        // migrations (named <module>_NNN_<desc>.{sql,php}) live in
+        // ../modules/<module>/backend/migrations/.
         $path = __DIR__ . '/../../database/migrations/' . $filename;
+        if (!is_file($path)) {
+            $modulesDir = __DIR__ . '/../../../modules';
+            foreach ((array) glob($modulesDir . '/*/backend/migrations/' . $filename) as $candidate) {
+                if (is_string($candidate) && is_file($candidate)) {
+                    $path = $candidate;
+                    break;
+                }
+            }
+        }
+        if (str_ends_with($filename, '.php')) {
+            // .php migrations are self-contained scripts that handle their own
+            // PDO connection — execute via require, not as raw SQL.
+            $pdo = $this->pdo;
+            require $path;
+            return;
+        }
         $sql  = (string) file_get_contents($path);
 
         // Split on `;` at end of line; skip `--` comments and empty lines
@@ -66,18 +85,25 @@ abstract class MigrationTestCase extends TestCase
 
     protected function runMigrationsUpTo(int $highestNumber): void
     {
-        $files = glob(__DIR__ . '/../../database/migrations/*.sql') ?: [];
-        sort($files);
-        foreach ($files as $file) {
+        // Core migrations: <NNN>_<desc>.{sql,php}, gated by $highestNumber.
+        $coreFiles = glob(__DIR__ . '/../../database/migrations/*.{sql,php}', GLOB_BRACE) ?: [];
+        // Module migrations: <module>_<NNN>_<desc>.{sql,php}, always included
+        // when their parent module is present on disk (their numbering is
+        // independent of the core sequence).
+        $moduleFiles = glob(__DIR__ . '/../../../modules/*/backend/migrations/*.{sql,php}', GLOB_BRACE) ?: [];
+
+        $all = [];
+        foreach ($coreFiles as $file) {
             $basename = basename($file);
-            // Parse leading 3-digit number
-            if (preg_match('/^(\d{3})_/', $basename, $m) !== 1) {
-                continue;
+            if (preg_match('/^(\d{3})_/', $basename, $m) === 1 && (int) $m[1] <= $highestNumber) {
+                $all[$basename] = $file;
             }
-            $num = (int) $m[1];
-            if ($num > $highestNumber) {
-                break;
-            }
+        }
+        foreach ($moduleFiles as $file) {
+            $all[basename($file)] = $file;
+        }
+        ksort($all);
+        foreach ($all as $basename => $_file) {
             $this->runMigration($basename);
         }
     }
