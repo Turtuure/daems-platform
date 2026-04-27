@@ -11,8 +11,6 @@ use Daems\Application\User\ChangePassword\ChangePassword;
 use Daems\Application\User\GetProfile\GetProfile;
 use Daems\Application\User\GetUserActivity\GetUserActivity;
 use Daems\Application\User\UpdateProfile\UpdateProfile;
-use Daems\Application\Membership\SubmitMemberApplication\SubmitMemberApplication;
-use Daems\Application\Membership\SubmitSupporterApplication\SubmitSupporterApplication;
 use Daems\Domain\Admin\AdminStatsRepositoryInterface;
 use Daems\Domain\Forum\ForumRepositoryInterface;
 use Daems\Domain\Membership\MemberApplicationRepositoryInterface;
@@ -21,12 +19,9 @@ use Daems\Domain\Project\ProjectProposalRepositoryInterface;
 use Daems\Domain\Project\ProjectRepositoryInterface;
 use Daems\Domain\User\UserRepositoryInterface;
 use Daems\Infrastructure\Adapter\Api\Controller\AdminController;
-use Daems\Infrastructure\Adapter\Api\Controller\ApplicationController;
 use Daems\Infrastructure\Adapter\Api\Controller\AuthController;
 use Daems\Infrastructure\Adapter\Api\Controller\UserController;
 use Daems\Infrastructure\Adapter\Persistence\Sql\SqlAdminRepository;
-use Daems\Infrastructure\Adapter\Persistence\Sql\SqlMemberApplicationRepository;
-use Daems\Infrastructure\Adapter\Persistence\Sql\SqlSupporterApplicationRepository;
 use Daems\Infrastructure\Adapter\Persistence\Sql\SqlUserRepository;
 use Daems\Application\Auth\AuthenticateToken\AuthenticateToken;
 use Daems\Application\Auth\CreateAuthToken\CreateAuthToken;
@@ -35,7 +30,6 @@ use Daems\Domain\Auth\AuthLoginAttemptRepositoryInterface;
 use Daems\Domain\Auth\AuthTokenRepositoryInterface;
 use Daems\Domain\Dismissal\AdminApplicationDismissalRepositoryInterface;
 use Daems\Domain\Shared\Clock;
-use Daems\Infrastructure\Adapter\Persistence\Sql\SqlAdminApplicationDismissalRepository;
 use Daems\Infrastructure\Adapter\Persistence\Sql\SqlAuthLoginAttemptRepository;
 use Daems\Infrastructure\Adapter\Persistence\Sql\SqlAuthTokenRepository;
 use Daems\Infrastructure\Adapter\Persistence\Sql\SqlTenantRepository;
@@ -133,17 +127,8 @@ $container->singleton(\Daems\Domain\Config\BaseUrlResolverInterface::class,
 $container->singleton(\Daems\Domain\Invite\UserInviteRepositoryInterface::class,
     static fn(Container $c) => new \Daems\Infrastructure\Adapter\Persistence\Sql\SqlUserInviteRepository($c->make(Connection::class)->pdo()),
 );
-$container->singleton(\Daems\Domain\Tenant\TenantMemberCounterRepositoryInterface::class,
-    static fn(Container $c) => new \Daems\Infrastructure\Adapter\Persistence\Sql\SqlTenantMemberCounterRepository($c->make(Connection::class)->pdo()),
-);
-$container->singleton(\Daems\Domain\Tenant\TenantSupporterCounterRepositoryInterface::class,
-    static fn(Container $c) => new \Daems\Infrastructure\Adapter\Persistence\Sql\SqlTenantSupporterCounterRepository($c->make(Connection::class)->pdo()),
-);
 $container->singleton(\Daems\Domain\Shared\TransactionManagerInterface::class,
     static fn(Container $c) => new \Daems\Infrastructure\Adapter\Persistence\Sql\PdoTransactionManager($c->make(Connection::class)->pdo()),
-);
-$container->singleton(\Daems\Domain\Membership\MemberStatusAuditRepositoryInterface::class,
-    static fn(Container $c) => new \Daems\Infrastructure\Adapter\Persistence\Sql\SqlMemberStatusAuditRepository($c->make(Connection::class)),
 );
 $container->singleton(\Daems\Domain\Shared\IdGeneratorInterface::class,
     static fn() => new class implements \Daems\Domain\Shared\IdGeneratorInterface {
@@ -160,94 +145,6 @@ $container->bind(\Daems\Application\Invite\IssueInvite\IssueInvite::class,
         $c->make(\Daems\Domain\Config\BaseUrlResolverInterface::class),
         $c->make(Clock::class),
         $c->make(\Daems\Domain\Shared\IdGeneratorInterface::class),
-    ),
-);
-$container->bind(\Daems\Application\Backstage\ActivateMember\MemberActivationService::class,
-    static fn(Container $c) => new \Daems\Application\Backstage\ActivateMember\MemberActivationService(
-        $c->make(UserRepositoryInterface::class),
-        $c->make(\Daems\Domain\Tenant\UserTenantRepositoryInterface::class),
-        $c->make(\Daems\Domain\Tenant\TenantMemberCounterRepositoryInterface::class),
-        $c->make(\Daems\Domain\Membership\MemberStatusAuditRepositoryInterface::class),
-        $c->make(Clock::class),
-        $c->make(\Daems\Domain\Shared\IdGeneratorInterface::class),
-    ),
-);
-$container->bind(\Daems\Application\Backstage\ActivateSupporter\SupporterActivationService::class,
-    static fn(Container $c) => new \Daems\Application\Backstage\ActivateSupporter\SupporterActivationService(
-        $c->make(UserRepositoryInterface::class),
-        $c->make(\Daems\Domain\Tenant\UserTenantRepositoryInterface::class),
-        $c->make(\Daems\Domain\Tenant\TenantSupporterCounterRepositoryInterface::class),
-        $c->make(Clock::class),
-        $c->make(\Daems\Domain\Shared\IdGeneratorInterface::class),
-    ),
-);
-
-// Backstage
-$container->singleton(\Daems\Domain\Backstage\MemberDirectoryRepositoryInterface::class,
-    static fn(Container $c) => new \Daems\Infrastructure\Adapter\Persistence\Sql\SqlMemberDirectoryRepository($c->make(Connection::class)),
-);
-$container->bind(\Daems\Application\Backstage\ListPendingApplications\ListPendingApplications::class,
-    static fn(Container $c) => new \Daems\Application\Backstage\ListPendingApplications\ListPendingApplications(
-        $c->make(MemberApplicationRepositoryInterface::class),
-        $c->make(SupporterApplicationRepositoryInterface::class),
-    ),
-);
-$container->bind(\Daems\Application\Backstage\ListDecidedApplications\ListDecidedApplications::class,
-    static fn(Container $c) => new \Daems\Application\Backstage\ListDecidedApplications\ListDecidedApplications(
-        $c->make(MemberApplicationRepositoryInterface::class),
-        $c->make(SupporterApplicationRepositoryInterface::class),
-    ),
-);
-$container->bind(\Daems\Application\Backstage\GetApplicationDetail\GetApplicationDetail::class,
-    static fn(Container $c) => new \Daems\Application\Backstage\GetApplicationDetail\GetApplicationDetail(
-        $c->make(MemberApplicationRepositoryInterface::class),
-        $c->make(SupporterApplicationRepositoryInterface::class),
-    ),
-);
-$container->bind(\Daems\Application\Backstage\DismissApplication\DismissApplication::class,
-    static fn(Container $c) => new \Daems\Application\Backstage\DismissApplication\DismissApplication(
-        $c->make(AdminApplicationDismissalRepositoryInterface::class),
-        $c->make(Clock::class),
-        $c->make(\Daems\Domain\Shared\IdGeneratorInterface::class),
-    ),
-);
-$container->bind(\Daems\Application\Backstage\ListPendingApplications\ListPendingApplicationsForAdmin::class,
-    static fn(Container $c) => new \Daems\Application\Backstage\ListPendingApplications\ListPendingApplicationsForAdmin(
-        $c->make(MemberApplicationRepositoryInterface::class),
-        $c->make(SupporterApplicationRepositoryInterface::class),
-        $c->make(AdminApplicationDismissalRepositoryInterface::class),
-        $c->make(ProjectProposalRepositoryInterface::class),
-        $c->make(\Daems\Domain\Forum\ForumReportRepositoryInterface::class),
-        $c->make(ForumRepositoryInterface::class),
-    ),
-);
-$container->bind(\Daems\Application\Backstage\DecideApplication\DecideApplication::class,
-    static fn(Container $c) => new \Daems\Application\Backstage\DecideApplication\DecideApplication(
-        $c->make(MemberApplicationRepositoryInterface::class),
-        $c->make(SupporterApplicationRepositoryInterface::class),
-        $c->make(\Daems\Application\Backstage\ActivateMember\MemberActivationService::class),
-        $c->make(\Daems\Application\Backstage\ActivateSupporter\SupporterActivationService::class),
-        $c->make(\Daems\Application\Invite\IssueInvite\IssueInvite::class),
-        $c->make(AdminApplicationDismissalRepositoryInterface::class),
-        $c->make(\Daems\Domain\Shared\TransactionManagerInterface::class),
-        $c->make(Clock::class),
-    ),
-);
-$container->bind(\Daems\Application\Backstage\ListMembers\ListMembers::class,
-    static fn(Container $c) => new \Daems\Application\Backstage\ListMembers\ListMembers(
-        $c->make(\Daems\Domain\Backstage\MemberDirectoryRepositoryInterface::class),
-    ),
-);
-$container->bind(\Daems\Application\Backstage\ChangeMemberStatus\ChangeMemberStatus::class,
-    static fn(Container $c) => new \Daems\Application\Backstage\ChangeMemberStatus\ChangeMemberStatus(
-        $c->make(\Daems\Domain\Backstage\MemberDirectoryRepositoryInterface::class),
-        $c->make(AnonymiseAccount::class),
-        $c->make(Clock::class),
-    ),
-);
-$container->bind(\Daems\Application\Backstage\GetMemberAudit\GetMemberAudit::class,
-    static fn(Container $c) => new \Daems\Application\Backstage\GetMemberAudit\GetMemberAudit(
-        $c->make(\Daems\Domain\Backstage\MemberDirectoryRepositoryInterface::class),
     ),
 );
 $container->bind(\Daems\Application\Backstage\ListProposalsForAdmin\ListProposalsForAdmin::class,
@@ -267,42 +164,15 @@ $container->singleton(\Daems\Domain\Storage\ImageStorageInterface::class,
 
 $container->bind(\Daems\Infrastructure\Adapter\Api\Controller\BackstageController::class,
     static fn(Container $c) => new \Daems\Infrastructure\Adapter\Api\Controller\BackstageController(
-        $c->make(\Daems\Application\Backstage\ListPendingApplications\ListPendingApplications::class),
-        $c->make(\Daems\Application\Backstage\DecideApplication\DecideApplication::class),
-        $c->make(\Daems\Application\Backstage\ListMembers\ListMembers::class),
-        $c->make(\Daems\Application\Backstage\ChangeMemberStatus\ChangeMemberStatus::class),
-        $c->make(\Daems\Application\Backstage\GetMemberAudit\GetMemberAudit::class),
-        $c->make(\Daems\Application\Backstage\ListPendingApplications\ListPendingApplicationsForAdmin::class),
-        $c->make(\Daems\Application\Backstage\DismissApplication\DismissApplication::class),
         $c->make(\Daems\Application\Backstage\ListProposalsForAdmin\ListProposalsForAdmin::class),
-        $c->make(\Daems\Application\Backstage\Members\ListMembersStats\ListMembersStats::class),
-        $c->make(\Daems\Application\Backstage\Applications\ListApplicationsStats\ListApplicationsStats::class),
         $c->make(\Daems\Application\Backstage\Notifications\ListNotificationsStats\ListNotificationsStats::class),
         $c->make(\Daems\Application\Backstage\UpdateTenantSettings\UpdateTenantSettings::class),
-        $c->make(\Daems\Application\Backstage\ListDecidedApplications\ListDecidedApplications::class),
-        $c->make(\Daems\Application\Backstage\GetApplicationDetail\GetApplicationDetail::class),
     ),
 );
 
 $container->bind(\Daems\Application\Backstage\UpdateTenantSettings\UpdateTenantSettings::class,
     static fn(Container $c) => new \Daems\Application\Backstage\UpdateTenantSettings\UpdateTenantSettings(
         $c->make(\Daems\Domain\Tenant\TenantRepositoryInterface::class),
-    ),
-);
-
-$container->bind(\Daems\Domain\Member\PublicMemberRepositoryInterface::class,
-    static fn(Container $c) => new \Daems\Infrastructure\Adapter\Persistence\Sql\SqlPublicMemberRepository(
-        $c->make(\Daems\Infrastructure\Framework\Database\Connection::class),
-    ),
-);
-$container->bind(\Daems\Application\Member\GetPublicMemberProfile\GetPublicMemberProfile::class,
-    static fn(Container $c) => new \Daems\Application\Member\GetPublicMemberProfile\GetPublicMemberProfile(
-        $c->make(\Daems\Domain\Member\PublicMemberRepositoryInterface::class),
-    ),
-);
-$container->bind(\Daems\Infrastructure\Adapter\Api\Controller\MemberController::class,
-    static fn(Container $c) => new \Daems\Infrastructure\Adapter\Api\Controller\MemberController(
-        $c->make(\Daems\Application\Member\GetPublicMemberProfile\GetPublicMemberProfile::class),
     ),
 );
 
@@ -320,23 +190,6 @@ $container->bind(\Daems\Infrastructure\Adapter\Api\Controller\SearchController::
         $c->make(\Daems\Application\Search\Search\Search::class),
     ));
 
-// Membership applications
-$container->singleton(MemberApplicationRepositoryInterface::class,
-    static fn(Container $c) => new SqlMemberApplicationRepository($c->make(Connection::class)),
-);
-$container->singleton(SupporterApplicationRepositoryInterface::class,
-    static fn(Container $c) => new SqlSupporterApplicationRepository($c->make(Connection::class)),
-);
-$container->bind(SubmitMemberApplication::class,
-    static fn(Container $c) => new SubmitMemberApplication($c->make(MemberApplicationRepositoryInterface::class)),
-);
-$container->bind(SubmitSupporterApplication::class,
-    static fn(Container $c) => new SubmitSupporterApplication($c->make(SupporterApplicationRepositoryInterface::class)),
-);
-$container->bind(ApplicationController::class,
-    static fn(Container $c) => new ApplicationController($c->make(SubmitMemberApplication::class), $c->make(SubmitSupporterApplication::class)),
-);
-
 // Auth
 $container->singleton(UserRepositoryInterface::class,
     static fn(Container $c) => new SqlUserRepository($c->make(Connection::class)),
@@ -353,10 +206,6 @@ $container->singleton(AuthLoginAttemptRepositoryInterface::class,
         $c->make(LoggerInterface::class),
     ),
 );
-$container->singleton(AdminApplicationDismissalRepositoryInterface::class,
-    static fn(Container $c) => new SqlAdminApplicationDismissalRepository($c->make(Connection::class)->pdo()),
-);
-
 $container->bind(CreateAuthToken::class,
     static fn(Container $c) => new CreateAuthToken(
         $c->make(AuthTokenRepositoryInterface::class),
@@ -508,18 +357,6 @@ $container->bind(\Daems\Application\Profile\UpdateMyTimeFormat\UpdateMyTimeForma
     ),
 );
 
-$container->bind(\Daems\Application\Backstage\Members\ListMembersStats\ListMembersStats::class,
-    static fn(Container $c) => new \Daems\Application\Backstage\Members\ListMembersStats\ListMembersStats(
-        $c->make(\Daems\Domain\Tenant\UserTenantRepositoryInterface::class),
-        $c->make(\Daems\Domain\Membership\MemberStatusAuditRepositoryInterface::class),
-    ),
-);
-$container->bind(\Daems\Application\Backstage\Applications\ListApplicationsStats\ListApplicationsStats::class,
-    static fn(Container $c) => new \Daems\Application\Backstage\Applications\ListApplicationsStats\ListApplicationsStats(
-        $c->make(\Daems\Domain\Membership\MemberApplicationRepositoryInterface::class),
-        $c->make(\Daems\Domain\Membership\SupporterApplicationRepositoryInterface::class),
-    ),
-);
 $container->bind(\Daems\Application\Backstage\Notifications\ListNotificationsStats\ListNotificationsStats::class,
     static fn(Container $c) => new \Daems\Application\Backstage\Notifications\ListNotificationsStats\ListNotificationsStats(
         $c->make(\Daems\Domain\Membership\MemberApplicationRepositoryInterface::class),
