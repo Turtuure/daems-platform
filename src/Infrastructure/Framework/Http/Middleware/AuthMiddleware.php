@@ -66,10 +66,6 @@ final class AuthMiddleware implements MiddlewareInterface
             roleInActiveTenant: $role,
         );
 
-        $result = $next($request->withActingUser($actingUser));
-        if (!$result instanceof Response) {
-            throw new \RuntimeException('AuthMiddleware next() did not return Response');
-        }
-        return $result;
+        return $next($request->withActingUser($actingUser));
     }
 }

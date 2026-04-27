@@ -106,7 +106,7 @@ final class ListPendingApplicationsForAdmin
         $total = count($items);
 
         return new ListPendingApplicationsForAdminOutput(
-            array_values(array_slice($items, 0, self::CAP)),
+            array_slice($items, 0, self::CAP),
             $total,
         );
     }

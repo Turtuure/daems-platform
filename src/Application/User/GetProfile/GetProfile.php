@@ -35,7 +35,7 @@ final class GetProfile
 
         // Look up the target user's role in the acting user's active tenant.
         $tenantRole = $this->userTenants->findRole($user->id(), $input->acting->activeTenant);
-        $roleLabel  = $tenantRole?->value ?? '';
+        $roleLabel  = $tenantRole->value ?? '';
 
         return new GetProfileOutput([
             'id'               => $user->id()->value(),

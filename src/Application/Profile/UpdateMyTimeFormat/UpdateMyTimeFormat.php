@@ -25,7 +25,7 @@ final class UpdateMyTimeFormat
 
         // Effective format: user override OR tenant default OR app default
         $tenant = $this->tenants->findById($input->actor->activeTenant);
-        $effective = $value ?? $tenant?->defaultTimeFormat ?? '24';
+        $effective = $value ?? $tenant->defaultTimeFormat ?? '24';
 
         return new UpdateMyTimeFormatOutput($value, $effective);
     }

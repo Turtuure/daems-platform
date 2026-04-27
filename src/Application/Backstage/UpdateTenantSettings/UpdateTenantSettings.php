@@ -41,7 +41,7 @@ final class UpdateTenantSettings
 
         // Re-read to expose the now-current values to the caller.
         $tenant = $this->tenants->findById($tenantId);
-        $effectiveTimeFormat = $tenant?->defaultTimeFormat ?? '24';
+        $effectiveTimeFormat = $tenant->defaultTimeFormat ?? '24';
 
         return new UpdateTenantSettingsOutput($prefix, $effectiveTimeFormat);
     }

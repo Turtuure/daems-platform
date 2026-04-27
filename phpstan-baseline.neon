@@ -1,0 +1,97 @@
+parameters:
+	ignoreErrors:
+		-
+			message: '#^Parameter \#1 \$rows of static method DaemsModule\\Forum\\Infrastructure\\SqlForumReportRepository\:\:buildDailySeries30dBackward\(\) expects list\<array\<string, mixed\>\>, array\<array\<string, mixed\>\> given\.$#'
+			identifier: argument.type
+			count: 2
+			path: ../modules/forum/backend/src/Infrastructure/SqlForumReportRepository.php
+
+		-
+			message: '#^Parameter \#11 \$gallery of class Daems\\Application\\Backstage\\UpdateEvent\\UpdateEventInput constructor expects array\<string\>\|null, array\<mixed, mixed\>\|null given\.$#'
+			identifier: argument.type
+			count: 1
+			path: src/Infrastructure/Adapter/Api/Controller/BackstageController.php
+
+		-
+			message: '#^Cannot cast mixed to string\.$#'
+			identifier: cast.string
+			count: 2
+			path: src/Infrastructure/Adapter/Api/Controller/MediaController.php
+
+		-
+			message: '#^Parameter \#1 \$rows of static method Daems\\Infrastructure\\Adapter\\Persistence\\Sql\\SqlEventProposalRepository\:\:buildDailySeries30dBackward\(\) expects list\<array\<string, mixed\>\>, array\<array\<string, mixed\>\> given\.$#'
+			identifier: argument.type
+			count: 1
+			path: src/Infrastructure/Adapter/Persistence/Sql/SqlEventProposalRepository.php
+
+		-
+			message: '#^Parameter \#1 \$rows of static method Daems\\Infrastructure\\Adapter\\Persistence\\Sql\\SqlEventRepository\:\:buildDailySeries30dBackward\(\) expects list\<array\<string, mixed\>\>, array\<array\<string, mixed\>\> given\.$#'
+			identifier: argument.type
+			count: 2
+			path: src/Infrastructure/Adapter/Persistence/Sql/SqlEventRepository.php
+
+		-
+			message: '#^Parameter \#1 \$rows of static method Daems\\Infrastructure\\Adapter\\Persistence\\Sql\\SqlMemberApplicationRepository\:\:buildDailySeries30dBackward\(\) expects list\<array\<string, mixed\>\>, array\<array\<string, mixed\>\> given\.$#'
+			identifier: argument.type
+			count: 5
+			path: src/Infrastructure/Adapter/Persistence/Sql/SqlMemberApplicationRepository.php
+
+		-
+			message: '#^Parameter \#1 \$rows of static method Daems\\Infrastructure\\Adapter\\Persistence\\Sql\\SqlProjectProposalRepository\:\:buildDailySeries30dBackward\(\) expects list\<array\<string, mixed\>\>, array\<array\<string, mixed\>\> given\.$#'
+			identifier: argument.type
+			count: 3
+			path: src/Infrastructure/Adapter/Persistence/Sql/SqlProjectProposalRepository.php
+
+		-
+			message: '#^Parameter \#1 \$rows of static method Daems\\Infrastructure\\Adapter\\Persistence\\Sql\\SqlProjectRepository\:\:buildDailySeries30dBackward\(\) expects list\<array\<string, mixed\>\>, array\<array\<string, mixed\>\> given\.$#'
+			identifier: argument.type
+			count: 2
+			path: src/Infrastructure/Adapter/Persistence/Sql/SqlProjectRepository.php
+
+		-
+			message: '#^Parameter \#1 \$rows of static method Daems\\Infrastructure\\Adapter\\Persistence\\Sql\\SqlSupporterApplicationRepository\:\:buildDailySeries30dBackward\(\) expects list\<array\<string, mixed\>\>, array\<array\<string, mixed\>\> given\.$#'
+			identifier: argument.type
+			count: 5
+			path: src/Infrastructure/Adapter/Persistence/Sql/SqlSupporterApplicationRepository.php
+
+		-
+			message: '#^Parameter \#1 \$row of method Daems\\Infrastructure\\Adapter\\Persistence\\Sql\\SqlTenantRepository\:\:hydrate\(\) expects array\<string, mixed\>, array\<mixed, mixed\> given\.$#'
+			identifier: argument.type
+			count: 4
+			path: src/Infrastructure/Adapter/Persistence/Sql/SqlTenantRepository.php
+
+		-
+			message: '#^Parameter \#1 \$haystack of function str_contains expects string, mixed given\.$#'
+			identifier: argument.type
+			count: 1
+			path: src/Infrastructure/Framework/Http/Request.php
+
+		-
+			message: '#^Parameter \#1 \$string of function rawurldecode expects string, mixed given\.$#'
+			identifier: argument.type
+			count: 1
+			path: src/Infrastructure/Framework/Http/Request.php
+
+		-
+			message: '#^Parameter \#1 \$string of function strtoupper expects string, mixed given\.$#'
+			identifier: argument.type
+			count: 1
+			path: src/Infrastructure/Framework/Http/Request.php
+
+		-
+			message: '#^Parameter \#1 \$data of static method Daems\\Infrastructure\\Module\\ModuleManifest\:\:fromArray\(\) expects array\<string, mixed\>, array\<mixed, mixed\> given\.$#'
+			identifier: argument.type
+			count: 1
+			path: src/Infrastructure/Module/ModuleRegistry.php
+
+		-
+			message: '#^Parameter \#1 \$width of function imagecreatetruecolor expects int\<1, max\>, int given\.$#'
+			identifier: argument.type
+			count: 1
+			path: src/Infrastructure/Storage/LocalImageStorage.php
+
+		-
+			message: '#^Parameter \#2 \$height of function imagecreatetruecolor expects int\<1, max\>, int given\.$#'
+			identifier: argument.type
+			count: 1
+			path: src/Infrastructure/Storage/LocalImageStorage.php

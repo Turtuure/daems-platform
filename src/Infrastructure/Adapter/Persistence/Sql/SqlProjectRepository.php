@@ -93,7 +93,7 @@ final class SqlProjectRepository implements ProjectRepositoryInterface
         $sets = [];
         $params = [];
         foreach ($fields as $col => $val) {
-            if (!is_string($col) || !in_array($col, $allowed, true)) {
+            if (!in_array($col, $allowed, true)) {
                 continue;
             }
             $sets[] = "{$col} = ?";
@@ -382,13 +382,13 @@ final class SqlProjectRepository implements ProjectRepositoryInterface
     {
         foreach ([SupportedLocale::UI_DEFAULT, SupportedLocale::CONTENT_FALLBACK] as $loc) {
             $row = $translations->rowFor(SupportedLocale::fromString($loc));
-            if ($row !== null && isset($row[$field]) && $row[$field] !== null && trim((string) $row[$field]) !== '') {
+            if ($row !== null && isset($row[$field]) && trim((string) $row[$field]) !== '') {
                 return (string) $row[$field];
             }
         }
         foreach (SupportedLocale::supportedValues() as $loc) {
             $row = $translations->rowFor(SupportedLocale::fromString($loc));
-            if ($row !== null && isset($row[$field]) && $row[$field] !== null && trim((string) $row[$field]) !== '') {
+            if ($row !== null && isset($row[$field]) && trim((string) $row[$field]) !== '') {
                 return (string) $row[$field];
             }
         }

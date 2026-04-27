@@ -30,10 +30,6 @@ final class LocaleMiddleware implements MiddlewareInterface
             default: SupportedLocale::contentFallback(),
         );
 
-        $result = $next($request->withAttribute('locale', $locale));
-        if (!$result instanceof Response) {
-            throw new \RuntimeException('LocaleMiddleware next() did not return Response');
-        }
-        return $result;
+        return $next($request->withAttribute('locale', $locale));
     }
 }
