@@ -168,31 +168,52 @@ final class SqlSearchRepository implements SearchRepositoryInterface
         return $hits;
     }
 
-    /** @return SearchHit[] */
+    /**
+     * Insights search: matches on the new insights_i18n FULLTEXT(title,
+     * excerpt) — the body content is searchable via i_fi.excerpt + the
+     * convenience search_text column on the chrome row when authors keep
+     * the excerpt up to date. The displayed title + excerpt are pulled
+     * from fi_FI then en_GB then sw_TZ (firstAvailable pattern).
+     *
+     * @return SearchHit[]
+     */
     private function searchInsights(string $tenantId, string $query, bool $includeUnpublished, int $limit): array
     {
-        $dateFilter = $includeUnpublished ? '' : ' AND published_date <= CURDATE()';
-        $sql = "SELECT id, slug, title, excerpt, search_text, published_date,
-                       MATCH(title, search_text) AGAINST (:q1) AS relevance
-                FROM insights
-                WHERE tenant_id = :t {$dateFilter}
-                  AND MATCH(title, search_text) AGAINST (:q2)
+        $dateFilter = $includeUnpublished ? '' : ' AND i.published_date <= CURDATE()';
+        $sql = "SELECT i.id, i.slug, i.search_text, i.published_date,
+                       COALESCE(t_fi.title,   t_en.title,   t_sw.title)   AS title,
+                       COALESCE(t_fi.excerpt, t_en.excerpt, t_sw.excerpt) AS excerpt,
+                       GREATEST(
+                           IFNULL(MATCH(t_fi.title, t_fi.excerpt) AGAINST (:q1), 0),
+                           IFNULL(MATCH(t_en.title, t_en.excerpt) AGAINST (:q2), 0),
+                           IFNULL(MATCH(t_sw.title, t_sw.excerpt) AGAINST (:q3), 0)
+                       ) AS relevance
+                FROM insights i
+                LEFT JOIN insights_i18n t_fi ON t_fi.insight_id = i.id AND t_fi.locale = 'fi_FI'
+                LEFT JOIN insights_i18n t_en ON t_en.insight_id = i.id AND t_en.locale = 'en_GB'
+                LEFT JOIN insights_i18n t_sw ON t_sw.insight_id = i.id AND t_sw.locale = 'sw_TZ'
+                WHERE i.tenant_id = :t {$dateFilter}
+                  AND (
+                      MATCH(t_fi.title, t_fi.excerpt) AGAINST (:q4)
+                   OR MATCH(t_en.title, t_en.excerpt) AGAINST (:q5)
+                   OR MATCH(t_sw.title, t_sw.excerpt) AGAINST (:q6)
+                  )
                 ORDER BY relevance DESC
                 LIMIT {$limit}";
         $rows = $this->db->query($sql, [
             ':t'  => $tenantId,
-            ':q1' => $query,
-            ':q2' => $query,
+            ':q1' => $query, ':q2' => $query, ':q3' => $query,
+            ':q4' => $query, ':q5' => $query, ':q6' => $query,
         ]);
 
         $hits = [];
         foreach ($rows as $r) {
-            $title = self::str($r, 'title', '');
-            $excerpt = self::str($r, 'excerpt', '');
-            $searchText = self::str($r, 'search_text', '');
+            $title         = self::str($r, 'title', '');
+            $excerpt       = self::str($r, 'excerpt', '');
+            $searchText    = self::str($r, 'search_text', '');
             $snippetSource = $excerpt !== '' ? $excerpt : $searchText;
             $publishedDate = $r['published_date'] ?? null;
-            $relevanceRaw = $r['relevance'] ?? 0;
+            $relevanceRaw  = $r['relevance'] ?? 0;
             $hits[] = new SearchHit(
                 entityType: 'insight',
                 entityId: self::str($r, 'id'),

@@ -90,21 +90,29 @@ final class SearchIntegrationTest extends MigrationTestCase
     private function seedInsights(): void
     {
         $pdo = $this->pdo();
+        // After insights migrations 007/008/009 the translatable columns
+        // (title, excerpt, content) live in insights_i18n. The chrome row
+        // keeps the locale-agnostic search_text for FULLTEXT relevance.
         $i1 = Uuid7::generate()->value();
         $pdo->prepare("INSERT INTO insights
-            (id, tenant_id, slug, title, category, category_label, featured, published_date, author, reading_time, excerpt, tags_json, content, search_text, created_at)
-            VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,NOW())")
-            ->execute([$i1, $this->tenantId, 'solar-future', 'Solar Future', 'tech', 'Tech', 0,
-                '2026-01-15', 'Sam', 5, 'Solar panels are booming', '[]',
-                '<p>Long form HTML <strong>solar</strong> content</p>',
+            (id, tenant_id, slug, category, category_label, featured, published_date, author, reading_time, tags_json, search_text, created_at)
+            VALUES (?,?,?,?,?,?,?,?,?,?,?,NOW())")
+            ->execute([$i1, $this->tenantId, 'solar-future', 'tech', 'Tech', 0,
+                '2026-01-15', 'Sam', 5, '[]',
                 'Long form HTML solar content',
             ]);
+        $pdo->prepare('INSERT INTO insights_i18n (insight_id, locale, title, excerpt, content) VALUES (?,?,?,?,?)')
+            ->execute([$i1, 'fi_FI', 'Solar Future', 'Solar panels are booming',
+                '<p>Long form HTML <strong>solar</strong> content</p>']);
+
         $i2 = Uuid7::generate()->value();
         $pdo->prepare("INSERT INTO insights
-            (id, tenant_id, slug, title, category, category_label, featured, published_date, author, reading_time, excerpt, tags_json, content, search_text, created_at)
-            VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,NOW())")
-            ->execute([$i2, $this->tenantId, 'future-post', 'Future Solar Post', 'tech', 'Tech', 0,
-                '2099-01-01', 'Sam', 3, 'x', '[]', 'body', 'body about solar']);
+            (id, tenant_id, slug, category, category_label, featured, published_date, author, reading_time, tags_json, search_text, created_at)
+            VALUES (?,?,?,?,?,?,?,?,?,?,?,NOW())")
+            ->execute([$i2, $this->tenantId, 'future-post', 'tech', 'Tech', 0,
+                '2099-01-01', 'Sam', 3, '[]', 'body about solar']);
+        $pdo->prepare('INSERT INTO insights_i18n (insight_id, locale, title, excerpt, content) VALUES (?,?,?,?,?)')
+            ->execute([$i2, 'fi_FI', 'Future Solar Post', 'x', 'body']);
     }
 
     private function seedForum(): void
