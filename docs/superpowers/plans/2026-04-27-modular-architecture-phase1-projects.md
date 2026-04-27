@@ -502,7 +502,7 @@ echo "=== Mixed migrations stay in core (expect 3) ==="
 ls database/migrations/053_backfill_events_projects_i18n.sql database/migrations/054_drop_translated_columns_from_events_projects.sql database/migrations/059_fulltext_events_projects_i18n.sql | wc -l
 ```
 
-Expected exact counts: 13 / 38 / 29 / 3 / 1 / 10 / 2 / 10 / 5 / 4 / 2 / 3 / 4 / 10 / 3.
+Expected exact counts: 13 / 38 / 32 / 3 / 1 / 10 / 2 / 10 / 5 / 4 / 2 / 3 / 4 / 10 / 3.
 
 If ANY count differs, STOP, surface to user, don't continue.
 
@@ -2330,7 +2330,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.fi" commit -m "Remove(harne
 
 **Why:** module's migrations are now active via `ModuleRegistry`. Core's originals are obsolete and confusing. Apply the `066_*` data-fix to dev DB, then delete:
 - 10 original Project migrations
-- 38 + 29 + 3 + 1 = 71 backend source files (Domain stays — 14 retained)
+- 38 + 32 + 3 + 1 = 74 backend source files (Domain stays — 14 retained)
 - 2 + 10 = 12 unit tests (Application/Project + Backstage)
 - 5 integration tests
 - 4 isolation tests
