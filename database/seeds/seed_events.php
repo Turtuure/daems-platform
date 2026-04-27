@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 require_once dirname(__DIR__, 2) . '/vendor/autoload.php';
 
-use Daems\Domain\Event\Event;
-use Daems\Domain\Event\EventId;
+use DaemsModule\Events\Domain\Event;
+use DaemsModule\Events\Domain\EventId;
 use Daems\Domain\Tenant\TenantId;
-use Daems\Infrastructure\Adapter\Persistence\Sql\SqlEventRepository;
+use DaemsModule\Events\Infrastructure\SqlEventRepository;
 use Daems\Infrastructure\Framework\Database\Connection;
 
 // Load .env
