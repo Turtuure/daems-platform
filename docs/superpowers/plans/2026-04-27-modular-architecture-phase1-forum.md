@@ -10,6 +10,12 @@
 
 **Spec:** `docs/superpowers/specs/2026-04-27-modular-architecture-phase1-forum-design.md` (commit `001104d`)
 
+**REVISION 2026-04-27 (during Wave A execution):** Cross-domain consumers in core (`ListNotificationsStats`, `ListPendingApplicationsForAdmin`, `GetUserActivity`, `AddProjectComment`) import Forum types. To preserve strict-A-isolation while keeping these working, **the entire `src/Domain/Forum/` directory (all 18 files) STAYS in core**. Only implementations (`SqlForum*Repository`), application use cases, controllers, tests, migrations, and frontend move to the module. The module's `bindings.php` binds **core-namespaced interfaces** (e.g. `Daems\Domain\Forum\ForumRepositoryInterface`) to **module-namespaced implementations** (`DaemsModule\Forum\Infrastructure\SqlForumRepository`). Additionally, `ForumIdentityDeriver::initials()` is lifted to `Daems\Application\Shared\IdentityFormatter::initials()` so `AddProjectComment` can stop importing from Forum. **Tasks affected:**
+- Task 4 (Move Domain) — **REMOVED**
+- Task 16 (Move Domain unit tests) — **REMOVED** (tests stay alongside their entities in core)
+- Task 3.5 (NEW) — Lift `IdentityFormatter::initials()` to core, update `AddProjectComment`, before any module moves
+- Task 7/8/9/13/14/19/20 namespace rewrites — only `Daems\Application\Forum`, `Daems\Application\Backstage\Forum`, `Daems\Infrastructure\Adapter\{Persistence\Sql,Api\Controller}\*Forum*` rewrite; **leave `Daems\Domain\Forum\*` references unchanged**.
+
 **Repos affected (3 commit streams):**
 - `C:\laragon\www\daems-platform\` — removals + `KernelHarness` cleanup + new data-fix migration `065_*` + extraction commits
 - `C:\laragon\www\modules\forum\` = `dp-forum` repo (new — `Turtuure/dp-forum`, branch `dev`) — manifest + all moved Forum code
