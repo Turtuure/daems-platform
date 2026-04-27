@@ -14,8 +14,6 @@ use Daems\Application\User\UpdateProfile\UpdateProfile;
 use Daems\Application\Membership\SubmitMemberApplication\SubmitMemberApplication;
 use Daems\Application\Membership\SubmitSupporterApplication\SubmitSupporterApplication;
 use Daems\Domain\Admin\AdminStatsRepositoryInterface;
-use Daems\Domain\Event\EventProposalRepositoryInterface;
-use Daems\Domain\Event\EventRepositoryInterface;
 use Daems\Domain\Forum\ForumRepositoryInterface;
 use Daems\Domain\Membership\MemberApplicationRepositoryInterface;
 use Daems\Domain\Membership\SupporterApplicationRepositoryInterface;
@@ -27,8 +25,6 @@ use Daems\Infrastructure\Adapter\Api\Controller\ApplicationController;
 use Daems\Infrastructure\Adapter\Api\Controller\AuthController;
 use Daems\Infrastructure\Adapter\Api\Controller\UserController;
 use Daems\Infrastructure\Adapter\Persistence\Sql\SqlAdminRepository;
-use Daems\Infrastructure\Adapter\Persistence\Sql\SqlEventProposalRepository;
-use Daems\Infrastructure\Adapter\Persistence\Sql\SqlEventRepository;
 use Daems\Infrastructure\Adapter\Persistence\Sql\SqlMemberApplicationRepository;
 use Daems\Infrastructure\Adapter\Persistence\Sql\SqlSupporterApplicationRepository;
 use Daems\Infrastructure\Adapter\Persistence\Sql\SqlUserRepository;
@@ -196,6 +192,12 @@ $container->bind(\Daems\Application\Backstage\ListPendingApplications\ListPendin
         $c->make(SupporterApplicationRepositoryInterface::class),
     ),
 );
+$container->bind(\Daems\Application\Backstage\ListDecidedApplications\ListDecidedApplications::class,
+    static fn(Container $c) => new \Daems\Application\Backstage\ListDecidedApplications\ListDecidedApplications(
+        $c->make(MemberApplicationRepositoryInterface::class),
+        $c->make(SupporterApplicationRepositoryInterface::class),
+    ),
+);
 $container->bind(\Daems\Application\Backstage\DismissApplication\DismissApplication::class,
     static fn(Container $c) => new \Daems\Application\Backstage\DismissApplication\DismissApplication(
         $c->make(AdminApplicationDismissalRepositoryInterface::class),
@@ -242,76 +244,18 @@ $container->bind(\Daems\Application\Backstage\GetMemberAudit\GetMemberAudit::cla
         $c->make(\Daems\Domain\Backstage\MemberDirectoryRepositoryInterface::class),
     ),
 );
-// Events admin — use cases
-$container->bind(\Daems\Application\Backstage\ListEventsForAdmin\ListEventsForAdmin::class,
-    static fn(Container $c) => new \Daems\Application\Backstage\ListEventsForAdmin\ListEventsForAdmin(
-        $c->make(EventRepositoryInterface::class),
-    ),
-);
-$container->bind(\Daems\Application\Backstage\CreateEvent\CreateEvent::class,
-    static fn(Container $c) => new \Daems\Application\Backstage\CreateEvent\CreateEvent(
-        $c->make(EventRepositoryInterface::class),
-        $c->make(\Daems\Domain\Shared\IdGeneratorInterface::class),
-    ),
-);
-$container->bind(\Daems\Application\Backstage\UpdateEvent\UpdateEvent::class,
-    static fn(Container $c) => new \Daems\Application\Backstage\UpdateEvent\UpdateEvent(
-        $c->make(EventRepositoryInterface::class),
-    ),
-);
-$container->bind(\Daems\Application\Backstage\PublishEvent\PublishEvent::class,
-    static fn(Container $c) => new \Daems\Application\Backstage\PublishEvent\PublishEvent(
-        $c->make(EventRepositoryInterface::class),
-    ),
-);
-$container->bind(\Daems\Application\Backstage\ArchiveEvent\ArchiveEvent::class,
-    static fn(Container $c) => new \Daems\Application\Backstage\ArchiveEvent\ArchiveEvent(
-        $c->make(EventRepositoryInterface::class),
-    ),
-);
-$container->bind(\Daems\Application\Backstage\ListEventRegistrations\ListEventRegistrations::class,
-    static fn(Container $c) => new \Daems\Application\Backstage\ListEventRegistrations\ListEventRegistrations(
-        $c->make(EventRepositoryInterface::class),
-    ),
-);
-$container->bind(\Daems\Application\Backstage\UnregisterUserFromEvent\UnregisterUserFromEvent::class,
-    static fn(Container $c) => new \Daems\Application\Backstage\UnregisterUserFromEvent\UnregisterUserFromEvent(
-        $c->make(EventRepositoryInterface::class),
-    ),
-);
-
 $container->bind(\Daems\Application\Backstage\ListProposalsForAdmin\ListProposalsForAdmin::class,
     static fn(Container $c) => new \Daems\Application\Backstage\ListProposalsForAdmin\ListProposalsForAdmin(
         $c->make(ProjectProposalRepositoryInterface::class),
     ),
 );
 
-// Image storage
+// Image storage — used by Events module via ImageStorageInterface binding.
 $container->singleton(\Daems\Domain\Storage\ImageStorageInterface::class,
     static fn(Container $c) => new \Daems\Infrastructure\Storage\LocalImageStorage(
         publicRoot: dirname(__DIR__) . '/public',
         urlPrefix:  rtrim((string) ($_ENV['APP_URL'] ?? 'http://daems-platform.local'), '/'),
         ids:        $c->make(\Daems\Domain\Shared\IdGeneratorInterface::class),
-    ),
-);
-$container->bind(\Daems\Application\Backstage\UploadEventImage\UploadEventImage::class,
-    static fn(Container $c) => new \Daems\Application\Backstage\UploadEventImage\UploadEventImage(
-        $c->make(EventRepositoryInterface::class),
-        $c->make(\Daems\Domain\Storage\ImageStorageInterface::class),
-    ),
-);
-$container->bind(\Daems\Application\Backstage\DeleteEventImage\DeleteEventImage::class,
-    static fn(Container $c) => new \Daems\Application\Backstage\DeleteEventImage\DeleteEventImage(
-        $c->make(EventRepositoryInterface::class),
-        $c->make(\Daems\Domain\Storage\ImageStorageInterface::class),
-    ),
-);
-
-// MediaController
-$container->bind(\Daems\Infrastructure\Adapter\Api\Controller\MediaController::class,
-    static fn(Container $c) => new \Daems\Infrastructure\Adapter\Api\Controller\MediaController(
-        $c->make(\Daems\Application\Backstage\UploadEventImage\UploadEventImage::class),
-        $c->make(\Daems\Application\Backstage\DeleteEventImage\DeleteEventImage::class),
     ),
 );
 
@@ -324,24 +268,12 @@ $container->bind(\Daems\Infrastructure\Adapter\Api\Controller\BackstageControlle
         $c->make(\Daems\Application\Backstage\GetMemberAudit\GetMemberAudit::class),
         $c->make(\Daems\Application\Backstage\ListPendingApplications\ListPendingApplicationsForAdmin::class),
         $c->make(\Daems\Application\Backstage\DismissApplication\DismissApplication::class),
-        $c->make(\Daems\Application\Backstage\ListEventsForAdmin\ListEventsForAdmin::class),
-        $c->make(\Daems\Application\Backstage\CreateEvent\CreateEvent::class),
-        $c->make(\Daems\Application\Backstage\UpdateEvent\UpdateEvent::class),
-        $c->make(\Daems\Application\Backstage\PublishEvent\PublishEvent::class),
-        $c->make(\Daems\Application\Backstage\ArchiveEvent\ArchiveEvent::class),
-        $c->make(\Daems\Application\Backstage\ListEventRegistrations\ListEventRegistrations::class),
-        $c->make(\Daems\Application\Backstage\UnregisterUserFromEvent\UnregisterUserFromEvent::class),
         $c->make(\Daems\Application\Backstage\ListProposalsForAdmin\ListProposalsForAdmin::class),
         $c->make(\Daems\Application\Backstage\Members\ListMembersStats\ListMembersStats::class),
         $c->make(\Daems\Application\Backstage\Applications\ListApplicationsStats\ListApplicationsStats::class),
-        $c->make(\Daems\Application\Backstage\Events\ListEventsStats\ListEventsStats::class),
         $c->make(\Daems\Application\Backstage\Notifications\ListNotificationsStats\ListNotificationsStats::class),
-        $c->make(\Daems\Application\Backstage\GetEventWithAllTranslations\GetEventWithAllTranslations::class),
-        $c->make(\Daems\Application\Backstage\UpdateEventTranslation\UpdateEventTranslation::class),
-        $c->make(\Daems\Application\Backstage\ListEventProposalsForAdmin\ListEventProposalsForAdmin::class),
-        $c->make(\Daems\Application\Backstage\ApproveEventProposal\ApproveEventProposal::class),
-        $c->make(\Daems\Application\Backstage\RejectEventProposal\RejectEventProposal::class),
         $c->make(\Daems\Application\Backstage\UpdateTenantSettings\UpdateTenantSettings::class),
+        $c->make(\Daems\Application\Backstage\ListDecidedApplications\ListDecidedApplications::class),
     ),
 );
 
@@ -380,46 +312,6 @@ $container->bind(\Daems\Infrastructure\Adapter\Api\Controller\SearchController::
     static fn(Container $c) => new \Daems\Infrastructure\Adapter\Api\Controller\SearchController(
         $c->make(\Daems\Application\Search\Search\Search::class),
     ));
-
-// i18n admin use cases
-$container->bind(\Daems\Application\Backstage\GetEventWithAllTranslations\GetEventWithAllTranslations::class,
-    static fn(Container $c) => new \Daems\Application\Backstage\GetEventWithAllTranslations\GetEventWithAllTranslations(
-        $c->make(EventRepositoryInterface::class),
-    ),
-);
-$container->bind(\Daems\Application\Backstage\UpdateEventTranslation\UpdateEventTranslation::class,
-    static fn(Container $c) => new \Daems\Application\Backstage\UpdateEventTranslation\UpdateEventTranslation(
-        $c->make(EventRepositoryInterface::class),
-    ),
-);
-$container->bind(\Daems\Application\Backstage\ListEventProposalsForAdmin\ListEventProposalsForAdmin::class,
-    static fn(Container $c) => new \Daems\Application\Backstage\ListEventProposalsForAdmin\ListEventProposalsForAdmin(
-        $c->make(EventProposalRepositoryInterface::class),
-    ),
-);
-$container->bind(\Daems\Application\Backstage\ApproveEventProposal\ApproveEventProposal::class,
-    static fn(Container $c) => new \Daems\Application\Backstage\ApproveEventProposal\ApproveEventProposal(
-        $c->make(EventProposalRepositoryInterface::class),
-        $c->make(EventRepositoryInterface::class),
-        $c->make(Clock::class),
-        $c->make(\Daems\Domain\Shared\IdGeneratorInterface::class),
-    ),
-);
-$container->bind(\Daems\Application\Backstage\RejectEventProposal\RejectEventProposal::class,
-    static fn(Container $c) => new \Daems\Application\Backstage\RejectEventProposal\RejectEventProposal(
-        $c->make(EventProposalRepositoryInterface::class),
-        $c->make(Clock::class),
-    ),
-);
-
-// Events repos — kept until core BackstageController + cross-domain consumers (GetUserActivity)
-// stop using core Daems\Domain\Event\Event*RepositoryInterface (Tasks 23+).
-$container->singleton(EventRepositoryInterface::class,
-    static fn(Container $c) => new SqlEventRepository($c->make(Connection::class)),
-);
-$container->singleton(EventProposalRepositoryInterface::class,
-    static fn(Container $c) => new SqlEventProposalRepository($c->make(Connection::class)),
-);
 
 // Membership applications
 $container->singleton(MemberApplicationRepositoryInterface::class,
@@ -619,12 +511,6 @@ $container->bind(\Daems\Application\Backstage\Applications\ListApplicationsStats
     static fn(Container $c) => new \Daems\Application\Backstage\Applications\ListApplicationsStats\ListApplicationsStats(
         $c->make(\Daems\Domain\Membership\MemberApplicationRepositoryInterface::class),
         $c->make(\Daems\Domain\Membership\SupporterApplicationRepositoryInterface::class),
-    ),
-);
-$container->bind(\Daems\Application\Backstage\Events\ListEventsStats\ListEventsStats::class,
-    static fn(Container $c) => new \Daems\Application\Backstage\Events\ListEventsStats\ListEventsStats(
-        $c->make(\Daems\Domain\Event\EventRepositoryInterface::class),
-        $c->make(\Daems\Domain\Event\EventProposalRepositoryInterface::class),
     ),
 );
 $container->bind(\Daems\Application\Backstage\Notifications\ListNotificationsStats\ListNotificationsStats::class,

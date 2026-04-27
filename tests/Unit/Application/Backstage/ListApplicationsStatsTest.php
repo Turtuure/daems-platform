@@ -203,6 +203,11 @@ final class ListApplicationsStatsTest extends TestCase
                 return [];
             }
 
+            public function listDecidedForTenant(TenantId $tenantId, string $decision, int $limit, int $days = 30): array
+            {
+                return [];
+            }
+
             public function findByIdForTenant(string $id, TenantId $tenantId): ?MemberApplication
             {
                 return null;
@@ -281,6 +286,11 @@ final class ListApplicationsStatsTest extends TestCase
             public function save(SupporterApplication $application): void {}
 
             public function listPendingForTenant(TenantId $tenantId, int $limit): array
+            {
+                return [];
+            }
+
+            public function listDecidedForTenant(TenantId $tenantId, string $decision, int $limit, int $days = 30): array
             {
                 return [];
             }

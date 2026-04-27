@@ -5,7 +5,6 @@ declare(strict_types=1);
 use Daems\Infrastructure\Adapter\Api\Controller\AdminController;
 use Daems\Infrastructure\Adapter\Api\Controller\ApplicationController;
 use Daems\Infrastructure\Adapter\Api\Controller\AuthController;
-use Daems\Infrastructure\Adapter\Api\Controller\EventController;
 use Daems\Infrastructure\Adapter\Api\Controller\UserController;
 use Daems\Infrastructure\Framework\Container\Container;
 use Daems\Infrastructure\Framework\Http\Middleware\AuthMiddleware;
@@ -40,29 +39,6 @@ return static function (Router $router, Container $container): void {
         return $container->make(AdminController::class)->memberGrowth($req);
     }, [TenantContextMiddleware::class, AuthMiddleware::class]);
 
-    // Events — public reads (locale-aware)
-    $router->get('/api/v1/events', static function (Request $req) use ($container): Response {
-        return $container->make(EventController::class)->indexLocalized($req);
-    }, [TenantContextMiddleware::class, LocaleMiddleware::class]);
-
-    $router->get('/api/v1/events/{slug}', static function (Request $req, array $params) use ($container): Response {
-        return $container->make(EventController::class)->showLocalized($req, $params);
-    }, [TenantContextMiddleware::class, LocaleMiddleware::class]);
-
-    // Events — legacy non-localized (kept for backward compat)
-    $router->get('/api/v1/events-legacy', static function (Request $req) use ($container): Response {
-        return $container->make(EventController::class)->index($req);
-    }, [TenantContextMiddleware::class]);
-
-    $router->get('/api/v1/events-legacy/{slug}', static function (Request $req, array $params) use ($container): Response {
-        return $container->make(EventController::class)->show($req, $params);
-    }, [TenantContextMiddleware::class]);
-
-    // Event proposals — member submit
-    $router->post('/api/v1/event-proposals', static function (Request $req) use ($container): Response {
-        return $container->make(EventController::class)->submitProposal($req);
-    }, [TenantContextMiddleware::class, LocaleMiddleware::class, AuthMiddleware::class]);
-
     // Users — all protected
     $router->get('/api/v1/users/{id}', static function (Request $req, array $params) use ($container): Response {
         return $container->make(UserController::class)->profile($req, $params);
@@ -82,15 +58,6 @@ return static function (Router $router, Container $container): void {
 
     $router->post('/api/v1/users/{id}/anonymise', static function (Request $req, array $params) use ($container): Response {
         return $container->make(UserController::class)->anonymise($req, $params);
-    }, [TenantContextMiddleware::class, AuthMiddleware::class]);
-
-    // Events — protected mutations
-    $router->post('/api/v1/events/{slug}/register', static function (Request $req, array $params) use ($container): Response {
-        return $container->make(EventController::class)->register($req, $params);
-    }, [TenantContextMiddleware::class, AuthMiddleware::class]);
-
-    $router->post('/api/v1/events/{slug}/unregister', static function (Request $req, array $params) use ($container): Response {
-        return $container->make(EventController::class)->unregister($req, $params);
     }, [TenantContextMiddleware::class, AuthMiddleware::class]);
 
     // Applications — public (anyone can apply for membership or supporter status)
@@ -125,6 +92,10 @@ return static function (Router $router, Container $container): void {
         return $container->make(\Daems\Infrastructure\Adapter\Api\Controller\BackstageController::class)->pendingApplications($req);
     }, [TenantContextMiddleware::class, AuthMiddleware::class]);
 
+    $router->get('/api/v1/backstage/applications/decided', static function (Request $req) use ($container): Response {
+        return $container->make(\Daems\Infrastructure\Adapter\Api\Controller\BackstageController::class)->decidedApplications($req);
+    }, [TenantContextMiddleware::class, AuthMiddleware::class]);
+
     $router->post('/api/v1/backstage/applications/{type}/{id}/decision', static function (Request $req, array $params) use ($container): Response {
         return $container->make(\Daems\Infrastructure\Adapter\Api\Controller\BackstageController::class)->decideApplication($req, $params);
     }, [TenantContextMiddleware::class, AuthMiddleware::class]);
@@ -157,47 +128,6 @@ return static function (Router $router, Container $container): void {
         return $container->make(\Daems\Infrastructure\Adapter\Api\Controller\BackstageController::class)->dismissApplication($req, $params);
     }, [TenantContextMiddleware::class, AuthMiddleware::class]);
 
-    // Backstage — Events (admin)
-    $router->get('/api/v1/backstage/events/stats', static function (Request $req) use ($container): Response {
-        return $container->make(\Daems\Infrastructure\Adapter\Api\Controller\BackstageController::class)->statsEvents($req);
-    }, [TenantContextMiddleware::class, AuthMiddleware::class]);
-
-    $router->get('/api/v1/backstage/events', static function (Request $req) use ($container): Response {
-        return $container->make(\Daems\Infrastructure\Adapter\Api\Controller\BackstageController::class)->listEvents($req);
-    }, [TenantContextMiddleware::class, AuthMiddleware::class]);
-
-    $router->post('/api/v1/backstage/events', static function (Request $req) use ($container): Response {
-        return $container->make(\Daems\Infrastructure\Adapter\Api\Controller\BackstageController::class)->createEvent($req);
-    }, [TenantContextMiddleware::class, AuthMiddleware::class]);
-
-    $router->post('/api/v1/backstage/events/{id}', static function (Request $req, array $params) use ($container): Response {
-        return $container->make(\Daems\Infrastructure\Adapter\Api\Controller\BackstageController::class)->updateEvent($req, $params);
-    }, [TenantContextMiddleware::class, AuthMiddleware::class]);
-
-    $router->post('/api/v1/backstage/events/{id}/publish', static function (Request $req, array $params) use ($container): Response {
-        return $container->make(\Daems\Infrastructure\Adapter\Api\Controller\BackstageController::class)->publishEvent($req, $params);
-    }, [TenantContextMiddleware::class, AuthMiddleware::class]);
-
-    $router->post('/api/v1/backstage/events/{id}/archive', static function (Request $req, array $params) use ($container): Response {
-        return $container->make(\Daems\Infrastructure\Adapter\Api\Controller\BackstageController::class)->archiveEvent($req, $params);
-    }, [TenantContextMiddleware::class, AuthMiddleware::class]);
-
-    $router->get('/api/v1/backstage/events/{id}/registrations', static function (Request $req, array $params) use ($container): Response {
-        return $container->make(\Daems\Infrastructure\Adapter\Api\Controller\BackstageController::class)->listEventRegistrations($req, $params);
-    }, [TenantContextMiddleware::class, AuthMiddleware::class]);
-
-    $router->post('/api/v1/backstage/events/{id}/registrations/{user_id}/remove', static function (Request $req, array $params) use ($container): Response {
-        return $container->make(\Daems\Infrastructure\Adapter\Api\Controller\BackstageController::class)->removeEventRegistration($req, $params);
-    }, [TenantContextMiddleware::class, AuthMiddleware::class]);
-
-    $router->post('/api/v1/backstage/events/{id}/images', static function (Request $req, array $params) use ($container): Response {
-        return $container->make(\Daems\Infrastructure\Adapter\Api\Controller\MediaController::class)->uploadEventImage($req, $params);
-    }, [TenantContextMiddleware::class, AuthMiddleware::class]);
-
-    $router->post('/api/v1/backstage/events/{id}/images/delete', static function (Request $req, array $params) use ($container): Response {
-        return $container->make(\Daems\Infrastructure\Adapter\Api\Controller\MediaController::class)->deleteEventImage($req, $params);
-    }, [TenantContextMiddleware::class, AuthMiddleware::class]);
-
     // Backstage — Notifications
     $router->get('/api/v1/backstage/notifications/stats', static function (Request $req) use ($container): Response {
         return $container->make(\Daems\Infrastructure\Adapter\Api\Controller\BackstageController::class)->statsNotifications($req);
@@ -205,19 +135,6 @@ return static function (Router $router, Container $container): void {
 
     $router->get('/api/v1/backstage/proposals', static function (Request $req) use ($container): Response {
         return $container->make(\Daems\Infrastructure\Adapter\Api\Controller\BackstageController::class)->listProposalsAdmin($req);
-    }, [TenantContextMiddleware::class, AuthMiddleware::class]);
-
-    // Backstage — event proposals (admin)
-    $router->get('/api/v1/backstage/event-proposals', static function (Request $req) use ($container): Response {
-        return $container->make(\Daems\Infrastructure\Adapter\Api\Controller\BackstageController::class)->listEventProposals($req);
-    }, [TenantContextMiddleware::class, AuthMiddleware::class]);
-
-    $router->post('/api/v1/backstage/event-proposals/{id}/approve', static function (Request $req, array $params) use ($container): Response {
-        return $container->make(\Daems\Infrastructure\Adapter\Api\Controller\BackstageController::class)->approveEventProposal($req, $params);
-    }, [TenantContextMiddleware::class, AuthMiddleware::class]);
-
-    $router->post('/api/v1/backstage/event-proposals/{id}/reject', static function (Request $req, array $params) use ($container): Response {
-        return $container->make(\Daems\Infrastructure\Adapter\Api\Controller\BackstageController::class)->rejectEventProposal($req, $params);
     }, [TenantContextMiddleware::class, AuthMiddleware::class]);
 
     // Backstage — tenant settings (currently only member_number_prefix)
@@ -249,15 +166,6 @@ return static function (Router $router, Container $container): void {
     $router->get('/api/v1/backstage/search', static function (Request $req) use ($container): Response {
         return $container->make(\Daems\Infrastructure\Adapter\Api\Controller\SearchController::class)->backstage($req);
     }, [TenantContextMiddleware::class, LocaleMiddleware::class, AuthMiddleware::class]);
-
-    // Backstage — translations (events + projects)
-    $router->get('/api/v1/backstage/events/{id}/translations', static function (Request $req, array $params) use ($container): Response {
-        return $container->make(\Daems\Infrastructure\Adapter\Api\Controller\BackstageController::class)->getEventWithTranslations($req, $params);
-    }, [TenantContextMiddleware::class, AuthMiddleware::class]);
-
-    $router->post('/api/v1/backstage/events/{id}/translations/{locale}', static function (Request $req, array $params) use ($container): Response {
-        return $container->make(\Daems\Infrastructure\Adapter\Api\Controller\BackstageController::class)->updateEventTranslation($req, $params);
-    }, [TenantContextMiddleware::class, AuthMiddleware::class]);
 
     $router->post('/api/v1/auth/invites/redeem', static function (Request $req) use ($container): Response {
         return $container->make(AuthController::class)->redeemInvite($req);

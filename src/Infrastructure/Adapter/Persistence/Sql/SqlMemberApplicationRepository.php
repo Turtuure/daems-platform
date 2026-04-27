@@ -55,6 +55,46 @@ final class SqlMemberApplicationRepository implements MemberApplicationRepositor
         return array_map(fn (array $r): MemberApplication => $this->hydrate($r), $rows);
     }
 
+    public function listDecidedForTenant(TenantId $tenantId, string $decision, int $limit, int $days = 30): array
+    {
+        if (!in_array($decision, ['approved', 'rejected'], true)) {
+            throw new \InvalidArgumentException("decision must be 'approved' or 'rejected', got: {$decision}");
+        }
+
+        $stmt = $this->db->pdo()->prepare(
+            "SELECT id, name, email, date_of_birth, country, motivation, decided_at, decision_note
+               FROM member_applications
+              WHERE tenant_id = ?
+                AND status = ?
+                AND decided_at IS NOT NULL
+                AND decided_at >= (NOW() - INTERVAL ? DAY)
+              ORDER BY decided_at DESC
+              LIMIT ?"
+        );
+        $stmt->bindValue(1, $tenantId->value());
+        $stmt->bindValue(2, $decision);
+        $stmt->bindValue(3, $days, \PDO::PARAM_INT);
+        $stmt->bindValue(4, $limit, \PDO::PARAM_INT);
+        $stmt->execute();
+        /** @var list<array<string, mixed>> $rows */
+        $rows = $stmt->fetchAll(\PDO::FETCH_ASSOC);
+
+        return array_map(static function (array $r): array {
+            $country = $r['country'] ?? null;
+            $note    = $r['decision_note'] ?? null;
+            return [
+                'id'            => self::str($r, 'id'),
+                'name'          => self::str($r, 'name'),
+                'email'         => self::str($r, 'email'),
+                'date_of_birth' => self::str($r, 'date_of_birth'),
+                'country'       => is_string($country) ? $country : null,
+                'motivation'    => self::str($r, 'motivation'),
+                'decided_at'    => self::str($r, 'decided_at'),
+                'decision_note' => is_string($note) ? $note : null,
+            ];
+        }, $rows);
+    }
+
     public function findByIdForTenant(string $id, TenantId $tenantId): ?MemberApplication
     {
         $row = $this->db->queryOne(

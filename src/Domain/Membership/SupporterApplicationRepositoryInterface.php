@@ -15,6 +15,26 @@ interface SupporterApplicationRepositoryInterface
     /** @return list<SupporterApplication> */
     public function listPendingForTenant(TenantId $tenantId, int $limit): array;
 
+    /**
+     * Lists decided supporter applications (approved or rejected) for the tenant, scoped to the
+     * last $days days by `decided_at`. Returns array shape rather than entities because the
+     * payload includes `decided_at` and `decision_note` which are not part of the
+     * SupporterApplication value object.
+     *
+     * @param 'approved'|'rejected' $decision
+     * @return list<array{
+     *   id: string,
+     *   org_name: string,
+     *   contact_person: string,
+     *   email: string,
+     *   country: ?string,
+     *   motivation: string,
+     *   decided_at: string,
+     *   decision_note: ?string
+     * }>
+     */
+    public function listDecidedForTenant(TenantId $tenantId, string $decision, int $limit, int $days = 30): array;
+
     public function findByIdForTenant(string $id, TenantId $tenantId): ?SupporterApplication;
 
     public function recordDecision(

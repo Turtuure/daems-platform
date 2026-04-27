@@ -30,6 +30,47 @@ final class InMemorySupporterApplicationRepository implements SupporterApplicati
         return array_slice(array_values($filtered), 0, $limit);
     }
 
+    public function listDecidedForTenant(\Daems\Domain\Tenant\TenantId $tenantId, string $decision, int $limit, int $days = 30): array
+    {
+        if (!in_array($decision, ['approved', 'rejected'], true)) {
+            throw new \InvalidArgumentException("decision must be 'approved' or 'rejected', got: {$decision}");
+        }
+
+        // The fake doesn't track decided_at timestamps with day granularity, so $days
+        // is accepted but not enforced — tests assert payload shape, not date-window
+        // exclusion. Newest decisions surface first via reverse iteration.
+        $out = [];
+        foreach (array_reverse($this->decisions, true) as $appId => $d) {
+            if ($d['decision'] !== $decision) {
+                continue;
+            }
+            $found = null;
+            foreach ($this->applications as $a) {
+                if ($a->id()->value() === $appId && $a->tenantId()->equals($tenantId)) {
+                    $found = $a;
+                    break;
+                }
+            }
+            if ($found === null) {
+                continue;
+            }
+            $out[] = [
+                'id'             => $found->id()->value(),
+                'org_name'       => $found->orgName(),
+                'contact_person' => $found->contactPerson(),
+                'email'          => $found->email(),
+                'country'        => $found->country(),
+                'motivation'     => $found->motivation(),
+                'decided_at'     => $d['at'],
+                'decision_note'  => $d['note'],
+            ];
+            if (count($out) >= $limit) {
+                break;
+            }
+        }
+        return $out;
+    }
+
     public function findByIdForTenant(string $id, \Daems\Domain\Tenant\TenantId $tenantId): ?SupporterApplication
     {
         foreach ($this->applications as $a) {
