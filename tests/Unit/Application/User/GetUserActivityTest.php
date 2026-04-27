@@ -8,11 +8,11 @@ use Daems\Application\User\GetUserActivity\GetUserActivity;
 use Daems\Application\User\GetUserActivity\GetUserActivityInput;
 use Daems\Domain\Auth\ActingUser;
 use Daems\Domain\Auth\ForbiddenException;
-use Daems\Domain\Event\EventRepositoryInterface;
 use Daems\Domain\Forum\ForumRepositoryInterface;
 use Daems\Domain\Tenant\TenantId;
 use Daems\Domain\Tenant\UserTenantRole;
 use Daems\Domain\User\UserId;
+use DaemsModule\Events\Domain\EventRepositoryInterface;
 use PHPUnit\Framework\TestCase;
 
 final class GetUserActivityTest extends TestCase

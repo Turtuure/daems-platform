@@ -583,7 +583,7 @@ $container->bind(AnonymiseAccount::class,
 $container->bind(GetUserActivity::class,
     static fn(Container $c) => new GetUserActivity(
         $c->make(ForumRepositoryInterface::class),
-        $c->make(EventRepositoryInterface::class),
+        $c->make(\DaemsModule\Events\Domain\EventRepositoryInterface::class),
     ),
 );
 $container->bind(UserController::class,

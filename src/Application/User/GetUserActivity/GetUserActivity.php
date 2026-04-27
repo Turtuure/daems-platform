@@ -5,9 +5,9 @@ declare(strict_types=1);
 namespace Daems\Application\User\GetUserActivity;
 
 use Daems\Domain\Auth\ForbiddenException;
-use Daems\Domain\Event\EventRepositoryInterface;
 use Daems\Domain\Forum\ForumRepositoryInterface;
 use Daems\Domain\User\UserId;
+use DaemsModule\Events\Domain\EventRepositoryInterface;
 
 final class GetUserActivity
 {
