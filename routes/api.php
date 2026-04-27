@@ -7,7 +7,6 @@ use Daems\Infrastructure\Adapter\Api\Controller\ApplicationController;
 use Daems\Infrastructure\Adapter\Api\Controller\AuthController;
 use Daems\Infrastructure\Adapter\Api\Controller\EventController;
 use Daems\Infrastructure\Adapter\Api\Controller\ForumController;
-use Daems\Infrastructure\Adapter\Api\Controller\InsightController;
 use Daems\Infrastructure\Adapter\Api\Controller\ProjectController;
 use Daems\Infrastructure\Adapter\Api\Controller\UserController;
 use Daems\Infrastructure\Framework\Container\Container;
@@ -59,15 +58,6 @@ return static function (Router $router, Container $container): void {
 
     $router->get('/api/v1/events-legacy/{slug}', static function (Request $req, array $params) use ($container): Response {
         return $container->make(EventController::class)->show($req, $params);
-    }, [TenantContextMiddleware::class]);
-
-    // Insights — public reads
-    $router->get('/api/v1/insights', static function (Request $req) use ($container): Response {
-        return $container->make(InsightController::class)->index($req);
-    }, [TenantContextMiddleware::class]);
-
-    $router->get('/api/v1/insights/{slug}', static function (Request $req, array $params) use ($container): Response {
-        return $container->make(InsightController::class)->show($req, $params);
     }, [TenantContextMiddleware::class]);
 
     // Projects — public reads (locale-aware)
@@ -366,31 +356,6 @@ return static function (Router $router, Container $container): void {
     // Backstage — tenant settings (currently only member_number_prefix)
     $router->post('/api/v1/backstage/tenant/settings', static function (Request $req) use ($container): Response {
         return $container->make(\Daems\Infrastructure\Adapter\Api\Controller\BackstageController::class)->updateTenantSettings($req);
-    }, [TenantContextMiddleware::class, AuthMiddleware::class]);
-
-    // Backstage — Insights CRUD
-    $router->get('/api/v1/backstage/insights', static function (Request $req) use ($container): Response {
-        return $container->make(\Daems\Infrastructure\Adapter\Api\Controller\BackstageController::class)->listInsights($req);
-    }, [TenantContextMiddleware::class, AuthMiddleware::class]);
-
-    $router->get('/api/v1/backstage/insights/stats', static function (Request $req) use ($container): Response {
-        return $container->make(\Daems\Infrastructure\Adapter\Api\Controller\BackstageController::class)->statsInsights($req);
-    }, [TenantContextMiddleware::class, AuthMiddleware::class]);
-
-    $router->post('/api/v1/backstage/insights', static function (Request $req) use ($container): Response {
-        return $container->make(\Daems\Infrastructure\Adapter\Api\Controller\BackstageController::class)->createInsight($req);
-    }, [TenantContextMiddleware::class, AuthMiddleware::class]);
-
-    $router->get('/api/v1/backstage/insights/{id}', static function (Request $req, array $params) use ($container): Response {
-        return $container->make(\Daems\Infrastructure\Adapter\Api\Controller\BackstageController::class)->getInsight($req, $params);
-    }, [TenantContextMiddleware::class, AuthMiddleware::class]);
-
-    $router->post('/api/v1/backstage/insights/{id}', static function (Request $req, array $params) use ($container): Response {
-        return $container->make(\Daems\Infrastructure\Adapter\Api\Controller\BackstageController::class)->updateInsight($req, $params);
-    }, [TenantContextMiddleware::class, AuthMiddleware::class]);
-
-    $router->post('/api/v1/backstage/insights/{id}/delete', static function (Request $req, array $params) use ($container): Response {
-        return $container->make(\Daems\Infrastructure\Adapter\Api\Controller\BackstageController::class)->deleteInsight($req, $params);
     }, [TenantContextMiddleware::class, AuthMiddleware::class]);
 
     // Me — public-profile privacy toggle (public_avatar_visible)

@@ -14,8 +14,6 @@ use Daems\Application\Forum\GetForumThread\GetForumThread;
 use Daems\Application\Forum\IncrementTopicView\IncrementTopicView;
 use Daems\Application\Forum\LikeForumPost\LikeForumPost;
 use Daems\Application\Forum\ListForumCategories\ListForumCategories;
-use Daems\Application\Insight\GetInsight\GetInsight;
-use Daems\Application\Insight\ListInsights\ListInsights;
 use Daems\Application\Admin\GetAdminStats\GetAdminStats;
 use Daems\Application\Auth\GetAuthMe\GetAuthMe;
 use Daems\Application\Auth\LoginUser\LoginUser;
@@ -46,7 +44,6 @@ use Daems\Domain\Admin\AdminStatsRepositoryInterface;
 use Daems\Domain\Event\EventProposalRepositoryInterface;
 use Daems\Domain\Event\EventRepositoryInterface;
 use Daems\Domain\Forum\ForumRepositoryInterface;
-use Daems\Domain\Insight\InsightRepositoryInterface;
 use Daems\Domain\Membership\MemberApplicationRepositoryInterface;
 use Daems\Domain\Membership\SupporterApplicationRepositoryInterface;
 use Daems\Domain\Project\ProjectProposalRepositoryInterface;
@@ -55,7 +52,6 @@ use Daems\Domain\User\UserRepositoryInterface;
 use Daems\Infrastructure\Adapter\Api\Controller\AdminController;
 use Daems\Infrastructure\Adapter\Api\Controller\EventController;
 use Daems\Infrastructure\Adapter\Api\Controller\ForumController;
-use Daems\Infrastructure\Adapter\Api\Controller\InsightController;
 use Daems\Infrastructure\Adapter\Api\Controller\ApplicationController;
 use Daems\Infrastructure\Adapter\Api\Controller\AuthController;
 use Daems\Infrastructure\Adapter\Api\Controller\ProjectController;
@@ -64,7 +60,6 @@ use Daems\Infrastructure\Adapter\Persistence\Sql\SqlAdminRepository;
 use Daems\Infrastructure\Adapter\Persistence\Sql\SqlEventProposalRepository;
 use Daems\Infrastructure\Adapter\Persistence\Sql\SqlEventRepository;
 use Daems\Infrastructure\Adapter\Persistence\Sql\SqlForumRepository;
-use Daems\Infrastructure\Adapter\Persistence\Sql\SqlInsightRepository;
 use Daems\Infrastructure\Adapter\Persistence\Sql\SqlMemberApplicationRepository;
 use Daems\Infrastructure\Adapter\Persistence\Sql\SqlProjectProposalRepository;
 use Daems\Infrastructure\Adapter\Persistence\Sql\SqlProjectRepository;
@@ -473,34 +468,8 @@ $container->bind(\Daems\Infrastructure\Adapter\Api\Controller\BackstageControlle
         $c->make(\Daems\Application\Backstage\ApproveEventProposal\ApproveEventProposal::class),
         $c->make(\Daems\Application\Backstage\RejectEventProposal\RejectEventProposal::class),
         $c->make(\Daems\Application\Backstage\UpdateTenantSettings\UpdateTenantSettings::class),
-        $c->make(\Daems\Application\Insight\CreateInsight\CreateInsight::class),
-        $c->make(\Daems\Application\Insight\UpdateInsight\UpdateInsight::class),
-        $c->make(\Daems\Application\Insight\DeleteInsight\DeleteInsight::class),
-        $c->make(\Daems\Application\Insight\ListInsights\ListInsights::class),
-        $c->make(\Daems\Application\Insight\ListInsightStats\ListInsightStats::class),
-        $c->make(\Daems\Domain\Insight\InsightRepositoryInterface::class),
     ),
 );
-
-$container->bind(\Daems\Application\Insight\CreateInsight\CreateInsight::class,
-    static fn(Container $c) => new \Daems\Application\Insight\CreateInsight\CreateInsight(
-        $c->make(\Daems\Domain\Insight\InsightRepositoryInterface::class),
-    ),
-);
-$container->bind(\Daems\Application\Insight\UpdateInsight\UpdateInsight::class,
-    static fn(Container $c) => new \Daems\Application\Insight\UpdateInsight\UpdateInsight(
-        $c->make(\Daems\Domain\Insight\InsightRepositoryInterface::class),
-    ),
-);
-$container->bind(\Daems\Application\Insight\DeleteInsight\DeleteInsight::class,
-    static fn(Container $c) => new \Daems\Application\Insight\DeleteInsight\DeleteInsight(
-        $c->make(\Daems\Domain\Insight\InsightRepositoryInterface::class),
-    ),
-);
-$container->bind(\Daems\Application\Insight\ListInsightStats\ListInsightStats::class,
-    static fn(Container $c) => new \Daems\Application\Insight\ListInsightStats\ListInsightStats(
-        $c->make(\Daems\Domain\Insight\InsightRepositoryInterface::class),
-    ));
 
 $container->bind(\Daems\Application\Backstage\UpdateTenantSettings\UpdateTenantSettings::class,
     static fn(Container $c) => new \Daems\Application\Backstage\UpdateTenantSettings\UpdateTenantSettings(
@@ -620,20 +589,6 @@ $container->bind(EventController::class,
         $c->make(GetEventBySlugForLocale::class),
         $c->make(SubmitEventProposal::class),
     ),
-);
-
-// Insights
-$container->singleton(InsightRepositoryInterface::class,
-    static fn(Container $c) => new SqlInsightRepository($c->make(Connection::class)),
-);
-$container->bind(ListInsights::class,
-    static fn(Container $c) => new ListInsights($c->make(InsightRepositoryInterface::class)),
-);
-$container->bind(GetInsight::class,
-    static fn(Container $c) => new GetInsight($c->make(InsightRepositoryInterface::class)),
-);
-$container->bind(InsightController::class,
-    static fn(Container $c) => new InsightController($c->make(ListInsights::class), $c->make(GetInsight::class)),
 );
 
 // Membership applications

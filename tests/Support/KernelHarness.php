@@ -25,8 +25,6 @@ use Daems\Application\Forum\GetForumThread\GetForumThread;
 use Daems\Application\Forum\IncrementTopicView\IncrementTopicView;
 use Daems\Application\Forum\LikeForumPost\LikeForumPost;
 use Daems\Application\Forum\ListForumCategories\ListForumCategories;
-use Daems\Application\Insight\GetInsight\GetInsight;
-use Daems\Application\Insight\ListInsights\ListInsights;
 use Daems\Application\Membership\SubmitMemberApplication\SubmitMemberApplication;
 use Daems\Application\Membership\SubmitSupporterApplication\SubmitSupporterApplication;
 use Daems\Application\Project\AddProjectComment\AddProjectComment;
@@ -53,7 +51,6 @@ use Daems\Domain\Dismissal\AdminApplicationDismissalRepositoryInterface;
 use Daems\Domain\Event\EventProposalRepositoryInterface;
 use Daems\Domain\Event\EventRepositoryInterface;
 use Daems\Domain\Forum\ForumRepositoryInterface;
-use Daems\Domain\Insight\InsightRepositoryInterface;
 use Daems\Domain\Membership\MemberApplicationRepositoryInterface;
 use Daems\Domain\Membership\SupporterApplicationRepositoryInterface;
 use Daems\Domain\Project\ProjectProposalRepositoryInterface;
@@ -75,7 +72,6 @@ use Daems\Infrastructure\Adapter\Api\Controller\ApplicationController;
 use Daems\Infrastructure\Adapter\Api\Controller\AuthController;
 use Daems\Infrastructure\Adapter\Api\Controller\EventController;
 use Daems\Infrastructure\Adapter\Api\Controller\ForumController;
-use Daems\Infrastructure\Adapter\Api\Controller\InsightController;
 use Daems\Infrastructure\Adapter\Api\Controller\ProjectController;
 use Daems\Infrastructure\Adapter\Api\Controller\UserController;
 use Daems\Infrastructure\Framework\Container\Container;
@@ -95,7 +91,6 @@ use Daems\Tests\Support\Fake\InMemoryForumModerationAuditRepository;
 use Daems\Tests\Support\Fake\InMemoryForumReportRepository;
 use Daems\Tests\Support\Fake\InMemoryForumRepository;
 use Daems\Tests\Support\Fake\InMemoryForumUserWarningRepository;
-use Daems\Tests\Support\Fake\InMemoryInsightRepository;
 use Daems\Tests\Support\Fake\ImmediateTransactionManager;
 use Daems\Tests\Support\Fake\InMemoryAdminApplicationDismissalRepository;
 use Daems\Tests\Support\Fake\InMemoryMemberApplicationRepository;
@@ -131,7 +126,6 @@ final class KernelHarness
     public InMemoryForumUserWarningRepository $forumWarnings;
     public InMemoryEventRepository $events;
     public InMemoryProjectProposalRepository $proposals;
-    public InMemoryInsightRepository $insights;
     public InMemoryMemberApplicationRepository $memberApps;
     public InMemorySupporterApplicationRepository $supporterApps;
     public InMemoryMemberDirectoryRepository $memberDirectory;
@@ -161,7 +155,6 @@ final class KernelHarness
         $this->forumWarnings = new InMemoryForumUserWarningRepository();
         $this->events = new InMemoryEventRepository();
         $this->proposals = new InMemoryProjectProposalRepository();
-        $this->insights = new InMemoryInsightRepository();
         $this->memberApps = new InMemoryMemberApplicationRepository();
         $this->supporterApps = new InMemorySupporterApplicationRepository();
         $this->memberDirectory = new InMemoryMemberDirectoryRepository();
@@ -217,7 +210,6 @@ final class KernelHarness
         $container->singleton(EventRepositoryInterface::class, fn() => $this->events);
         $container->singleton(ProjectProposalRepositoryInterface::class, fn() => $this->proposals);
         $container->singleton(\Daems\Domain\Project\ProjectCommentModerationAuditRepositoryInterface::class, fn() => $this->commentAudit);
-        $container->singleton(InsightRepositoryInterface::class, fn() => $this->insights);
         $container->singleton(MemberApplicationRepositoryInterface::class, fn() => $this->memberApps);
         $container->singleton(SupporterApplicationRepositoryInterface::class, fn() => $this->supporterApps);
         $container->singleton(\Daems\Domain\Backstage\MemberDirectoryRepositoryInterface::class, fn() => $this->memberDirectory);
@@ -453,9 +445,6 @@ final class KernelHarness
         $container->bind(RegisterForEvent::class, static fn(Container $c) => new RegisterForEvent($c->make(EventRepositoryInterface::class)));
         $container->bind(UnregisterFromEvent::class, static fn(Container $c) => new UnregisterFromEvent($c->make(EventRepositoryInterface::class)));
 
-        $container->bind(ListInsights::class, static fn(Container $c) => new ListInsights($c->make(InsightRepositoryInterface::class)));
-        $container->bind(GetInsight::class, static fn(Container $c) => new GetInsight($c->make(InsightRepositoryInterface::class)));
-
         $container->bind(SubmitMemberApplication::class, static fn(Container $c) => new SubmitMemberApplication($c->make(MemberApplicationRepositoryInterface::class)));
         $container->bind(SubmitSupporterApplication::class, static fn(Container $c) => new SubmitSupporterApplication($c->make(SupporterApplicationRepositoryInterface::class)));
 
@@ -685,10 +674,6 @@ final class KernelHarness
             $c->make(GetEventBySlugForLocale::class),
             $c->make(SubmitEventProposal::class),
         ));
-        $container->bind(InsightController::class, static fn(Container $c) => new InsightController(
-            $c->make(ListInsights::class),
-            $c->make(GetInsight::class),
-        ));
         $container->bind(ApplicationController::class, static fn(Container $c) => new ApplicationController(
             $c->make(SubmitMemberApplication::class),
             $c->make(SubmitSupporterApplication::class),
@@ -754,29 +739,7 @@ final class KernelHarness
             $c->make(\Daems\Application\Backstage\ApproveEventProposal\ApproveEventProposal::class),
             $c->make(\Daems\Application\Backstage\RejectEventProposal\RejectEventProposal::class),
             $c->make(\Daems\Application\Backstage\UpdateTenantSettings\UpdateTenantSettings::class),
-            $c->make(\Daems\Application\Insight\CreateInsight\CreateInsight::class),
-            $c->make(\Daems\Application\Insight\UpdateInsight\UpdateInsight::class),
-            $c->make(\Daems\Application\Insight\DeleteInsight\DeleteInsight::class),
-            $c->make(\Daems\Application\Insight\ListInsights\ListInsights::class),
-            $c->make(\Daems\Application\Insight\ListInsightStats\ListInsightStats::class),
-            $c->make(\Daems\Domain\Insight\InsightRepositoryInterface::class),
         ));
-        $container->bind(\Daems\Application\Insight\CreateInsight\CreateInsight::class,
-            static fn(Container $c) => new \Daems\Application\Insight\CreateInsight\CreateInsight(
-                $c->make(\Daems\Domain\Insight\InsightRepositoryInterface::class),
-            ));
-        $container->bind(\Daems\Application\Insight\UpdateInsight\UpdateInsight::class,
-            static fn(Container $c) => new \Daems\Application\Insight\UpdateInsight\UpdateInsight(
-                $c->make(\Daems\Domain\Insight\InsightRepositoryInterface::class),
-            ));
-        $container->bind(\Daems\Application\Insight\DeleteInsight\DeleteInsight::class,
-            static fn(Container $c) => new \Daems\Application\Insight\DeleteInsight\DeleteInsight(
-                $c->make(\Daems\Domain\Insight\InsightRepositoryInterface::class),
-            ));
-        $container->bind(\Daems\Application\Insight\ListInsightStats\ListInsightStats::class,
-            static fn(Container $c) => new \Daems\Application\Insight\ListInsightStats\ListInsightStats(
-                $c->make(\Daems\Domain\Insight\InsightRepositoryInterface::class),
-            ));
         $container->bind(\Daems\Application\Backstage\UpdateTenantSettings\UpdateTenantSettings::class,
             static fn(Container $c) => new \Daems\Application\Backstage\UpdateTenantSettings\UpdateTenantSettings(
                 $c->make(\Daems\Domain\Tenant\TenantRepositoryInterface::class),
