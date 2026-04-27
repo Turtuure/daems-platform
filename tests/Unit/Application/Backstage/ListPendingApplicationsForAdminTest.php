@@ -21,7 +21,7 @@ use Daems\Domain\Tenant\UserTenantRole;
 use Daems\Domain\User\UserId;
 use Daems\Tests\Support\Fake\InMemoryAdminApplicationDismissalRepository;
 use Daems\Tests\Support\Fake\InMemoryMemberApplicationRepository;
-use Daems\Tests\Support\Fake\InMemoryProjectProposalRepository;
+use DaemsModule\Projects\Tests\Support\InMemoryProjectProposalRepository;
 use Daems\Tests\Support\Fake\InMemorySupporterApplicationRepository;
 use DaemsModule\Forum\Tests\Support\ForumSeed;
 use DaemsModule\Forum\Tests\Support\InMemoryForumReportRepository;

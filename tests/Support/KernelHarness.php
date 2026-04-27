@@ -20,19 +20,6 @@ use Daems\Application\Event\SubmitEventProposal\SubmitEventProposal;
 use Daems\Application\Event\UnregisterFromEvent\UnregisterFromEvent;
 use Daems\Application\Membership\SubmitMemberApplication\SubmitMemberApplication;
 use Daems\Application\Membership\SubmitSupporterApplication\SubmitSupporterApplication;
-use Daems\Application\Project\AddProjectComment\AddProjectComment;
-use Daems\Application\Project\AddProjectUpdate\AddProjectUpdate;
-use Daems\Application\Project\ArchiveProject\ArchiveProject;
-use Daems\Application\Project\CreateProject\CreateProject;
-use Daems\Application\Project\GetProject\GetProject;
-use Daems\Application\Project\GetProjectBySlugForLocale\GetProjectBySlugForLocale;
-use Daems\Application\Project\JoinProject\JoinProject;
-use Daems\Application\Project\LeaveProject\LeaveProject;
-use Daems\Application\Project\LikeProjectComment\LikeProjectComment;
-use Daems\Application\Project\ListProjects\ListProjects;
-use Daems\Application\Project\ListProjectsForLocale\ListProjectsForLocale;
-use Daems\Application\Project\SubmitProjectProposal\SubmitProjectProposal;
-use Daems\Application\Project\UpdateProject\UpdateProject;
 use Daems\Application\User\AnonymiseAccount\AnonymiseAccount;
 use Daems\Application\User\ChangePassword\ChangePassword;
 use Daems\Application\User\GetProfile\GetProfile;
@@ -47,7 +34,6 @@ use Daems\Domain\Forum\ForumRepositoryInterface;
 use Daems\Domain\Membership\MemberApplicationRepositoryInterface;
 use Daems\Domain\Membership\SupporterApplicationRepositoryInterface;
 use Daems\Domain\Project\ProjectProposalRepositoryInterface;
-use Daems\Domain\Project\ProjectRepositoryInterface;
 use Daems\Domain\Shared\Clock;
 use Daems\Domain\Tenant\Tenant;
 use Daems\Domain\Tenant\TenantId;
@@ -64,7 +50,6 @@ use Daems\Domain\User\UserRepositoryInterface;
 use Daems\Infrastructure\Adapter\Api\Controller\ApplicationController;
 use Daems\Infrastructure\Adapter\Api\Controller\AuthController;
 use Daems\Infrastructure\Adapter\Api\Controller\EventController;
-use Daems\Infrastructure\Adapter\Api\Controller\ProjectController;
 use Daems\Infrastructure\Adapter\Api\Controller\UserController;
 use Daems\Infrastructure\Framework\Container\Container;
 use Daems\Infrastructure\Framework\Http\Kernel;
@@ -84,9 +69,6 @@ use Daems\Tests\Support\Fake\InMemoryAdminApplicationDismissalRepository;
 use Daems\Tests\Support\Fake\InMemoryMemberApplicationRepository;
 use Daems\Tests\Support\Fake\InMemoryMemberDirectoryRepository;
 use Daems\Tests\Support\Fake\InMemoryMemberStatusAuditRepository;
-use Daems\Tests\Support\Fake\InMemoryProjectCommentModerationAuditRepository;
-use Daems\Tests\Support\Fake\InMemoryProjectProposalRepository;
-use Daems\Tests\Support\Fake\InMemoryProjectRepository;
 use Daems\Tests\Support\Fake\InMemorySupporterApplicationRepository;
 use Daems\Tests\Support\Fake\InMemoryTenantMemberCounterRepository;
 use Daems\Tests\Support\Fake\InMemoryTenantSupporterCounterRepository;
@@ -107,14 +89,11 @@ final class KernelHarness
     public InMemoryUserTenantRepository $userTenants;
     public InMemoryAuthTokenRepository $tokens;
     public InMemoryAuthLoginAttemptRepository $attempts;
-    public InMemoryProjectRepository $projects;
     public InMemoryEventRepository $events;
-    public InMemoryProjectProposalRepository $proposals;
     public InMemoryMemberApplicationRepository $memberApps;
     public InMemorySupporterApplicationRepository $supporterApps;
     public InMemoryMemberDirectoryRepository $memberDirectory;
     public InMemoryAdminApplicationDismissalRepository $dismissals;
-    public InMemoryProjectCommentModerationAuditRepository $commentAudit;
     public InMemoryUserInviteRepository $invites;
     public InMemoryTenantMemberCounterRepository $memberCounters;
     public InMemoryTenantSupporterCounterRepository $supporterCounters;
@@ -132,14 +111,11 @@ final class KernelHarness
         $this->userTenants = new InMemoryUserTenantRepository();
         $this->tokens = new InMemoryAuthTokenRepository();
         $this->attempts = new InMemoryAuthLoginAttemptRepository();
-        $this->projects = new InMemoryProjectRepository();
         $this->events = new InMemoryEventRepository();
-        $this->proposals = new InMemoryProjectProposalRepository();
         $this->memberApps = new InMemoryMemberApplicationRepository();
         $this->supporterApps = new InMemorySupporterApplicationRepository();
         $this->memberDirectory = new InMemoryMemberDirectoryRepository();
         $this->dismissals = new InMemoryAdminApplicationDismissalRepository();
-        $this->commentAudit = new InMemoryProjectCommentModerationAuditRepository();
         $this->invites = new InMemoryUserInviteRepository();
         $this->memberCounters = new InMemoryTenantMemberCounterRepository();
         $this->supporterCounters = new InMemoryTenantSupporterCounterRepository();
@@ -182,10 +158,7 @@ final class KernelHarness
         $container->singleton(AuthTokenRepositoryInterface::class, fn() => $this->tokens);
         $container->singleton(AuthLoginAttemptRepositoryInterface::class, fn() => $this->attempts);
         $container->singleton(AdminApplicationDismissalRepositoryInterface::class, fn() => $this->dismissals);
-        $container->singleton(ProjectRepositoryInterface::class, fn() => $this->projects);
         $container->singleton(EventRepositoryInterface::class, fn() => $this->events);
-        $container->singleton(ProjectProposalRepositoryInterface::class, fn() => $this->proposals);
-        $container->singleton(\Daems\Domain\Project\ProjectCommentModerationAuditRepositoryInterface::class, fn() => $this->commentAudit);
         $container->singleton(MemberApplicationRepositoryInterface::class, fn() => $this->memberApps);
         $container->singleton(SupporterApplicationRepositoryInterface::class, fn() => $this->supporterApps);
         $container->singleton(\Daems\Domain\Backstage\MemberDirectoryRepositoryInterface::class, fn() => $this->memberDirectory);
@@ -262,27 +235,6 @@ final class KernelHarness
             $c->make(EventRepositoryInterface::class),
         ));
 
-        $container->bind(ListProjects::class, static fn(Container $c) => new ListProjects($c->make(ProjectRepositoryInterface::class)));
-        $container->bind(GetProject::class, static fn(Container $c) => new GetProject($c->make(ProjectRepositoryInterface::class)));
-        $container->bind(CreateProject::class, static fn(Container $c) => new CreateProject($c->make(ProjectRepositoryInterface::class)));
-        $container->bind(UpdateProject::class, static fn(Container $c) => new UpdateProject($c->make(ProjectRepositoryInterface::class)));
-        $container->bind(ArchiveProject::class, static fn(Container $c) => new ArchiveProject($c->make(ProjectRepositoryInterface::class)));
-        $container->bind(AddProjectComment::class, static fn(Container $c) => new AddProjectComment(
-            $c->make(ProjectRepositoryInterface::class),
-            $c->make(UserRepositoryInterface::class),
-        ));
-        $container->bind(LikeProjectComment::class, static fn(Container $c) => new LikeProjectComment($c->make(ProjectRepositoryInterface::class)));
-        $container->bind(JoinProject::class, static fn(Container $c) => new JoinProject($c->make(ProjectRepositoryInterface::class)));
-        $container->bind(LeaveProject::class, static fn(Container $c) => new LeaveProject($c->make(ProjectRepositoryInterface::class)));
-        $container->bind(AddProjectUpdate::class, static fn(Container $c) => new AddProjectUpdate(
-            $c->make(ProjectRepositoryInterface::class),
-            $c->make(UserRepositoryInterface::class),
-        ));
-        $container->bind(SubmitProjectProposal::class, static fn(Container $c) => new SubmitProjectProposal(
-            $c->make(ProjectProposalRepositoryInterface::class),
-            $c->make(UserRepositoryInterface::class),
-        ));
-
         $container->bind(\Daems\Application\Backstage\Members\ListMembersStats\ListMembersStats::class, static fn(Container $c) => new \Daems\Application\Backstage\Members\ListMembersStats\ListMembersStats(
             $c->make(UserTenantRepositoryInterface::class),
             $c->make(\Daems\Domain\Membership\MemberStatusAuditRepositoryInterface::class),
@@ -294,10 +246,6 @@ final class KernelHarness
         $container->bind(\Daems\Application\Backstage\Events\ListEventsStats\ListEventsStats::class, static fn(Container $c) => new \Daems\Application\Backstage\Events\ListEventsStats\ListEventsStats(
             $c->make(EventRepositoryInterface::class),
             $c->make(\Daems\Domain\Event\EventProposalRepositoryInterface::class),
-        ));
-        $container->bind(\Daems\Application\Backstage\Projects\ListProjectsStats\ListProjectsStats::class, static fn(Container $c) => new \Daems\Application\Backstage\Projects\ListProjectsStats\ListProjectsStats(
-            $c->make(ProjectRepositoryInterface::class),
-            $c->make(ProjectProposalRepositoryInterface::class),
         ));
         $container->bind(\Daems\Application\Backstage\Notifications\ListNotificationsStats\ListNotificationsStats::class, static fn(Container $c) => new \Daems\Application\Backstage\Notifications\ListNotificationsStats\ListNotificationsStats(
             $c->make(MemberApplicationRepositoryInterface::class),
@@ -400,48 +348,8 @@ final class KernelHarness
             $c->make(EventRepositoryInterface::class),
         ));
 
-        // Projects admin — use cases
-        $container->bind(\Daems\Application\Backstage\ListProjectsForAdmin\ListProjectsForAdmin::class, static fn(Container $c) => new \Daems\Application\Backstage\ListProjectsForAdmin\ListProjectsForAdmin(
-            $c->make(ProjectRepositoryInterface::class),
-        ));
-        $container->bind(\Daems\Application\Backstage\CreateProjectAsAdmin\CreateProjectAsAdmin::class, static fn(Container $c) => new \Daems\Application\Backstage\CreateProjectAsAdmin\CreateProjectAsAdmin(
-            $c->make(ProjectRepositoryInterface::class),
-            $c->make(\Daems\Domain\Shared\IdGeneratorInterface::class),
-        ));
-        $container->bind(\Daems\Application\Backstage\AdminUpdateProject\AdminUpdateProject::class, static fn(Container $c) => new \Daems\Application\Backstage\AdminUpdateProject\AdminUpdateProject(
-            $c->make(ProjectRepositoryInterface::class),
-        ));
-        $container->bind(\Daems\Application\Backstage\ChangeProjectStatus\ChangeProjectStatus::class, static fn(Container $c) => new \Daems\Application\Backstage\ChangeProjectStatus\ChangeProjectStatus(
-            $c->make(ProjectRepositoryInterface::class),
-        ));
-        $container->bind(\Daems\Application\Backstage\SetProjectFeatured\SetProjectFeatured::class, static fn(Container $c) => new \Daems\Application\Backstage\SetProjectFeatured\SetProjectFeatured(
-            $c->make(ProjectRepositoryInterface::class),
-        ));
         $container->bind(\Daems\Application\Backstage\ListProposalsForAdmin\ListProposalsForAdmin::class, static fn(Container $c) => new \Daems\Application\Backstage\ListProposalsForAdmin\ListProposalsForAdmin(
             $c->make(ProjectProposalRepositoryInterface::class),
-        ));
-        $container->bind(\Daems\Application\Backstage\ApproveProjectProposal\ApproveProjectProposal::class, static fn(Container $c) => new \Daems\Application\Backstage\ApproveProjectProposal\ApproveProjectProposal(
-            $c->make(ProjectProposalRepositoryInterface::class),
-            $c->make(ProjectRepositoryInterface::class),
-            $c->make(AdminApplicationDismissalRepositoryInterface::class),
-            $c->make(\Daems\Domain\Shared\TransactionManagerInterface::class),
-            $c->make(Clock::class),
-            $c->make(\Daems\Domain\Shared\IdGeneratorInterface::class),
-        ));
-        $container->bind(\Daems\Application\Backstage\RejectProjectProposal\RejectProjectProposal::class, static fn(Container $c) => new \Daems\Application\Backstage\RejectProjectProposal\RejectProjectProposal(
-            $c->make(ProjectProposalRepositoryInterface::class),
-            $c->make(AdminApplicationDismissalRepositoryInterface::class),
-            $c->make(\Daems\Domain\Shared\TransactionManagerInterface::class),
-            $c->make(Clock::class),
-        ));
-        $container->bind(\Daems\Application\Backstage\ListProjectCommentsForAdmin\ListProjectCommentsForAdmin::class, static fn(Container $c) => new \Daems\Application\Backstage\ListProjectCommentsForAdmin\ListProjectCommentsForAdmin(
-            $c->make(ProjectRepositoryInterface::class),
-        ));
-        $container->bind(\Daems\Application\Backstage\DeleteProjectCommentAsAdmin\DeleteProjectCommentAsAdmin::class, static fn(Container $c) => new \Daems\Application\Backstage\DeleteProjectCommentAsAdmin\DeleteProjectCommentAsAdmin(
-            $c->make(ProjectRepositoryInterface::class),
-            $c->make(\Daems\Domain\Project\ProjectCommentModerationAuditRepositoryInterface::class),
-            $c->make(Clock::class),
-            $c->make(\Daems\Domain\Shared\IdGeneratorInterface::class),
         ));
 
         // Image storage
@@ -492,25 +400,6 @@ final class KernelHarness
                 $c->make(\Daems\Domain\User\UserRepositoryInterface::class),
                 $c->make(\Daems\Domain\Tenant\TenantRepositoryInterface::class),
             ));
-        $container->bind(ListProjectsForLocale::class,
-            static fn(Container $c) => new ListProjectsForLocale($c->make(ProjectRepositoryInterface::class)));
-        $container->bind(GetProjectBySlugForLocale::class,
-            static fn(Container $c) => new GetProjectBySlugForLocale($c->make(ProjectRepositoryInterface::class)));
-        $container->bind(ProjectController::class, static fn(Container $c) => new ProjectController(
-            $c->make(ListProjects::class),
-            $c->make(GetProject::class),
-            $c->make(CreateProject::class),
-            $c->make(UpdateProject::class),
-            $c->make(ArchiveProject::class),
-            $c->make(AddProjectComment::class),
-            $c->make(LikeProjectComment::class),
-            $c->make(JoinProject::class),
-            $c->make(LeaveProject::class),
-            $c->make(AddProjectUpdate::class),
-            $c->make(SubmitProjectProposal::class),
-            $c->make(ListProjectsForLocale::class),
-            $c->make(GetProjectBySlugForLocale::class),
-        ));
         $container->bind(ListEventsForLocale::class,
             static fn(Container $c) => new ListEventsForLocale($c->make(EventRepositoryInterface::class)));
         $container->bind(GetEventBySlugForLocale::class,
@@ -550,25 +439,13 @@ final class KernelHarness
             $c->make(\Daems\Application\Backstage\ArchiveEvent\ArchiveEvent::class),
             $c->make(\Daems\Application\Backstage\ListEventRegistrations\ListEventRegistrations::class),
             $c->make(\Daems\Application\Backstage\UnregisterUserFromEvent\UnregisterUserFromEvent::class),
-            $c->make(\Daems\Application\Backstage\ListProjectsForAdmin\ListProjectsForAdmin::class),
-            $c->make(\Daems\Application\Backstage\CreateProjectAsAdmin\CreateProjectAsAdmin::class),
-            $c->make(\Daems\Application\Backstage\AdminUpdateProject\AdminUpdateProject::class),
-            $c->make(\Daems\Application\Backstage\ChangeProjectStatus\ChangeProjectStatus::class),
-            $c->make(\Daems\Application\Backstage\SetProjectFeatured\SetProjectFeatured::class),
             $c->make(\Daems\Application\Backstage\ListProposalsForAdmin\ListProposalsForAdmin::class),
-            $c->make(\Daems\Application\Backstage\ApproveProjectProposal\ApproveProjectProposal::class),
-            $c->make(\Daems\Application\Backstage\RejectProjectProposal\RejectProjectProposal::class),
-            $c->make(\Daems\Application\Backstage\ListProjectCommentsForAdmin\ListProjectCommentsForAdmin::class),
-            $c->make(\Daems\Application\Backstage\DeleteProjectCommentAsAdmin\DeleteProjectCommentAsAdmin::class),
             $c->make(\Daems\Application\Backstage\Members\ListMembersStats\ListMembersStats::class),
             $c->make(\Daems\Application\Backstage\Applications\ListApplicationsStats\ListApplicationsStats::class),
             $c->make(\Daems\Application\Backstage\Events\ListEventsStats\ListEventsStats::class),
-            $c->make(\Daems\Application\Backstage\Projects\ListProjectsStats\ListProjectsStats::class),
             $c->make(\Daems\Application\Backstage\Notifications\ListNotificationsStats\ListNotificationsStats::class),
             $c->make(\Daems\Application\Backstage\GetEventWithAllTranslations\GetEventWithAllTranslations::class),
             $c->make(\Daems\Application\Backstage\UpdateEventTranslation\UpdateEventTranslation::class),
-            $c->make(\Daems\Application\Backstage\GetProjectWithAllTranslations\GetProjectWithAllTranslations::class),
-            $c->make(\Daems\Application\Backstage\UpdateProjectTranslation\UpdateProjectTranslation::class),
             $c->make(\Daems\Application\Backstage\ListEventProposalsForAdmin\ListEventProposalsForAdmin::class),
             $c->make(\Daems\Application\Backstage\ApproveEventProposal\ApproveEventProposal::class),
             $c->make(\Daems\Application\Backstage\RejectEventProposal\RejectEventProposal::class),
@@ -609,14 +486,6 @@ final class KernelHarness
         $container->bind(\Daems\Application\Backstage\UpdateEventTranslation\UpdateEventTranslation::class,
             static fn(Container $c) => new \Daems\Application\Backstage\UpdateEventTranslation\UpdateEventTranslation(
                 $c->make(EventRepositoryInterface::class),
-            ));
-        $container->bind(\Daems\Application\Backstage\GetProjectWithAllTranslations\GetProjectWithAllTranslations::class,
-            static fn(Container $c) => new \Daems\Application\Backstage\GetProjectWithAllTranslations\GetProjectWithAllTranslations(
-                $c->make(ProjectRepositoryInterface::class),
-            ));
-        $container->bind(\Daems\Application\Backstage\UpdateProjectTranslation\UpdateProjectTranslation::class,
-            static fn(Container $c) => new \Daems\Application\Backstage\UpdateProjectTranslation\UpdateProjectTranslation(
-                $c->make(ProjectRepositoryInterface::class),
             ));
         $container->bind(\Daems\Application\Backstage\ListEventProposalsForAdmin\ListEventProposalsForAdmin::class,
             static fn(Container $c) => new \Daems\Application\Backstage\ListEventProposalsForAdmin\ListEventProposalsForAdmin(

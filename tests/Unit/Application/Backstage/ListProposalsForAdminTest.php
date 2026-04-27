@@ -13,7 +13,7 @@ use Daems\Domain\Project\ProjectProposalId;
 use Daems\Domain\Tenant\TenantId;
 use Daems\Domain\Tenant\UserTenantRole;
 use Daems\Domain\User\UserId;
-use Daems\Tests\Support\Fake\InMemoryProjectProposalRepository;
+use DaemsModule\Projects\Tests\Support\InMemoryProjectProposalRepository;
 use PHPUnit\Framework\TestCase;
 
 final class ListProposalsForAdminTest extends TestCase
