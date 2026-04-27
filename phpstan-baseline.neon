@@ -1,10 +1,34 @@
 parameters:
 	ignoreErrors:
 		-
+			message: '#^Cannot cast mixed to string\.$#'
+			identifier: cast.string
+			count: 2
+			path: ../modules/events/backend/src/Controller/EventBackstageController.php
+
+		-
+			message: '#^Parameter \#11 \$gallery of class DaemsModule\\Events\\Application\\Backstage\\UpdateEvent\\UpdateEventInput constructor expects array\<string\>\|null, array\<mixed, mixed\>\|null given\.$#'
+			identifier: argument.type
+			count: 1
+			path: ../modules/events/backend/src/Controller/EventBackstageController.php
+
+		-
 			message: '#^Parameter \#1 \$rows of static method DaemsModule\\Forum\\Infrastructure\\SqlForumReportRepository\:\:buildDailySeries30dBackward\(\) expects list\<array\<string, mixed\>\>, array\<array\<string, mixed\>\> given\.$#'
 			identifier: argument.type
 			count: 2
 			path: ../modules/forum/backend/src/Infrastructure/SqlForumReportRepository.php
+
+		-
+			message: '#^Parameter \#1 \$rows of static method DaemsModule\\Members\\Infrastructure\\SqlMemberApplicationRepository\:\:buildDailySeries30dBackward\(\) expects list\<array\<string, mixed\>\>, array\<array\<string, mixed\>\> given\.$#'
+			identifier: argument.type
+			count: 5
+			path: ../modules/members/backend/src/Infrastructure/SqlMemberApplicationRepository.php
+
+		-
+			message: '#^Parameter \#1 \$rows of static method DaemsModule\\Members\\Infrastructure\\SqlSupporterApplicationRepository\:\:buildDailySeries30dBackward\(\) expects list\<array\<string, mixed\>\>, array\<array\<string, mixed\>\> given\.$#'
+			identifier: argument.type
+			count: 5
+			path: ../modules/members/backend/src/Infrastructure/SqlSupporterApplicationRepository.php
 
 		-
 			message: '#^Parameter \#1 \$rows of static method DaemsModule\\Projects\\Infrastructure\\SqlProjectProposalRepository\:\:buildDailySeries30dBackward\(\) expects list\<array\<string, mixed\>\>, array\<array\<string, mixed\>\> given\.$#'
@@ -17,18 +41,6 @@ parameters:
 			identifier: argument.type
 			count: 2
 			path: ../modules/projects/backend/src/Infrastructure/SqlProjectRepository.php
-
-		-
-			message: '#^Parameter \#11 \$gallery of class DaemsModule\\Events\\Application\\Backstage\\UpdateEvent\\UpdateEventInput constructor expects array\<string\>\|null, array\<mixed, mixed\>\|null given\.$#'
-			identifier: argument.type
-			count: 1
-			path: ../modules/events/backend/src/Controller/EventBackstageController.php
-
-		-
-			message: '#^Cannot cast mixed to string\.$#'
-			identifier: cast.string
-			count: 2
-			path: ../modules/events/backend/src/Controller/EventBackstageController.php
 
 		-
 			message: '#^Parameter \#1 \$rows of static method Daems\\Infrastructure\\Adapter\\Persistence\\Sql\\SqlMemberApplicationRepository\:\:buildDailySeries30dBackward\(\) expects list\<array\<string, mixed\>\>, array\<array\<string, mixed\>\> given\.$#'
