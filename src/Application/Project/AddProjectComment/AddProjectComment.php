@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Daems\Application\Project\AddProjectComment;
 
-use Daems\Application\Forum\Shared\ForumIdentityDeriver;
+use Daems\Application\Shared\IdentityFormatter;
 use Daems\Domain\Project\ProjectComment;
 use Daems\Domain\Project\ProjectCommentId;
 use Daems\Domain\Project\ProjectRepositoryInterface;
@@ -26,7 +26,7 @@ final class AddProjectComment
 
         $user = $this->users->findById($input->acting->id->value());
         $authorName = $user !== null ? $user->name() : 'Unknown';
-        $avatarInitials = ForumIdentityDeriver::initials($authorName);
+        $avatarInitials = IdentityFormatter::initials($authorName);
         $avatarColor = '#64748b';
 
         $now = date('Y-m-d H:i:s');
