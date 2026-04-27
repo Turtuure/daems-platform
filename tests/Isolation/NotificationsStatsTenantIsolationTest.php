@@ -10,11 +10,11 @@ use Daems\Domain\Shared\ValueObject\Uuid7;
 use Daems\Domain\Tenant\TenantId;
 use Daems\Domain\Tenant\UserTenantRole;
 use Daems\Infrastructure\Adapter\Persistence\Sql\SqlAdminApplicationDismissalRepository;
-use Daems\Infrastructure\Adapter\Persistence\Sql\SqlForumReportRepository;
 use Daems\Infrastructure\Adapter\Persistence\Sql\SqlMemberApplicationRepository;
 use Daems\Infrastructure\Adapter\Persistence\Sql\SqlProjectProposalRepository;
 use Daems\Infrastructure\Adapter\Persistence\Sql\SqlSupporterApplicationRepository;
 use Daems\Infrastructure\Framework\Database\Connection;
+use DaemsModule\Forum\Infrastructure\SqlForumReportRepository;
 
 /**
  * Value-level isolation for the unified /backstage/notifications/stats KPI strip.

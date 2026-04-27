@@ -6,11 +6,11 @@ namespace Daems\Tests\Integration;
 
 use Daems\Domain\Shared\ValueObject\Uuid7;
 use Daems\Domain\Tenant\TenantId;
-use Daems\Infrastructure\Adapter\Persistence\Sql\SqlForumReportRepository;
 use Daems\Infrastructure\Adapter\Persistence\Sql\SqlMemberApplicationRepository;
 use Daems\Infrastructure\Adapter\Persistence\Sql\SqlProjectProposalRepository;
 use Daems\Infrastructure\Adapter\Persistence\Sql\SqlSupporterApplicationRepository;
 use Daems\Infrastructure\Framework\Database\Connection;
+use DaemsModule\Forum\Infrastructure\SqlForumReportRepository;
 
 /**
  * Exercises the `notificationStatsForTenant()` slice on all 4 source repos that

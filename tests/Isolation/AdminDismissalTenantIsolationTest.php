@@ -12,13 +12,13 @@ use Daems\Domain\Auth\ActingUser;
 use Daems\Domain\Shared\ValueObject\Uuid7;
 use Daems\Domain\Tenant\UserTenantRole;
 use Daems\Infrastructure\Adapter\Persistence\Sql\SqlAdminApplicationDismissalRepository;
-use Daems\Infrastructure\Adapter\Persistence\Sql\SqlForumReportRepository;
-use Daems\Infrastructure\Adapter\Persistence\Sql\SqlForumRepository;
 use Daems\Infrastructure\Adapter\Persistence\Sql\SqlMemberApplicationRepository;
 use Daems\Infrastructure\Adapter\Persistence\Sql\SqlProjectProposalRepository;
 use Daems\Infrastructure\Adapter\Persistence\Sql\SqlSupporterApplicationRepository;
 use Daems\Infrastructure\Framework\Clock\SystemClock;
 use Daems\Infrastructure\Framework\Database\Connection;
+use DaemsModule\Forum\Infrastructure\SqlForumReportRepository;
+use DaemsModule\Forum\Infrastructure\SqlForumRepository;
 
 /**
  * Verifies that admin A's dismissals do not affect admin B's pending-count view

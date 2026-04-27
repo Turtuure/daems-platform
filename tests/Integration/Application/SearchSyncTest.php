@@ -41,7 +41,7 @@ final class SearchSyncTest extends MigrationTestCase
             VALUES (?,?,?,?,?,?,?,?,NOW(),'anon',NOW())")
             ->execute([$topicId, $this->tenantId, $catId, 'first-sync', 'Hi', 'anon', 'AN', 'blue']);
 
-        $repo = new \Daems\Infrastructure\Adapter\Persistence\Sql\SqlForumRepository($this->conn);
+        $repo = new \DaemsModule\Forum\Infrastructure\SqlForumRepository($this->conn);
         $firstPost = new \Daems\Domain\Forum\ForumPost(
             id: \Daems\Domain\Forum\ForumPostId::generate(),
             tenantId: \Daems\Domain\Tenant\TenantId::fromString($this->tenantId),
