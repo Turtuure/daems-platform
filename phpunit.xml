@@ -19,6 +19,7 @@
         </testsuite>
         <testsuite name="E2E">
             <directory>tests/E2E</directory>
+            <directory>../modules/*/backend/tests/E2E</directory>
         </testsuite>
     </testsuites>
     <source>
