@@ -3,6 +3,7 @@ parameters:
     paths:
         - src
         - ../modules/insights/backend/src
+        - ../modules/forum/backend/src
     phpVersion: 80100
     ignoreErrors:
         -

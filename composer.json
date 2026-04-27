@@ -15,7 +15,9 @@
     "psr-4": {
       "Daems\\Tests\\": "tests/",
       "DaemsModule\\Insights\\": "../modules/insights/backend/src/",
-      "DaemsModule\\Insights\\Tests\\": "../modules/insights/backend/tests/"
+      "DaemsModule\\Insights\\Tests\\": "../modules/insights/backend/tests/",
+      "DaemsModule\\Forum\\": "../modules/forum/backend/src/",
+      "DaemsModule\\Forum\\Tests\\": "../modules/forum/backend/tests/"
     }
   },
   "require-dev": {
