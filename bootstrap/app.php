@@ -2,11 +2,6 @@
 
 declare(strict_types=1);
 
-use Daems\Application\Event\GetEvent\GetEvent;
-use Daems\Application\Event\GetEventBySlugForLocale\GetEventBySlugForLocale;
-use Daems\Application\Event\ListEvents\ListEvents;
-use Daems\Application\Event\ListEventsForLocale\ListEventsForLocale;
-use Daems\Application\Event\SubmitEventProposal\SubmitEventProposal;
 use Daems\Application\Admin\GetAdminStats\GetAdminStats;
 use Daems\Application\Auth\GetAuthMe\GetAuthMe;
 use Daems\Application\Auth\LoginUser\LoginUser;
@@ -16,8 +11,6 @@ use Daems\Application\User\ChangePassword\ChangePassword;
 use Daems\Application\User\GetProfile\GetProfile;
 use Daems\Application\User\GetUserActivity\GetUserActivity;
 use Daems\Application\User\UpdateProfile\UpdateProfile;
-use Daems\Application\Event\RegisterForEvent\RegisterForEvent;
-use Daems\Application\Event\UnregisterFromEvent\UnregisterFromEvent;
 use Daems\Application\Membership\SubmitMemberApplication\SubmitMemberApplication;
 use Daems\Application\Membership\SubmitSupporterApplication\SubmitSupporterApplication;
 use Daems\Domain\Admin\AdminStatsRepositoryInterface;
@@ -30,7 +23,6 @@ use Daems\Domain\Project\ProjectProposalRepositoryInterface;
 use Daems\Domain\Project\ProjectRepositoryInterface;
 use Daems\Domain\User\UserRepositoryInterface;
 use Daems\Infrastructure\Adapter\Api\Controller\AdminController;
-use Daems\Infrastructure\Adapter\Api\Controller\EventController;
 use Daems\Infrastructure\Adapter\Api\Controller\ApplicationController;
 use Daems\Infrastructure\Adapter\Api\Controller\AuthController;
 use Daems\Infrastructure\Adapter\Api\Controller\UserController;
@@ -420,47 +412,13 @@ $container->bind(\Daems\Application\Backstage\RejectEventProposal\RejectEventPro
     ),
 );
 
-// Events
+// Events repos — kept until core BackstageController + cross-domain consumers (GetUserActivity)
+// stop using core Daems\Domain\Event\Event*RepositoryInterface (Tasks 23+).
 $container->singleton(EventRepositoryInterface::class,
     static fn(Container $c) => new SqlEventRepository($c->make(Connection::class)),
 );
-$container->bind(ListEvents::class,
-    static fn(Container $c) => new ListEvents($c->make(EventRepositoryInterface::class)),
-);
-$container->bind(GetEvent::class,
-    static fn(Container $c) => new GetEvent($c->make(EventRepositoryInterface::class)),
-);
-$container->bind(RegisterForEvent::class,
-    static fn(Container $c) => new RegisterForEvent($c->make(EventRepositoryInterface::class)),
-);
-$container->bind(UnregisterFromEvent::class,
-    static fn(Container $c) => new UnregisterFromEvent($c->make(EventRepositoryInterface::class)),
-);
-$container->bind(ListEventsForLocale::class,
-    static fn(Container $c) => new ListEventsForLocale($c->make(EventRepositoryInterface::class)),
-);
-$container->bind(GetEventBySlugForLocale::class,
-    static fn(Container $c) => new GetEventBySlugForLocale($c->make(EventRepositoryInterface::class)),
-);
 $container->singleton(EventProposalRepositoryInterface::class,
     static fn(Container $c) => new SqlEventProposalRepository($c->make(Connection::class)),
-);
-$container->bind(SubmitEventProposal::class,
-    static fn(Container $c) => new SubmitEventProposal(
-        $c->make(EventProposalRepositoryInterface::class),
-        $c->make(UserRepositoryInterface::class),
-    ),
-);
-$container->bind(EventController::class,
-    static fn(Container $c) => new EventController(
-        $c->make(ListEvents::class),
-        $c->make(GetEvent::class),
-        $c->make(RegisterForEvent::class),
-        $c->make(UnregisterFromEvent::class),
-        $c->make(ListEventsForLocale::class),
-        $c->make(GetEventBySlugForLocale::class),
-        $c->make(SubmitEventProposal::class),
-    ),
 );
 
 // Membership applications
