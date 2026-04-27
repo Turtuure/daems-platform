@@ -46,7 +46,7 @@ Wave B (sequential, depends on Wave A)
 ├── Task 5: Move 3 SQL repos + namespace rewrite
 ├── Task 6: Move 3 InMemory fakes + namespace rewrite
 ├── Task 7: Move Application/Project (13 dirs, 38 files) + namespace rewrite
-├── Task 8: Move 12 admin use case dirs (29 files) + namespace rewrite
+├── Task 8: Move 12 admin use case dirs (32 files) + namespace rewrite
 ├── Task 9: Move ProjectController + namespace rewrite
 ├── Task 9.5: NEW infra commit on daems-platform — autoload-dev + phpstan paths
 ├── Task 10: Extract ProjectsBackstageController (TDD, 12 methods)
@@ -101,7 +101,7 @@ Wave G (verification gate)
 
 **Deleted in `daems-platform/`:**
 - `src/Application/Project/` (entire dir, 13 sub-dirs, 38 files)
-- 12 admin sibling dirs under `src/Application/Backstage/`: `AdminUpdateProject`, `ApproveProjectProposal`, `ChangeProjectStatus`, `CreateProjectAsAdmin`, `DeleteProjectCommentAsAdmin`, `GetProjectWithAllTranslations`, `ListProjectCommentsForAdmin`, `ListProjectsForAdmin`, `Projects` (only `ListProjectsStats` inside), `RejectProjectProposal`, `SetProjectFeatured`, `UpdateProjectTranslation` (29 files)
+- 12 admin sibling dirs under `src/Application/Backstage/`: `AdminUpdateProject`, `ApproveProjectProposal`, `ChangeProjectStatus`, `CreateProjectAsAdmin`, `DeleteProjectCommentAsAdmin`, `GetProjectWithAllTranslations`, `ListProjectCommentsForAdmin`, `ListProjectsForAdmin`, `Projects` (only `ListProjectsStats` inside), `RejectProjectProposal`, `SetProjectFeatured`, `UpdateProjectTranslation` (32 files)
 - `src/Infrastructure/Adapter/Persistence/Sql/SqlProject{,CommentModerationAudit,Proposal}Repository.php` (3 files)
 - `src/Infrastructure/Adapter/Api/Controller/ProjectController.php`
 - `database/migrations/{003,009,010,016,027,031,044,046,052,055}_*.sql` (10 files)
@@ -125,7 +125,7 @@ Wave G (verification gate)
 - `backend/bindings.php`, `backend/bindings.test.php`, `backend/routes.php`
 - `backend/migrations/project_001..010_*.sql` (10 files)
 - `backend/src/Application/Project/*` (38 files)
-- `backend/src/Application/Backstage/*` (29 files in 12 dirs)
+- `backend/src/Application/Backstage/*` (32 files in 12 dirs)
 - `backend/src/Infrastructure/SqlProject*Repository.php` (3 files)
 - `backend/src/Controller/ProjectController.php`
 - `backend/src/Controller/ProjectsBackstageController.php`
@@ -462,7 +462,7 @@ echo "=== Application/Project (expect 13 dirs, 38 files) ==="
 ls -d src/Application/Project/*/ | wc -l
 find src/Application/Project -name "*.php" | wc -l
 
-echo "=== Application/Backstage 12 admin dirs (expect 29 files total) ==="
+echo "=== Application/Backstage 12 admin dirs (expect 32 files total) ==="
 find src/Application/Backstage/AdminUpdateProject src/Application/Backstage/ApproveProjectProposal src/Application/Backstage/ChangeProjectStatus src/Application/Backstage/CreateProjectAsAdmin src/Application/Backstage/DeleteProjectCommentAsAdmin src/Application/Backstage/GetProjectWithAllTranslations src/Application/Backstage/ListProjectCommentsForAdmin src/Application/Backstage/ListProjectsForAdmin src/Application/Backstage/Projects src/Application/Backstage/RejectProjectProposal src/Application/Backstage/SetProjectFeatured src/Application/Backstage/UpdateProjectTranslation -name "*.php" | wc -l
 
 echo "=== SQL repos (expect 3) ==="
@@ -740,7 +740,7 @@ Originals remain in `daems-platform/src/Application/Project/` until Task 25.
 
 ---
 
-## Task 8: Move 12 admin use case sibling dirs (29 files)
+## Task 8: Move 12 admin use case sibling dirs (32 files)
 
 **Repo for commits:** `dp-projects`
 
@@ -803,7 +803,7 @@ Expected: 0 errors.
 ```bash
 cd C:/laragon/www/modules/projects
 git -c user.name="Dev Team" -c user.email="dev@daems.fi" add backend/src/Application/Backstage/
-git -c user.name="Dev Team" -c user.email="dev@daems.fi" commit -m "Move(app): 12 admin use-case dirs (29 files) with namespace rewrite"
+git -c user.name="Dev Team" -c user.email="dev@daems.fi" commit -m "Move(app): 12 admin use-case dirs (32 files) with namespace rewrite"
 ```
 
 ---
