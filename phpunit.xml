@@ -7,10 +7,15 @@
     <testsuites>
         <testsuite name="Unit">
             <directory>tests/Unit</directory>
+            <directory>../modules/*/backend/tests/Unit</directory>
         </testsuite>
         <testsuite name="Integration">
             <directory>tests/Integration</directory>
+            <directory>../modules/*/backend/tests/Integration</directory>
+        </testsuite>
+        <testsuite name="Isolation">
             <directory>tests/Isolation</directory>
+            <directory>../modules/*/backend/tests/Isolation</directory>
         </testsuite>
         <testsuite name="E2E">
             <directory>tests/E2E</directory>
