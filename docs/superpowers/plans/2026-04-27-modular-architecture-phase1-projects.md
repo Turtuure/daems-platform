@@ -296,7 +296,7 @@ Path: `C:/laragon/www/modules/projects/backend/bindings.php`
 
 declare(strict_types=1);
 
-use Daems\Infrastructure\Framework\Container;
+use Daems\Infrastructure\Framework\Container\Container;
 
 return static function (Container $container): void {
     // Bindings will be added in Task 13.
@@ -311,7 +311,7 @@ Path: `C:/laragon/www/modules/projects/backend/bindings.test.php`
 
 declare(strict_types=1);
 
-use Daems\Infrastructure\Framework\Container;
+use Daems\Infrastructure\Framework\Container\Container;
 
 return static function (Container $container): void {
     // Test bindings will be added in Task 14.
@@ -326,7 +326,7 @@ Path: `C:/laragon/www/modules/projects/backend/routes.php`
 
 declare(strict_types=1);
 
-use Daems\Infrastructure\Framework\Container;
+use Daems\Infrastructure\Framework\Container\Container;
 use Daems\Infrastructure\Framework\Http\Router;
 
 return static function (Router $router, Container $container): void {
@@ -1407,7 +1407,7 @@ declare(strict_types=1);
 use Daems\Domain\Project\ProjectCommentModerationAuditRepositoryInterface;
 use Daems\Domain\Project\ProjectProposalRepositoryInterface;
 use Daems\Domain\Project\ProjectRepositoryInterface;
-use Daems\Infrastructure\Framework\Container;
+use Daems\Infrastructure\Framework\Container\Container;
 use Daems\Infrastructure\Framework\Persistence\Connection;
 use DaemsModule\Projects\Application\Backstage\AdminUpdateProject\AdminUpdateProject;
 use DaemsModule\Projects\Application\Backstage\ApproveProjectProposal\ApproveProjectProposal;
@@ -1654,7 +1654,7 @@ Path: `modules/projects/backend/routes.php`
 
 declare(strict_types=1);
 
-use Daems\Infrastructure\Framework\Container;
+use Daems\Infrastructure\Framework\Container\Container;
 use Daems\Infrastructure\Framework\Http\Request;
 use Daems\Infrastructure\Framework\Http\Response;
 use Daems\Infrastructure\Framework\Http\Router;
