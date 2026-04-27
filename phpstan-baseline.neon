@@ -61,18 +61,6 @@ parameters:
 			path: src/Infrastructure/Adapter/Persistence/Sql/SqlMemberApplicationRepository.php
 
 		-
-			message: '#^Parameter \#1 \$rows of static method Daems\\Infrastructure\\Adapter\\Persistence\\Sql\\SqlProjectProposalRepository\:\:buildDailySeries30dBackward\(\) expects list\<array\<string, mixed\>\>, array\<array\<string, mixed\>\> given\.$#'
-			identifier: argument.type
-			count: 3
-			path: src/Infrastructure/Adapter/Persistence/Sql/SqlProjectProposalRepository.php
-
-		-
-			message: '#^Parameter \#1 \$rows of static method Daems\\Infrastructure\\Adapter\\Persistence\\Sql\\SqlProjectRepository\:\:buildDailySeries30dBackward\(\) expects list\<array\<string, mixed\>\>, array\<array\<string, mixed\>\> given\.$#'
-			identifier: argument.type
-			count: 2
-			path: src/Infrastructure/Adapter/Persistence/Sql/SqlProjectRepository.php
-
-		-
 			message: '#^Parameter \#1 \$rows of static method Daems\\Infrastructure\\Adapter\\Persistence\\Sql\\SqlSupporterApplicationRepository\:\:buildDailySeries30dBackward\(\) expects list\<array\<string, mixed\>\>, array\<array\<string, mixed\>\> given\.$#'
 			identifier: argument.type
 			count: 5

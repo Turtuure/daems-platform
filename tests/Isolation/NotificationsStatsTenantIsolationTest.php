@@ -11,7 +11,7 @@ use Daems\Domain\Tenant\TenantId;
 use Daems\Domain\Tenant\UserTenantRole;
 use Daems\Infrastructure\Adapter\Persistence\Sql\SqlAdminApplicationDismissalRepository;
 use Daems\Infrastructure\Adapter\Persistence\Sql\SqlMemberApplicationRepository;
-use Daems\Infrastructure\Adapter\Persistence\Sql\SqlProjectProposalRepository;
+use DaemsModule\Projects\Infrastructure\SqlProjectProposalRepository;
 use Daems\Infrastructure\Adapter\Persistence\Sql\SqlSupporterApplicationRepository;
 use Daems\Infrastructure\Framework\Database\Connection;
 use DaemsModule\Forum\Infrastructure\SqlForumReportRepository;

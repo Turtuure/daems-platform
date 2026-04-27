@@ -7,7 +7,7 @@ require_once dirname(__DIR__, 2) . '/vendor/autoload.php';
 use Daems\Domain\Project\Project;
 use Daems\Domain\Project\ProjectId;
 use Daems\Domain\Tenant\TenantId;
-use Daems\Infrastructure\Adapter\Persistence\Sql\SqlProjectRepository;
+use DaemsModule\Projects\Infrastructure\SqlProjectRepository;
 use Daems\Infrastructure\Framework\Database\Connection;
 
 $envFile = dirname(__DIR__, 2) . '/.env';
