@@ -3,7 +3,6 @@
 declare(strict_types=1);
 
 use Daems\Infrastructure\Adapter\Api\Controller\AdminController;
-use Daems\Infrastructure\Adapter\Api\Controller\ApplicationController;
 use Daems\Infrastructure\Adapter\Api\Controller\AuthController;
 use Daems\Infrastructure\Adapter\Api\Controller\UserController;
 use Daems\Infrastructure\Framework\Container\Container;
@@ -60,15 +59,6 @@ return static function (Router $router, Container $container): void {
         return $container->make(UserController::class)->anonymise($req, $params);
     }, [TenantContextMiddleware::class, AuthMiddleware::class]);
 
-    // Applications — public (anyone can apply for membership or supporter status)
-    $router->post('/api/v1/applications/member', static function (Request $req) use ($container): Response {
-        return $container->make(ApplicationController::class)->member($req);
-    }, [TenantContextMiddleware::class]);
-
-    $router->post('/api/v1/applications/supporter', static function (Request $req) use ($container): Response {
-        return $container->make(ApplicationController::class)->supporter($req);
-    }, [TenantContextMiddleware::class]);
-
     // Auth
     $router->post('/api/v1/auth/login', static function (Request $req) use ($container): Response {
         return $container->make(AuthController::class)->login($req);
@@ -86,51 +76,6 @@ return static function (Router $router, Container $container): void {
         return $container->make(AuthController::class)->me($req);
     }, [TenantContextMiddleware::class, AuthMiddleware::class]);
 
-
-    // Backstage — tenant-admin / GSA
-    $router->get('/api/v1/backstage/applications/pending', static function (Request $req) use ($container): Response {
-        return $container->make(\Daems\Infrastructure\Adapter\Api\Controller\BackstageController::class)->pendingApplications($req);
-    }, [TenantContextMiddleware::class, AuthMiddleware::class]);
-
-    $router->get('/api/v1/backstage/applications/decided', static function (Request $req) use ($container): Response {
-        return $container->make(\Daems\Infrastructure\Adapter\Api\Controller\BackstageController::class)->decidedApplications($req);
-    }, [TenantContextMiddleware::class, AuthMiddleware::class]);
-
-    $router->get('/api/v1/backstage/applications/{type}/{id}', static function (Request $req, array $params) use ($container): Response {
-        return $container->make(\Daems\Infrastructure\Adapter\Api\Controller\BackstageController::class)->applicationDetail($req, $params);
-    }, [TenantContextMiddleware::class, AuthMiddleware::class]);
-
-    $router->post('/api/v1/backstage/applications/{type}/{id}/decision', static function (Request $req, array $params) use ($container): Response {
-        return $container->make(\Daems\Infrastructure\Adapter\Api\Controller\BackstageController::class)->decideApplication($req, $params);
-    }, [TenantContextMiddleware::class, AuthMiddleware::class]);
-
-    $router->get('/api/v1/backstage/members', static function (Request $req) use ($container): Response {
-        return $container->make(\Daems\Infrastructure\Adapter\Api\Controller\BackstageController::class)->members($req);
-    }, [TenantContextMiddleware::class, AuthMiddleware::class]);
-
-    $router->get('/api/v1/backstage/members/stats', static function (Request $req) use ($container): Response {
-        return $container->make(\Daems\Infrastructure\Adapter\Api\Controller\BackstageController::class)->statsMembers($req);
-    }, [TenantContextMiddleware::class, AuthMiddleware::class]);
-
-    $router->post('/api/v1/backstage/members/{id}/status', static function (Request $req, array $params) use ($container): Response {
-        return $container->make(\Daems\Infrastructure\Adapter\Api\Controller\BackstageController::class)->changeMemberStatus($req, $params);
-    }, [TenantContextMiddleware::class, AuthMiddleware::class]);
-
-    $router->get('/api/v1/backstage/members/{id}/audit', static function (Request $req, array $params) use ($container): Response {
-        return $container->make(\Daems\Infrastructure\Adapter\Api\Controller\BackstageController::class)->memberAudit($req, $params);
-    }, [TenantContextMiddleware::class, AuthMiddleware::class]);
-
-    $router->get('/api/v1/backstage/applications/pending-count', static function (Request $req) use ($container): Response {
-        return $container->make(\Daems\Infrastructure\Adapter\Api\Controller\BackstageController::class)->listPendingForAdmin($req);
-    }, [TenantContextMiddleware::class, AuthMiddleware::class]);
-
-    $router->get('/api/v1/backstage/applications/stats', static function (Request $req) use ($container): Response {
-        return $container->make(\Daems\Infrastructure\Adapter\Api\Controller\BackstageController::class)->statsApplications($req);
-    }, [TenantContextMiddleware::class, AuthMiddleware::class]);
-
-    $router->post('/api/v1/backstage/applications/{type}/{id}/dismiss', static function (Request $req, array $params) use ($container): Response {
-        return $container->make(\Daems\Infrastructure\Adapter\Api\Controller\BackstageController::class)->dismissApplication($req, $params);
-    }, [TenantContextMiddleware::class, AuthMiddleware::class]);
 
     // Backstage — Notifications
     $router->get('/api/v1/backstage/notifications/stats', static function (Request $req) use ($container): Response {
@@ -155,11 +100,6 @@ return static function (Router $router, Container $container): void {
     $router->post('/api/v1/me/time-format', static function (Request $req) use ($container): Response {
         return $container->make(UserController::class)->updateMyTimeFormat($req);
     }, [TenantContextMiddleware::class, AuthMiddleware::class]);
-
-    // Public — member verification (NO auth). {id} is users.id (UUIDv7).
-    $router->get('/api/v1/members/{id}', static function (Request $req, array $params) use ($container): Response {
-        return $container->make(\Daems\Infrastructure\Adapter\Api\Controller\MemberController::class)->getPublicProfile($req, $params);
-    }, []);
 
     // Public search (no auth). Locale middleware for i18n fallback resolution.
     $router->get('/api/v1/search', static function (Request $req) use ($container): Response {
