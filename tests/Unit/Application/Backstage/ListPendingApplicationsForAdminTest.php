@@ -20,12 +20,12 @@ use Daems\Domain\Tenant\TenantId;
 use Daems\Domain\Tenant\UserTenantRole;
 use Daems\Domain\User\UserId;
 use Daems\Tests\Support\Fake\InMemoryAdminApplicationDismissalRepository;
-use Daems\Tests\Support\Fake\InMemoryForumReportRepository;
-use Daems\Tests\Support\Fake\InMemoryForumRepository;
 use Daems\Tests\Support\Fake\InMemoryMemberApplicationRepository;
 use Daems\Tests\Support\Fake\InMemoryProjectProposalRepository;
 use Daems\Tests\Support\Fake\InMemorySupporterApplicationRepository;
-use Daems\Tests\Support\ForumSeed;
+use DaemsModule\Forum\Tests\Support\ForumSeed;
+use DaemsModule\Forum\Tests\Support\InMemoryForumReportRepository;
+use DaemsModule\Forum\Tests\Support\InMemoryForumRepository;
 use DateTimeImmutable;
 use PHPUnit\Framework\TestCase;
 

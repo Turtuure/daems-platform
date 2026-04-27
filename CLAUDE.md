@@ -53,7 +53,7 @@ Active roadmap (`docs/planning/roadmap.md`, section 1 Admin Panel):
 
 ### Git
 
-- **Commit identity:** every commit must use `git -c user.name="Dev Team" -c user.email="dev@daems.org" commit -m "..."`. The repo's global git config is NOT set to Dev Team.
+- **Commit identity:** every commit must use `git -c user.name="Dev Team" -c user.email="dev@daems.fi" commit -m "..."`. The repo's global git config is NOT set to Dev Team.
 - **No `Co-Authored-By:`** trailer. Ever.
 - **Never auto-push.** Report commit SHAs and wait for explicit "pushaa" instruction.
 - **Never stage `.claude/`** — run `git reset HEAD .claude/` before committing if it got staged.
