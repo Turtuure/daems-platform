@@ -198,6 +198,12 @@ $container->bind(\Daems\Application\Backstage\ListDecidedApplications\ListDecide
         $c->make(SupporterApplicationRepositoryInterface::class),
     ),
 );
+$container->bind(\Daems\Application\Backstage\GetApplicationDetail\GetApplicationDetail::class,
+    static fn(Container $c) => new \Daems\Application\Backstage\GetApplicationDetail\GetApplicationDetail(
+        $c->make(MemberApplicationRepositoryInterface::class),
+        $c->make(SupporterApplicationRepositoryInterface::class),
+    ),
+);
 $container->bind(\Daems\Application\Backstage\DismissApplication\DismissApplication::class,
     static fn(Container $c) => new \Daems\Application\Backstage\DismissApplication\DismissApplication(
         $c->make(AdminApplicationDismissalRepositoryInterface::class),
@@ -274,6 +280,7 @@ $container->bind(\Daems\Infrastructure\Adapter\Api\Controller\BackstageControlle
         $c->make(\Daems\Application\Backstage\Notifications\ListNotificationsStats\ListNotificationsStats::class),
         $c->make(\Daems\Application\Backstage\UpdateTenantSettings\UpdateTenantSettings::class),
         $c->make(\Daems\Application\Backstage\ListDecidedApplications\ListDecidedApplications::class),
+        $c->make(\Daems\Application\Backstage\GetApplicationDetail\GetApplicationDetail::class),
     ),
 );
 

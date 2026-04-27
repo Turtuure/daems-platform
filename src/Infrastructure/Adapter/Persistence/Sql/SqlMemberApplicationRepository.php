@@ -104,6 +104,38 @@ final class SqlMemberApplicationRepository implements MemberApplicationRepositor
         return $row !== null ? $this->hydrate($row) : null;
     }
 
+    public function findDetailedByIdForTenant(string $id, TenantId $tenantId): ?array
+    {
+        $row = $this->db->queryOne(
+            'SELECT id, name, email, date_of_birth, country, motivation, how_heard, status,
+                    created_at, decided_at, decision_note
+               FROM member_applications
+              WHERE id = ? AND tenant_id = ?',
+            [$id, $tenantId->value()],
+        );
+        if ($row === null) {
+            return null;
+        }
+        $country    = $row['country']       ?? null;
+        $howHeard   = $row['how_heard']     ?? null;
+        $createdAt  = $row['created_at']    ?? null;
+        $decidedAt  = $row['decided_at']    ?? null;
+        $note       = $row['decision_note'] ?? null;
+        return [
+            'id'            => self::str($row, 'id'),
+            'name'          => self::str($row, 'name'),
+            'email'         => self::str($row, 'email'),
+            'date_of_birth' => self::str($row, 'date_of_birth'),
+            'country'       => is_string($country) ? $country : null,
+            'motivation'    => self::str($row, 'motivation'),
+            'how_heard'     => is_string($howHeard) ? $howHeard : null,
+            'status'        => self::str($row, 'status'),
+            'created_at'    => is_string($createdAt) ? $createdAt : null,
+            'decided_at'    => is_string($decidedAt) ? $decidedAt : null,
+            'decision_note' => is_string($note) ? $note : null,
+        ];
+    }
+
     public function recordDecision(
         string $id,
         TenantId $tenantId,

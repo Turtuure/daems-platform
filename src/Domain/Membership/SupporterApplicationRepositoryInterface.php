@@ -37,6 +37,29 @@ interface SupporterApplicationRepositoryInterface
 
     public function findByIdForTenant(string $id, TenantId $tenantId): ?SupporterApplication;
 
+    /**
+     * Single-row detail fetch for the admin detail page. Returns array shape
+     * including all submitted fields PLUS decision metadata (decided_at,
+     * decision_note) for already-decided applications. Returns null when not
+     * found in the tenant scope.
+     *
+     * @return array{
+     *   id: string,
+     *   org_name: string,
+     *   contact_person: string,
+     *   reg_no: ?string,
+     *   email: string,
+     *   country: ?string,
+     *   motivation: string,
+     *   how_heard: ?string,
+     *   status: string,
+     *   created_at: ?string,
+     *   decided_at: ?string,
+     *   decision_note: ?string
+     * }|null
+     */
+    public function findDetailedByIdForTenant(string $id, TenantId $tenantId): ?array;
+
     public function recordDecision(
         string $id,
         TenantId $tenantId,

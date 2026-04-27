@@ -20,6 +20,8 @@ use Daems\Application\Backstage\Notifications\ListNotificationsStats\ListNotific
 use Daems\Application\Backstage\Notifications\ListNotificationsStats\ListNotificationsStatsInput;
 use Daems\Application\Backstage\Members\ListMembersStats\ListMembersStats;
 use Daems\Application\Backstage\Members\ListMembersStats\ListMembersStatsInput;
+use Daems\Application\Backstage\GetApplicationDetail\GetApplicationDetail;
+use Daems\Application\Backstage\GetApplicationDetail\GetApplicationDetailInput;
 use Daems\Application\Backstage\ListDecidedApplications\ListDecidedApplications;
 use Daems\Application\Backstage\ListDecidedApplications\ListDecidedApplicationsInput;
 use Daems\Application\Backstage\ListPendingApplications\ListPendingApplications;
@@ -53,6 +55,7 @@ final class BackstageController
         private readonly ListNotificationsStats $listNotificationsStats,
         private readonly UpdateTenantSettings $updateTenantSettings,
         private readonly ListDecidedApplications $listDecided,
+        private readonly GetApplicationDetail $getApplicationDetail,
     ) {}
 
     public function updateTenantSettings(Request $request): Response
@@ -118,6 +121,30 @@ final class BackstageController
             $out = $this->listDecided->execute(new ListDecidedApplicationsInput($acting, $decision, $limit, $days));
         } catch (ForbiddenException $e) {
             return Response::json(['error' => 'forbidden', 'message' => $e->getMessage()], 403);
+        }
+
+        return Response::json(['data' => $out->toArray()]);
+    }
+
+    /**
+     * @param array<string, string> $params
+     */
+    public function applicationDetail(Request $request, array $params): Response
+    {
+        $acting = $request->requireActingUser();
+        $type = (string) ($params['type'] ?? '');
+        $id   = (string) ($params['id']   ?? '');
+
+        if (!in_array($type, ['member', 'supporter'], true)) {
+            return Response::json(['error' => 'validation_failed', 'message' => "type must be 'member' or 'supporter'"], 422);
+        }
+
+        try {
+            $out = $this->getApplicationDetail->execute(new GetApplicationDetailInput($acting, $type, $id));
+        } catch (ForbiddenException $e) {
+            return Response::json(['error' => 'forbidden', 'message' => $e->getMessage()], 403);
+        } catch (NotFoundException $e) {
+            return Response::json(['error' => 'not_found'], 404);
         }
 
         return Response::json(['data' => $out->toArray()]);

@@ -366,6 +366,11 @@ final class KernelHarness
             $c->make(\Daems\Application\Backstage\Notifications\ListNotificationsStats\ListNotificationsStats::class),
             $c->make(\Daems\Application\Backstage\UpdateTenantSettings\UpdateTenantSettings::class),
             $c->make(\Daems\Application\Backstage\ListDecidedApplications\ListDecidedApplications::class),
+            $c->make(\Daems\Application\Backstage\GetApplicationDetail\GetApplicationDetail::class),
+        ));
+        $container->bind(\Daems\Application\Backstage\GetApplicationDetail\GetApplicationDetail::class, static fn(Container $c) => new \Daems\Application\Backstage\GetApplicationDetail\GetApplicationDetail(
+            $c->make(\Daems\Domain\Membership\MemberApplicationRepositoryInterface::class),
+            $c->make(\Daems\Domain\Membership\SupporterApplicationRepositoryInterface::class),
         ));
         $container->bind(\Daems\Application\Backstage\UpdateTenantSettings\UpdateTenantSettings::class,
             static fn(Container $c) => new \Daems\Application\Backstage\UpdateTenantSettings\UpdateTenantSettings(

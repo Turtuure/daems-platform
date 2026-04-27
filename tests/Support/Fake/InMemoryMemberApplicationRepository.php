@@ -81,6 +81,30 @@ final class InMemoryMemberApplicationRepository implements MemberApplicationRepo
         return null;
     }
 
+    public function findDetailedByIdForTenant(string $id, \Daems\Domain\Tenant\TenantId $tenantId): ?array
+    {
+        foreach ($this->applications as $a) {
+            if ($a->id()->value() !== $id || !$a->tenantId()->equals($tenantId)) {
+                continue;
+            }
+            $decision = $this->decisions[$id] ?? null;
+            return [
+                'id'            => $a->id()->value(),
+                'name'          => $a->name(),
+                'email'         => $a->email(),
+                'date_of_birth' => $a->dateOfBirth(),
+                'country'       => $a->country(),
+                'motivation'    => $a->motivation(),
+                'how_heard'     => $a->howHeard(),
+                'status'        => $a->status(),
+                'created_at'    => $a->createdAt(),
+                'decided_at'    => $decision !== null ? $decision['at']   : null,
+                'decision_note' => $decision !== null ? $decision['note'] : null,
+            ];
+        }
+        return null;
+    }
+
     public function recordDecision(
         string $id,
         \Daems\Domain\Tenant\TenantId $tenantId,

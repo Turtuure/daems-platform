@@ -200,6 +200,11 @@ final class ListNotificationsStatsTest extends TestCase
                 return null;
             }
 
+            public function findDetailedByIdForTenant(string $id, TenantId $tenantId): ?array
+            {
+                return null;
+            }
+
             public function recordDecision(
                 string $id,
                 TenantId $tenantId,
@@ -264,6 +269,11 @@ final class ListNotificationsStatsTest extends TestCase
             }
 
             public function findByIdForTenant(string $id, TenantId $tenantId): ?SupporterApplication
+            {
+                return null;
+            }
+
+            public function findDetailedByIdForTenant(string $id, TenantId $tenantId): ?array
             {
                 return null;
             }
