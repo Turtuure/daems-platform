@@ -11,8 +11,6 @@ use Daems\Application\Auth\GetAuthMe\GetAuthMe;
 use Daems\Application\Auth\LoginUser\LoginUser;
 use Daems\Application\Auth\LogoutUser\LogoutUser;
 use Daems\Application\Auth\RegisterUser\RegisterUser;
-use Daems\Application\Membership\SubmitMemberApplication\SubmitMemberApplication;
-use Daems\Application\Membership\SubmitSupporterApplication\SubmitSupporterApplication;
 use Daems\Application\User\AnonymiseAccount\AnonymiseAccount;
 use Daems\Application\User\ChangePassword\ChangePassword;
 use Daems\Application\User\GetProfile\GetProfile;
@@ -38,7 +36,6 @@ use DateTimeImmutable;
 use Daems\Domain\User\User;
 use Daems\Domain\User\UserId;
 use Daems\Domain\User\UserRepositoryInterface;
-use Daems\Infrastructure\Adapter\Api\Controller\ApplicationController;
 use Daems\Infrastructure\Adapter\Api\Controller\AuthController;
 use Daems\Infrastructure\Adapter\Api\Controller\UserController;
 use Daems\Infrastructure\Framework\Container\Container;
@@ -53,13 +50,6 @@ use Daems\Infrastructure\Framework\Logging\LoggerInterface;
 use Daems\Tests\Support\Fake\InMemoryAuthLoginAttemptRepository;
 use Daems\Tests\Support\Fake\InMemoryAuthTokenRepository;
 use Daems\Tests\Support\Fake\ImmediateTransactionManager;
-use Daems\Tests\Support\Fake\InMemoryAdminApplicationDismissalRepository;
-use Daems\Tests\Support\Fake\InMemoryMemberApplicationRepository;
-use Daems\Tests\Support\Fake\InMemoryMemberDirectoryRepository;
-use Daems\Tests\Support\Fake\InMemoryMemberStatusAuditRepository;
-use Daems\Tests\Support\Fake\InMemorySupporterApplicationRepository;
-use Daems\Tests\Support\Fake\InMemoryTenantMemberCounterRepository;
-use Daems\Tests\Support\Fake\InMemoryTenantSupporterCounterRepository;
 use Daems\Tests\Support\Fake\InMemoryTenantSlugResolver;
 use Daems\Tests\Support\Fake\InMemoryUserInviteRepository;
 use Daems\Tests\Support\Fake\InMemoryImageStorage;
@@ -77,14 +67,7 @@ final class KernelHarness
     public InMemoryUserTenantRepository $userTenants;
     public InMemoryAuthTokenRepository $tokens;
     public InMemoryAuthLoginAttemptRepository $attempts;
-    public InMemoryMemberApplicationRepository $memberApps;
-    public InMemorySupporterApplicationRepository $supporterApps;
-    public InMemoryMemberDirectoryRepository $memberDirectory;
-    public InMemoryAdminApplicationDismissalRepository $dismissals;
     public InMemoryUserInviteRepository $invites;
-    public InMemoryTenantMemberCounterRepository $memberCounters;
-    public InMemoryTenantSupporterCounterRepository $supporterCounters;
-    public InMemoryMemberStatusAuditRepository $memberStatusAudit;
     public InMemoryImageStorage $imageStorage;
     public FrozenClock $clock;
 
@@ -98,14 +81,7 @@ final class KernelHarness
         $this->userTenants = new InMemoryUserTenantRepository();
         $this->tokens = new InMemoryAuthTokenRepository();
         $this->attempts = new InMemoryAuthLoginAttemptRepository();
-        $this->memberApps = new InMemoryMemberApplicationRepository();
-        $this->supporterApps = new InMemorySupporterApplicationRepository();
-        $this->memberDirectory = new InMemoryMemberDirectoryRepository();
-        $this->dismissals = new InMemoryAdminApplicationDismissalRepository();
         $this->invites = new InMemoryUserInviteRepository();
-        $this->memberCounters = new InMemoryTenantMemberCounterRepository();
-        $this->supporterCounters = new InMemoryTenantSupporterCounterRepository();
-        $this->memberStatusAudit = new InMemoryMemberStatusAuditRepository();
         $this->imageStorage = new InMemoryImageStorage();
 
         $logs = &$this->logs;
@@ -143,14 +119,7 @@ final class KernelHarness
         });
         $container->singleton(AuthTokenRepositoryInterface::class, fn() => $this->tokens);
         $container->singleton(AuthLoginAttemptRepositoryInterface::class, fn() => $this->attempts);
-        $container->singleton(AdminApplicationDismissalRepositoryInterface::class, fn() => $this->dismissals);
-        $container->singleton(MemberApplicationRepositoryInterface::class, fn() => $this->memberApps);
-        $container->singleton(SupporterApplicationRepositoryInterface::class, fn() => $this->supporterApps);
-        $container->singleton(\Daems\Domain\Backstage\MemberDirectoryRepositoryInterface::class, fn() => $this->memberDirectory);
         $container->singleton(\Daems\Domain\Invite\UserInviteRepositoryInterface::class, fn() => $this->invites);
-        $container->singleton(\Daems\Domain\Tenant\TenantMemberCounterRepositoryInterface::class, fn() => $this->memberCounters);
-        $container->singleton(\Daems\Domain\Tenant\TenantSupporterCounterRepositoryInterface::class, fn() => $this->supporterCounters);
-        $container->singleton(\Daems\Domain\Membership\MemberStatusAuditRepositoryInterface::class, fn() => $this->memberStatusAudit);
         $container->singleton(\Daems\Domain\Shared\TransactionManagerInterface::class, fn() => new ImmediateTransactionManager());
         $container->singleton(\Daems\Domain\Invite\TokenGeneratorInterface::class, static function (): \Daems\Domain\Invite\TokenGeneratorInterface {
             return new class implements \Daems\Domain\Invite\TokenGeneratorInterface {
@@ -220,14 +189,6 @@ final class KernelHarness
             $c->make(\DaemsModule\Events\Domain\EventRepositoryInterface::class),
         ));
 
-        $container->bind(\Daems\Application\Backstage\Members\ListMembersStats\ListMembersStats::class, static fn(Container $c) => new \Daems\Application\Backstage\Members\ListMembersStats\ListMembersStats(
-            $c->make(UserTenantRepositoryInterface::class),
-            $c->make(\Daems\Domain\Membership\MemberStatusAuditRepositoryInterface::class),
-        ));
-        $container->bind(\Daems\Application\Backstage\Applications\ListApplicationsStats\ListApplicationsStats::class, static fn(Container $c) => new \Daems\Application\Backstage\Applications\ListApplicationsStats\ListApplicationsStats(
-            $c->make(MemberApplicationRepositoryInterface::class),
-            $c->make(SupporterApplicationRepositoryInterface::class),
-        ));
         $container->bind(\Daems\Application\Backstage\Notifications\ListNotificationsStats\ListNotificationsStats::class, static fn(Container $c) => new \Daems\Application\Backstage\Notifications\ListNotificationsStats\ListNotificationsStats(
             $c->make(MemberApplicationRepositoryInterface::class),
             $c->make(SupporterApplicationRepositoryInterface::class),
@@ -236,9 +197,6 @@ final class KernelHarness
             $c->make(AdminApplicationDismissalRepositoryInterface::class),
         ));
 
-        $container->bind(SubmitMemberApplication::class, static fn(Container $c) => new SubmitMemberApplication($c->make(MemberApplicationRepositoryInterface::class)));
-        $container->bind(SubmitSupporterApplication::class, static fn(Container $c) => new SubmitSupporterApplication($c->make(SupporterApplicationRepositoryInterface::class)));
-
         $container->bind(\Daems\Application\Invite\IssueInvite\IssueInvite::class, static fn(Container $c) => new \Daems\Application\Invite\IssueInvite\IssueInvite(
             $c->make(\Daems\Domain\Invite\UserInviteRepositoryInterface::class),
             $c->make(\Daems\Domain\Invite\TokenGeneratorInterface::class),
@@ -246,66 +204,9 @@ final class KernelHarness
             $c->make(Clock::class),
             $c->make(\Daems\Domain\Shared\IdGeneratorInterface::class),
         ));
-        $container->bind(\Daems\Application\Backstage\ActivateMember\MemberActivationService::class, static fn(Container $c) => new \Daems\Application\Backstage\ActivateMember\MemberActivationService(
-            $c->make(UserRepositoryInterface::class),
-            $c->make(UserTenantRepositoryInterface::class),
-            $c->make(\Daems\Domain\Tenant\TenantMemberCounterRepositoryInterface::class),
-            $c->make(\Daems\Domain\Membership\MemberStatusAuditRepositoryInterface::class),
-            $c->make(Clock::class),
-            $c->make(\Daems\Domain\Shared\IdGeneratorInterface::class),
-        ));
-        $container->bind(\Daems\Application\Backstage\ActivateSupporter\SupporterActivationService::class, static fn(Container $c) => new \Daems\Application\Backstage\ActivateSupporter\SupporterActivationService(
-            $c->make(UserRepositoryInterface::class),
-            $c->make(UserTenantRepositoryInterface::class),
-            $c->make(\Daems\Domain\Tenant\TenantSupporterCounterRepositoryInterface::class),
-            $c->make(Clock::class),
-            $c->make(\Daems\Domain\Shared\IdGeneratorInterface::class),
-        ));
-        $container->bind(\Daems\Application\Backstage\ListPendingApplications\ListPendingApplications::class, static fn(Container $c) => new \Daems\Application\Backstage\ListPendingApplications\ListPendingApplications(
-            $c->make(\Daems\Domain\Membership\MemberApplicationRepositoryInterface::class),
-            $c->make(\Daems\Domain\Membership\SupporterApplicationRepositoryInterface::class),
-        ));
-        $container->bind(\Daems\Application\Backstage\DismissApplication\DismissApplication::class, static fn(Container $c) => new \Daems\Application\Backstage\DismissApplication\DismissApplication(
-            $c->make(AdminApplicationDismissalRepositoryInterface::class),
-            $c->make(Clock::class),
-            $c->make(\Daems\Domain\Shared\IdGeneratorInterface::class),
-        ));
-        $container->bind(\Daems\Application\Backstage\ListPendingApplications\ListPendingApplicationsForAdmin::class, static fn(Container $c) => new \Daems\Application\Backstage\ListPendingApplications\ListPendingApplicationsForAdmin(
-            $c->make(\Daems\Domain\Membership\MemberApplicationRepositoryInterface::class),
-            $c->make(\Daems\Domain\Membership\SupporterApplicationRepositoryInterface::class),
-            $c->make(AdminApplicationDismissalRepositoryInterface::class),
-            $c->make(ProjectProposalRepositoryInterface::class),
-            $c->make(\Daems\Domain\Forum\ForumReportRepositoryInterface::class),
-            $c->make(ForumRepositoryInterface::class),
-        ));
-        $container->bind(\Daems\Application\Backstage\DecideApplication\DecideApplication::class, static fn(Container $c) => new \Daems\Application\Backstage\DecideApplication\DecideApplication(
-            $c->make(\Daems\Domain\Membership\MemberApplicationRepositoryInterface::class),
-            $c->make(\Daems\Domain\Membership\SupporterApplicationRepositoryInterface::class),
-            $c->make(\Daems\Application\Backstage\ActivateMember\MemberActivationService::class),
-            $c->make(\Daems\Application\Backstage\ActivateSupporter\SupporterActivationService::class),
-            $c->make(\Daems\Application\Invite\IssueInvite\IssueInvite::class),
-            $c->make(AdminApplicationDismissalRepositoryInterface::class),
-            $c->make(\Daems\Domain\Shared\TransactionManagerInterface::class),
-            $c->make(Clock::class),
-        ));
-        $container->bind(\Daems\Application\Backstage\ListMembers\ListMembers::class, static fn(Container $c) => new \Daems\Application\Backstage\ListMembers\ListMembers(
-            $c->make(\Daems\Domain\Backstage\MemberDirectoryRepositoryInterface::class),
-        ));
-        $container->bind(\Daems\Application\Backstage\ChangeMemberStatus\ChangeMemberStatus::class, static fn(Container $c) => new \Daems\Application\Backstage\ChangeMemberStatus\ChangeMemberStatus(
-            $c->make(\Daems\Domain\Backstage\MemberDirectoryRepositoryInterface::class),
-            $c->make(AnonymiseAccount::class),
-            $c->make(Clock::class),
-        ));
-        $container->bind(\Daems\Application\Backstage\GetMemberAudit\GetMemberAudit::class, static fn(Container $c) => new \Daems\Application\Backstage\GetMemberAudit\GetMemberAudit(
-            $c->make(\Daems\Domain\Backstage\MemberDirectoryRepositoryInterface::class),
-        ));
 
         $container->bind(\Daems\Application\Backstage\ListProposalsForAdmin\ListProposalsForAdmin::class, static fn(Container $c) => new \Daems\Application\Backstage\ListProposalsForAdmin\ListProposalsForAdmin(
             $c->make(ProjectProposalRepositoryInterface::class),
-        ));
-        $container->bind(\Daems\Application\Backstage\ListDecidedApplications\ListDecidedApplications::class, static fn(Container $c) => new \Daems\Application\Backstage\ListDecidedApplications\ListDecidedApplications(
-            $c->make(MemberApplicationRepositoryInterface::class),
-            $c->make(SupporterApplicationRepositoryInterface::class),
         ));
 
         // Image storage — used by Events module via ImageStorageInterface binding.
@@ -348,29 +249,10 @@ final class KernelHarness
                 $c->make(\Daems\Domain\User\UserRepositoryInterface::class),
                 $c->make(\Daems\Domain\Tenant\TenantRepositoryInterface::class),
             ));
-        $container->bind(ApplicationController::class, static fn(Container $c) => new ApplicationController(
-            $c->make(SubmitMemberApplication::class),
-            $c->make(SubmitSupporterApplication::class),
-        ));
         $container->bind(\Daems\Infrastructure\Adapter\Api\Controller\BackstageController::class, static fn(Container $c) => new \Daems\Infrastructure\Adapter\Api\Controller\BackstageController(
-            $c->make(\Daems\Application\Backstage\ListPendingApplications\ListPendingApplications::class),
-            $c->make(\Daems\Application\Backstage\DecideApplication\DecideApplication::class),
-            $c->make(\Daems\Application\Backstage\ListMembers\ListMembers::class),
-            $c->make(\Daems\Application\Backstage\ChangeMemberStatus\ChangeMemberStatus::class),
-            $c->make(\Daems\Application\Backstage\GetMemberAudit\GetMemberAudit::class),
-            $c->make(\Daems\Application\Backstage\ListPendingApplications\ListPendingApplicationsForAdmin::class),
-            $c->make(\Daems\Application\Backstage\DismissApplication\DismissApplication::class),
             $c->make(\Daems\Application\Backstage\ListProposalsForAdmin\ListProposalsForAdmin::class),
-            $c->make(\Daems\Application\Backstage\Members\ListMembersStats\ListMembersStats::class),
-            $c->make(\Daems\Application\Backstage\Applications\ListApplicationsStats\ListApplicationsStats::class),
             $c->make(\Daems\Application\Backstage\Notifications\ListNotificationsStats\ListNotificationsStats::class),
             $c->make(\Daems\Application\Backstage\UpdateTenantSettings\UpdateTenantSettings::class),
-            $c->make(\Daems\Application\Backstage\ListDecidedApplications\ListDecidedApplications::class),
-            $c->make(\Daems\Application\Backstage\GetApplicationDetail\GetApplicationDetail::class),
-        ));
-        $container->bind(\Daems\Application\Backstage\GetApplicationDetail\GetApplicationDetail::class, static fn(Container $c) => new \Daems\Application\Backstage\GetApplicationDetail\GetApplicationDetail(
-            $c->make(\Daems\Domain\Membership\MemberApplicationRepositoryInterface::class),
-            $c->make(\Daems\Domain\Membership\SupporterApplicationRepositoryInterface::class),
         ));
         $container->bind(\Daems\Application\Backstage\UpdateTenantSettings\UpdateTenantSettings::class,
             static fn(Container $c) => new \Daems\Application\Backstage\UpdateTenantSettings\UpdateTenantSettings(
@@ -378,16 +260,8 @@ final class KernelHarness
             ));
         // E2E uses SQL repo directly for public member lookups (no fake needed for read-only path).
         $container->bind(\Daems\Domain\Member\PublicMemberRepositoryInterface::class,
-            static fn(Container $c) => new \Daems\Infrastructure\Adapter\Persistence\Sql\SqlPublicMemberRepository(
+            static fn(Container $c) => new \DaemsModule\Members\Infrastructure\SqlPublicMemberRepository(
                 $c->make(\Daems\Infrastructure\Framework\Database\Connection::class),
-            ));
-        $container->bind(\Daems\Application\Member\GetPublicMemberProfile\GetPublicMemberProfile::class,
-            static fn(Container $c) => new \Daems\Application\Member\GetPublicMemberProfile\GetPublicMemberProfile(
-                $c->make(\Daems\Domain\Member\PublicMemberRepositoryInterface::class),
-            ));
-        $container->bind(\Daems\Infrastructure\Adapter\Api\Controller\MemberController::class,
-            static fn(Container $c) => new \Daems\Infrastructure\Adapter\Api\Controller\MemberController(
-                $c->make(\Daems\Application\Member\GetPublicMemberProfile\GetPublicMemberProfile::class),
             ));
         // Search
         $container->bind(\Daems\Domain\Search\SearchRepositoryInterface::class,
@@ -531,12 +405,19 @@ final class KernelHarness
     public function __get(string $name): mixed
     {
         return match ($name) {
-            'projects'        => $this->container->make(\Daems\Domain\Project\ProjectRepositoryInterface::class),
-            'proposals'       => $this->container->make(\Daems\Domain\Project\ProjectProposalRepositoryInterface::class),
-            'commentAudit'    => $this->container->make(\Daems\Domain\Project\ProjectCommentModerationAuditRepositoryInterface::class),
-            'forum'           => $this->container->make(\Daems\Domain\Forum\ForumRepositoryInterface::class),
-            'events'          => $this->container->make(\DaemsModule\Events\Domain\EventRepositoryInterface::class),
-            'eventProposals'  => $this->container->make(\DaemsModule\Events\Domain\EventProposalRepositoryInterface::class),
+            'projects'           => $this->container->make(\Daems\Domain\Project\ProjectRepositoryInterface::class),
+            'proposals'          => $this->container->make(\Daems\Domain\Project\ProjectProposalRepositoryInterface::class),
+            'commentAudit'       => $this->container->make(\Daems\Domain\Project\ProjectCommentModerationAuditRepositoryInterface::class),
+            'forum'              => $this->container->make(\Daems\Domain\Forum\ForumRepositoryInterface::class),
+            'events'             => $this->container->make(\DaemsModule\Events\Domain\EventRepositoryInterface::class),
+            'eventProposals'     => $this->container->make(\DaemsModule\Events\Domain\EventProposalRepositoryInterface::class),
+            'memberApps'         => $this->container->make(MemberApplicationRepositoryInterface::class),
+            'supporterApps'      => $this->container->make(SupporterApplicationRepositoryInterface::class),
+            'memberDirectory'    => $this->container->make(\Daems\Domain\Backstage\MemberDirectoryRepositoryInterface::class),
+            'dismissals'         => $this->container->make(AdminApplicationDismissalRepositoryInterface::class),
+            'memberCounters'     => $this->container->make(\Daems\Domain\Tenant\TenantMemberCounterRepositoryInterface::class),
+            'supporterCounters'  => $this->container->make(\Daems\Domain\Tenant\TenantSupporterCounterRepositoryInterface::class),
+            'memberStatusAudit'  => $this->container->make(\Daems\Domain\Membership\MemberStatusAuditRepositoryInterface::class),
             default           => throw new \LogicException("Undefined property: KernelHarness::\${$name}"),
         };
     }
