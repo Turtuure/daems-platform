@@ -19,7 +19,9 @@
       "DaemsModule\\Forum\\": "../modules/forum/backend/src/",
       "DaemsModule\\Forum\\Tests\\": "../modules/forum/backend/tests/",
       "DaemsModule\\Projects\\": "../modules/projects/backend/src/",
-      "DaemsModule\\Projects\\Tests\\": "../modules/projects/backend/tests/"
+      "DaemsModule\\Projects\\Tests\\": "../modules/projects/backend/tests/",
+      "DaemsModule\\Events\\": "../modules/events/backend/src/",
+      "DaemsModule\\Events\\Tests\\": "../modules/events/backend/tests/"
     }
   },
   "require-dev": {

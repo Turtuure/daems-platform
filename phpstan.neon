@@ -8,6 +8,7 @@ parameters:
         - ../modules/insights/backend/src
         - ../modules/forum/backend/src
         - ../modules/projects/backend/src
+        - ../modules/events/backend/src
     phpVersion: 80100
     ignoreErrors:
         -
