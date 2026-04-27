@@ -17,7 +17,9 @@
       "DaemsModule\\Insights\\": "../modules/insights/backend/src/",
       "DaemsModule\\Insights\\Tests\\": "../modules/insights/backend/tests/",
       "DaemsModule\\Forum\\": "../modules/forum/backend/src/",
-      "DaemsModule\\Forum\\Tests\\": "../modules/forum/backend/tests/"
+      "DaemsModule\\Forum\\Tests\\": "../modules/forum/backend/tests/",
+      "DaemsModule\\Projects\\": "../modules/projects/backend/src/",
+      "DaemsModule\\Projects\\Tests\\": "../modules/projects/backend/tests/"
     }
   },
   "require-dev": {

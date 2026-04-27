@@ -7,6 +7,18 @@ parameters:
 			path: ../modules/forum/backend/src/Infrastructure/SqlForumReportRepository.php
 
 		-
+			message: '#^Parameter \#1 \$rows of static method DaemsModule\\Projects\\Infrastructure\\SqlProjectProposalRepository\:\:buildDailySeries30dBackward\(\) expects list\<array\<string, mixed\>\>, array\<array\<string, mixed\>\> given\.$#'
+			identifier: argument.type
+			count: 3
+			path: ../modules/projects/backend/src/Infrastructure/SqlProjectProposalRepository.php
+
+		-
+			message: '#^Parameter \#1 \$rows of static method DaemsModule\\Projects\\Infrastructure\\SqlProjectRepository\:\:buildDailySeries30dBackward\(\) expects list\<array\<string, mixed\>\>, array\<array\<string, mixed\>\> given\.$#'
+			identifier: argument.type
+			count: 2
+			path: ../modules/projects/backend/src/Infrastructure/SqlProjectRepository.php
+
+		-
 			message: '#^Parameter \#11 \$gallery of class Daems\\Application\\Backstage\\UpdateEvent\\UpdateEventInput constructor expects array\<string\>\|null, array\<mixed, mixed\>\|null given\.$#'
 			identifier: argument.type
 			count: 1
