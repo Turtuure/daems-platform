@@ -10,3 +10,17 @@ Discovered while running Members integration suite during Task 19. Both failures
 Likely root cause: clock/date assumption (test inserts a row "today" but the stats query filters by a window that doesn't include today). Needs separate plan to fix.
 
 The module copy passes byte-for-byte identical assertions to the original — move is correct.
+
+## Pre-existing Insights isolation failures (discovered during Members Wave G verification)
+
+Five Insights isolation tests fail with `PDOException: SQLSTATE[HY000]: General error: 1364 Field 'title' doesn't have a default value`. These predate the Members extraction (the dp-insights module hasn't been touched in this session) and reproduce on a fresh test DB:
+
+- `DaemsModule\Insights\Tests\Isolation\InsightStatsTenantIsolationTest::test_stats_isolate_published_count_by_tenant` (line 36)
+- `DaemsModule\Insights\Tests\Isolation\InsightStatsTenantIsolationTest::test_stats_isolate_featured_count_by_tenant`
+- `DaemsModule\Insights\Tests\Isolation\InsightStatsTenantIsolationTest::test_stats_isolate_scheduled_count_by_tenant`
+- `DaemsModule\Insights\Tests\Isolation\InsightTenantIsolationTest::test_list_isolates_by_tenant`
+- `DaemsModule\Insights\Tests\Isolation\InsightTenantIsolationTest::test_find_by_slug_requires_matching_tenant`
+
+Likely root cause: Insights moved to i18n schema (legacy `insights.title` was dropped, `insights_i18n.title` is the source of truth), but these tests insert into `insights` directly and don't satisfy any constraint that still requires `title` either as a column on `insights` or via a trigger. Needs a separate fix on the dp-insights module side.
+
+The test DB pollution from a prior killed phpunit run inflated this number to 49 errors at one point. With a fresh DB (`DROP DATABASE IF EXISTS daems_db_test; CREATE DATABASE daems_db_test ...`), the failures are exactly 5 and confined to dp-insights.
