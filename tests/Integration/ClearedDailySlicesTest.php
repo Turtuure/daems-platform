@@ -6,9 +6,9 @@ namespace Daems\Tests\Integration;
 
 use Daems\Domain\Shared\ValueObject\Uuid7;
 use Daems\Domain\Tenant\TenantId;
-use Daems\Infrastructure\Adapter\Persistence\Sql\SqlMemberApplicationRepository;
+use DaemsModule\Members\Infrastructure\SqlMemberApplicationRepository;
+use DaemsModule\Members\Infrastructure\SqlSupporterApplicationRepository;
 use DaemsModule\Projects\Infrastructure\SqlProjectProposalRepository;
-use Daems\Infrastructure\Adapter\Persistence\Sql\SqlSupporterApplicationRepository;
 use Daems\Infrastructure\Framework\Database\Connection;
 use DaemsModule\Forum\Infrastructure\SqlForumReportRepository;
 

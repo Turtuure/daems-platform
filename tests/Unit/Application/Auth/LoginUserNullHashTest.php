@@ -9,7 +9,7 @@ use Daems\Application\Auth\LoginUser\LoginUserInput;
 use Daems\Domain\Dismissal\AdminApplicationDismissal;
 use Daems\Domain\User\User;
 use Daems\Domain\User\UserId;
-use Daems\Tests\Support\Fake\InMemoryAdminApplicationDismissalRepository;
+use DaemsModule\Members\Tests\Support\InMemoryAdminApplicationDismissalRepository;
 use Daems\Tests\Support\Fake\InMemoryAuthLoginAttemptRepository;
 use Daems\Tests\Support\Fake\InMemoryUserRepository;
 use Daems\Tests\Support\FrozenClock;

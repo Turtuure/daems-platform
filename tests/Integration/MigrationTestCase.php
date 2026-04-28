@@ -123,6 +123,15 @@ abstract class MigrationTestCase extends TestCase
             $basename = basename($file);
             if (isset($slotMap[$basename])) {
                 $originalSlot = (int) $slotMap[$basename];
+                // Gate MAPPED (slot-aware) module migrations by highestNumber:
+                // a module migration that explicitly slotted to position N
+                // must only run if N <= highestNumber. Otherwise tests that
+                // call runMigrationsUpTo(19) would unconditionally pull in
+                // members_008 (slot 38) — which references user_tenants from
+                // slot 22 that hasn't been created yet.
+                if ($originalSlot > $highestNumber) {
+                    continue;
+                }
                 // Core original still present → skip the module duplicate.
                 // Once the core file is deleted (extraction completes) the
                 // module migration takes over its slot.
@@ -135,9 +144,22 @@ abstract class MigrationTestCase extends TestCase
                 // siblings sharing the same slot).
                 $entries[] = ['key' => $originalSlot + 0.5, 'basename' => $basename, 'path' => $file];
             } else {
-                // Unmapped module migration (e.g. forum_*, insights_*): place
-                // after all core migrations using a high pseudo-slot derived
-                // from the module-local NNN. Core max is well under 999.
+                // Unmapped module migration (e.g. forum_*, insights_007+):
+                // these have no original core slot — they're post-extraction
+                // schema additions. Include them when the test asks for the
+                // production-shape schema (i.e. $highestNumber covers the
+                // highest *schema* core migration). Rename-only migrations
+                // (064-068) don't change schema, so we use 59 as the de-facto
+                // schema cutoff: any test using $highestNumber >= 59 wants
+                // current-day schema and should see all module additions.
+                //
+                // Tests that call runMigrationsUpTo(19) or (42) want a bounded
+                // historic snapshot — they explicitly DO NOT want post-
+                // extraction module schema, so we exclude unmapped module
+                // migrations in that case.
+                if ($highestNumber < 59) {
+                    continue;
+                }
                 if (preg_match('/_(\d{3})_/', $basename, $m) === 1) {
                     $entries[] = ['key' => 1000.0 + (int) $m[1], 'basename' => $basename, 'path' => $file];
                 } else {

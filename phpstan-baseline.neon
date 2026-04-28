@@ -43,18 +43,6 @@ parameters:
 			path: ../modules/projects/backend/src/Infrastructure/SqlProjectRepository.php
 
 		-
-			message: '#^Parameter \#1 \$rows of static method Daems\\Infrastructure\\Adapter\\Persistence\\Sql\\SqlMemberApplicationRepository\:\:buildDailySeries30dBackward\(\) expects list\<array\<string, mixed\>\>, array\<array\<string, mixed\>\> given\.$#'
-			identifier: argument.type
-			count: 5
-			path: src/Infrastructure/Adapter/Persistence/Sql/SqlMemberApplicationRepository.php
-
-		-
-			message: '#^Parameter \#1 \$rows of static method Daems\\Infrastructure\\Adapter\\Persistence\\Sql\\SqlSupporterApplicationRepository\:\:buildDailySeries30dBackward\(\) expects list\<array\<string, mixed\>\>, array\<array\<string, mixed\>\> given\.$#'
-			identifier: argument.type
-			count: 5
-			path: src/Infrastructure/Adapter/Persistence/Sql/SqlSupporterApplicationRepository.php
-
-		-
 			message: '#^Parameter \#1 \$row of method Daems\\Infrastructure\\Adapter\\Persistence\\Sql\\SqlTenantRepository\:\:hydrate\(\) expects array\<string, mixed\>, array\<mixed, mixed\> given\.$#'
 			identifier: argument.type
 			count: 4

@@ -16,7 +16,7 @@ use Daems\Domain\User\User;
 use Daems\Domain\User\UserId;
 use Daems\Tests\Support\Fake\ImmediateTransactionManager;
 use Daems\Tests\Support\Fake\InMemoryAuthTokenRepository;
-use Daems\Tests\Support\Fake\InMemoryMemberStatusAuditRepository;
+use DaemsModule\Members\Tests\Support\InMemoryMemberStatusAuditRepository;
 use Daems\Tests\Support\Fake\InMemoryUserRepository;
 use Daems\Tests\Support\Fake\InMemoryUserTenantRepository;
 use Daems\Tests\Support\FrozenClock;

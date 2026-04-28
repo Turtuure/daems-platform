@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace Daems\Tests\Isolation;
 
 use Daems\Domain\Membership\MemberApplicationId;
-use Daems\Infrastructure\Adapter\Persistence\Sql\SqlMemberApplicationRepository;
-use Daems\Infrastructure\Adapter\Persistence\Sql\SqlMemberDirectoryRepository;
+use DaemsModule\Members\Infrastructure\SqlMemberApplicationRepository;
+use DaemsModule\Members\Infrastructure\SqlMemberDirectoryRepository;
 use Daems\Infrastructure\Framework\Database\Connection;
 
 final class BackstageTenantIsolationTest extends IsolationTestCase

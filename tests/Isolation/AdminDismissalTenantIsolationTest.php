@@ -4,21 +4,21 @@ declare(strict_types=1);
 
 namespace Daems\Tests\Isolation;
 
-use Daems\Application\Backstage\DismissApplication\DismissApplication;
-use Daems\Application\Backstage\DismissApplication\DismissApplicationInput;
-use Daems\Application\Backstage\ListPendingApplications\ListPendingApplicationsForAdmin;
-use Daems\Application\Backstage\ListPendingApplications\ListPendingApplicationsForAdminInput;
 use Daems\Domain\Auth\ActingUser;
 use Daems\Domain\Shared\ValueObject\Uuid7;
 use Daems\Domain\Tenant\UserTenantRole;
-use Daems\Infrastructure\Adapter\Persistence\Sql\SqlAdminApplicationDismissalRepository;
-use Daems\Infrastructure\Adapter\Persistence\Sql\SqlMemberApplicationRepository;
-use DaemsModule\Projects\Infrastructure\SqlProjectProposalRepository;
-use Daems\Infrastructure\Adapter\Persistence\Sql\SqlSupporterApplicationRepository;
 use Daems\Infrastructure\Framework\Clock\SystemClock;
 use Daems\Infrastructure\Framework\Database\Connection;
 use DaemsModule\Forum\Infrastructure\SqlForumReportRepository;
 use DaemsModule\Forum\Infrastructure\SqlForumRepository;
+use DaemsModule\Members\Application\Backstage\DismissApplication\DismissApplication;
+use DaemsModule\Members\Application\Backstage\DismissApplication\DismissApplicationInput;
+use DaemsModule\Members\Application\Backstage\ListPendingApplications\ListPendingApplicationsForAdmin;
+use DaemsModule\Members\Application\Backstage\ListPendingApplications\ListPendingApplicationsForAdminInput;
+use DaemsModule\Members\Infrastructure\SqlAdminApplicationDismissalRepository;
+use DaemsModule\Members\Infrastructure\SqlMemberApplicationRepository;
+use DaemsModule\Members\Infrastructure\SqlSupporterApplicationRepository;
+use DaemsModule\Projects\Infrastructure\SqlProjectProposalRepository;
 
 /**
  * Verifies that admin A's dismissals do not affect admin B's pending-count view
