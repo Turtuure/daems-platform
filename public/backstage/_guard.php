@@ -12,18 +12,6 @@ declare(strict_types=1);
  *   $_SESSION['user']['is_platform_admin']  = bool
  */
 
-// REMOVE before Task 8 — temporary dev auth so Wave-B chrome can be smoke-tested
-// before /backstage/login lands in Task 13. Pass ?_dev_admin=1 in URL.
-if (empty($_SESSION['user']) && (($_GET['_dev_admin'] ?? null) === '1')) {
-    $_SESSION['user'] = [
-        'id'                => '00000000-0000-0000-0000-000000000001',
-        'name'              => 'Dev Admin',
-        'role'              => 'global_system_administrator',
-        'is_platform_admin' => true,
-    ];
-    $_SESSION['token'] = 'dev-fake-token';
-}
-
 $__user = $_SESSION['user'] ?? null;
 $__role = is_array($__user) ? ($__user['role'] ?? '') : '';
 $__isPlatformAdmin = is_array($__user) ? ($__user['is_platform_admin'] ?? false) : false;
