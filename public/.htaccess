@@ -1,5 +1,20 @@
+# Stop mod_dir's auto 301-to-trailing-slash for /backstage and /api/backstage.
+# Real file/dir static serves still work (handled by RewriteCond -f / -d below).
+DirectorySlash Off
+
 RewriteEngine On
 
-RewriteCond %{REQUEST_FILENAME} !-f
-RewriteCond %{REQUEST_FILENAME} !-d
-RewriteRule ^ index.php [L]
+# Real files served directly (CSS/JS/img).
+RewriteCond %{REQUEST_FILENAME} -f
+RewriteRule ^ - [L]
+
+# Backstage UI + admin proxies → backstage front controller
+RewriteRule ^backstage(/.*)?$ backstage.php [L,QSA]
+RewriteRule ^api/backstage(/.*)?$ backstage.php [L,QSA]
+
+# Other real directories served directly
+RewriteCond %{REQUEST_FILENAME} -d
+RewriteRule ^ - [L]
+
+# Everything else → API kernel
+RewriteRule ^ index.php [L,QSA]
