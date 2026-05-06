@@ -8,19 +8,19 @@ This project spans two Laragon web roots that work together:
 
 | Repo | Path | Role |
 |------|------|------|
-| `daems-platform` | `C:\laragon\www\daems-platform` | **Backend API + Backstage UI**. PHP 8.1+, Clean Architecture, MySQL. REST at `http://<tenant>-platform.local/api/v1/*`, admin UI at `http://<tenant>-platform.local/backstage/*`. |
-| `daem-society` | `C:\laragon\www\sites\daem-society` | **Public site only** (post-2026-05-06 backstage migration). Calls platform API via `ApiClient`. `/backstage*` and `/api/backstage/*` 301-redirect to `daems-platform.local`. |
+| `daems-platform` | `C:\laragon\www\daems-platform` | **Backend API + Backstage code**. PHP 8.1+, Clean Architecture, MySQL. REST at `http://daems-platform.local/api/v1/*`. Backstage code lives at `public/backstage/*` and is served by tenant frontend hosts via filesystem delegation. |
+| `daem-society` | `C:\laragon\www\sites\daem-society` | **Public site + backstage delegation**. Public pages own. `/backstage*`, `/api/backstage/*`, and the related static-asset paths are delegated to platform's filesystem code via `require` — no cross-host redirect. Tenant-frontend session carries to backstage. |
 
 Open the **new terminal in `C:\laragon\www\daems-platform`** by default — this is the primary work location. Switch to `sites/daem-society` only when editing public-site pages, CSS, or JS.
 
-**Multi-tenant:** the platform serves multiple frontends (daem-society, sahegroup, …) AND hosts the same backstage UI for every tenant. Tenant is resolved by `Host` header (`TenantContextMiddleware`). Dev-host fallback lives in `config/tenant-fallback.php`:
-- `daems-platform.local` → `daems` tenant (API + backstage)
-- `sahegroup-platform.local` → `sahegroup` tenant (API + backstage)
-- `daem-society.local` → `daems` tenant (public site only — backstage redirects to platform host)
-- `sahegroup.local` → `sahegroup` tenant
+**Multi-tenant:** the platform serves multiple tenant frontends (daems, sahegroup, …) AND hosts the same backstage UI code (delegated to each frontend host). Tenant is resolved by `Host` header (`TenantContextMiddleware`). Dev-host fallback lives in `config/tenant-fallback.php`:
+- `daems.local` / `daem-society.local` → `daems` tenant (frontend + backstage delegation)
+- `daems-platform.local` → `daems` tenant (direct API + direct-access backstage fallback)
+- `sahegroup.local` → `sahegroup` tenant (frontend; backstage delegation needs Phase-2 X-Daems-Forwarded-Host)
+- `sahegroup-platform.local` → `sahegroup` tenant (direct API)
 - `localhost` → `daems` tenant
 
-**Backstage:** Lives in `daems-platform/public/backstage/*` + `modules/<n>/frontend/backstage/*`. Two front controllers in platform: `public/index.php` for `/api/v1/*`, `public/backstage.php` for `/backstage/*` and `/api/backstage/*`. Login at `/backstage/login` with its own session (NOT shared with public-site session). Adding a new tenant for backstage: add `<tenant>-platform.local` row to `config/tenant-fallback.php` + Apache vhost + Windows hosts file row.
+**Backstage:** Code lives in `daems-platform/public/backstage/*` + `modules/<n>/frontend/backstage/*`. Tenant frontends serve it at `<host>/backstage/*` via a filesystem-include delegation block in their `index.php`. NO cross-host redirect; the tenant-frontend session is the source of truth (`$_SESSION['user']` shape compatible with platform's `_guard.php`). Platform's own `daems-platform.local/backstage` works as a direct-access fallback with its own login form. Adding a new tenant frontend: add Apache vhost pointing at the tenant's repo and ensure the same delegation block is in that repo's index.php (today only `daem-society/public/index.php` has it).
 
 ## Current state (updated 2026-05-06)
 
