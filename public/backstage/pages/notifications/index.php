@@ -131,7 +131,7 @@ $kpis = [
 <div class="kpis-grid">
   <?php foreach ($kpis as $kpi): daems_shared_partial('components/cards/kpi-card/kpi-card', $kpi); endforeach; ?>
 </div>
-<script src="/pages/backstage/notifications/notifications-stats.js" defer></script>
+<script src="/backstage/pages/notifications/notifications-stats.js" defer></script>
 
 <?php if ($apiError !== null): ?>
 <div class="card" style="border-left:4px solid var(--status-error); margin-bottom:1rem;">
@@ -196,8 +196,8 @@ $kpis = [
 
 </div><!-- /.notifications-admin -->
 
-<link rel="stylesheet" href="/pages/backstage/notifications/notifications.css">
-<script src="/pages/backstage/notifications/notifications.js"></script>
+<link rel="stylesheet" href="/backstage/pages/notifications/notifications.css">
+<script src="/backstage/pages/notifications/notifications.js"></script>
 
 <?php
 $pageContent = ob_get_clean();
