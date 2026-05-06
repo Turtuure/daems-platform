@@ -19,7 +19,7 @@ $map = [
     '/api/backstage/event-upload'    => __DIR__ . '/api/event-upload.php',
     '/api/backstage/forum'           => __DIR__ . '/api/forum.php',
     '/api/backstage/insights'        => __DIR__ . '/api/insights.php',
-    // Wave-D additions append below as proxies migrate.
+    '/api/backstage/tenant-settings' => __DIR__ . '/api/tenant-settings.php',
 ];
 
 if (isset($map[$uri]) && is_file($map[$uri])) {
