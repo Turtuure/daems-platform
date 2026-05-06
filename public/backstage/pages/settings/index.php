@@ -270,7 +270,7 @@ ob_start();
 
 </div><!-- /.settings-admin -->
 
-<link rel="stylesheet" href="/pages/backstage/settings/settings.css">
+<link rel="stylesheet" href="/backstage/pages/settings/settings.css">
 
 <script>
 (function () {

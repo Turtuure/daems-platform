@@ -11,6 +11,7 @@ $map = [
     ''               => __DIR__ . '/pages/index.php',
     '/notifications' => __DIR__ . '/pages/notifications/index.php',
     '/search'        => __DIR__ . '/pages/search/index.php',
+    '/settings'      => __DIR__ . '/pages/settings/index.php',
 ];
 
 if (isset($map[$sub]) && is_file($map[$sub])) {
