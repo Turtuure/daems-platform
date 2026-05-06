@@ -1,0 +1,161 @@
+/**
+ * Locale-cards — shared styling for event/project translation editors.
+ *
+ * Layout: a responsive grid of locale cards across the top, followed by
+ * the editor pane populated with fields for the active locale.
+ * Kept deliberately scoped under .locale-cards-container to avoid leaking
+ * into surrounding modal chrome (which already uses .evt-form-* classes).
+ */
+
+.locale-cards-container {
+    margin-bottom: 1.25rem;
+}
+
+.locale-cards-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 0.75rem;
+    margin-bottom: 1rem;
+}
+
+.locale-card {
+    border: 1px solid var(--surface-border);
+    border-radius: 0.5rem;
+    padding: 0.75rem;
+    cursor: pointer;
+    background: var(--surface-dark);
+    color: inherit;
+    text-align: left;
+    font: inherit;
+    transition: border-color 120ms ease, box-shadow 120ms ease;
+}
+
+.locale-card:hover {
+    border-color: var(--brand-primary);
+}
+
+.locale-card[aria-selected="true"] {
+    border-color: var(--brand-primary);
+    box-shadow: 0 0 0 0.2rem var(--brand-primary-muted);
+}
+
+.locale-card .locale-label {
+    font-weight: 600;
+    margin-bottom: 0.1rem;
+    font-size: 0.95rem;
+}
+
+.locale-card .locale-code {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    color: var(--text-muted);
+    font-size: 0.8em;
+}
+
+.locale-card .coverage-bar {
+    height: 4px;
+    background: var(--surface-light);
+    border-radius: 2px;
+    margin: 0.5rem 0 0.4rem;
+    overflow: hidden;
+}
+
+.locale-card .coverage-bar > span {
+    display: block;
+    height: 100%;
+    background: var(--brand-primary);
+    transition: width 160ms ease;
+}
+
+.locale-card.coverage-complete .coverage-bar > span { background: var(--status-success); }
+.locale-card.coverage-empty    .coverage-bar > span { background: var(--status-error); }
+.locale-card.coverage-partial  .coverage-bar > span { background: var(--status-warning); }
+
+.locale-card .coverage-text {
+    font-size: 0.8em;
+    color: var(--text-secondary);
+}
+
+.locale-cards-editor {
+    margin-top: 0.25rem;
+}
+
+.locale-cards-fields {
+    margin-top: 0.5rem;
+}
+
+.locale-cards-fields .lc-field {
+    margin-bottom: 0.9rem;
+}
+
+.locale-cards-fields label {
+    display: block;
+    font-weight: 600;
+    margin-bottom: 0.25rem;
+    font-size: 0.9rem;
+}
+
+.locale-cards-fields input[type="text"],
+.locale-cards-fields textarea {
+    width: 100%;
+    padding: 0.5rem 0.6rem;
+    border: 1px solid var(--surface-border);
+    border-radius: 0.25rem;
+    font: inherit;
+    background: var(--surface-dark);
+    color: inherit;
+    box-sizing: border-box;
+}
+
+.locale-cards-fields textarea {
+    min-height: 8rem;
+    resize: vertical;
+}
+
+.locale-cards-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-top: 0.5rem;
+}
+
+.locale-cards-status {
+    font-size: 0.85em;
+    color: var(--text-secondary);
+    min-height: 1em;
+}
+
+.locale-cards-status.is-error {
+    color: var(--status-error);
+}
+
+.locale-cards-status.is-success {
+    color: var(--status-success);
+}
+
+/* Required-field asterisk inside locale-card field labels. */
+.locale-cards-fields .lc-required {
+    color: var(--status-error);
+}
+
+/**
+ * Coverage badge — compact 3-dot indicator on list-view rows. Rendered by
+ * the events/projects tables; each dot represents fi_FI, en_GB, sw_TZ in
+ * that order. Colors mirror the locale-card coverage states.
+ */
+.coverage-badge {
+    display: inline-flex;
+    gap: 3px;
+    align-items: center;
+}
+
+.coverage-dot {
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    background: var(--surface-lighter);
+    display: inline-block;
+}
+
+.coverage-dot.complete { background: var(--status-success); }
+.coverage-dot.partial  { background: var(--status-warning); }
+.coverage-dot.empty    { background: var(--status-error); }

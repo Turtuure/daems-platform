@@ -1,0 +1,122 @@
+.settings-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    gap: 1rem;
+}
+
+.settings-admin .card__title {
+    font-size: 1.05rem;
+    margin: 0 0 .75rem;
+    display: flex;
+    align-items: center;
+    gap: .5rem;
+}
+
+.settings-admin .card__title i {
+    color: var(--text-secondary);
+}
+
+.settings-dl {
+    margin: 0;
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: .4rem 1rem;
+    font-size: .9rem;
+}
+
+.settings-dl dt {
+    color: var(--text-secondary);
+    font-weight: 500;
+}
+
+.settings-dl dd {
+    margin: 0;
+    overflow-wrap: anywhere;
+}
+
+.settings-dl code {
+    font-size: .8rem;
+    background: var(--surface-light);
+    padding: 1px 6px;
+    border-radius: 4px;
+}
+
+.settings-actions {
+    margin-top: 1rem;
+    display: flex;
+    gap: .5rem;
+}
+
+.settings-pill {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-size: .7rem;
+    font-weight: 600;
+    letter-spacing: .03em;
+    text-transform: uppercase;
+}
+.settings-pill--gsa    { background: var(--status-warning-subtle); color: var(--status-warning); }
+.settings-pill--muted  { background: var(--surface-light);         color: var(--text-secondary); }
+.settings-pill--ok     { background: var(--status-success-subtle); color: var(--status-success); }
+
+/* Inline form-help text (used by membership-card form + display preferences). */
+.settings-help {
+    margin: 0 0 .5rem;
+    font-size: .85rem;
+    color: var(--text-secondary);
+    line-height: 1.4;
+}
+
+/* Preference row: label/desc on the left, control on the right. */
+.settings-pref-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    margin-top: .5rem;
+    padding-top: .75rem;
+    border-top: 1px solid var(--surface-border);
+}
+.settings-pref-row__label {
+    font-weight: var(--weight-semibold);
+    font-size: .9rem;
+    color: var(--text-primary);
+}
+
+/* Segmented toggle (e.g. 12h / 24h). */
+.settings-seg {
+    display: inline-flex;
+    background: var(--surface-medium);
+    border: 1px solid var(--surface-border);
+    border-radius: var(--radius-md);
+    padding: 3px;
+    flex-shrink: 0;
+}
+.settings-seg-btn {
+    background: transparent;
+    border: none;
+    color: var(--text-secondary);
+    font-size: 12px;
+    font-weight: var(--weight-semibold);
+    padding: 6px 14px;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    transition: background-color var(--transition-fast),
+                color var(--transition-fast);
+}
+.settings-seg-btn:hover { color: var(--text-primary); }
+.settings-seg-btn.is-active {
+    background: var(--brand-primary);
+    color: #fff;
+}
+
+.settings-soon {
+    opacity: .85;
+}
+.settings-soon .settings-coming {
+    margin: 0;
+    color: var(--text-secondary);
+    font-size: .85rem;
+    font-style: italic;
+}

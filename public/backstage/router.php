@@ -2,9 +2,19 @@
 declare(strict_types=1);
 
 require __DIR__ . '/_guard.php';
+require_once __DIR__ . '/pages/_shared.php';
 
-http_response_code(200);
-echo '<!doctype html><meta charset=utf-8><title>Backstage (WIP)</title>';
-echo '<h1>Authenticated backstage scaffold</h1>';
-echo '<p>User: ' . htmlspecialchars((string) ($_SESSION['user']['name'] ?? '?'), ENT_QUOTES) . '</p>';
-echo '<p>URI: ' . htmlspecialchars((string) ($_SERVER['REQUEST_URI'] ?? '/'), ENT_QUOTES) . '</p>';
+$uri = strtok(rawurldecode((string) ($_SERVER['REQUEST_URI'] ?? '/')), '?');
+$sub = rtrim($uri === '/backstage' ? '' : substr($uri, 10), '/');
+
+$map = [
+    '' => __DIR__ . '/pages/index.php',
+];
+
+if (isset($map[$sub]) && is_file($map[$sub])) {
+    require $map[$sub];
+    exit;
+}
+
+http_response_code(404);
+echo 'Not found';

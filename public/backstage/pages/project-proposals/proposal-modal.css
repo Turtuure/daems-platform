@@ -1,0 +1,35 @@
+/**
+ * Project-proposals review modal — layered on top of the event-proposals
+ * modal stylesheet (loaded first). Only project-specific overrides live
+ * here; status pills and locale badges are shared.
+ */
+
+.pp-review-body dt {
+    font-weight: 600;
+    color: var(--text-secondary);
+    font-size: 0.82em;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    margin-top: 0.6rem;
+}
+.pp-review-body dd {
+    margin: 0.15rem 0 0;
+    white-space: pre-wrap;
+}
+
+.pp-review-notice {
+    margin-top: 1rem;
+    padding: 0.6rem 0.75rem;
+    background: var(--status-warning-subtle);
+    border: 1px solid var(--status-warning);
+    border-radius: 0.25rem;
+    font-size: 0.9em;
+    color: var(--text-primary);
+}
+
+.pp-review-notice code {
+    background: var(--surface-dark);
+    padding: 1px 4px;
+    border-radius: 3px;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
