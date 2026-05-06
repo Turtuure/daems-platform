@@ -13,6 +13,10 @@ $map = [
     '/api/backstage/notifications'   => __DIR__ . '/api/notifications.php',
     '/api/backstage/search'          => __DIR__ . '/api/search.php',
     '/api/backstage/dismiss'         => __DIR__ . '/api/dismiss.php',
+    '/api/backstage/events'          => __DIR__ . '/api/events.php',
+    '/api/backstage/projects'        => __DIR__ . '/api/projects.php',
+    '/api/backstage/proposals'       => __DIR__ . '/api/proposals.php',
+    '/api/backstage/event-upload'    => __DIR__ . '/api/event-upload.php',
     // Wave-D additions append below as proxies migrate.
 ];
 
