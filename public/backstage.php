@@ -35,6 +35,44 @@ if (php_sapi_name() === 'cli-server') {
     }
 }
 
+// modules/shared/* → /modules-shared/* (DatePicker, TimePicker, KpiCard, etc.)
+if (str_starts_with($uri, '/modules-shared/')) {
+    $rel = substr($uri, strlen('/modules-shared/'));
+    $base = realpath(dirname(__DIR__, 2) . '/modules/shared');
+    $file = $base !== false ? realpath($base . '/' . $rel) : false;
+    if ($base !== false && $file !== false && str_starts_with($file, $base) && is_file($file)) {
+        $ext  = strtolower(pathinfo($file, PATHINFO_EXTENSION));
+        $mime = ['css' => 'text/css', 'js' => 'application/javascript', 'svg' => 'image/svg+xml',
+                 'png' => 'image/png', 'json' => 'application/json'][$ext] ?? 'application/octet-stream';
+        header('Content-Type: ' . $mime . '; charset=utf-8');
+        header('Cache-Control: public, max-age=3600');
+        readfile($file);
+        exit;
+    }
+    http_response_code(404);
+    exit;
+}
+
+// modules/<name>/frontend/assets/* → /modules/<name>/assets/*
+if (preg_match('#^/modules/([a-z][a-z0-9-]*)/assets/(.+)$#', $uri, $m)) {
+    $module = $m[1];
+    $rel = $m[2];
+    $base = realpath(dirname(__DIR__, 2) . '/modules/' . $module . '/frontend/assets');
+    $file = $base !== false ? realpath($base . '/' . $rel) : false;
+    if ($base !== false && $file !== false && str_starts_with($file, $base) && is_file($file)) {
+        $ext  = strtolower(pathinfo($file, PATHINFO_EXTENSION));
+        $mime = ['css' => 'text/css', 'js' => 'application/javascript', 'svg' => 'image/svg+xml',
+                 'png' => 'image/png', 'jpg' => 'image/jpeg', 'jpeg' => 'image/jpeg',
+                 'json' => 'application/json'][$ext] ?? 'application/octet-stream';
+        header('Content-Type: ' . $mime . '; charset=utf-8');
+        header('Cache-Control: public, max-age=3600');
+        readfile($file);
+        exit;
+    }
+    http_response_code(404);
+    exit;
+}
+
 // Logout
 if ($uri === '/backstage/logout') {
     require __DIR__ . '/backstage/auth/logout.php';

@@ -11,6 +11,8 @@ RewriteRule ^ - [L]
 # Backstage UI + admin proxies → backstage front controller
 RewriteRule ^backstage(/.*)?$ backstage.php [L,QSA]
 RewriteRule ^api/backstage(/.*)?$ backstage.php [L,QSA]
+RewriteRule ^modules-shared(/.*)?$ backstage.php [L,QSA]
+RewriteRule ^modules/[^/]+/assets(/.*)?$ backstage.php [L,QSA]
 
 # Other real directories served directly
 RewriteCond %{REQUEST_FILENAME} -d
