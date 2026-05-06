@@ -19,6 +19,27 @@ define('DAEMS_BACKSTAGE_PUBLIC', __DIR__ . '/backstage');
 // module backstage files like layout.php require paths resolve correctly.
 define('DAEMS_SITE_PUBLIC', __DIR__ . '/backstage');
 
+// Discover modules (filesystem scan of ../../modules/*/module.json) so the
+// backstage router below knows which /backstage/<name>/* URLs to forward
+// into modules/<name>/frontend/backstage/.
+$daemsKnownModules = [];
+$modulesBase = realpath(dirname(__DIR__, 2) . '/modules');
+if ($modulesBase !== false && is_dir($modulesBase)) {
+    foreach ((array) glob($modulesBase . '/*/module.json') as $manifestPath) {
+        if (!is_string($manifestPath)) continue;
+        $data = json_decode((string) file_get_contents($manifestPath), true);
+        if (!is_array($data) || !isset($data['name']) || !is_string($data['name'])) continue;
+        $name = $data['name'];
+        $modDir = dirname($manifestPath);
+        $backstageDir = isset($data['frontend']['backstage_pages'])
+                      ? $modDir . '/' . $data['frontend']['backstage_pages'] : null;
+        $daemsKnownModules[$name] = [
+            'backstage' => $backstageDir !== null ? rtrim($backstageDir, '/\\') : null,
+        ];
+    }
+}
+$GLOBALS['daemsKnownModules'] = $daemsKnownModules;
+
 session_start();
 
 if (class_exists(\Daems\Frontend\I18n::class, false)) {
