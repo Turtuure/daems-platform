@@ -10,8 +10,9 @@ declare(strict_types=1);
  * in the tenant_domains table.
  */
 return [
-    'daem-society.local'   => 'daems',
-    'daems-platform.local' => 'daems',
-    'sahegroup.local'      => 'sahegroup',
-    'localhost'            => 'daems',
+    'daem-society.local'      => 'daems',
+    'daems-platform.local'    => 'daems',
+    'sahegroup.local'         => 'sahegroup',
+    'sahegroup-platform.local' => 'sahegroup',
+    'localhost'               => 'daems',
 ];
