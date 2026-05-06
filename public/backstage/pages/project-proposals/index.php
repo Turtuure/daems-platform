@@ -130,12 +130,12 @@ ob_start();
 
 </div><!-- /.project-proposals-admin -->
 
-<link rel="stylesheet" href="/pages/backstage/event-proposals/proposal-modal.css">
-<link rel="stylesheet" href="/pages/backstage/project-proposals/proposal-modal.css">
+<link rel="stylesheet" href="/modules/events/assets/backstage/proposal-modal.css">
+<link rel="stylesheet" href="/backstage/pages/project-proposals/proposal-modal.css">
 <script>
 window.DAEMS_PROJECT_PROPOSALS = <?= json_encode($proposals, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) ?>;
 </script>
-<script src="/pages/backstage/project-proposals/proposal-modal.js"></script>
+<script src="/backstage/pages/project-proposals/proposal-modal.js"></script>
 
 <?php
 $pageContent = ob_get_clean();
