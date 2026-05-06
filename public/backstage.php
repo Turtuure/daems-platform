@@ -94,6 +94,36 @@ if (preg_match('#^/modules/([a-z][a-z0-9-]*)/assets/(.+)$#', $uri, $m)) {
     exit;
 }
 
+// Static assets under /backstage/assets/* and /backstage/pages/* — explicit
+// passthrough so missing files return 404 instead of falling through to the
+// auth-protected HTML router (which redirects unauth visitors to /backstage/login,
+// surfacing as a confusing 302 on missing fonts/css/js).
+if (preg_match('#^/backstage/(assets|pages)/(.+)$#', $uri, $am)) {
+    $section = $am[1];
+    $rel     = $am[2];
+    $base    = realpath(__DIR__ . '/backstage/' . $section);
+    $file    = $base !== false ? realpath($base . '/' . $rel) : false;
+    if ($base !== false && $file !== false && str_starts_with($file, $base) && is_file($file)) {
+        $ext = strtolower(pathinfo($file, PATHINFO_EXTENSION));
+        // Only known static types — never expose .php pages here.
+        $allowedExt = ['css', 'js', 'svg', 'png', 'jpg', 'jpeg', 'json', 'woff', 'woff2', 'gif', 'webp', 'ico', 'map'];
+        if (in_array($ext, $allowedExt, true)) {
+            $mime = ['css'=>'text/css','js'=>'application/javascript','svg'=>'image/svg+xml',
+                     'png'=>'image/png','jpg'=>'image/jpeg','jpeg'=>'image/jpeg',
+                     'gif'=>'image/gif','webp'=>'image/webp','ico'=>'image/x-icon',
+                     'woff'=>'font/woff','woff2'=>'font/woff2',
+                     'json'=>'application/json','map'=>'application/json'][$ext] ?? 'application/octet-stream';
+            header('Content-Type: ' . $mime . '; charset=utf-8');
+            header('Cache-Control: public, max-age=3600');
+            readfile($file);
+            exit;
+        }
+    }
+    // Missing or disallowed extension → 404 cleanly (NO auth redirect).
+    http_response_code(404);
+    exit;
+}
+
 // Logout
 if ($uri === '/backstage/logout') {
     require __DIR__ . '/backstage/auth/logout.php';
