@@ -7,6 +7,13 @@ if (session_status() === PHP_SESSION_NONE) {
 
 $uri = strtok(rawurldecode((string) ($_SERVER['REQUEST_URI'] ?? '/')), '?');
 
+// Some module-side JS still hits the legacy society URL form
+// `/api/backstage/<resource>.php?op=...`. Strip the `.php` so both forms resolve
+// to the same proxy file post-migration.
+if (str_ends_with($uri, '.php')) {
+    $uri = substr($uri, 0, -4);
+}
+
 $map = [
     '/api/backstage/applications'    => __DIR__ . '/api/applications.php',
     '/api/backstage/members'         => __DIR__ . '/api/members.php',
