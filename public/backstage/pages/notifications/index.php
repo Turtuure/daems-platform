@@ -13,7 +13,7 @@ declare(strict_types=1);
 
 use Daems\Frontend\ApiClient;
 
-$pageTitle   = 'Notifications';
+$pageTitle   = 'backstage.title.notifications';
 $activePage  = 'notifications';
 $breadcrumbs = [];
 

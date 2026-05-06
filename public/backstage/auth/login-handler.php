@@ -2,6 +2,7 @@
 declare(strict_types=1);
 
 use Daems\Frontend\ApiClient;
+use Daems\Frontend\I18n;
 
 $email    = (string) ($_POST['email']    ?? '');
 $password = (string) ($_POST['password'] ?? '');
@@ -19,7 +20,8 @@ if (is_array($payload)) {
 }
 
 if (!is_array($result) || $result['status'] !== 200 || !is_array($user)) {
-    header('Location: /backstage/login?error=' . rawurlencode('Invalid email or password') . '&redirect=' . rawurlencode($redirect));
+    $errorKey = $result['status'] >= 500 ? 'backstage.login.error.internal' : 'backstage.login.error.invalid';
+    header('Location: /backstage/login?error=' . rawurlencode(I18n::t($errorKey)) . '&redirect=' . rawurlencode($redirect));
     exit;
 }
 

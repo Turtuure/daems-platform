@@ -5,8 +5,9 @@
  */
 
 use Daems\Frontend\ApiClient;
+use Daems\Frontend\I18n;
 
-$pageTitle   = 'Dashboard';
+$pageTitle   = 'backstage.title.dashboard';
 $activePage  = 'dashboard';
 $breadcrumbs = [];
 
@@ -36,12 +37,20 @@ $sparklines = [
 
 $memberGrowth = $stats['member_growth'] ?? ['labels' => [], 'series' => []];
 
+// Locale-aware date for the subtitle. IntlDateFormatter understands fi_FI/en_GB/sw_TZ.
+$__locale = I18n::locale();
+$__bcp47  = str_replace('_', '-', $__locale);
+$__dateFmt = class_exists(\IntlDateFormatter::class)
+    ? new \IntlDateFormatter($__bcp47, \IntlDateFormatter::FULL, \IntlDateFormatter::NONE)
+    : null;
+$__today = $__dateFmt !== null ? $__dateFmt->format(time()) : date('l, j F Y');
+
 ob_start();
 ?>
 <div class="page-header">
     <div>
-        <h1 class="page-header__title">Dashboard</h1>
-        <p class="page-header__subtitle">Platform overview — <?= date('l, j F Y') ?></p>
+        <h1 class="page-header__title"><?= I18n::e('backstage.dashboard.title') ?></h1>
+        <p class="page-header__subtitle"><?= htmlspecialchars(I18n::t('backstage.dashboard.subtitle', ['date' => $__today]), ENT_QUOTES, 'UTF-8') ?></p>
     </div>
 </div>
 
@@ -51,7 +60,7 @@ ob_start();
     $cards = [
         [
             'id'     => 'members',
-            'label'  => 'Members',
+            'label'  => I18n::t('backstage.dashboard.card.members'),
             'color'  => 'blue',
             'value'  => $members,
             'change' => $changes['members'],
@@ -60,7 +69,7 @@ ob_start();
         ],
         [
             'id'     => 'applications',
-            'label'  => 'Applications',
+            'label'  => I18n::t('backstage.dashboard.card.applications'),
             'color'  => 'amber',
             'value'  => $applications,
             'change' => $changes['applications'],
@@ -69,7 +78,7 @@ ob_start();
         ],
         [
             'id'     => 'events',
-            'label'  => 'Upcoming events',
+            'label'  => I18n::t('backstage.dashboard.card.events'),
             'color'  => 'green',
             'value'  => $events,
             'change' => $changes['events'],
@@ -78,7 +87,7 @@ ob_start();
         ],
         [
             'id'     => 'projects',
-            'label'  => 'Active projects',
+            'label'  => I18n::t('backstage.dashboard.card.projects'),
             'color'  => 'purple',
             'value'  => $projects,
             'change' => $changes['projects'],
@@ -106,12 +115,12 @@ window.DaemsDashboard = {
     <div class="card">
         <div class="card__body">
             <div class="flex items-center" style="justify-content:space-between;margin-bottom:var(--space-4);">
-                <p class="card__title">Member growth</p>
-                <div class="chart-period-tabs" role="tablist" aria-label="Chart period">
-                    <button class="chart-period-tab is-active" data-period="30d" role="tab" aria-selected="true">30d</button>
-                    <button class="chart-period-tab" data-period="90d" role="tab" aria-selected="false">90d</button>
-                    <button class="chart-period-tab" data-period="1y" role="tab" aria-selected="false">1y</button>
-                    <button class="chart-period-tab" data-period="all" role="tab" aria-selected="false">All</button>
+                <p class="card__title"><?= I18n::e('backstage.dashboard.chart.member_growth') ?></p>
+                <div class="chart-period-tabs" role="tablist" aria-label="<?= I18n::e('backstage.dashboard.chart.period_label') ?>">
+                    <button class="chart-period-tab is-active" data-period="30d" role="tab" aria-selected="true"><?= I18n::e('backstage.dashboard.period.30d') ?></button>
+                    <button class="chart-period-tab" data-period="90d" role="tab" aria-selected="false"><?= I18n::e('backstage.dashboard.period.90d') ?></button>
+                    <button class="chart-period-tab" data-period="1y" role="tab" aria-selected="false"><?= I18n::e('backstage.dashboard.period.1y') ?></button>
+                    <button class="chart-period-tab" data-period="all" role="tab" aria-selected="false"><?= I18n::e('backstage.dashboard.period.all') ?></button>
                 </div>
             </div>
             <div id="chart-member-growth" style="min-height:200px;"></div>
@@ -119,7 +128,7 @@ window.DaemsDashboard = {
     </div>
     <div class="card">
         <div class="card__body">
-            <p class="card__title" style="margin-bottom:var(--space-4);">Platform activity</p>
+            <p class="card__title" style="margin-bottom:var(--space-4);"><?= I18n::e('backstage.dashboard.chart.platform_activity') ?></p>
             <div id="chart-platform-activity" style="min-height:200px;"></div>
         </div>
     </div>

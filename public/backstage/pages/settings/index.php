@@ -13,8 +13,9 @@
 declare(strict_types=1);
 
 use Daems\Frontend\ApiClient;
+use Daems\Frontend\I18n;
 
-$pageTitle   = 'Settings';
+$pageTitle   = 'backstage.title.settings';
 $activePage  = 'settings';
 $breadcrumbs = [];
 
@@ -55,9 +56,10 @@ $tenant = is_array($me['tenant'] ?? null) ? $me['tenant'] : [];
 $roleInTenant = is_string($me['role_in_tenant'] ?? null) ? $me['role_in_tenant'] : null;
 $tokenExpires = is_string($me['token_expires_at'] ?? null) ? $me['token_expires_at'] : null;
 
-$esc = static fn(string $v): string => htmlspecialchars($v, ENT_QUOTES, 'UTF-8');
+$esc   = static fn(string $v): string => htmlspecialchars($v, ENT_QUOTES, 'UTF-8');
+$empty = I18n::t('backstage.common.empty');
 
-$tokenExpiresDisplay = '—';
+$tokenExpiresDisplay = $empty;
 if ($tokenExpires) {
     $ts = strtotime($tokenExpires);
     if ($ts !== false) {
@@ -66,18 +68,18 @@ if ($tokenExpires) {
 }
 
 $roleLabels = [
-    'admin'       => 'Ylläpitäjä',
-    'moderator'   => 'Moderaattori',
-    'member'      => 'Jäsen',
-    'supporter'   => 'Tukijäsen',
-    'registered'  => 'Rekisteröitynyt',
+    'admin'       => I18n::t('backstage.settings.role.admin'),
+    'moderator'   => I18n::t('backstage.settings.role.moderator'),
+    'member'      => I18n::t('backstage.settings.role.member'),
+    'supporter'   => I18n::t('backstage.settings.role.supporter'),
+    'registered'  => I18n::t('backstage.settings.role.registered'),
 ];
 $roleDisplay = $roleInTenant !== null
     ? ($roleLabels[$roleInTenant] ?? ucfirst($roleInTenant))
-    : 'Ei roolia tenantissa';
+    : I18n::t('backstage.settings.role.no_role');
 
 $phpVersion = PHP_VERSION;
-$appEnv = $_ENV['APP_ENV'] ?? 'development';
+$appEnv     = $_ENV['APP_ENV'] ?? 'development';
 $appVersion = 'v1.0.0';
 
 ob_start();
@@ -86,15 +88,15 @@ ob_start();
 
 <div class="page-header">
     <div>
-        <h1 class="page-header__title">Settings</h1>
-        <p class="page-header__subtitle">Tilin, tenantin ja alustan tiedot yhdellä silmäyksellä.</p>
+        <h1 class="page-header__title"><?= I18n::e('backstage.settings.title') ?></h1>
+        <p class="page-header__subtitle"><?= I18n::e('backstage.settings.subtitle') ?></p>
     </div>
 </div>
 
 <?php if ($meError !== null): ?>
 <div class="card" style="border-left:4px solid var(--status-error); margin-bottom:1rem;">
     <div class="card__body">
-        <strong style="color:var(--status-error);">Tietoja ei voitu ladata:</strong>
+        <strong style="color:var(--status-error);"><?= I18n::e('backstage.settings.error.load_failed') ?></strong>
         <code style="font-size:.8rem; display:block; margin-top:.5rem;"><?= $esc($meError) ?></code>
     </div>
 </div>
@@ -105,28 +107,28 @@ ob_start();
     <!-- You -->
     <div class="card">
         <div class="card__body">
-            <h2 class="card__title"><i class="bi bi-person-circle"></i> Sinä</h2>
+            <h2 class="card__title"><i class="bi bi-person-circle"></i> <?= I18n::e('backstage.settings.you.heading') ?></h2>
             <dl class="settings-dl">
-                <dt>Nimi</dt>
-                <dd><?= $esc((string) ($user['name'] ?? '—')) ?></dd>
+                <dt><?= I18n::e('backstage.settings.field.name') ?></dt>
+                <dd><?= $esc((string) ($user['name'] ?? $empty)) ?></dd>
 
-                <dt>Sähköposti</dt>
-                <dd><?= $esc((string) ($user['email'] ?? '—')) ?></dd>
+                <dt><?= I18n::e('backstage.settings.field.email') ?></dt>
+                <dd><?= $esc((string) ($user['email'] ?? $empty)) ?></dd>
 
-                <dt>Rooli</dt>
+                <dt><?= I18n::e('backstage.settings.field.role') ?></dt>
                 <dd>
                     <?php if (!empty($user['is_platform_admin'])): ?>
-                        <span class="settings-pill settings-pill--gsa">Global System Administrator</span>
+                        <span class="settings-pill settings-pill--gsa"><?= I18n::e('backstage.settings.role.gsa_full') ?></span>
                     <?php else: ?>
-                        <span class="settings-pill settings-pill--muted">Tenant-rooli</span>
+                        <span class="settings-pill settings-pill--muted"><?= I18n::e('backstage.settings.pill.muted') ?></span>
                     <?php endif; ?>
                 </dd>
 
-                <dt>Käyttäjä-ID</dt>
-                <dd><code><?= $esc((string) ($user['id'] ?? '—')) ?></code></dd>
+                <dt><?= I18n::e('backstage.settings.field.user_id') ?></dt>
+                <dd><code><?= $esc((string) ($user['id'] ?? $empty)) ?></code></dd>
             </dl>
             <div class="settings-actions">
-                <a href="/profile" class="btn btn--ghost btn--sm">Muokkaa profiilia &rsaquo;</a>
+                <a href="/profile" class="btn btn--ghost btn--sm"><?= I18n::e('backstage.settings.you.edit_profile') ?> &rsaquo;</a>
             </div>
         </div>
     </div>
@@ -134,15 +136,15 @@ ob_start();
     <!-- Tenant -->
     <div class="card">
         <div class="card__body">
-            <h2 class="card__title"><i class="bi bi-building"></i> Tenant</h2>
+            <h2 class="card__title"><i class="bi bi-building"></i> <?= I18n::e('backstage.settings.tenant.heading') ?></h2>
             <dl class="settings-dl">
-                <dt>Nimi</dt>
-                <dd><?= $esc((string) ($tenant['name'] ?? '—')) ?></dd>
+                <dt><?= I18n::e('backstage.settings.field.name') ?></dt>
+                <dd><?= $esc((string) ($tenant['name'] ?? $empty)) ?></dd>
 
-                <dt>Slug</dt>
-                <dd><code><?= $esc((string) ($tenant['slug'] ?? '—')) ?></code></dd>
+                <dt><?= I18n::e('backstage.settings.tenant.field.slug') ?></dt>
+                <dd><code><?= $esc((string) ($tenant['slug'] ?? $empty)) ?></code></dd>
 
-                <dt>Roolisi tenantissa</dt>
+                <dt><?= I18n::e('backstage.settings.tenant.field.your_role') ?></dt>
                 <dd><?= $esc($roleDisplay) ?></dd>
             </dl>
         </div>
@@ -151,15 +153,15 @@ ob_start();
     <!-- Session -->
     <div class="card">
         <div class="card__body">
-            <h2 class="card__title"><i class="bi bi-shield-lock"></i> Sessio</h2>
+            <h2 class="card__title"><i class="bi bi-shield-lock"></i> <?= I18n::e('backstage.settings.session.heading') ?></h2>
             <dl class="settings-dl">
-                <dt>Token vanhenee</dt>
+                <dt><?= I18n::e('backstage.settings.session.token_expires') ?></dt>
                 <dd><?= $esc($tokenExpiresDisplay) ?></dd>
-                <dt>Istunnon tila</dt>
-                <dd><span class="settings-pill settings-pill--ok">Aktiivinen</span></dd>
+                <dt><?= I18n::e('backstage.settings.session.status') ?></dt>
+                <dd><span class="settings-pill settings-pill--ok"><?= I18n::e('backstage.settings.session.status.active') ?></span></dd>
             </dl>
             <div class="settings-actions">
-                <a href="/logout" class="btn btn--ghost btn--sm">Kirjaudu ulos &rsaquo;</a>
+                <a href="/logout" class="btn btn--ghost btn--sm"><?= I18n::e('backstage.settings.session.logout') ?> &rsaquo;</a>
             </div>
         </div>
     </div>
@@ -167,16 +169,16 @@ ob_start();
     <!-- Platform -->
     <div class="card">
         <div class="card__body">
-            <h2 class="card__title"><i class="bi bi-gear"></i> Alusta</h2>
+            <h2 class="card__title"><i class="bi bi-gear"></i> <?= I18n::e('backstage.settings.platform.heading') ?></h2>
             <dl class="settings-dl">
-                <dt>Sovellus</dt>
-                <dd>Daem Society Platform <?= $esc($appVersion) ?></dd>
+                <dt><?= I18n::e('backstage.settings.platform.app') ?></dt>
+                <dd><?= $esc(I18n::t('backstage.settings.platform.app_name', ['version' => $appVersion])) ?></dd>
 
-                <dt>PHP</dt>
+                <dt><?= I18n::e('backstage.settings.platform.php') ?></dt>
                 <dd><?= $esc($phpVersion) ?></dd>
 
-                <dt>Ympäristö</dt>
-                <dd><code><?= $esc($appEnv) ?></code></dd>
+                <dt><?= I18n::e('backstage.settings.platform.env') ?></dt>
+                <dd><code><?= $esc((string) $appEnv) ?></code></dd>
             </dl>
         </div>
     </div>
@@ -184,18 +186,18 @@ ob_start();
     <!-- Membership card — member-number prefix -->
     <div class="card">
         <div class="card__body">
-            <h2 class="card__title"><i class="bi bi-credit-card"></i> Jäsenkortti</h2>
-            <p class="settings-help">Jäsennumeron etuliite jäsenkortilla ja julkisella verifiointisivulla. Jätä tyhjäksi näyttääksesi raa&#8217;an numeron (123).</p>
+            <h2 class="card__title"><i class="bi bi-credit-card"></i> <?= I18n::e('backstage.settings.member_card.heading') ?></h2>
+            <p class="settings-help"><?= I18n::e('backstage.settings.member_card.help') ?></p>
             <form id="settings-form-membership-card" class="settings-form">
                 <label class="settings-field">
-                    <span class="settings-field-label">Jäsennumeron etuliite</span>
+                    <span class="settings-field-label"><?= I18n::e('backstage.settings.member_card.field.prefix') ?></span>
                     <input type="text" id="settings-member-number-prefix" maxlength="20"
                         pattern="[A-Z0-9\-]+"
-                        placeholder="esim. DAEMS"
+                        placeholder="<?= I18n::e('backstage.settings.member_card.placeholder') ?>"
                         value="<?= $esc((string) ($tenant['member_number_prefix'] ?? '')) ?>" />
                 </label>
                 <div class="settings-actions">
-                    <button type="submit" class="btn btn--primary btn--sm">Tallenna</button>
+                    <button type="submit" class="btn btn--primary btn--sm"><?= I18n::e('backstage.settings.member_card.save') ?></button>
                     <span id="settings-membership-card-status" class="settings-status" aria-live="polite"></span>
                 </div>
             </form>
@@ -219,18 +221,18 @@ ob_start();
     ?>
     <div class="card">
         <div class="card__body">
-            <h2 class="card__title"><i class="bi bi-display"></i> Näyttöasetukset</h2>
-            <p class="settings-help">Tallennetaan tietokantaan. Tenantin oletus voi olla yhteinen kaikille; oma valinta yliajaa sen sinun osaltasi.</p>
+            <h2 class="card__title"><i class="bi bi-display"></i> <?= I18n::e('backstage.settings.display.heading') ?></h2>
+            <p class="settings-help"><?= I18n::e('backstage.settings.display.help') ?></p>
 
             <div class="settings-pref-row">
                 <div>
-                    <span class="settings-pref-row__label">Tenantin oletus &mdash; kellojärjestelmä</span>
+                    <span class="settings-pref-row__label"><?= I18n::e('backstage.settings.display.tenant_default_label') ?></span>
                     <p class="settings-help" style="margin:.15rem 0 0;">
-                        Käytetäänkö 12-tuntista (AM/PM) vai 24-tuntista oletusarvoa julkaisuajan valitsijassa.
-                        <?php if (!$__isTenantAdmin): ?><br><em>(Vain ylläpitäjä voi muuttaa.)</em><?php endif; ?>
+                        <?= I18n::e('backstage.settings.display.tenant_default_help') ?>
+                        <?php if (!$__isTenantAdmin): ?><br><em><?= I18n::e('backstage.settings.display.admin_only_note') ?></em><?php endif; ?>
                     </p>
                 </div>
-                <div class="settings-seg<?= $__isTenantAdmin ? '' : ' is-disabled' ?>" id="settings-tenant-time-format" data-current="<?= $__tfTenant ?>" data-can-edit="<?= $__isTenantAdmin ? '1' : '0' ?>" role="tablist" aria-label="Tenant default time format">
+                <div class="settings-seg<?= $__isTenantAdmin ? '' : ' is-disabled' ?>" id="settings-tenant-time-format" data-current="<?= $__tfTenant ?>" data-can-edit="<?= $__isTenantAdmin ? '1' : '0' ?>" role="tablist" aria-label="<?= I18n::e('backstage.settings.display.aria.tenant_seg') ?>">
                     <button type="button" class="settings-seg-btn<?= $__tfTenant === '12' ? ' is-active' : '' ?>" data-value="12" <?= $__isTenantAdmin ? '' : 'disabled' ?>>12h</button>
                     <button type="button" class="settings-seg-btn<?= $__tfTenant === '24' ? ' is-active' : '' ?>" data-value="24" <?= $__isTenantAdmin ? '' : 'disabled' ?>>24h</button>
                 </div>
@@ -238,11 +240,11 @@ ob_start();
 
             <div class="settings-pref-row">
                 <div>
-                    <span class="settings-pref-row__label">Oma valinta</span>
-                    <p class="settings-help" style="margin:.15rem 0 0;">Yliajaa tenantin oletuksen vain sinulla. Valitse "Käytä tenantin oletusta" palauttaaksesi.</p>
+                    <span class="settings-pref-row__label"><?= I18n::e('backstage.settings.display.user_label') ?></span>
+                    <p class="settings-help" style="margin:.15rem 0 0;"><?= I18n::e('backstage.settings.display.user_help') ?></p>
                 </div>
-                <div class="settings-seg" id="settings-user-time-format" data-current="<?= $__tfUser ?? '' ?>" role="tablist" aria-label="My time format">
-                    <button type="button" class="settings-seg-btn<?= $__tfUser === null ? ' is-active' : '' ?>" data-value="">Tenant</button>
+                <div class="settings-seg" id="settings-user-time-format" data-current="<?= $__tfUser ?? '' ?>" role="tablist" aria-label="<?= I18n::e('backstage.settings.display.aria.user_seg') ?>">
+                    <button type="button" class="settings-seg-btn<?= $__tfUser === null ? ' is-active' : '' ?>" data-value=""><?= I18n::e('backstage.settings.display.user_inherit') ?></button>
                     <button type="button" class="settings-seg-btn<?= $__tfUser === '12' ? ' is-active' : '' ?>" data-value="12">12h</button>
                     <button type="button" class="settings-seg-btn<?= $__tfUser === '24' ? ' is-active' : '' ?>" data-value="24">24h</button>
                 </div>
@@ -253,16 +255,16 @@ ob_start();
     <!-- Future: branding -->
     <div class="card settings-soon">
         <div class="card__body">
-            <h2 class="card__title"><i class="bi bi-palette"></i> Brändäys <span class="settings-pill settings-pill--muted">Tulossa</span></h2>
-            <p class="settings-coming">Tenantin logo, pääväri ja sähköpostit määritellään täällä tulevassa päivityksessä.</p>
+            <h2 class="card__title"><i class="bi bi-palette"></i> <?= I18n::e('backstage.settings.branding.heading') ?> <span class="settings-pill settings-pill--muted"><?= I18n::e('backstage.settings.pill.coming_soon') ?></span></h2>
+            <p class="settings-coming"><?= I18n::e('backstage.settings.branding.body') ?></p>
         </div>
     </div>
 
     <!-- Future: notifications -->
     <div class="card settings-soon">
         <div class="card__body">
-            <h2 class="card__title"><i class="bi bi-bell"></i> Ilmoitukset <span class="settings-pill settings-pill--muted">Tulossa</span></h2>
-            <p class="settings-coming">Sähköposti-ilmoitusten asetukset (uudet jäsenhakemukset, foorumi-raportit) per admin.</p>
+            <h2 class="card__title"><i class="bi bi-bell"></i> <?= I18n::e('backstage.settings.notifications.heading') ?> <span class="settings-pill settings-pill--muted"><?= I18n::e('backstage.settings.pill.coming_soon') ?></span></h2>
+            <p class="settings-coming"><?= I18n::e('backstage.settings.notifications.body') ?></p>
         </div>
     </div>
 
@@ -273,7 +275,30 @@ ob_start();
 <link rel="stylesheet" href="/backstage/pages/settings/settings.css">
 
 <script>
+window.DAEMS_SETTINGS_I18N = {
+    saving:       <?= json_encode(I18n::t('backstage.settings.member_card.saving'),  JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?>,
+    saved:        <?= json_encode(I18n::t('backstage.settings.member_card.saved'),   JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?>,
+    toastSaved:   <?= json_encode(I18n::t('backstage.settings.member_card.toast.saved'), JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?>,
+    errorPrefix:  <?= json_encode(I18n::t('backstage.common.error_prefix'),          JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?>,
+    networkError: <?= json_encode(I18n::t('backstage.common.network_error'),         JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?>,
+    genericError: <?= json_encode(I18n::t('backstage.common.generic_error'),         JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?>,
+    toastTenant:  <?= json_encode(I18n::t('backstage.settings.display.toast.tenant_set'),  JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?>,
+    toastInherit: <?= json_encode(I18n::t('backstage.settings.display.toast.user_inherit'), JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?>,
+    toastUserSet: <?= json_encode(I18n::t('backstage.settings.display.toast.user_set'),    JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?>
+};
+</script>
+
+<script>
 (function () {
+    var T = window.DAEMS_SETTINGS_I18N;
+    function fill(template, params) {
+        if (!template) return '';
+        if (!params) return template;
+        return Object.keys(params).reduce(function (s, k) {
+            return s.split('{' + k + '}').join(String(params[k]));
+        }, template);
+    }
+
     var form = document.getElementById('settings-form-membership-card');
     if (!form) return;
     var input  = document.getElementById('settings-member-number-prefix');
@@ -283,7 +308,7 @@ ob_start();
         e.preventDefault();
         var raw = input.value.trim();
         var payload = { member_number_prefix: raw === '' ? null : raw };
-        status.textContent = 'Tallennetaan…';
+        status.textContent = T.saving;
 
         fetch('/api/backstage/tenant-settings', {
             method: 'POST',
@@ -293,14 +318,14 @@ ob_start();
         .then(function (r) { return r.json().then(function (d) { return { ok: r.ok, body: d }; }); })
         .then(function (res) {
             if (res.ok) {
-                status.textContent = 'Tallennettu.';
-                if (window.DAEMS_TOASTS) window.DAEMS_TOASTS.show('Jäsenkortin etuliite tallennettu.', 'success');
+                status.textContent = T.saved;
+                if (window.DAEMS_TOASTS) window.DAEMS_TOASTS.show(T.toastSaved, 'success');
             } else {
-                var msg = (res.body && res.body.error) ? res.body.error : 'virhe';
-                status.textContent = 'Virhe: ' + msg;
+                var msg = (res.body && res.body.error) ? res.body.error : T.genericError;
+                status.textContent = fill(T.errorPrefix, { msg: msg });
             }
         })
-        .catch(function (err) { status.textContent = 'Verkkovirhe: ' + err.message; });
+        .catch(function (err) { status.textContent = fill(T.networkError, { msg: err.message }); });
     });
 })();
 
@@ -310,6 +335,14 @@ ob_start();
 // On success, the meta tag in <head> is also synced so the TimePicker on
 // other pages opened in the same session reflects the new effective value.
 (function () {
+    var T = window.DAEMS_SETTINGS_I18N;
+    function fill(template, params) {
+        if (!template) return '';
+        if (!params) return template;
+        return Object.keys(params).reduce(function (s, k) {
+            return s.split('{' + k + '}').join(String(params[k]));
+        }, template);
+    }
     function paint(seg) {
         var cur = seg.getAttribute('data-current') || '';
         Array.prototype.forEach.call(seg.querySelectorAll('[data-value]'), function (b) {
@@ -335,7 +368,7 @@ ob_start();
             })
             .then(function (r) { return r.json().then(function (d) { return { ok: r.ok, body: d }; }); })
             .then(function (res) {
-                if (!res.ok) throw new Error((res.body && res.body.error) || 'virhe');
+                if (!res.ok) throw new Error((res.body && res.body.error) || T.genericError);
                 tSeg.setAttribute('data-current', fmt);
                 paint(tSeg);
                 syncMeta('daems-time-format-tenant-default', fmt);
@@ -344,10 +377,10 @@ ob_start();
                 if (!userOvr || !userOvr.getAttribute('content')) {
                     syncMeta('daems-time-format', fmt);
                 }
-                if (window.DAEMS_TOASTS) window.DAEMS_TOASTS.show('Tenantin oletus: ' + fmt + 'h', 'success');
+                if (window.DAEMS_TOASTS) window.DAEMS_TOASTS.show(fill(T.toastTenant, { h: fmt }), 'success');
             })
             .catch(function (err) {
-                if (window.DAEMS_TOASTS) window.DAEMS_TOASTS.show('Virhe: ' + err.message, 'error');
+                if (window.DAEMS_TOASTS) window.DAEMS_TOASTS.show(fill(T.errorPrefix, { msg: err.message }), 'error');
             });
         });
     }
@@ -367,7 +400,7 @@ ob_start();
             })
             .then(function (r) { return r.json().then(function (d) { return { ok: r.ok, body: d }; }); })
             .then(function (res) {
-                if (!res.ok) throw new Error((res.body && res.body.error) || 'virhe');
+                if (!res.ok) throw new Error((res.body && res.body.error) || T.genericError);
                 var data = (res.body && res.body.data) || {};
                 uSeg.setAttribute('data-current', fmt);
                 paint(uSeg);
@@ -377,13 +410,13 @@ ob_start();
                 }
                 if (window.DAEMS_TOASTS) {
                     window.DAEMS_TOASTS.show(
-                        fmt === '' ? 'Käytetään tenantin oletusta' : 'Oma valinta: ' + fmt + 'h',
+                        fmt === '' ? T.toastInherit : fill(T.toastUserSet, { h: fmt }),
                         'success'
                     );
                 }
             })
             .catch(function (err) {
-                if (window.DAEMS_TOASTS) window.DAEMS_TOASTS.show('Virhe: ' + err.message, 'error');
+                if (window.DAEMS_TOASTS) window.DAEMS_TOASTS.show(fill(T.errorPrefix, { msg: err.message }), 'error');
             });
         });
     }

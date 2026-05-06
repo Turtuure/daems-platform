@@ -8,7 +8,7 @@ $u = $_SESSION['user'] ?? null;
 $isAdmin = $u && (!empty($u['is_platform_admin']) || in_array(($u['role'] ?? ''), ['admin', 'moderator'], true));
 if (!$isAdmin) { header('Location: /'); exit; }
 
-$pageTitle   = 'Search';
+$pageTitle   = 'backstage.title.search';
 $activePage  = 'search';
 $breadcrumbs = [];
 

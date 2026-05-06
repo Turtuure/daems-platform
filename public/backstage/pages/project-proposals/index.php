@@ -20,12 +20,13 @@
 declare(strict_types=1);
 
 use Daems\Frontend\ApiClient;
+use Daems\Frontend\I18n;
 
-$pageTitle   = 'Project Proposals';
+$pageTitle   = 'backstage.title.project_proposals';
 $activePage  = 'projects';
 $breadcrumbs = [
-    ['label' => 'Projects', 'url' => '/backstage/projects'],
-    ['label' => 'Proposals'],
+    ['label' => I18n::t('backstage.title.projects'),          'url' => '/backstage/projects'],
+    ['label' => I18n::t('backstage.title.project_proposals')],
 ];
 
 $fetchList = static function (string $path): array {
