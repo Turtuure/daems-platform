@@ -1928,4 +1928,31 @@ These are intentionally NOT in this plan. Park them in `docs/superpowers/plans/d
 
 | Date | Wave | Task | Commit | Notes |
 |------|------|------|--------|-------|
-| 2026-05-06 | A | 1 | (this commit) | Branched off dev (8 ahead of origin) in both repos. PHPStan baseline: 0 errors with `--memory-limit=1G` (default 128 MB OOMs on parallel workers; not fixed in this plan). `composer test:all` skipped per documented pre-existing Integration-suite fragility (`docs/superpowers/plans/deferred-items.md`); we re-verify per-suite at wave boundaries instead. |
+| 2026-05-06 | A | 1 | 9e41827 | Branched off dev (8 ahead of origin) in both repos. PHPStan baseline: 0 errors with `--memory-limit=1G` (default 128 MB OOMs on parallel workers). Unit+Integration baseline: 832/832 OK in 18:48. |
+| 2026-05-06 | A | 2 | e4be7e5 | Front controller + .htaccess split. `DirectorySlash Off` to prevent mod_dir 301 from `/backstage`. |
+| 2026-05-06 | A | 3 | 9daf0fd | Daems\Frontend ports + lang/ + PHPStan exclude `src/Frontend/*` (5 mixed-typed errors, no real safety value). |
+| 2026-05-06 | A | 4 | 42b6efa | Role guard. |
+| 2026-05-06 | B | 5 | a3070d9 | Pages tree moved + asset URL rewrites. |
+| 2026-05-06 | B | 6 | 2fca449 | CSS/JS/fonts/brand SVGs into `public/backstage/assets/`. |
+| 2026-05-06 | B | 7 | c587576 | `/modules-shared/*` + `/modules/<n>/assets/*` static passthrough. |
+| 2026-05-06 | B | 8 | (no commit) | Manual smoke deferred to user (no browser available); curl + PHP -l checks pass. |
+| 2026-05-06 | C | 9 | 35c0203 | `/backstage/notifications` wired. |
+| 2026-05-06 | C | 10 | cad2fc0 | `/backstage/search` wired. |
+| 2026-05-06 | C | 11 | 142a8b5 | `/backstage/settings` wired. |
+| 2026-05-06 | C | 12 | 2e9f149 | `/backstage/project-proposals` wired; events-module proposal-modal asset URL fix. |
+| 2026-05-06 | D | 13 | 01bf44d | Login form + POST handler + logout; dev-skip shim removed. |
+| 2026-05-06 | D | 14 | ee6af07 | 5 proxies (applications/members/notifications/search/dismiss) + api-router. |
+| 2026-05-06 | D | 15 | 2eeff0e | 4 proxies (events/projects/proposals/event-upload). |
+| 2026-05-06 | D | 16 | 3e28a77 | 2 proxies (forum/insights). |
+| 2026-05-06 | D | 17 | 1ee3523 | tenant-settings proxy with POST gate. |
+| 2026-05-06 | E | 18 | 5708afb | Module discovery + dispatch in backstage.php; legacy /applications redirect. |
+| 2026-05-06 | E | 19 | events:e495ba6 forum:9ec17c1 insights:aedaaf7 members:c57c0c7 projects:dd76838 | DAEMS_SITE_PUBLIC paths fixed; module-side ApiClient bootstrap → use Daems\Frontend\ApiClient; 3× /pages/errors/404 references inlined. |
+| 2026-05-06 | E | 20 | (no commit) | Manual smoke deferred to user; PHP -l on 50+ files passes. |
+| 2026-05-06 | F | 21 | society:ba6ca2e | Society backstage routes stripped; 301 redirect added. |
+| 2026-05-06 | F | 22 | society:8a2bcc2 | Society backstage files deleted (12 proxy + ~30 page files + 5 backstage CSS/JS). |
+| 2026-05-06 | F | 23 | (no commit) | Audit only: 30 society public files use ApiClient::, 10 use I18n:: — both stay in society. |
+| 2026-05-06 | G | 24 | b5bdd88 | sahegroup-platform.local fallback. |
+| 2026-05-06 | G | 25 | (no commit) | PHPStan 0 errors. Unit+Integration: running at end-of-plan; results in summary. |
+| 2026-05-06 | G | 26 | (no commit) | Manual two-tenant smoke deferred to user. |
+| 2026-05-06 | G | 27 | 6daaaf1 | CLAUDE.md + memory updated. |
+| 2026-05-06 | G | 28 | (awaiting pushaa) | Halted per CLAUDE.md "no auto-push" rule; commit-list ready for review. |
