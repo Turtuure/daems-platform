@@ -433,4 +433,75 @@ return [
 
     'backstage.members.pagination.previous'            => 'Iliyotangulia',
     'backstage.members.pagination.next'                => 'Inayofuata',
+
+    // ── Modules: names + descriptions ────────────────────────────
+    'modules.members.name'        => 'Wanachama',
+    'modules.members.description' => 'Daftari la uanachama wa chama na maombi.',
+    'modules.events.name'         => 'Matukio',
+    'modules.events.description'  => 'Uundaji wa matukio, ratiba, na usajili.',
+    'modules.projects.name'       => 'Miradi',
+    'modules.projects.description'=> 'Ufuatiliaji wa miradi na ushirikiano wa wanachama.',
+    'modules.forum.name'          => 'Jukwaa',
+    'modules.forum.description'   => 'Jukwaa za majadiliano zenye usimamizi.',
+    'modules.insights.name'       => 'Blogu',
+    'modules.insights.description'=> 'Machapisho ya blogu na matangazo ya uhariri.',
+
+    // ── Module categories ────────────────────────────────────────
+    'modules.category.core'       => 'Msingi',
+    'modules.category.members'    => 'Wanachama',
+    'modules.category.community'  => 'Jamii',
+    'modules.category.governance' => 'Utawala',
+    'modules.category.content'    => 'Maudhui',
+
+    // ── Sidebar group labels ─────────────────────────────────────
+    'sidebar.group.shell'         => 'Msingi',
+    'sidebar.group.platform'      => 'Mfumo',
+    'sidebar.group.members'       => 'Wanachama',
+    'sidebar.group.community'     => 'Jamii',
+    'sidebar.group.content'       => 'Maudhui',
+    'sidebar.group.governance'    => 'Utawala',
+
+    // ── Shell items ──────────────────────────────────────────────
+    'shell.dashboard' => 'Dashibodi',
+    'shell.search'    => 'Tafuta',
+    'shell.settings'  => 'Mipangilio',
+
+    // ── Platform / tenant management UI ──────────────────────────
+    'platform.tenants.title'                => 'Wapangaji',
+    'platform.tenants.create'               => 'Mpangaji mpya',
+    'platform.tenants.tab.basics'           => 'Misingi',
+    'platform.tenants.tab.domains'          => 'Vikoa',
+    'platform.tenants.tab.admins'           => 'Wasimamizi',
+    'platform.tenants.tab.modules'          => 'Moduli',
+    'platform.tenants.tab.danger'           => 'Eneo la hatari',
+    'platform.tenants.suspend.confirm'      => 'Thibitisha kusimamishwa kwa mpangaji',
+    'platform.tenants.reactivate.confirm'   => 'Thibitisha kuwasha upya mpangaji',
+    'platform.modules.grant.confirm'        => 'Toa moduli kwa mpangaji',
+    'platform.modules.revoke.confirm'       => 'Ondoa upatikanaji wa moduli',
+    'platform.modules.cascade_warning'      => 'Moduli hizi zilizo wezeshwa zitazimwa:',
+    'platform.modules.requires'             => 'Inahitaji: %s',
+
+    // ── Settings → Modules (tenant-admin UI) ─────────────────────
+    'settings.modules.title'             => 'Moduli',
+    'settings.modules.enabled'           => 'Zinatumika',
+    'settings.modules.available'         => 'Zinapatikana, hazijaamilishwa',
+    'settings.modules.activate'          => 'Amilisha',
+    'settings.modules.deactivate'        => 'Zima',
+    'settings.modules.deps_unmet'        => 'Amilisha kwanza: %s',
+    'settings.modules.dependents_block'  => 'Haiwezi kuzimwa — inahitajika na: %s',
+    'settings.modules.granted_at'        => 'Imetolewa na GSA tarehe: %s',
+
+    // ── Default public site ──────────────────────────────────────
+    'default.home.welcome'     => 'Karibu kwa %s',
+    'default.home.cta_join'    => 'Jiunge nasi',
+    'default.home.cta_login'   => 'Ingia',
+    'default.join.title'       => 'Jiunge: %s',
+    'default.join.intro'       => 'Omba uanachama.',
+    'default.join.field.name'  => 'Jina kamili',
+    'default.join.field.email' => 'Barua pepe',
+    'default.join.submit'      => 'Tuma ombi',
+    'default.join.success'     => 'Ombi lako limetumwa.',
+    'default.suspended.title'  => 'Tovuti haipatikani kwa muda',
+    'default.suspended.body'   => 'Tovuti hii imesimamishwa kwa muda. Tafadhali jaribu tena baadaye.',
+    'default.footer.poweredBy' => 'Inaendeshwa na Daems Platform',
 ];

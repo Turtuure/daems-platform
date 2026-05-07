@@ -429,4 +429,75 @@ return [
 
     'backstage.members.pagination.previous'            => 'Edellinen',
     'backstage.members.pagination.next'                => 'Seuraava',
+
+    // ── Modules: names + descriptions ────────────────────────────
+    'modules.members.name'        => 'Jäsenet',
+    'modules.members.description' => 'Yhdistyksen jäsenrekisteri ja hakemukset.',
+    'modules.events.name'         => 'Tapahtumat',
+    'modules.events.description'  => 'Tapahtumien luonti, aikataulutus ja ilmoittautumiset.',
+    'modules.projects.name'       => 'Projektit',
+    'modules.projects.description'=> 'Projektien seuranta ja jäsenten yhteistyö.',
+    'modules.forum.name'          => 'Foorumi',
+    'modules.forum.description'   => 'Keskustelufoorumit moderoinnilla.',
+    'modules.insights.name'       => 'Blogi',
+    'modules.insights.description'=> 'Toimitukselliset blogikirjoitukset ja tiedotteet.',
+
+    // ── Module categories ────────────────────────────────────────
+    'modules.category.core'       => 'Ydin',
+    'modules.category.members'    => 'Jäsenet',
+    'modules.category.community'  => 'Yhteisö',
+    'modules.category.governance' => 'Hallinto',
+    'modules.category.content'    => 'Sisältö',
+
+    // ── Sidebar group labels ─────────────────────────────────────
+    'sidebar.group.shell'         => 'Perus',
+    'sidebar.group.platform'      => 'Alusta',
+    'sidebar.group.members'       => 'Jäsenet',
+    'sidebar.group.community'     => 'Yhteisö',
+    'sidebar.group.content'       => 'Sisältö',
+    'sidebar.group.governance'    => 'Hallinto',
+
+    // ── Shell items ──────────────────────────────────────────────
+    'shell.dashboard' => 'Hallintapaneeli',
+    'shell.search'    => 'Haku',
+    'shell.settings'  => 'Asetukset',
+
+    // ── Platform / tenant management UI ──────────────────────────
+    'platform.tenants.title'                => 'Tenantit',
+    'platform.tenants.create'               => 'Uusi tenantti',
+    'platform.tenants.tab.basics'           => 'Yleistiedot',
+    'platform.tenants.tab.domains'          => 'Domainit',
+    'platform.tenants.tab.admins'           => 'Adminit',
+    'platform.tenants.tab.modules'          => 'Moduulit',
+    'platform.tenants.tab.danger'           => 'Vaarallinen alue',
+    'platform.tenants.suspend.confirm'      => 'Vahvista tenantin deaktivointi',
+    'platform.tenants.reactivate.confirm'   => 'Vahvista tenantin uudelleenaktivointi',
+    'platform.modules.grant.confirm'        => 'Salli moduuli tenantille',
+    'platform.modules.revoke.confirm'       => 'Peru moduulin saatavuus',
+    'platform.modules.cascade_warning'      => 'Seuraavat aktivoidut moduulit menevät pois käytöstä:',
+    'platform.modules.requires'             => 'Vaatii: %s',
+
+    // ── Settings → Modules (tenant-admin UI) ─────────────────────
+    'settings.modules.title'             => 'Moduulit',
+    'settings.modules.enabled'           => 'Käytössä',
+    'settings.modules.available'         => 'Saatavilla, ei aktivoitu',
+    'settings.modules.activate'          => 'Aktivoi',
+    'settings.modules.deactivate'        => 'Poista käytöstä',
+    'settings.modules.deps_unmet'        => 'Aktivoi ensin: %s',
+    'settings.modules.dependents_block'  => 'Ei voida poistaa — edellytys moduulille: %s',
+    'settings.modules.granted_at'        => 'GSA:n sallima: %s',
+
+    // ── Default public site ──────────────────────────────────────
+    'default.home.welcome'     => 'Tervetuloa, %s',
+    'default.home.cta_join'    => 'Liity meihin',
+    'default.home.cta_login'   => 'Kirjaudu sisään',
+    'default.join.title'       => 'Liity: %s',
+    'default.join.intro'       => 'Hae jäsenyyttä.',
+    'default.join.field.name'  => 'Koko nimi',
+    'default.join.field.email' => 'Sähköposti',
+    'default.join.submit'      => 'Lähetä hakemus',
+    'default.join.success'     => 'Hakemuksesi on lähetetty.',
+    'default.suspended.title'  => 'Sivusto tilapäisesti pois käytöstä',
+    'default.suspended.body'   => 'Tämä sivusto on tilapäisesti deaktivoitu. Yritä myöhemmin uudelleen.',
+    'default.footer.poweredBy' => 'Toteutettu Daems Platformilla',
 ];

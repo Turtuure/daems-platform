@@ -429,4 +429,75 @@ return [
 
     'backstage.members.pagination.previous'            => 'Previous',
     'backstage.members.pagination.next'                => 'Next',
+
+    // ── Modules: names + descriptions ────────────────────────────
+    'modules.members.name'        => 'Members',
+    'modules.members.description' => 'Association membership registry and applications.',
+    'modules.events.name'         => 'Events',
+    'modules.events.description'  => 'Event creation, scheduling, and registration.',
+    'modules.projects.name'       => 'Projects',
+    'modules.projects.description'=> 'Project tracking and member collaboration.',
+    'modules.forum.name'          => 'Forum',
+    'modules.forum.description'   => 'Discussion forums with moderation.',
+    'modules.insights.name'       => 'Blog',
+    'modules.insights.description'=> 'Editorial blog posts and announcements.',
+
+    // ── Module categories ────────────────────────────────────────
+    'modules.category.core'       => 'Core',
+    'modules.category.members'    => 'Members',
+    'modules.category.community'  => 'Community',
+    'modules.category.governance' => 'Governance',
+    'modules.category.content'    => 'Content',
+
+    // ── Sidebar group labels ─────────────────────────────────────
+    'sidebar.group.shell'         => 'Shell',
+    'sidebar.group.platform'      => 'Platform',
+    'sidebar.group.members'       => 'Members',
+    'sidebar.group.community'     => 'Community',
+    'sidebar.group.content'       => 'Content',
+    'sidebar.group.governance'    => 'Governance',
+
+    // ── Shell items ──────────────────────────────────────────────
+    'shell.dashboard' => 'Dashboard',
+    'shell.search'    => 'Search',
+    'shell.settings'  => 'Settings',
+
+    // ── Platform / tenant management UI ──────────────────────────
+    'platform.tenants.title'                => 'Tenants',
+    'platform.tenants.create'               => 'New tenant',
+    'platform.tenants.tab.basics'           => 'Basics',
+    'platform.tenants.tab.domains'          => 'Domains',
+    'platform.tenants.tab.admins'           => 'Admins',
+    'platform.tenants.tab.modules'          => 'Modules',
+    'platform.tenants.tab.danger'           => 'Danger zone',
+    'platform.tenants.suspend.confirm'      => 'Confirm tenant suspension',
+    'platform.tenants.reactivate.confirm'   => 'Confirm tenant reactivation',
+    'platform.modules.grant.confirm'        => 'Grant module to tenant',
+    'platform.modules.revoke.confirm'       => 'Revoke module availability',
+    'platform.modules.cascade_warning'      => 'These currently-enabled modules will be disabled:',
+    'platform.modules.requires'             => 'Requires: %s',
+
+    // ── Settings → Modules (tenant-admin UI) ─────────────────────
+    'settings.modules.title'             => 'Modules',
+    'settings.modules.enabled'           => 'In use',
+    'settings.modules.available'         => 'Available, not activated',
+    'settings.modules.activate'          => 'Activate',
+    'settings.modules.deactivate'        => 'Deactivate',
+    'settings.modules.deps_unmet'        => 'Activate first: %s',
+    'settings.modules.dependents_block'  => 'Cannot disable — required by: %s',
+    'settings.modules.granted_at'        => 'Granted by GSA at %s',
+
+    // ── Default public site ──────────────────────────────────────
+    'default.home.welcome'     => 'Welcome to %s',
+    'default.home.cta_join'    => 'Join us',
+    'default.home.cta_login'   => 'Sign in',
+    'default.join.title'       => 'Join %s',
+    'default.join.intro'       => 'Apply for membership.',
+    'default.join.field.name'  => 'Full name',
+    'default.join.field.email' => 'Email',
+    'default.join.submit'      => 'Submit application',
+    'default.join.success'     => 'Your application has been submitted.',
+    'default.suspended.title'  => 'Site temporarily unavailable',
+    'default.suspended.body'   => 'This site is temporarily suspended. Please check back later.',
+    'default.footer.poweredBy' => 'Powered by Daems Platform',
 ];
