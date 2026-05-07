@@ -153,7 +153,11 @@ return [
     'backstage.layout.user.frontend'                   => 'Daems Frontend',
     'backstage.layout.user.view_as'                    => 'View as…',
     'backstage.layout.user.exit_view_as'               => 'Exit view as',
+    'backstage.layout.user.language'                   => 'Language',
     'backstage.layout.user.logout'                     => 'Log out',
+    'locale.fi_FI'                                     => 'Finnish',
+    'locale.en_GB'                                     => 'English',
+    'locale.sw_TZ'                                     => 'Swahili',
     'backstage.layout.user.role.gsa_short'             => 'GSA',
     'backstage.layout.user.role.gsa_full'              => 'Global System Administrator',
     'backstage.layout.user.role.admin_short'           => 'Admin',
@@ -439,8 +443,8 @@ return [
     'modules.projects.description'=> 'Project tracking and member collaboration.',
     'modules.forum.name'          => 'Forum',
     'modules.forum.description'   => 'Discussion forums with moderation.',
-    'modules.insights.name'       => 'Blog',
-    'modules.insights.description'=> 'Editorial blog posts and announcements.',
+    'modules.insights.name'       => 'Insights',
+    'modules.insights.description'=> 'Editorial articles and announcements.',
 
     // ── Module categories ────────────────────────────────────────
     'modules.category.core'       => 'Core',

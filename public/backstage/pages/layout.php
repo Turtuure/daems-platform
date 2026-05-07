@@ -543,6 +543,27 @@ $__renderIcon = static function (string $name) use ($__sidebarIcons): string {
                     <?php endif; ?>
                     <?php endif; ?>
                     <div class="user-dropdown__divider"></div>
+                    <span class="user-dropdown__item user-dropdown__item--section-label" role="menuitem" aria-disabled="true">
+                        <?= I18n::e('backstage.layout.user.language') ?>
+                    </span>
+                    <?php
+                    $__currentLocale = \Daems\Frontend\I18n::locale();
+                    $__currentPath = parse_url((string) ($_SERVER['REQUEST_URI'] ?? '/'), PHP_URL_PATH) ?: '/';
+                    $__qsBase = $_GET;
+                    foreach (\Daems\Frontend\I18n::SUPPORTED as $__loc):
+                        $__qsBase['lang'] = $__loc;
+                        $__langUrl = $__currentPath . '?' . http_build_query($__qsBase);
+                    ?>
+                    <a href="<?= htmlspecialchars($__langUrl, ENT_QUOTES, 'UTF-8') ?>" class="user-dropdown__item" role="menuitem">
+                        <?php if ($__loc === $__currentLocale): ?>
+                            <i class="bi bi-check2 me-2" aria-hidden="true"></i>
+                        <?php else: ?>
+                            <i class="bi bi-translate me-2 opacity-50" aria-hidden="true"></i>
+                        <?php endif; ?>
+                        <?= I18n::e('locale.' . $__loc) ?>
+                    </a>
+                    <?php endforeach; ?>
+                    <div class="user-dropdown__divider"></div>
                     <a href="/backstage/logout" class="user-dropdown__item user-dropdown__item--danger" role="menuitem">
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
                             <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
