@@ -46,6 +46,17 @@ final class SqlUserTenantRepository implements UserTenantRepositoryInterface
         $stmt->execute([$userId->value(), $tenantId->value()]);
     }
 
+    public function countAdminsForTenant(TenantId $tenantId): int
+    {
+        $stmt = $this->pdo->prepare(
+            'SELECT COUNT(*) FROM user_tenants
+             WHERE tenant_id = ? AND role = ? AND left_at IS NULL'
+        );
+        $stmt->execute([$tenantId->value(), UserTenantRole::Admin->value]);
+        $val = $stmt->fetchColumn();
+        return is_numeric($val) ? (int) $val : 0;
+    }
+
     public function markAllLeftForUser(string $userId, \DateTimeImmutable $now): void
     {
         $stmt = $this->pdo->prepare(

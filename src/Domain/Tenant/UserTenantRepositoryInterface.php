@@ -23,6 +23,12 @@ interface UserTenantRepositoryInterface
     public function markAllLeftForUser(string $userId, \DateTimeImmutable $now): void;
 
     /**
+     * Count of users with role=admin for the given tenant. Used by the GSA
+     * ListTenants read model so the UI can show "X admins" per tenant card.
+     */
+    public function countAdminsForTenant(TenantId $tenantId): int;
+
+    /**
      * Aggregate membership stats for the backstage Members dashboard.
      *
      * Each KPI returns a value (full-history total) plus a 30-entry zero-filled

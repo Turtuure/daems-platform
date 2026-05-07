@@ -49,6 +49,18 @@ final class InMemoryUserTenantRepository implements UserTenantRepositoryInterfac
         return $stored !== null && $stored->value === $role;
     }
 
+    public function countAdminsForTenant(TenantId $tenantId): int
+    {
+        $count = 0;
+        $tenantSuffix = ':' . $tenantId->value();
+        foreach ($this->roles as $key => $role) {
+            if (str_ends_with($key, $tenantSuffix) && $role === UserTenantRole::Admin) {
+                $count++;
+            }
+        }
+        return $count;
+    }
+
     public function markAllLeftForUser(string $userId, \DateTimeImmutable $now): void
     {
         // In the in-memory fake, we remove active memberships for the user
