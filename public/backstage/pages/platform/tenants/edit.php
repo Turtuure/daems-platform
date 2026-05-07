@@ -257,7 +257,41 @@ ob_start();
         </div>
     </div>
 </template>
-<template id="tab-tpl-danger"><div class="tenant-tab-placeholder">Danger zone coming in H7.</div></template>
+<template id="tab-tpl-danger">
+    <!-- Suspend card (only shown when active) -->
+    <div class="tenant-danger-card tenant-danger-card--suspend" id="td-suspend-card" hidden>
+        <h3>Suspend tenant</h3>
+        <p>
+            Suspending blocks tenant logins, hides the public site, and
+            preserves all data. The tenant can be reactivated later.
+        </p>
+        <form id="td-suspend-form" class="tenant-form">
+            <div class="tenant-form__row">
+                <label for="td-suspend-reason">Reason *</label>
+                <textarea id="td-suspend-reason" name="reason" rows="3" required
+                    placeholder="Why is this tenant being suspended?"></textarea>
+            </div>
+            <div class="tenant-form__actions">
+                <button type="submit" class="btn btn--primary">Suspend</button>
+            </div>
+        </form>
+    </div>
+
+    <!-- Reactivate card (only shown when suspended) -->
+    <div class="tenant-danger-card tenant-danger-card--reactivate" id="td-reactivate-card" hidden>
+        <h3>Reactivate tenant</h3>
+        <p id="td-reactivate-reason-line">This tenant is currently suspended.</p>
+        <div class="tenant-form__actions">
+            <button type="button" class="btn btn--primary" id="td-reactivate-btn">Reactivate</button>
+        </div>
+    </div>
+
+    <!-- Hard-delete (out of scope) -->
+    <div class="tenant-danger-card tenant-danger-card--info">
+        <h3>Hard-delete tenant</h3>
+        <p>Future feature: GDPR-compliant tenant deletion (out of scope).</p>
+    </div>
+</template>
 
 <script>
 window.DAEMS_TENANT_EDIT = {

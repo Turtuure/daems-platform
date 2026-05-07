@@ -577,6 +577,74 @@
         }
     };
 
+    // -----------------------------------------------------------------------
+    // H7 — Danger zone tab
+    // -----------------------------------------------------------------------
+    window.DaemsTenantTabs.danger = {
+        load: function (host, tenant) {
+            var id = window.DAEMS_TENANT_EDIT.tenantId;
+            var t = tenant || window.DAEMS_TENANT_EDIT.tenant || {};
+            var status = String(t.status || '').toLowerCase();
+
+            var suspendCard    = host.querySelector('#td-suspend-card');
+            var reactivateCard = host.querySelector('#td-reactivate-card');
+            var reasonLine     = host.querySelector('#td-reactivate-reason-line');
+
+            if (status === 'suspended') {
+                suspendCard.hidden    = true;
+                reactivateCard.hidden = false;
+                if (t.suspendedReason && reasonLine) {
+                    reasonLine.textContent = 'Suspended: ' + t.suspendedReason;
+                }
+            } else {
+                suspendCard.hidden    = false;
+                reactivateCard.hidden = true;
+            }
+
+            var suspendForm  = host.querySelector('#td-suspend-form');
+            var reactivateBtn = host.querySelector('#td-reactivate-btn');
+
+            suspendForm.addEventListener('submit', function (e) {
+                e.preventDefault();
+                var reason = String(host.querySelector('#td-suspend-reason').value || '').trim();
+                if (!reason) { toast('Reason is required.', 'error'); return; }
+                if (!confirm('Suspend this tenant? Logins and the public site will be blocked.')) return;
+                fetch(PROXY + '?op=suspend&id=' + encodeURIComponent(id), {
+                    method:  'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body:    JSON.stringify({ reason: reason })
+                })
+                    .then(function (r) { return r.text().then(function (t) { var b = {}; try { b = t ? JSON.parse(t) : {}; } catch (_) {} return { ok: r.ok, body: b, status: r.status }; }); })
+                    .then(function (res) {
+                        if (!res.ok) { toast('Suspend failed: ' + ((res.body && res.body.error) || res.status), 'error'); return; }
+                        toast('Tenant suspended.', 'success');
+                        if (window.DaemsTenantEdit && window.DaemsTenantEdit.reloadHeader) {
+                            window.DaemsTenantEdit.reloadHeader().then(function () {
+                                window.DaemsTenantEdit.reloadActiveTab();
+                            });
+                        }
+                    })
+                    .catch(function (e) { toast('Suspend failed: ' + e.message, 'error'); });
+            });
+
+            reactivateBtn.addEventListener('click', function () {
+                if (!confirm('Reactivate this tenant?')) return;
+                fetch(PROXY + '?op=reactivate&id=' + encodeURIComponent(id), { method: 'POST' })
+                    .then(function (r) { return r.text().then(function (t) { var b = {}; try { b = t ? JSON.parse(t) : {}; } catch (_) {} return { ok: r.ok, body: b, status: r.status }; }); })
+                    .then(function (res) {
+                        if (!res.ok) { toast('Reactivate failed: ' + ((res.body && res.body.error) || res.status), 'error'); return; }
+                        toast('Tenant reactivated.', 'success');
+                        if (window.DaemsTenantEdit && window.DaemsTenantEdit.reloadHeader) {
+                            window.DaemsTenantEdit.reloadHeader().then(function () {
+                                window.DaemsTenantEdit.reloadActiveTab();
+                            });
+                        }
+                    })
+                    .catch(function (e) { toast('Reactivate failed: ' + e.message, 'error'); });
+            });
+        }
+    };
+
     if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', init);
     } else {
