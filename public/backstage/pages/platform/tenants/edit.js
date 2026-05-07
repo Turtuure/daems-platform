@@ -239,6 +239,132 @@
             .finally(function () { if (btn) btn.disabled = false; });
     }
 
+    // -----------------------------------------------------------------------
+    // H4 — Domains tab
+    // -----------------------------------------------------------------------
+    window.DaemsTenantTabs.domains = {
+        load: function (host /* , tenant */) {
+            var id = window.DAEMS_TENANT_EDIT.tenantId;
+            var tbody    = host.querySelector('#td-tbody');
+            var table    = host.querySelector('#td-table');
+            var statusEl = host.querySelector('#td-status');
+            var addBtn   = host.querySelector('#td-add-btn');
+            var modal    = host.querySelector('#td-add-modal');
+            var form     = host.querySelector('#td-add-form');
+            var errEl    = host.querySelector('#td-add-error');
+
+            function loadList() {
+                statusEl.textContent = 'Loading…';
+                fetch(PROXY + '?op=domains.list&id=' + encodeURIComponent(id))
+                    .then(function (r) { return r.json().then(function (b) { return { ok: r.ok, body: b }; }); })
+                    .then(function (res) {
+                        if (!res.ok) throw new Error((res.body && res.body.error) || 'Load failed');
+                        var rows = (res.body && res.body.data && res.body.data.domains) || [];
+                        if (rows.length === 0) {
+                            statusEl.textContent = 'No domains yet.';
+                            table.hidden = true;
+                            return;
+                        }
+                        statusEl.textContent = '';
+                        table.hidden = false;
+                        var primaryCount = rows.reduce(function (n, r) { return n + (r.isPrimary ? 1 : 0); }, 0);
+                        tbody.innerHTML = rows.map(function (d) {
+                            var isOnlyPrimary = d.isPrimary && primaryCount === 1;
+                            var hostEnc = encodeURIComponent(d.hostname);
+                            return '' +
+                                '<tr data-host="' + escapeHtml(hostEnc) + '">' +
+                                    '<td><code>' + escapeHtml(d.hostname) + '</code></td>' +
+                                    '<td>' + (d.isPrimary
+                                        ? '<span class="tenants-pill tenants-pill--active">Primary</span>'
+                                        : '<button type="button" class="btn btn--ghost btn--sm" data-action="set-primary">Make primary</button>') + '</td>' +
+                                    '<td>' + escapeHtml(d.createdAt || '—') + '</td>' +
+                                    '<td><button type="button" class="btn btn--ghost btn--sm" data-action="remove"' +
+                                        (isOnlyPrimary ? ' disabled title="Cannot remove the only primary domain"' : '') +
+                                    '>Remove</button></td>' +
+                                '</tr>';
+                        }).join('');
+                    })
+                    .catch(function (err) {
+                        statusEl.textContent = 'Error: ' + err.message;
+                        toast('Domains load failed: ' + err.message, 'error');
+                    });
+            }
+
+            // Row actions (event delegation)
+            tbody.addEventListener('click', function (e) {
+                var btn = e.target.closest && e.target.closest('button[data-action]');
+                if (!btn) return;
+                var row = btn.closest('tr[data-host]');
+                if (!row) return;
+                var host = decodeURIComponent(row.getAttribute('data-host'));
+                var action = btn.getAttribute('data-action');
+
+                if (action === 'remove') {
+                    if (!confirm('Remove ' + host + '?')) return;
+                    fetch(PROXY + '?op=domains.remove&id=' + encodeURIComponent(id) + '&did=' + encodeURIComponent(host), { method: 'POST' })
+                        .then(function (r) { return r.text().then(function (t) { var b = {}; try { b = t ? JSON.parse(t) : {}; } catch (_) {} return { ok: r.ok, body: b, status: r.status }; }); })
+                        .then(function (res) {
+                            if (!res.ok) { toast('Remove failed: ' + ((res.body && res.body.error) || res.status), 'error'); return; }
+                            toast('Domain removed.', 'success');
+                            loadList();
+                        })
+                        .catch(function (e) { toast('Remove failed: ' + e.message, 'error'); });
+                } else if (action === 'set-primary') {
+                    fetch(PROXY + '?op=domains.update&id=' + encodeURIComponent(id) + '&did=' + encodeURIComponent(host), {
+                        method:  'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body:    JSON.stringify({ isPrimary: true })
+                    })
+                        .then(function (r) { return r.text().then(function (t) { var b = {}; try { b = t ? JSON.parse(t) : {}; } catch (_) {} return { ok: r.ok, body: b, status: r.status }; }); })
+                        .then(function (res) {
+                            if (!res.ok) { toast('Update failed: ' + ((res.body && res.body.error) || res.status), 'error'); return; }
+                            toast('Primary updated.', 'success');
+                            loadList();
+                        })
+                        .catch(function (e) { toast('Update failed: ' + e.message, 'error'); });
+                }
+            });
+
+            // Add modal
+            addBtn.addEventListener('click', function () { modal.hidden = false; });
+            modal.addEventListener('click', function (e) {
+                if (e.target.matches('[data-close]')) {
+                    modal.hidden = true;
+                    if (errEl) errEl.textContent = '';
+                    if (form) form.reset();
+                }
+            });
+            form.addEventListener('submit', function (e) {
+                e.preventDefault();
+                var fd = new FormData(form);
+                var payload = {
+                    hostname:  String(fd.get('hostname') || '').trim(),
+                    isPrimary: fd.get('isPrimary') ? true : false
+                };
+                if (errEl) errEl.textContent = '';
+                fetch(PROXY + '?op=domains.add&id=' + encodeURIComponent(id), {
+                    method:  'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body:    JSON.stringify(payload)
+                })
+                    .then(function (r) { return r.text().then(function (t) { var b = {}; try { b = t ? JSON.parse(t) : {}; } catch (_) {} return { ok: r.ok, body: b, status: r.status }; }); })
+                    .then(function (res) {
+                        if (!res.ok) {
+                            if (errEl) errEl.textContent = (res.body && res.body.error) || ('HTTP ' + res.status);
+                            return;
+                        }
+                        modal.hidden = true;
+                        form.reset();
+                        toast('Domain added.', 'success');
+                        loadList();
+                    })
+                    .catch(function (e) { if (errEl) errEl.textContent = 'Network error: ' + e.message; });
+            });
+
+            loadList();
+        }
+    };
+
     if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', init);
     } else {

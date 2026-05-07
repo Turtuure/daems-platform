@@ -130,7 +130,49 @@ ob_start();
         </div>
     </form>
 </template>
-<template id="tab-tpl-domains"><div class="tenant-tab-placeholder">Domains tab coming in H4.</div></template>
+<template id="tab-tpl-domains">
+    <div class="tenant-tab-toolbar">
+        <span class="tenants-status" id="td-status">Loading…</span>
+        <button type="button" class="btn btn--primary" id="td-add-btn">+ Add domain</button>
+    </div>
+    <table class="tenant-tab-table" id="td-table" hidden>
+        <thead>
+            <tr>
+                <th>Hostname</th>
+                <th>Primary</th>
+                <th>Created</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody id="td-tbody"></tbody>
+    </table>
+
+    <div class="tenants-modal" id="td-add-modal" hidden role="dialog" aria-modal="true">
+        <div class="tenants-modal__backdrop" data-close></div>
+        <div class="tenants-modal__panel">
+            <header class="tenants-modal__header">
+                <h2 class="tenants-modal__title">Add domain</h2>
+                <button type="button" class="tenants-modal__close" data-close aria-label="Close">×</button>
+            </header>
+            <form id="td-add-form" class="tenants-modal__form">
+                <label class="tenants-field">
+                    <span class="tenants-field__label">Hostname *</span>
+                    <input type="text" name="hostname" required placeholder="example.org">
+                </label>
+                <label class="tenants-field">
+                    <span class="tenants-field__label">
+                        <input type="checkbox" name="isPrimary"> Mark as primary
+                    </span>
+                </label>
+                <div class="tenants-modal__actions">
+                    <button type="button" class="btn btn--ghost" data-close>Cancel</button>
+                    <button type="submit" class="btn btn--primary">Add</button>
+                </div>
+                <div id="td-add-error" class="tenants-modal__error" aria-live="polite"></div>
+            </form>
+        </div>
+    </div>
+</template>
 <template id="tab-tpl-admins"><div class="tenant-tab-placeholder">Admins tab coming in H5.</div></template>
 <template id="tab-tpl-modules"><div class="tenant-tab-placeholder">Modules tab coming in H6.</div></template>
 <template id="tab-tpl-danger"><div class="tenant-tab-placeholder">Danger zone coming in H7.</div></template>
