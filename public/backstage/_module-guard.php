@@ -3,44 +3,62 @@
 declare(strict_types=1);
 
 /**
- * Wave G2 — module route guard for the backstage front-controller.
+ * Wave G2/G3 — module route guard + container access for the backstage
+ * front-controller.
  *
- * Returns the (ModuleRouteGuard, TenantId|null) pair so the surrounding
- * router can short-circuit /backstage/<module>/* and /api/backstage/<module>
- * URLs to 404 BEFORE the auth check when the owning module is disabled
- * for the current tenant. Doing it pre-auth means an unauthenticated
- * visitor sees the same 404 whether the module is disabled or doesn't
- * exist — a tenant should not even know the forum exists if their forum
- * is off.
- *
- * The backstage front-controller (public/backstage.php) is a separate
- * process from the API kernel (public/index.php). It does NOT load the
- * full bootstrap container by default — bringing it in here keeps the
- * binding side-effects local to backstage requests that actually need
- * the guard. All bindings inside bootstrap/app.php are lazy so this is
- * cheap (no DB connection until a query fires).
+ * Loads the bootstrap container once and exposes it (plus the resolved
+ * Tenant entity for the current host) in $GLOBALS so downstream templates
+ * — notably layout.php — can pull the same services without re-bootstrapping.
  *
  * Returns: array{0: \Daems\Domain\Tenant\ModuleRouteGuard, 1: ?\Daems\Domain\Tenant\TenantId}
+ *
+ * Side-effects (after first include only):
+ *   $GLOBALS['daems_backstage_container'] = Container
+ *   $GLOBALS['daems_backstage_tenant']    = ?Tenant
+ *
+ * Idempotent — safe to require multiple times. Subsequent includes return
+ * the cached pair without re-running bootstrap/app.php.
+ *
+ * Why a separate helper: the backstage front-controller (public/backstage.php)
+ * is a separate process from the API kernel (public/index.php). It does NOT
+ * load the bootstrap container by default. Bringing it in here keeps the
+ * side-effects local to backstage requests that actually need the guard.
+ * All bindings inside bootstrap/app.php are lazy so this is cheap (no DB
+ * connection until the first query fires).
+ *
+ * Why pre-auth: a tenant whose forum is disabled should see the same 404
+ * as a tenant whose forum doesn't exist — running the guard before the
+ * auth check guarantees that, since an unauthenticated visitor cannot
+ * distinguish disabled from missing.
  */
 
-require_once __DIR__ . '/../../vendor/autoload.php';
+if (!isset($GLOBALS['daems_backstage_module_guard'])) {
+    require_once __DIR__ . '/../../vendor/autoload.php';
 
-/** @var \Daems\Infrastructure\Framework\Http\Kernel $__kernel */
-$__kernel = require __DIR__ . '/../../bootstrap/app.php';
-unset($__kernel); // we only need the side-effect — $container is now in this scope
+    /** @var \Daems\Infrastructure\Framework\Http\Kernel $__kernel */
+    $__kernel = require __DIR__ . '/../../bootstrap/app.php';
+    unset($__kernel); // we only need the side-effect — $container is now in this scope
 
-if (!isset($container) || !$container instanceof \Daems\Infrastructure\Framework\Container\Container) {
-    throw new \RuntimeException('bootstrap/app.php did not expose $container');
+    if (!isset($container) || !$container instanceof \Daems\Infrastructure\Framework\Container\Container) {
+        throw new \RuntimeException('bootstrap/app.php did not expose $container');
+    }
+
+    /** @var \Daems\Domain\Tenant\ModuleRouteGuard $__guard */
+    $__guard = $container->make(\Daems\Domain\Tenant\ModuleRouteGuard::class);
+
+    /** @var \Daems\Infrastructure\Tenant\HostTenantResolver $__resolver */
+    $__resolver = $container->make(\Daems\Infrastructure\Tenant\HostTenantResolver::class);
+
+    $__host = (string) ($_SERVER['HTTP_HOST'] ?? '');
+    $__tenant = $__resolver->resolve($__host);
+
+    $GLOBALS['daems_backstage_container']    = $container;
+    $GLOBALS['daems_backstage_tenant']       = $__tenant;
+    $GLOBALS['daems_backstage_module_guard'] = $__guard;
+    $GLOBALS['daems_backstage_tenant_id']    = $__tenant !== null ? $__tenant->id : null;
 }
 
-/** @var \Daems\Domain\Tenant\ModuleRouteGuard $__guard */
-$__guard = $container->make(\Daems\Domain\Tenant\ModuleRouteGuard::class);
-
-/** @var \Daems\Infrastructure\Tenant\HostTenantResolver $__resolver */
-$__resolver = $container->make(\Daems\Infrastructure\Tenant\HostTenantResolver::class);
-
-$__host = (string) ($_SERVER['HTTP_HOST'] ?? '');
-$__tenant = $__resolver->resolve($__host);
-$__tenantId = $__tenant !== null ? $__tenant->id : null;
-
-return [$__guard, $__tenantId];
+return [
+    $GLOBALS['daems_backstage_module_guard'],
+    $GLOBALS['daems_backstage_tenant_id'],
+];
