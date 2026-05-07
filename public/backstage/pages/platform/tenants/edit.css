@@ -1,187 +1,571 @@
-/* Wave H2 — minimal CSS for tenant edit shell. Layout-only. */
+/* ==========================================================================
+   Wave H — Tenant edit shell
 
+   Builds on list.css (which is also loaded — modals, fields, pills are
+   shared). This file owns: the tab strip, per-tab shell containers,
+   tables that live inside tabs, the cascade-confirm dialog, and the
+   danger-zone cards.
+
+   Honors the project hard rule: hover effects use background-color /
+   border-color / opacity only — never translate or scale.
+   ========================================================================== */
+
+/* --------------------------------------------------------------------------
+   Tab strip — modeled after .chart-period-tabs / segmented control style
+   -------------------------------------------------------------------------- */
 .tenant-tabs {
     display: flex;
-    gap: 0.25rem;
-    border-bottom: 1px solid var(--surface-border, #e4e4e7);
-    margin: var(--space-3, 1rem) 0;
+    gap: var(--space-1);
+    background: var(--surface-medium);
+    border: 1px solid var(--surface-border);
+    border-radius: var(--radius-md);
+    padding: 4px;
+    margin: var(--space-4) 0 var(--space-5);
+    overflow-x: auto;
+    scrollbar-width: thin;
 }
 
 .tenant-tabs__tab {
-    padding: 0.5rem 1rem;
+    flex-shrink: 0;
+    padding: 7px 14px;
+    font-size: var(--text-small);
+    font-weight: var(--weight-semibold);
+    color: var(--text-secondary);
+    border-radius: calc(var(--radius-md) - 2px);
     text-decoration: none;
-    color: var(--text-secondary, #71717a);
-    border-bottom: 2px solid transparent;
-    margin-bottom: -1px;
-    font-size: 0.95rem;
+    white-space: nowrap;
+    transition: background-color var(--transition-fast),
+                color var(--transition-fast);
+}
+
+.tenant-tabs__tab:hover {
+    color: var(--text-primary);
+    background: var(--surface-light);
+}
+[data-theme="dark"] .tenant-tabs__tab:hover {
+    background: var(--surface-lighter);
 }
 
 .tenant-tabs__tab.is-active {
-    color: var(--text-primary, #18181b);
-    border-bottom-color: var(--brand-primary, #3b82f6);
-    font-weight: 600;
+    background: var(--surface-dark);
+    color: var(--text-primary);
+    box-shadow: var(--shadow-sm);
 }
 
-.tenant-edit-content { margin-top: 1rem; }
-
-.tenant-tab-placeholder {
-    padding: 2rem;
-    text-align: center;
-    color: var(--text-secondary, #71717a);
-    border: 1px dashed var(--surface-border, #e4e4e7);
-    border-radius: 8px;
+/* --------------------------------------------------------------------------
+   Edit shell — header pills row, content surface
+   -------------------------------------------------------------------------- */
+.tenant-edit-header-meta {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-2);
+    flex-wrap: wrap;
+    margin-top: 4px;
+    font-size: var(--text-small);
+    color: var(--text-secondary);
+}
+.tenant-edit-header-meta code {
+    font-family: var(--font-mono);
+    font-size: 0.78rem;
+    background: var(--surface-light);
+    color: var(--text-primary);
+    padding: 1px 6px;
+    border-radius: var(--radius-sm);
 }
 
-/* Locale-card mini grid (used by Basics tab in H3) */
-.tenant-locale-cards {
-    display: grid;
-    gap: 0.75rem;
-    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-    margin-top: 0.5rem;
+.tenant-edit-content {
+    background: var(--surface-dark);
+    border: 1px solid var(--surface-border);
+    border-radius: var(--radius-lg);
+    padding: var(--space-5) var(--space-6);
+    min-height: 240px;
 }
 
-.tenant-locale-card {
-    border: 1px solid var(--surface-border, #e4e4e7);
-    border-radius: 8px;
-    padding: 0.75rem 1rem;
-    background: var(--surface-bg, #fff);
+.tenant-edit-content > .tenant-form,
+.tenant-edit-content > .tenant-tab-toolbar,
+.tenant-edit-content > .tenant-tab-table,
+.tenant-edit-content > .tenant-tab-empty {
+    /* Keeps consistent vertical rhythm regardless of which tab is active. */
+    margin-top: 0;
 }
 
-.tenant-locale-card__title {
-    margin: 0 0 0.5rem;
-    font-size: 0.85rem;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.04em;
-    color: var(--text-secondary, #71717a);
+/* --------------------------------------------------------------------------
+   Form layout shared across tabs
+   -------------------------------------------------------------------------- */
+.tenant-form {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-4);
 }
 
-.tenant-locale-card input,
-.tenant-locale-card textarea {
-    width: 100%;
-    padding: 0.45rem 0.6rem;
-    border: 1px solid var(--surface-border, #d4d4d8);
-    border-radius: 6px;
-    background: var(--surface-bg, #fff);
-    color: var(--text-primary, #18181b);
-    font: inherit;
-    box-sizing: border-box;
+.tenant-form__row {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
 }
 
-.tenant-locale-card textarea { min-height: 96px; resize: vertical; }
+.tenant-form__row > label {
+    font-weight: var(--weight-semibold);
+    font-size: var(--text-small);
+    color: var(--text-primary);
+}
+.tenant-form__row > small {
+    color: var(--text-muted);
+    font-size: var(--text-xs);
+}
 
-.tenant-locale-card + .tenant-locale-card { margin-top: 0; }
-
-/* Form layout shared across tabs */
-.tenant-form { display: flex; flex-direction: column; gap: 1rem; }
-.tenant-form__row { display: flex; flex-direction: column; gap: 0.25rem; }
-.tenant-form__row label { font-weight: 600; font-size: 0.9rem; }
-.tenant-form__row input,
+.tenant-form__row input[type="text"],
+.tenant-form__row input[type="search"],
+.tenant-form__row input[type="email"],
 .tenant-form__row select,
 .tenant-form__row textarea {
-    padding: 0.45rem 0.6rem;
-    border: 1px solid var(--surface-border, #d4d4d8);
-    border-radius: 6px;
-    background: var(--surface-bg, #fff);
-    color: var(--text-primary, #18181b);
+    width: 100%;
+    padding: 8px 10px;
+    border: 1px solid var(--surface-border);
+    border-radius: var(--radius-md);
+    background: var(--surface-dark);
+    color: var(--text-primary);
+    font: inherit;
+    font-size: var(--text-small);
+    transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+    box-sizing: border-box;
+}
+.tenant-form__row input[readonly] {
+    background: var(--surface-medium);
+    color: var(--text-secondary);
+    cursor: default;
+}
+.tenant-form__row input:focus-visible,
+.tenant-form__row select:focus-visible,
+.tenant-form__row textarea:focus-visible {
+    outline: none;
+    border-color: var(--brand-primary);
+    box-shadow: 0 0 0 3px var(--brand-primary-subtle);
 }
 
-.tenant-form__locales { display: flex; gap: 1rem; flex-wrap: wrap; }
-.tenant-form__locales label { font-weight: normal; }
+.tenant-form__locales {
+    display: flex;
+    gap: var(--space-3);
+    flex-wrap: wrap;
+}
+.tenant-form__locales label {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-weight: var(--weight-regular);
+    font-size: var(--text-small);
+    color: var(--text-primary);
+    cursor: pointer;
+    padding: 6px 10px;
+    border: 1px solid var(--surface-border);
+    border-radius: var(--radius-md);
+    transition: border-color var(--transition-fast), background-color var(--transition-fast);
+}
+.tenant-form__locales label:hover { border-color: var(--brand-primary); }
+.tenant-form__locales label:has(input:checked) {
+    background: var(--brand-primary-subtle);
+    border-color: var(--brand-primary);
+}
+.tenant-form__locales input[type="checkbox"] {
+    accent-color: var(--brand-primary);
+}
 
 .tenant-form__actions {
     display: flex;
-    gap: 0.5rem;
+    gap: var(--space-2);
     justify-content: flex-end;
     align-items: center;
-    margin-top: 0.5rem;
+    margin-top: var(--space-2);
+    padding-top: var(--space-4);
+    border-top: 1px solid var(--surface-border);
+}
+.tenant-form__status {
+    margin-right: auto;
+    font-size: var(--text-small);
+    color: var(--text-secondary);
+}
+.tenant-form__status.is-error   { color: var(--status-error); }
+.tenant-form__status.is-success { color: var(--status-success); }
+
+/* --------------------------------------------------------------------------
+   Locale-card mini grid (Basics tab) — adopts the shared .locale-card look
+   from public/backstage/pages/shared/locale-cards.css. We use a slimmer
+   variant here because the tenant form has many other fields competing
+   for vertical space.
+   -------------------------------------------------------------------------- */
+.tenant-locale-cards {
+    display: grid;
+    gap: var(--space-3);
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    margin-top: 4px;
 }
 
-/* Tables shared (domains/admins/modules) */
-.tenant-tab-table {
-    width: 100%;
-    border-collapse: collapse;
-    margin-top: 0.5rem;
+.tenant-locale-card {
+    border: 1px solid var(--surface-border);
+    border-radius: var(--radius-md);
+    padding: var(--space-3);
+    background: var(--surface-dark);
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    transition: border-color var(--transition-fast);
+}
+.tenant-locale-card:focus-within {
+    border-color: var(--brand-primary);
+    box-shadow: 0 0 0 3px var(--brand-primary-subtle);
 }
 
-.tenant-tab-table th,
-.tenant-tab-table td {
-    text-align: left;
-    padding: 0.6rem 0.8rem;
-    border-bottom: 1px solid var(--surface-border, #e4e4e7);
-    vertical-align: middle;
+.tenant-locale-card__head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-2);
 }
 
-.tenant-tab-table th {
-    font-weight: 600;
-    color: var(--text-secondary, #71717a);
-    font-size: 0.85rem;
+.tenant-locale-card__title {
+    margin: 0;
+    font-size: var(--text-xs);
+    font-weight: var(--weight-bold);
     text-transform: uppercase;
     letter-spacing: 0.04em;
+    color: var(--text-secondary);
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+.tenant-locale-card__flag {
+    font-size: 1rem;
+    line-height: 1;
+}
+.tenant-locale-card__default-pill {
+    display: inline-block;
+    padding: 1px 7px;
+    font-size: 0.65rem;
+    font-weight: var(--weight-semibold);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    border-radius: var(--radius-full);
+    background: var(--brand-primary-subtle);
+    color: var(--brand-primary);
+}
+.tenant-locale-card__fallback-dot {
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--status-warning);
+    flex-shrink: 0;
+    margin-left: 4px;
 }
 
+.tenant-locale-card input[type="text"],
+.tenant-locale-card textarea {
+    width: 100%;
+    padding: 8px 10px;
+    border: 1px solid var(--surface-border);
+    border-radius: var(--radius-md);
+    background: var(--surface-dark);
+    color: var(--text-primary);
+    font: inherit;
+    font-size: var(--text-small);
+    transition: border-color var(--transition-fast);
+    box-sizing: border-box;
+}
+.tenant-locale-card input:focus-visible,
+.tenant-locale-card textarea:focus-visible {
+    outline: none;
+    border-color: var(--brand-primary);
+    box-shadow: 0 0 0 3px var(--brand-primary-subtle);
+}
+.tenant-locale-card textarea { min-height: 96px; resize: vertical; }
+
+/* --------------------------------------------------------------------------
+   Per-tab shared chrome — toolbar + table + empty-state placeholder
+   -------------------------------------------------------------------------- */
 .tenant-tab-toolbar {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 0.5rem;
+    gap: var(--space-3);
+    margin-bottom: var(--space-3);
+}
+.tenant-tab-toolbar > :first-child { display: inline-flex; align-items: center; gap: var(--space-2); }
+
+.tenant-tab-table {
+    width: 100%;
+    border-collapse: collapse;
 }
 
-/* Confirm-dialog (used by H6, H7) */
+.tenant-tab-table thead th {
+    text-align: left;
+    padding: var(--space-3);
+    font-size: var(--text-xs);
+    font-weight: var(--weight-semibold);
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    border-bottom: 1px solid var(--surface-border);
+    background: var(--surface-medium);
+}
+
+.tenant-tab-table tbody td {
+    padding: var(--space-3);
+    font-size: var(--text-small);
+    color: var(--text-primary);
+    vertical-align: middle;
+    border-top: 1px solid var(--surface-border);
+}
+
+.tenant-tab-table tbody tr {
+    transition: background-color var(--transition-fast);
+}
+.tenant-tab-table tbody tr:hover { background: var(--surface-medium); }
+[data-theme="dark"] .tenant-tab-table tbody tr:hover { background: var(--surface-light); }
+
+.tenant-tab-table code {
+    font-family: var(--font-mono);
+    font-size: 0.78rem;
+    background: var(--surface-light);
+    color: var(--text-primary);
+    padding: 1px 6px;
+    border-radius: var(--radius-sm);
+}
+
+.tenant-tab-table__actions {
+    text-align: right;
+    width: 1%;
+    white-space: nowrap;
+}
+
+.tenant-tab-empty {
+    padding: var(--space-10) var(--space-5);
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--space-2);
+    border: 1px dashed var(--surface-border);
+    border-radius: var(--radius-md);
+    background: var(--surface-medium);
+}
+.tenant-tab-empty__icon {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--brand-primary-subtle);
+    color: var(--brand-primary);
+    margin-bottom: 4px;
+}
+.tenant-tab-empty__title {
+    margin: 0;
+    font-size: var(--text-body);
+    font-weight: var(--weight-bold);
+    color: var(--text-primary);
+}
+.tenant-tab-empty__body {
+    margin: 0;
+    font-size: var(--text-small);
+    color: var(--text-secondary);
+    max-width: 400px;
+}
+
+.tenant-tab-placeholder {
+    padding: var(--space-6);
+    text-align: center;
+    color: var(--text-secondary);
+    border: 1px dashed var(--surface-border);
+    border-radius: var(--radius-md);
+    background: var(--surface-medium);
+    line-height: 1.5;
+}
+.tenant-tab-placeholder strong { color: var(--text-primary); }
+.tenant-tab-placeholder small  {
+    display: block;
+    margin-top: var(--space-2);
+    font-size: var(--text-xs);
+    color: var(--text-muted);
+}
+
+/* --------------------------------------------------------------------------
+   Confirm dialog (Modules cascade-revoke + suspend confirms)
+   -------------------------------------------------------------------------- */
 .tenant-confirm[hidden] { display: none !important; }
 .tenant-confirm {
     position: fixed;
     inset: 0;
-    z-index: 110;
+    z-index: var(--z-modal);
     display: flex;
     align-items: center;
     justify-content: center;
+    padding: var(--space-4);
 }
-.tenant-confirm__backdrop { position: absolute; inset: 0; background: rgba(0,0,0,0.4); }
+.tenant-confirm__backdrop {
+    position: absolute;
+    inset: 0;
+    background: rgba(15, 23, 42, 0.45);
+    backdrop-filter: blur(2px);
+    -webkit-backdrop-filter: blur(2px);
+    animation: tenants-modal-fade 200ms ease;
+}
+
 .tenant-confirm__panel {
     position: relative;
-    background: var(--surface-bg, #fff);
-    color: var(--text-primary, #18181b);
-    padding: 1.25rem;
-    border-radius: 8px;
-    max-width: 460px;
-    width: calc(100% - 2rem);
-    box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+    background: var(--surface-dark);
+    color: var(--text-primary);
+    border: 1px solid var(--surface-border);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-xl);
+    max-width: 480px;
+    width: 100%;
+    max-height: calc(100vh - var(--space-8));
+    overflow-y: auto;
+    padding: var(--space-5);
+    animation: tenants-modal-pop 220ms cubic-bezier(0.34, 1.56, 0.64, 1);
 }
-.tenant-confirm__title { margin: 0 0 0.5rem; }
-.tenant-confirm__body  { margin: 0 0 1rem; color: var(--text-secondary, #71717a); }
-.tenant-confirm__field { display: flex; flex-direction: column; gap: 0.25rem; margin: 0.5rem 0 1rem; }
+
+.tenant-confirm__title {
+    margin: 0 0 var(--space-2);
+    font-size: var(--text-h3);
+    font-weight: var(--weight-bold);
+}
+.tenant-confirm__body {
+    margin: 0 0 var(--space-3);
+    color: var(--text-secondary);
+    font-size: var(--text-small);
+    line-height: 1.5;
+}
+
+.tenant-confirm__field {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin: var(--space-3) 0;
+}
+.tenant-confirm__field label {
+    font-weight: var(--weight-semibold);
+    font-size: var(--text-small);
+}
 .tenant-confirm__field input,
 .tenant-confirm__field textarea {
-    padding: 0.45rem 0.6rem;
-    border: 1px solid var(--surface-border, #d4d4d8);
-    border-radius: 6px;
+    width: 100%;
+    padding: 8px 10px;
+    border: 1px solid var(--surface-border);
+    border-radius: var(--radius-md);
+    background: var(--surface-dark);
+    color: var(--text-primary);
     font: inherit;
+    font-size: var(--text-small);
+    box-sizing: border-box;
+    resize: vertical;
 }
-.tenant-confirm__actions { display: flex; gap: 0.5rem; justify-content: flex-end; }
+.tenant-confirm__field input:focus-visible,
+.tenant-confirm__field textarea:focus-visible {
+    outline: none;
+    border-color: var(--brand-primary);
+    box-shadow: 0 0 0 3px var(--brand-primary-subtle);
+}
 
-/* Danger zone */
+.tenant-confirm__actions {
+    display: flex;
+    gap: var(--space-2);
+    justify-content: flex-end;
+    margin-top: var(--space-3);
+}
+
+/* --------------------------------------------------------------------------
+   Danger-zone cards — semantic accent colours, no opacity tricks
+   -------------------------------------------------------------------------- */
+.tenant-danger-stack {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-4);
+}
+
 .tenant-danger-card {
-    border-radius: 8px;
-    padding: 1rem 1.25rem;
-    margin-bottom: 1rem;
-    background: var(--surface-bg, #fff);
+    border-radius: var(--radius-lg);
+    padding: var(--space-5);
+    background: var(--surface-dark);
+    border: 1px solid var(--surface-border);
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
 }
-.tenant-danger-card--suspend   { border: 1px solid #fca5a5; }
-.tenant-danger-card--reactivate{ border: 1px solid #86efac; }
-.tenant-danger-card--info      { border: 1px solid var(--surface-border, #e4e4e7); opacity: 0.7; }
-.tenant-danger-card h3 { margin: 0 0 0.5rem; }
 
-/* Module rows */
-.tenant-module-row { display: flex; align-items: center; gap: 0.75rem; }
-.tenant-module-row__meta { flex: 1; }
-.tenant-module-badge {
-    display: inline-block;
-    padding: 0.1rem 0.45rem;
-    border-radius: 999px;
-    font-size: 0.75rem;
-    background: var(--surface-muted, #f4f4f5);
-    color: var(--text-secondary, #71717a);
+.tenant-danger-card__head {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
 }
-.tenant-module-badge--available { background: #dcfce7; color: #166534; }
-.tenant-module-badge--unavailable { background: #fef3c7; color: #92400e; }
+.tenant-danger-card__icon {
+    width: 36px;
+    height: 36px;
+    border-radius: var(--radius-md);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+.tenant-danger-card h3 {
+    margin: 0;
+    font-size: var(--text-h3);
+    font-weight: var(--weight-bold);
+    color: var(--text-primary);
+}
+.tenant-danger-card p {
+    margin: 0;
+    color: var(--text-secondary);
+    font-size: var(--text-small);
+    line-height: 1.5;
+}
+
+.tenant-danger-card--suspend {
+    border-color: var(--status-error);
+    border-left-width: 4px;
+    background: linear-gradient(0deg, var(--status-error-subtle) 0%, transparent 100%), var(--surface-dark);
+}
+.tenant-danger-card--suspend .tenant-danger-card__icon {
+    background: var(--status-error-subtle);
+    color: var(--status-error);
+}
+
+.tenant-danger-card--reactivate {
+    border-color: var(--status-success);
+    border-left-width: 4px;
+    background: linear-gradient(0deg, var(--status-success-subtle) 0%, transparent 100%), var(--surface-dark);
+}
+.tenant-danger-card--reactivate .tenant-danger-card__icon {
+    background: var(--status-success-subtle);
+    color: var(--status-success);
+}
+
+.tenant-danger-card--info {
+    border-color: var(--surface-border);
+    background: var(--surface-medium);
+}
+.tenant-danger-card--info .tenant-danger-card__icon {
+    background: var(--surface-light);
+    color: var(--text-muted);
+}
+.tenant-danger-card--info h3 { color: var(--text-secondary); }
+
+/* --------------------------------------------------------------------------
+   Module-tab badges (state column)
+   -------------------------------------------------------------------------- */
+.tenant-module-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 2px 9px;
+    font-size: var(--text-xs);
+    font-weight: var(--weight-semibold);
+    border-radius: var(--radius-full);
+    line-height: 18px;
+    background: rgba(148, 163, 184, 0.15);
+    color: var(--text-secondary);
+}
+.tenant-module-badge--enabled   { background: var(--status-success-subtle); color: var(--status-success); }
+.tenant-module-badge--available { background: var(--brand-primary-subtle);  color: var(--brand-primary); }
+.tenant-module-badge--disabled  { background: var(--status-warning-subtle); color: var(--status-warning); }
+.tenant-module-badge--core      { background: var(--accent-subtle);         color: var(--accent); }
