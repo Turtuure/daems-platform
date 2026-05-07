@@ -102,4 +102,23 @@ final class SqlTenantRepository implements TenantRepositoryInterface
         $stmt = $this->pdo->prepare('UPDATE tenants SET default_time_format = ? WHERE id = ?');
         $stmt->execute([$format, $tenantId->value()]);
     }
+
+    public function update(Tenant $tenant): void
+    {
+        // Wave D Task D7 will write the full UPDATE for display_name_i18n,
+        // public_description_i18n, supported_locales, default_locale.
+        throw new \LogicException('Not implemented; see Wave D Task D7');
+    }
+
+    public function suspend(TenantId $tenantId, string $reason, \DateTimeImmutable $now): void
+    {
+        // Wave D Task D7 will write the suspended_at + suspended_reason UPDATE.
+        throw new \LogicException('Not implemented; see Wave D Task D7');
+    }
+
+    public function reactivate(TenantId $tenantId): void
+    {
+        // Wave D Task D7 will null out suspended_at + suspended_reason.
+        throw new \LogicException('Not implemented; see Wave D Task D7');
+    }
 }

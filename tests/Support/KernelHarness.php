@@ -116,6 +116,9 @@ final class KernelHarness
             public function findAll(): array { return []; }
             public function updatePrefix(\Daems\Domain\Tenant\TenantId $tenantId, ?string $prefix): void {}
             public function updateDefaultTimeFormat(\Daems\Domain\Tenant\TenantId $tenantId, string $format): void {}
+            public function update(\Daems\Domain\Tenant\Tenant $tenant): void {}
+            public function suspend(\Daems\Domain\Tenant\TenantId $tenantId, string $reason, \DateTimeImmutable $now): void {}
+            public function reactivate(\Daems\Domain\Tenant\TenantId $tenantId): void {}
         });
         $container->singleton(AuthTokenRepositoryInterface::class, fn() => $this->tokens);
         $container->singleton(AuthLoginAttemptRepositoryInterface::class, fn() => $this->attempts);

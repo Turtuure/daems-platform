@@ -82,6 +82,25 @@ final class InMemoryTenantRepository implements TenantRepositoryInterface
         );
     }
 
+    public function update(Tenant $tenant): void
+    {
+        // Stub for Wave C; Wave D5 will replace with a full reassignment that
+        // preserves slug + id and overwrites the editable fields.
+        $this->byId[$tenant->id->value()] = $tenant;
+        $this->idBySlug[$tenant->slug->value()] = $tenant->id->value();
+    }
+
+    public function suspend(TenantId $tenantId, string $reason, \DateTimeImmutable $now): void
+    {
+        // Wave D5 fills this in. Stubbed no-op so the InMemory fake stays
+        // construct-compatible with existing tests until then.
+    }
+
+    public function reactivate(TenantId $tenantId): void
+    {
+        // Wave D5 fills this in.
+    }
+
     /** Test seed helper. */
     public function seedTenant(TenantId $id, string $slug, string $name, ?string $prefix = null): void
     {
