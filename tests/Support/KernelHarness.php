@@ -143,6 +143,10 @@ final class KernelHarness
             $c->make(\Daems\Infrastructure\Module\ModuleRegistry::class),
             $c->make(\Daems\Domain\Tenant\TenantModuleResolver::class),
         ));
+        $container->singleton(\Daems\Frontend\BackstageSidebar::class, fn(Container $c) => new \Daems\Frontend\BackstageSidebar(
+            $c->make(\Daems\Infrastructure\Module\ModuleRegistry::class),
+            $c->make(\Daems\Domain\Tenant\TenantModuleResolver::class),
+        ));
         $container->singleton(AuthTokenRepositoryInterface::class, fn() => $this->tokens);
         $container->singleton(AuthLoginAttemptRepositoryInterface::class, fn() => $this->attempts);
         $container->singleton(\Daems\Domain\Invite\UserInviteRepositoryInterface::class, fn() => $this->invites);

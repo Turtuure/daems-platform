@@ -274,6 +274,13 @@ $container->singleton(ModuleRouteGuard::class,
     ),
 );
 
+$container->singleton(\Daems\Frontend\BackstageSidebar::class,
+    static fn(Container $c) => new \Daems\Frontend\BackstageSidebar(
+        $c->make(\Daems\Infrastructure\Module\ModuleRegistry::class),
+        $c->make(TenantModuleResolver::class),
+    ),
+);
+
 $container->singleton(HostTenantResolver::class,
     static fn(Container $c) => new HostTenantResolver(
         $c->make(TenantRepositoryInterface::class),
