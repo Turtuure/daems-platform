@@ -83,7 +83,53 @@ ob_start();
 </div>
 
 <!-- Per-tab templates — populated in subsequent H3-H7 tasks. -->
-<template id="tab-tpl-basics"><div class="tenant-tab-placeholder">Basics tab coming in H3.</div></template>
+<template id="tab-tpl-basics">
+    <form class="tenant-form" id="tenant-basics-form" autocomplete="off">
+        <div class="tenant-form__row">
+            <label>Slug</label>
+            <input type="text" name="slug" id="tb-slug" readonly>
+            <small>Slug is immutable.</small>
+        </div>
+
+        <div class="tenant-form__row">
+            <label>Display name (per locale)</label>
+            <div class="tenant-locale-cards" id="tb-display-name-cards"></div>
+        </div>
+
+        <div class="tenant-form__row">
+            <label>Public description (per locale)</label>
+            <div class="tenant-locale-cards" id="tb-public-description-cards"></div>
+        </div>
+
+        <div class="tenant-form__row">
+            <label>Supported locales</label>
+            <div class="tenant-form__locales" id="tb-supported-locales">
+                <label><input type="checkbox" name="supportedLocales" value="fi_FI"> fi_FI</label>
+                <label><input type="checkbox" name="supportedLocales" value="en_GB"> en_GB</label>
+                <label><input type="checkbox" name="supportedLocales" value="sw_TZ"> sw_TZ</label>
+            </div>
+        </div>
+
+        <div class="tenant-form__row">
+            <label for="tb-default-locale">Default locale</label>
+            <select name="defaultLocale" id="tb-default-locale">
+                <option value="fi_FI">fi_FI</option>
+                <option value="en_GB">en_GB</option>
+                <option value="sw_TZ">sw_TZ</option>
+            </select>
+        </div>
+
+        <div class="tenant-form__row">
+            <label for="tb-prefix">Member-number prefix</label>
+            <input type="text" name="memberNumberPrefix" id="tb-prefix" pattern="[A-Z0-9\-]*">
+        </div>
+
+        <div class="tenant-form__actions">
+            <span class="tenant-form__status" id="tb-status" aria-live="polite"></span>
+            <button type="submit" class="btn btn--primary" id="tb-save">Save</button>
+        </div>
+    </form>
+</template>
 <template id="tab-tpl-domains"><div class="tenant-tab-placeholder">Domains tab coming in H4.</div></template>
 <template id="tab-tpl-admins"><div class="tenant-tab-placeholder">Admins tab coming in H5.</div></template>
 <template id="tab-tpl-modules"><div class="tenant-tab-placeholder">Modules tab coming in H6.</div></template>

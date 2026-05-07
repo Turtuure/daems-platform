@@ -52,6 +52,7 @@ final class ListTenants
     /**
      * @param 'active'|'suspended' $status
      * @return array{
+     *   id: string,
      *   slug: string,
      *   displayNameI18n: array<string, string>|null,
      *   status: 'active'|'suspended',
@@ -77,6 +78,7 @@ final class ListTenants
         }
 
         return [
+            'id'               => $tenant->id->value(),
             'slug'             => $tenant->slug->value(),
             'displayNameI18n'  => $tenant->displayNameI18n(),
             'status'           => $status,
