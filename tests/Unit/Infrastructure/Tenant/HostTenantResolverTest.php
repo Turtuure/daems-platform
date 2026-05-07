@@ -38,6 +38,7 @@ final class HostTenantResolverTest extends TestCase
                 return $domain === 'daems.fi' ? $this->daems : null;
             }
             public function findAll(): array { return [$this->daems]; }
+            public function save(Tenant $tenant): void {}
             public function updatePrefix(TenantId $tenantId, ?string $prefix): void {}
             public function updateDefaultTimeFormat(TenantId $tenantId, string $format): void {}
             public function update(Tenant $tenant): void {}
