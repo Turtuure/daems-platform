@@ -1,10 +1,28 @@
 <?php
 declare(strict_types=1);
 
+$uri = strtok(rawurldecode((string) ($_SERVER['REQUEST_URI'] ?? '/')), '?');
+
+// Wave G2 — module route guard runs BEFORE auth so a tenant whose forum is
+// disabled sees the same 404 as one whose forum doesn't exist. If no tenant
+// resolves for this host (very rare — fallback map covers all dev hosts),
+// we skip the guard and let the existing 404 path handle it.
+[$__moduleGuard, $__tenantId] = require __DIR__ . '/_module-guard.php';
+if ($__tenantId !== null) {
+    $__path = parse_url((string) ($_SERVER['REQUEST_URI'] ?? '/'), PHP_URL_PATH);
+    if (!is_string($__path) || $__path === '') {
+        $__path = '/';
+    }
+    if ($__moduleGuard->authorize($__tenantId, $__path) === \Daems\Domain\Tenant\ModuleRouteGuard::NOT_FOUND) {
+        http_response_code(404);
+        echo 'Not found';
+        exit;
+    }
+}
+
 require __DIR__ . '/_guard.php';
 require_once __DIR__ . '/pages/_shared.php';
 
-$uri = strtok(rawurldecode((string) ($_SERVER['REQUEST_URI'] ?? '/')), '?');
 $daemsKnownModules = $GLOBALS['daemsKnownModules'] ?? [];
 
 // Module page router — /backstage/<module>/<sub-path>?

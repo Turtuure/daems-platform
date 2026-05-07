@@ -14,6 +14,29 @@ if (str_ends_with($uri, '.php')) {
     $uri = substr($uri, 0, -4);
 }
 
+// Wave G2 — module route guard. Same rationale as the page router: we want
+// disabled-module endpoints to look identical to non-existent endpoints
+// regardless of auth state. The guard answers ALLOW for unowned paths
+// (shell + non-module endpoints), so the existing $map dispatch is unchanged
+// for those.
+[$__moduleGuard, $__tenantId] = require __DIR__ . '/_module-guard.php';
+if ($__tenantId !== null) {
+    $__path = parse_url((string) ($_SERVER['REQUEST_URI'] ?? '/'), PHP_URL_PATH);
+    if (!is_string($__path) || $__path === '') {
+        $__path = '/';
+    }
+    // Strip the same legacy `.php` suffix so the guard sees the canonical path.
+    if (str_ends_with($__path, '.php')) {
+        $__path = substr($__path, 0, -4);
+    }
+    if ($__moduleGuard->authorize($__tenantId, $__path) === \Daems\Domain\Tenant\ModuleRouteGuard::NOT_FOUND) {
+        http_response_code(404);
+        header('Content-Type: application/json');
+        echo json_encode(['error' => 'not_found']);
+        exit;
+    }
+}
+
 $map = [
     '/api/backstage/applications'    => __DIR__ . '/api/applications.php',
     '/api/backstage/members'         => __DIR__ . '/api/members.php',
