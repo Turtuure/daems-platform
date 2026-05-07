@@ -34,13 +34,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $dob   = trim((string) ($_POST['dob']   ?? ''));
 
     if ($name === '') {
-        $errors['name'] = 'Required';
+        $errors['name'] = \Daems\Frontend\I18n::t('default.join.error.required');
     }
-    if ($email === '' || filter_var($email, FILTER_VALIDATE_EMAIL) === false) {
-        $errors['email'] = 'Invalid';
+    if ($email === '') {
+        $errors['email'] = \Daems\Frontend\I18n::t('default.join.error.required');
+    } elseif (filter_var($email, FILTER_VALIDATE_EMAIL) === false) {
+        $errors['email'] = \Daems\Frontend\I18n::t('default.join.error.invalid_email');
     }
     if ($dob === '') {
-        $errors['dob'] = 'Required';
+        $errors['dob'] = \Daems\Frontend\I18n::t('default.join.error.required');
+    } elseif (\DateTimeImmutable::createFromFormat('Y-m-d', $dob) === false) {
+        $errors['dob'] = \Daems\Frontend\I18n::t('default.join.error.invalid_dob');
     }
 
     if ($errors === []) {
