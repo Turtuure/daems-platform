@@ -22,7 +22,46 @@ Open the **new terminal in `C:\laragon\www\daems-platform`** by default — this
 
 **Backstage:** Code lives in `daems-platform/public/backstage/*` + `modules/<n>/frontend/backstage/*`. Tenant frontends serve it at `<host>/backstage/*` via a filesystem-include delegation block in their `index.php`. NO cross-host redirect; the tenant-frontend session is the source of truth (`$_SESSION['user']` shape compatible with platform's `_guard.php`). Platform's own `daems-platform.local/backstage` works as a direct-access fallback with its own login form. Adding a new tenant frontend: add Apache vhost pointing at the tenant's repo and ensure the same delegation block is in that repo's index.php (today only `daem-society/public/index.php` has it).
 
-## Current state (updated 2026-05-06)
+## Module registry & tenant gating (2026-05-07)
+
+The platform uses a **two-tier manifest split** for module configuration:
+
+- **`c:/laragon/www/modules/<name>/module.json`** — module's own technical metadata (name, namespace, src_path, bindings, routes, migrations_path, frontend.{public_pages, backstage_pages, assets}). Lives in the module's repo, not this one.
+- **`config/modules.php`** (this repo) — platform-side gating metadata (category, sidebar position, `is_core`, `default_available`, `route_prefixes`, `depends_on`, name_key, description_key).
+
+Both are merged at boot in `\Daems\Infrastructure\Module\ModuleRegistry::discover()`, which autoloads each module's namespace and runs its `bindings.php`.
+
+**Per-tenant runtime gating** uses two columns in `tenant_modules`:
+
+- `available_at` — GSA grants availability to a tenant
+- `enabled_at` — tenant admin enables the available module
+
+`\Daems\Domain\Tenant\TenantModuleResolver` is the single source of truth for "is module M enabled for tenant T". `\Daems\Domain\Tenant\ModuleRouteGuard` runs **before auth** in `public/backstage/router.php` + `api-router.php`, returning 404 for disabled modules so unauthenticated visitors can't probe module state.
+
+The 5 existing modules (events, forum, insights, members, projects) are seeded for `daems` + `sahegroup` tenants by migration 072.
+
+### Adding a new module
+
+1. **Module repo** (`c:/laragon/www/modules/<name>/`):
+   - Create or update `module.json` with: name, namespace, src_path, bindings, routes, migrations_path, frontend.{public_pages, backstage_pages, assets}.
+2. **daems-platform** (this repo):
+   - Add an entry to `config/modules.php` with gating metadata: category, sidebar position (group/order/icon/href), `route_prefixes` (must NOT overlap with other modules), `is_core`, `default_available`, `depends_on`, `name_key`, `description_key`.
+   - Add i18n keys `modules.<name>.name` and `modules.<name>.description` to `lang/{fi_FI,en_GB,sw_TZ}.php`.
+   - If `default_available=true`, add a one-off SQL migration that inserts `tenant_modules` rows for existing tenants (or use the GSA UI per tenant if rollout should be gated).
+3. **Boot the platform**: `ModuleRegistry::discover()` picks up `module.json`, autoloads its namespace, runs its bindings.php, registers its routes. The new module appears in GSA tenant management (Modules tab).
+
+## Default public site (2026-05-07)
+
+Lives at `public/sites/_default/` in this repo — fallback for tenants without a custom `c:/laragon/www/sites/<slug>/` directory.
+
+`public/sites-router.php` is the entry point:
+
+1. Resolves tenant from host header.
+2. If suspended (non-null `tenants.suspended_at`) → HTTP 503 from `public/sites/_default/suspended.php`.
+3. If `c:/laragon/www/sites/<slug>/public/index.php` exists → delegate to it.
+4. Else → render from `public/sites/_default/` (home, join, login, suspended).
+
+## Current state (updated 2026-05-07)
 
 Branch: `dev` (pushed to origin). All work lands here; never push without explicit ask.
 
@@ -46,7 +85,7 @@ Active roadmap (`docs/planning/roadmap.md`, section 1 Admin Panel):
 
 ## i18n notes (PR 5)
 
-- **UI chrome default locale** = `fi_FI` (frontend `I18n::DEFAULT_LOCALE`). **Content fallback** = `en_GB` (backend `SupportedLocale::CONTENT_FALLBACK`). These are intentionally different.
+- **UI chrome default locale** (`\Daems\Frontend\I18n::DEFAULT_LOCALE`) is `'en_GB'`. Tenants override via `tenants.default_locale` (column added in migration 071). Daem Society tenant runs in `fi_FI`; Sahegroup tenant runs in `en_GB`. **Content fallback** = `en_GB` (backend `SupportedLocale::CONTENT_FALLBACK`).
 - Locale negotiation priority (highest first): `Accept-Language` header → `?lang=` query → `X-Daems-Locale` header → default.
 - API response shape for translatable entities: `title`, `title_fallback` (bool), `title_missing` (bool) — same triple per translatable field. Admin read adds a `translations` map keyed by locale + a `coverage` map `{locale: {filled, total}}`.
 - Backstage editor pattern: locale-cards grid inside the existing `event-modal` / `project-modal`; non-translated fields in a shared panel below; save is per-locale via `POST /api/v1/backstage/{kind}s/{id}/translations/{locale}` (NOT PUT).
@@ -89,7 +128,7 @@ composer test:all     # Everything
 
 Dev DB: `daems_db` on `127.0.0.1:3306`, user `root`, password `salasana`. Test DB: `daems_db_test`. MySQL binary: `C:/laragon/bin/mysql/mysql-8.4.3-winx64/bin/mysql.exe`.
 
-Test suites use `tests/Integration/MigrationTestCase` (resets DB + runs migrations fresh per test — slow but deterministic). Add new isolation tests under `tests/Isolation/` — `IsolationTestCase` base class runs migrations up to the current highest (currently 35) and seeds `daems` + `sahegroup` tenants.
+Test suites use `tests/Integration/MigrationTestCase` (resets DB + runs migrations fresh per test — slow but deterministic). Add new isolation tests under `tests/Isolation/` — `IsolationTestCase` base class runs migrations up to the current highest (currently 72) and seeds `daems` + `sahegroup` tenants.
 
 ### Role & identity
 
