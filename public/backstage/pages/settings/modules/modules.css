@@ -1,0 +1,80 @@
+/* Wave H8 — minimal CSS for Settings → Modules. Cards in a responsive grid. */
+
+.settings-modules-section { margin-top: 1.5rem; }
+
+.settings-modules-section__title {
+    margin: 0 0 0.5rem;
+    font-size: 0.95rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--text-secondary, #71717a);
+}
+
+.settings-modules-grid {
+    display: grid;
+    gap: 0.75rem;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+}
+
+.settings-module-card {
+    border: 1px solid var(--surface-border, #e4e4e7);
+    border-radius: 8px;
+    padding: 1rem;
+    background: var(--surface-bg, #fff);
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.settings-module-card__head {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 0.5rem;
+}
+
+.settings-module-card__slug {
+    font-family: monospace;
+    font-size: 0.85rem;
+    color: var(--text-secondary, #71717a);
+}
+
+.settings-module-card__name {
+    margin: 0;
+    font-size: 1rem;
+    font-weight: 600;
+}
+
+.settings-module-card__desc {
+    margin: 0;
+    font-size: 0.9rem;
+    color: var(--text-secondary, #71717a);
+    flex: 1;
+}
+
+.settings-module-card__since {
+    font-size: 0.78rem;
+    color: var(--text-secondary, #71717a);
+}
+
+.settings-module-card__actions {
+    display: flex;
+    justify-content: flex-end;
+}
+
+.settings-module-card__core {
+    display: inline-block;
+    padding: 0.1rem 0.45rem;
+    border-radius: 999px;
+    background: var(--surface-muted, #f4f4f5);
+    color: var(--text-secondary, #71717a);
+    font-size: 0.75rem;
+}
+
+.settings-modules-empty {
+    padding: 1rem;
+    border: 1px dashed var(--surface-border, #e4e4e7);
+    border-radius: 8px;
+    color: var(--text-secondary, #71717a);
+    text-align: center;
+}
