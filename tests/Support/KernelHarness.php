@@ -110,9 +110,16 @@ final class KernelHarness
         $this->container = $container;
 
         // Module registry — discover modules under modules/* with TEST bindings.
+        // Loads the platform catalog (config/modules.php) so manifests pick up
+        // platform metadata (is_core, default_available, depends_on, route prefixes).
+        // Without it, every module would be treated as non-core, non-default-available
+        // and CreateTenant would auto-seed zero rows — diverging from production.
         $composerLoader = require dirname(__DIR__, 2) . '/vendor/autoload.php';
         $moduleRegistry = new \Daems\Infrastructure\Module\ModuleRegistry();
-        $moduleRegistry->discover(dirname(__DIR__, 3) . '/modules');
+        $moduleRegistry->discover(
+            dirname(__DIR__, 3) . '/modules',
+            dirname(__DIR__, 2) . '/config/modules.php',
+        );
         $moduleRegistry->registerAutoloader($composerLoader);
         $container->bind(\Daems\Infrastructure\Module\ModuleRegistry::class, fn() => $moduleRegistry);
 
