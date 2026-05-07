@@ -93,7 +93,7 @@ final class BackstageSidebarTest extends TestCase
         return new InMemoryTenantModulesRepository();
     }
 
-    public function testRendersDashboardSearchSettingsForAnyUser(): void
+    public function testRendersDashboardAndSettingsForAnyUser(): void
     {
         $registry = $this->makeRegistry([]);
         $repo = $this->makeRepo();
@@ -103,8 +103,9 @@ final class BackstageSidebarTest extends TestCase
 
         $hrefs = array_map(static fn(array $i) => $i['href'], $items);
         $this->assertContains('/backstage/', $hrefs);
-        $this->assertContains('/backstage/search', $hrefs);
         $this->assertContains('/backstage/settings', $hrefs);
+        // Search is NOT in the sidebar — header Ctrl+K is canonical.
+        $this->assertNotContains('/backstage/search', $hrefs);
         // No platform group for non-admin.
         $platformGroups = array_filter($items, static fn(array $i) => $i['group'] === 'platform');
         $this->assertCount(0, $platformGroups);
@@ -200,18 +201,16 @@ final class BackstageSidebarTest extends TestCase
         $hrefs = array_values(array_map(static fn(array $i) => $i['href'], $items));
 
         // Expected ordering:
-        //   shell: dashboard(0), search(1)
+        //   shell: dashboard(0), settings(999)
         //   members: /backstage/members (rank 2, order 0)
         //   content: /backstage/events  (rank 3, order 0)
         //   community: /backstage/forum (rank 4, order 0)
-        //   shell: settings (rank 0, order 999) — comes BEFORE module groups because rank=0 wins.
         //
-        // i.e. all shell items group together at the top because their rank=0
-        // is lower than any module group; settings (order=999) appears last
+        // All shell items group together at the top because their rank=0 is
+        // lower than any module group; settings (order=999) appears last
         // within the shell group but still before any rank>=2 group.
         $this->assertSame([
             '/backstage/',
-            '/backstage/search',
             '/backstage/settings',
             '/backstage/members',
             '/backstage/events',
@@ -259,8 +258,8 @@ final class BackstageSidebarTest extends TestCase
         $items = $sidebar->buildFor($this->makeTenant(), $this->makeUser(false));
         $hrefs = array_map(static fn(array $i) => $i['href'], $items);
         $this->assertNotContains('/backstage/webhook', $hrefs);
-        // Only the 3 shell items remain.
-        $this->assertCount(3, $items);
+        // Only the 2 shell items remain (Dashboard + Settings; Search is no longer in sidebar).
+        $this->assertCount(2, $items);
     }
 
     public function testModuleNameKeyFallsBackToConventionalKey(): void

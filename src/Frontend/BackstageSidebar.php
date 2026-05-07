@@ -14,11 +14,16 @@ use Daems\Infrastructure\Module\ModuleRegistry;
  * (tenant, user) pair.
  *
  * Combines:
- *   - hardcoded shell items (Dashboard, Search, Settings) — always present;
+ *   - hardcoded shell items (Dashboard, Settings) — always present;
  *   - the platform group (Tenants admin) — only for platform admins;
  *   - module sidebar items — only for modules currently active for the tenant
  *     (ENABLED or CORE) AND that declare a sidebar entry in their platform
  *     catalog.
+ *
+ * Search is intentionally NOT in the sidebar — header Ctrl+K is the primary
+ * search affordance per the project's "header search is canonical" policy
+ * (`feedback_backstage_search_ui.md`). The /backstage/search?q=... route
+ * remains as the typeahead "see all results" landing page.
  *
  * Items are sorted by group rank first, then by intra-group `order`. Group
  * ranks: shell=0, platform=1, members=2, content=3, community=4,
@@ -49,9 +54,9 @@ final class BackstageSidebar
     {
         $items = [];
 
-        // 1. Hardcoded shell items.
+        // 1. Hardcoded shell items. Search is intentionally NOT here — see class
+        //    docblock; header Ctrl+K is the canonical search affordance.
         $items[] = ['group' => 'shell', 'label_key' => 'shell.dashboard', 'href' => '/backstage/',         'icon' => 'home',     'order' => 0];
-        $items[] = ['group' => 'shell', 'label_key' => 'shell.search',    'href' => '/backstage/search',   'icon' => 'search',   'order' => 1];
         $items[] = ['group' => 'shell', 'label_key' => 'shell.settings',  'href' => '/backstage/settings', 'icon' => 'settings', 'order' => 999];
 
         // 2. Platform group — only for platform admins.
