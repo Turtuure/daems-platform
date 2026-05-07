@@ -26,7 +26,7 @@ use Daems\Infrastructure\Module\ModuleRegistry;
 final class ModuleRegistryFactory
 {
     /**
-     * @param list<array{name: string, isCore?: bool, defaultAvailable?: bool, dependsOn?: list<string>, category?: ?string, nameKey?: ?string, descriptionKey?: ?string}> $specs
+     * @param list<array{name: string, isCore?: bool, defaultAvailable?: bool, dependsOn?: list<string>, category?: ?string, nameKey?: ?string, descriptionKey?: ?string, sidebar?: ?array{group: string, order: int, icon: string, href: string}}> $specs
      * @return array{0: ModuleRegistry, 1: string} [registry, tempRootDir]
      */
     public static function build(array $specs): array
@@ -58,6 +58,7 @@ final class ModuleRegistryFactory
         $catalogLines = [
             "<?php",
             "use Daems\\Infrastructure\\Module\\RoutePrefixes;",
+            "use Daems\\Infrastructure\\Module\\SidebarEntry;",
             "return [",
         ];
         foreach ($specs as $spec) {
@@ -72,13 +73,23 @@ final class ModuleRegistryFactory
             $catRaw   = $category === null ? 'null' : "'{$category}'";
             $nkRaw    = $nameKey  === null ? 'null' : "'{$nameKey}'";
             $dkRaw    = $descKey  === null ? 'null' : "'{$descKey}'";
+            $sidebar = $spec['sidebar'] ?? null;
+            if ($sidebar === null) {
+                $sidebarLiteral = 'null';
+            } else {
+                $sg = addslashes($sidebar['group']);
+                $si = addslashes($sidebar['icon']);
+                $sh = addslashes($sidebar['href']);
+                $so = (int) $sidebar['order'];
+                $sidebarLiteral = "new SidebarEntry(group: '{$sg}', order: {$so}, icon: '{$si}', href: '{$sh}')";
+            }
             $catalogLines[] = "  '{$name}' => [";
             $catalogLines[] = "    'category' => {$catRaw},";
             $catalogLines[] = "    'name_key' => {$nkRaw},";
             $catalogLines[] = "    'description_key' => {$dkRaw},";
             $catalogLines[] = "    'is_core' => {$isCore},";
             $catalogLines[] = "    'default_available' => {$defaultAvailable},";
-            $catalogLines[] = "    'sidebar' => null,";
+            $catalogLines[] = "    'sidebar' => {$sidebarLiteral},";
             $catalogLines[] = "    'route_prefixes' => new RoutePrefixes(backstage: ['/backstage/{$name}'], api: ['/api/v1/{$name}']),";
             $catalogLines[] = "    'depends_on' => {$depsLiteral},";
             $catalogLines[] = "  ],";
