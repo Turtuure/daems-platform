@@ -450,6 +450,133 @@
         }
     };
 
+    // -----------------------------------------------------------------------
+    // H6 — Modules tab
+    // -----------------------------------------------------------------------
+    var STATE_LABELS = {
+        'enabled':   'Enabled',
+        'available': 'Available',
+        'disabled':  'Disabled',
+        'core':      'Core'
+    };
+
+    window.DaemsTenantTabs.modules = {
+        load: function (host) {
+            var id      = window.DAEMS_TENANT_EDIT.tenantId;
+            var tbody   = host.querySelector('#tm-tbody');
+            var table   = host.querySelector('#tm-table');
+            var statusEl= host.querySelector('#tm-status');
+            var confirm = host.querySelector('#tm-confirm');
+            var reason  = host.querySelector('#tm-reason');
+            var goBtn   = host.querySelector('#tm-confirm-go');
+            var pending = null; // { slug, action }
+
+            function loadList() {
+                statusEl.textContent = 'Loading…';
+                fetch(PROXY + '?op=modules.list&id=' + encodeURIComponent(id))
+                    .then(function (r) { return r.json().then(function (b) { return { ok: r.ok, body: b }; }); })
+                    .then(function (res) {
+                        if (!res.ok) throw new Error((res.body && res.body.error) || 'Load failed');
+                        var rows = (res.body && res.body.data && res.body.data.modules) || [];
+                        if (rows.length === 0) {
+                            statusEl.textContent = 'No modules registered.';
+                            table.hidden = true;
+                            return;
+                        }
+                        statusEl.textContent = '';
+                        table.hidden = false;
+                        tbody.innerHTML = rows.map(function (m) {
+                            var state = String(m.state || '');
+                            var label = STATE_LABELS[state] || state;
+                            var stateClass = (state === 'enabled' || state === 'available' || state === 'core')
+                                ? 'tenant-module-badge--available'
+                                : (state === 'disabled' ? 'tenant-module-badge--unavailable' : '');
+                            var actionBtn = '';
+                            if (state === 'core') {
+                                actionBtn = '<span class="tenants-pill">Core</span>';
+                            } else if (state === 'disabled') {
+                                actionBtn = '<button type="button" class="btn btn--primary btn--sm" data-action="grant" data-slug="' + escapeHtml(m.slug) + '">Grant</button>';
+                            } else {
+                                // enabled or available — both are 'granted'; offer revoke
+                                actionBtn = '<button type="button" class="btn btn--ghost btn--sm" data-action="revoke" data-slug="' + escapeHtml(m.slug) + '">Revoke</button>';
+                            }
+                            return '' +
+                                '<tr>' +
+                                    '<td><code>' + escapeHtml(m.slug) + '</code></td>' +
+                                    '<td>' + escapeHtml(m.nameKey || m.slug) + '</td>' +
+                                    '<td>' + escapeHtml(m.category || '—') + '</td>' +
+                                    '<td><span class="tenant-module-badge ' + stateClass + '">' + escapeHtml(label) + '</span></td>' +
+                                    '<td>' + actionBtn + '</td>' +
+                                '</tr>';
+                        }).join('');
+                    })
+                    .catch(function (e) {
+                        statusEl.textContent = 'Error: ' + e.message;
+                        toast('Modules load failed: ' + e.message, 'error');
+                    });
+            }
+
+            tbody.addEventListener('click', function (e) {
+                var btn = e.target.closest && e.target.closest('button[data-action]');
+                if (!btn) return;
+                var action = btn.getAttribute('data-action');
+                var slug   = btn.getAttribute('data-slug');
+                if (action === 'grant') {
+                    pending = { slug: slug, action: 'grant' };
+                    if (reason) reason.value = '';
+                    host.querySelector('#tm-confirm-title').textContent = 'Grant module: ' + slug;
+                    host.querySelector('#tm-confirm-body').textContent = 'Granting marks the module available so the tenant admin can enable it. Provide a reason for the audit log (optional).';
+                    goBtn.textContent = 'Grant';
+                    confirm.hidden = false;
+                } else if (action === 'revoke') {
+                    pending = { slug: slug, action: 'revoke' };
+                    if (reason) reason.value = '';
+                    host.querySelector('#tm-confirm-title').textContent = 'Revoke module: ' + slug;
+                    host.querySelector('#tm-confirm-body').textContent = 'Revoking will force-disable any module that depends on this one (server-enforced cascade). Provide a reason — required.';
+                    goBtn.textContent = 'Revoke';
+                    confirm.hidden = false;
+                }
+            });
+
+            confirm.addEventListener('click', function (e) {
+                if (e.target.matches('[data-close]')) {
+                    confirm.hidden = true;
+                    pending = null;
+                }
+            });
+
+            goBtn.addEventListener('click', function () {
+                if (!pending) return;
+                var r = (reason && reason.value) || '';
+                if (pending.action === 'revoke' && r.trim() === '') {
+                    toast('Reason is required for revoke.', 'error');
+                    return;
+                }
+                var payload = { action: pending.action };
+                if (r.trim() !== '') payload.reason = r.trim();
+                fetch(PROXY + '?op=modules.availability&id=' + encodeURIComponent(id) + '&slug=' + encodeURIComponent(pending.slug), {
+                    method:  'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body:    JSON.stringify(payload)
+                })
+                    .then(function (r) { return r.text().then(function (t) { var b = {}; try { b = t ? JSON.parse(t) : {}; } catch (_) {} return { ok: r.ok, body: b, status: r.status }; }); })
+                    .then(function (res) {
+                        if (!res.ok) {
+                            toast('Module ' + pending.action + ' failed: ' + ((res.body && res.body.error) || res.status), 'error');
+                            return;
+                        }
+                        toast('Module ' + pending.slug + ' ' + (pending.action === 'grant' ? 'granted' : 'revoked') + '.', 'success');
+                        confirm.hidden = true;
+                        pending = null;
+                        loadList();
+                    })
+                    .catch(function (e) { toast('Module update failed: ' + e.message, 'error'); });
+            });
+
+            loadList();
+        }
+    };
+
     if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', init);
     } else {

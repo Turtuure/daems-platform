@@ -221,7 +221,42 @@ ob_start();
         </div>
     </div>
 </template>
-<template id="tab-tpl-modules"><div class="tenant-tab-placeholder">Modules tab coming in H6.</div></template>
+<template id="tab-tpl-modules">
+    <div class="tenant-tab-toolbar">
+        <span class="tenants-status" id="tm-status">Loading…</span>
+    </div>
+    <table class="tenant-tab-table" id="tm-table" hidden>
+        <thead>
+            <tr>
+                <th>Slug</th>
+                <th>Name</th>
+                <th>Category</th>
+                <th>State</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody id="tm-tbody"></tbody>
+    </table>
+
+    <!-- Cascade-revoke confirm dialog. Reused for plain reasons too. -->
+    <div class="tenant-confirm" id="tm-confirm" hidden role="dialog" aria-modal="true">
+        <div class="tenant-confirm__backdrop" data-close></div>
+        <div class="tenant-confirm__panel">
+            <h3 class="tenant-confirm__title" id="tm-confirm-title">Revoke module</h3>
+            <p class="tenant-confirm__body" id="tm-confirm-body">
+                Revoking will force-disable any modules that depend on this one. Provide a reason for the audit log.
+            </p>
+            <div class="tenant-confirm__field">
+                <label for="tm-reason">Reason *</label>
+                <textarea id="tm-reason" rows="3" required></textarea>
+            </div>
+            <div class="tenant-confirm__actions">
+                <button type="button" class="btn btn--ghost" data-close>Cancel</button>
+                <button type="button" class="btn btn--primary" id="tm-confirm-go">Revoke</button>
+            </div>
+        </div>
+    </div>
+</template>
 <template id="tab-tpl-danger"><div class="tenant-tab-placeholder">Danger zone coming in H7.</div></template>
 
 <script>
