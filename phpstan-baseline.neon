@@ -43,12 +43,6 @@ parameters:
 			path: ../modules/projects/backend/src/Infrastructure/SqlProjectRepository.php
 
 		-
-			message: '#^Parameter \#1 \$row of method Daems\\Infrastructure\\Adapter\\Persistence\\Sql\\SqlTenantRepository\:\:hydrate\(\) expects array\<string, mixed\>, array\<mixed, mixed\> given\.$#'
-			identifier: argument.type
-			count: 4
-			path: src/Infrastructure/Adapter/Persistence/Sql/SqlTenantRepository.php
-
-		-
 			message: '#^Parameter \#1 \$haystack of function str_contains expects string, mixed given\.$#'
 			identifier: argument.type
 			count: 1

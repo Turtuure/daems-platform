@@ -67,6 +67,29 @@ final class Tenant
         return null;
     }
 
+    /**
+     * Raw i18n display-name map exactly as stored. NULL = no i18n configured;
+     * the entity falls back to en_GB then to `$this->name`. Used by the SQL
+     * repository to round-trip the JSON column.
+     *
+     * @return array<string, string>|null
+     */
+    public function displayNameI18n(): ?array
+    {
+        return $this->displayNameI18n;
+    }
+
+    /**
+     * Raw i18n public-description map exactly as stored. NULL = column is
+     * NULL in the DB.
+     *
+     * @return array<string, string>|null
+     */
+    public function publicDescriptionI18n(): ?array
+    {
+        return $this->publicDescriptionI18n;
+    }
+
     /** @return list<string> */
     public function supportedLocales(): array
     {
