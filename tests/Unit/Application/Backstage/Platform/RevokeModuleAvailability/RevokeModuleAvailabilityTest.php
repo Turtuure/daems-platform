@@ -10,11 +10,14 @@ use Daems\Domain\Auth\ForbiddenException;
 use Daems\Domain\Tenant\ModuleAuditAction;
 use Daems\Domain\Tenant\TenantId;
 use Daems\Domain\Tenant\TenantModule;
+use Daems\Domain\Tenant\TenantModulesRepositoryInterface;
 use Daems\Domain\User\User;
 use Daems\Domain\User\UserId;
+use Daems\Tests\Support\Fake\ImmediateTransactionManager;
 use Daems\Tests\Support\Fake\InMemoryModuleAuditRepository;
 use Daems\Tests\Support\Fake\InMemoryTenantModulesRepository;
 use Daems\Tests\Support\Fake\InMemoryUserRepository;
+use Daems\Tests\Support\Fake\SnapshotTransactionManager;
 use Daems\Tests\Support\FrozenClock;
 use Daems\Tests\Support\ModuleRegistryFactory;
 use DateTimeImmutable;
@@ -167,6 +170,57 @@ final class RevokeModuleAvailabilityTest extends TestCase
         ));
     }
 
+    /**
+     * Spec AC-8: cascade and root revoke must be in the same transaction.
+     * If Phase 2 (root revokeAvailability) fails, Phase 1's dependent disables
+     * must be rolled back so the system never sees a partial cascade.
+     */
+    public function test_phase2_failure_rolls_back_phase1_cascade(): void
+    {
+        // Use a TenantModules repo decorator that throws on the root revokeAvailability call.
+        $failingRepo = new FailingRevokeTenantModulesRepository($this->tenantModules);
+
+        [$registry, $root] = ModuleRegistryFactory::build([
+            ['name' => 'events'],
+            ['name' => 'analytics', 'dependsOn' => ['events']],
+        ]);
+        $this->tempDirs[] = $root;
+
+        $this->seedRow('events', enabled: true);
+        $this->seedRow('analytics', enabled: true);
+
+        // Snapshot the underlying tenantModules + audits state so we can rollback on throw.
+        $tx = new SnapshotTransactionManager([$this->tenantModules, $this->audits]);
+        $uc = new RevokeModuleAvailability(
+            $failingRepo,
+            $this->audits,
+            $this->users,
+            $registry,
+            $this->clock,
+            $tx,
+        );
+
+        $threw = false;
+        try {
+            $uc->execute(new RevokeModuleAvailabilityInput(
+                actingUserId: UserId::fromString(self::GSA_ID),
+                tenantId: TenantId::fromString(self::TENANT_ID),
+                moduleSlug: 'events',
+                reason: 'kaboom',
+            ));
+        } catch (\RuntimeException $e) {
+            $threw = true;
+        }
+        self::assertTrue($threw, 'expected phase2 failure to propagate');
+
+        // Rollback assertions: analytics is still enabled, no cascade audit was persisted.
+        $analytics = $this->tenantModules->find(TenantId::fromString(self::TENANT_ID), 'analytics');
+        self::assertNotNull($analytics);
+        self::assertNotNull($analytics->enabledAt(), 'analytics should still be enabled after rollback');
+        self::assertNull($analytics->disabledAt(), 'analytics should not be disabled after rollback');
+        self::assertCount(0, $this->audits->entries, 'cascade audit entries should be rolled back');
+    }
+
     private function seedRow(string $slug, bool $enabled): void
     {
         $availableAt = new DateTimeImmutable('2026-04-01T00:00:00+00:00');
@@ -198,6 +252,7 @@ final class RevokeModuleAvailabilityTest extends TestCase
             $this->users,
             $registry,
             $this->clock,
+            new ImmediateTransactionManager(),
         );
     }
 
@@ -213,5 +268,43 @@ final class RevokeModuleAvailabilityTest extends TestCase
             isPlatformAdmin: $isPlatformAdmin,
         );
         $this->users->save($user);
+    }
+}
+
+/**
+ * Test decorator that delegates everything except revokeAvailability(),
+ * which throws — used to simulate a Phase 2 failure mid-cascade so the
+ * use case's transactional wrapper has something to rollback.
+ */
+final class FailingRevokeTenantModulesRepository implements TenantModulesRepositoryInterface
+{
+    public function __construct(private readonly TenantModulesRepositoryInterface $inner) {}
+
+    public function findByTenant(TenantId $tenantId): array
+    {
+        return $this->inner->findByTenant($tenantId);
+    }
+
+    public function find(TenantId $tenantId, string $moduleSlug): ?TenantModule
+    {
+        return $this->inner->find($tenantId, $moduleSlug);
+    }
+
+    public function save(TenantModule $tm): void
+    {
+        $this->inner->save($tm);
+    }
+
+    public function revokeAvailability(
+        TenantModule $tm,
+        \DateTimeImmutable $now,
+        array $auditEntries,
+    ): void {
+        throw new \RuntimeException('simulated phase2 failure');
+    }
+
+    public function findEnabledByTenant(TenantId $tenantId): array
+    {
+        return $this->inner->findEnabledByTenant($tenantId);
     }
 }

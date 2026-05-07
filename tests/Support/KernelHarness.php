@@ -365,6 +365,7 @@ final class KernelHarness
                 $c->make(UserRepositoryInterface::class),
                 $c->make(\Daems\Infrastructure\Module\ModuleRegistry::class),
                 $c->make(Clock::class),
+                $c->make(\Daems\Domain\Shared\TransactionManagerInterface::class),
             ));
         $container->bind(\Daems\Application\Backstage\Platform\ListTenants\ListTenants::class,
             static fn(Container $c) => new \Daems\Application\Backstage\Platform\ListTenants\ListTenants(

@@ -6,6 +6,7 @@ namespace Daems\Application\Backstage\Platform\RevokeModuleAvailability;
 
 use Daems\Domain\Auth\ForbiddenException;
 use Daems\Domain\Shared\Clock;
+use Daems\Domain\Shared\TransactionManagerInterface;
 use Daems\Domain\Tenant\ModuleAuditAction;
 use Daems\Domain\Tenant\ModuleAuditEntry;
 use Daems\Domain\Tenant\ModuleAuditRepositoryInterface;
@@ -28,8 +29,10 @@ use DateTimeImmutable;
  * Each cascade step writes a `DISABLED` audit entry. The root step writes
  * `REVOKED_AVAILABILITY`. The repository's revokeAvailability() handles
  * the root atomically (clear available_at + enabled_at, set disabled_at,
- * append the root audit entry) — we pass cascaded audit entries to the
- * dependent saves manually since they aren't atomic with the root.
+ * append the root audit entry). To honour spec AC-8 ("cascade and root
+ * revoke happen in the same transaction"), the entire mutating body is
+ * wrapped via TransactionManagerInterface — if the root revoke fails,
+ * the dependent disables are rolled back too.
  */
 final class RevokeModuleAvailability
 {
@@ -39,6 +42,7 @@ final class RevokeModuleAvailability
         private readonly UserRepositoryInterface $users,
         private readonly ModuleRegistry $registry,
         private readonly Clock $clock,
+        private readonly TransactionManagerInterface $tx,
     ) {}
 
     public function execute(RevokeModuleAvailabilityInput $input): void
@@ -56,70 +60,72 @@ final class RevokeModuleAvailability
 
         $now = $this->clock->now();
 
-        // Walk dependents transitively, collecting only those whose row is
-        // currently enabled for this tenant. Disabled / unavailable
-        // dependents need no action.
-        $cascadeQueue = [$input->moduleSlug];
-        $cascadeSlugs = [];
-        $seen = [$input->moduleSlug => true];
-        while ($cascadeQueue !== []) {
-            $head = array_shift($cascadeQueue);
-            foreach ($this->registry->dependents($head) as $depSlug) {
-                if (isset($seen[$depSlug])) {
+        $this->tx->run(function () use ($input, $rootRow, $now): void {
+            // Walk dependents transitively, collecting only those whose row is
+            // currently enabled for this tenant. Disabled / unavailable
+            // dependents need no action.
+            $cascadeQueue = [$input->moduleSlug];
+            $cascadeSlugs = [];
+            $seen = [$input->moduleSlug => true];
+            while ($cascadeQueue !== []) {
+                $head = array_shift($cascadeQueue);
+                foreach ($this->registry->dependents($head) as $depSlug) {
+                    if (isset($seen[$depSlug])) {
+                        continue;
+                    }
+                    $seen[$depSlug] = true;
+                    $depRow = $this->tenantModules->find($input->tenantId, $depSlug);
+                    if ($depRow !== null && $depRow->isEnabled()) {
+                        $cascadeSlugs[] = $depSlug;
+                    }
+                    // Continue walking even past non-enabled dependents — their
+                    // own dependents could still be enabled (rare but possible
+                    // with weird mid-state configurations).
+                    $cascadeQueue[] = $depSlug;
+                }
+            }
+
+            // Phase 1: cascade-disable each enabled dependent. Persist the
+            // updated row + matching audit entry.
+            foreach ($cascadeSlugs as $depSlug) {
+                $depRow = $this->tenantModules->find($input->tenantId, $depSlug);
+                if ($depRow === null) {
                     continue;
                 }
-                $seen[$depSlug] = true;
-                $depRow = $this->tenantModules->find($input->tenantId, $depSlug);
-                if ($depRow !== null && $depRow->isEnabled()) {
-                    $cascadeSlugs[] = $depSlug;
-                }
-                // Continue walking even past non-enabled dependents — their
-                // own dependents could still be enabled (rare but possible
-                // with weird mid-state configurations).
-                $cascadeQueue[] = $depSlug;
+                $disabled = new TenantModule(
+                    id: $depRow->id(),
+                    tenantId: $depRow->tenantId(),
+                    moduleSlug: $depRow->moduleSlug(),
+                    availableAt: $depRow->availableAt(),
+                    availableBy: $depRow->availableBy(),
+                    enabledAt: null,
+                    enabledBy: null,
+                    disabledAt: $now,
+                    createdAt: $depRow->createdAt(),
+                    updatedAt: $now,
+                );
+                $this->tenantModules->save($disabled);
+                $this->audits->append($this->makeAudit(
+                    tenantId: $input->tenantId,
+                    moduleSlug: $depSlug,
+                    action: ModuleAuditAction::DISABLED,
+                    actorUserId: $input->actingUserId,
+                    reason: "cascade from {$input->moduleSlug}",
+                    now: $now,
+                ));
             }
-        }
 
-        // Phase 1: cascade-disable each enabled dependent. Persist the
-        // updated row + matching audit entry.
-        foreach ($cascadeSlugs as $depSlug) {
-            $depRow = $this->tenantModules->find($input->tenantId, $depSlug);
-            if ($depRow === null) {
-                continue;
-            }
-            $disabled = new TenantModule(
-                id: $depRow->id(),
-                tenantId: $depRow->tenantId(),
-                moduleSlug: $depRow->moduleSlug(),
-                availableAt: $depRow->availableAt(),
-                availableBy: $depRow->availableBy(),
-                enabledAt: null,
-                enabledBy: null,
-                disabledAt: $now,
-                createdAt: $depRow->createdAt(),
-                updatedAt: $now,
-            );
-            $this->tenantModules->save($disabled);
-            $this->audits->append($this->makeAudit(
+            // Phase 2: revoke availability of the root atomically.
+            $rootAudit = $this->makeAudit(
                 tenantId: $input->tenantId,
-                moduleSlug: $depSlug,
-                action: ModuleAuditAction::DISABLED,
+                moduleSlug: $input->moduleSlug,
+                action: ModuleAuditAction::REVOKED_AVAILABILITY,
                 actorUserId: $input->actingUserId,
-                reason: "cascade from {$input->moduleSlug}",
+                reason: $input->reason,
                 now: $now,
-            ));
-        }
-
-        // Phase 2: revoke availability of the root atomically.
-        $rootAudit = $this->makeAudit(
-            tenantId: $input->tenantId,
-            moduleSlug: $input->moduleSlug,
-            action: ModuleAuditAction::REVOKED_AVAILABILITY,
-            actorUserId: $input->actingUserId,
-            reason: $input->reason,
-            now: $now,
-        );
-        $this->tenantModules->revokeAvailability($rootRow, $now, [$rootAudit]);
+            );
+            $this->tenantModules->revokeAvailability($rootRow, $now, [$rootAudit]);
+        });
     }
 
     private function makeAudit(
