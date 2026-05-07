@@ -365,6 +365,91 @@
         }
     };
 
+    // -----------------------------------------------------------------------
+    // H5 — Admins tab
+    //
+    // The list endpoint currently returns {admins: [], total: <count>}.
+    // findAdminsForTenant in the repo is unimplemented (Wave F known limit).
+    // Until that lands, show the count + a manual grant/revoke flow.
+    // -----------------------------------------------------------------------
+    window.DaemsTenantTabs.admins = {
+        load: function (host) {
+            var id    = window.DAEMS_TENANT_EDIT.tenantId;
+            var countEl  = host.querySelector('#ta-count');
+            var addBtn   = host.querySelector('#ta-add-btn');
+            var modal    = host.querySelector('#ta-add-modal');
+            var addForm  = host.querySelector('#ta-add-form');
+            var addError = host.querySelector('#ta-add-error');
+            var revoke   = host.querySelector('#ta-revoke-form');
+
+            function loadCount() {
+                fetch(PROXY + '?op=admins.list&id=' + encodeURIComponent(id))
+                    .then(function (r) { return r.json().then(function (b) { return { ok: r.ok, body: b }; }); })
+                    .then(function (res) {
+                        if (!res.ok) throw new Error((res.body && res.body.error) || 'Load failed');
+                        var total = (res.body && res.body.data && res.body.data.total) || 0;
+                        if (countEl) countEl.textContent = String(total);
+                    })
+                    .catch(function (e) {
+                        if (countEl) countEl.textContent = '—';
+                        toast('Admin count load failed: ' + e.message, 'error');
+                    });
+            }
+
+            addBtn.addEventListener('click', function () { modal.hidden = false; });
+            modal.addEventListener('click', function (e) {
+                if (e.target.matches('[data-close]')) {
+                    modal.hidden = true;
+                    if (addForm) addForm.reset();
+                    if (addError) addError.textContent = '';
+                }
+            });
+
+            addForm.addEventListener('submit', function (e) {
+                e.preventDefault();
+                var fd = new FormData(addForm);
+                var uid = String(fd.get('userId') || '').trim();
+                if (!uid) { if (addError) addError.textContent = 'User id is required'; return; }
+                if (addError) addError.textContent = '';
+                fetch(PROXY + '?op=admins.grant&id=' + encodeURIComponent(id), {
+                    method:  'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body:    JSON.stringify({ userId: uid })
+                })
+                    .then(function (r) { return r.text().then(function (t) { var b = {}; try { b = t ? JSON.parse(t) : {}; } catch (_) {} return { ok: r.ok, body: b, status: r.status }; }); })
+                    .then(function (res) {
+                        if (!res.ok) {
+                            if (addError) addError.textContent = (res.body && res.body.error) || ('HTTP ' + res.status);
+                            return;
+                        }
+                        modal.hidden = true;
+                        addForm.reset();
+                        toast('Admin granted.', 'success');
+                        loadCount();
+                    })
+                    .catch(function (e) { if (addError) addError.textContent = 'Network error: ' + e.message; });
+            });
+
+            revoke.addEventListener('submit', function (e) {
+                e.preventDefault();
+                var uid = String(new FormData(revoke).get('userId') || '').trim();
+                if (!uid) return;
+                if (!confirm('Revoke admin role from ' + uid + '?')) return;
+                fetch(PROXY + '?op=admins.revoke&id=' + encodeURIComponent(id) + '&uid=' + encodeURIComponent(uid), { method: 'POST' })
+                    .then(function (r) { return r.text().then(function (t) { var b = {}; try { b = t ? JSON.parse(t) : {}; } catch (_) {} return { ok: r.ok, body: b, status: r.status }; }); })
+                    .then(function (res) {
+                        if (!res.ok) { toast('Revoke failed: ' + ((res.body && res.body.error) || res.status), 'error'); return; }
+                        toast('Admin revoked.', 'success');
+                        revoke.reset();
+                        loadCount();
+                    })
+                    .catch(function (e) { toast('Revoke failed: ' + e.message, 'error'); });
+            });
+
+            loadCount();
+        }
+    };
+
     if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', init);
     } else {

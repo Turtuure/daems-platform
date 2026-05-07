@@ -173,7 +173,54 @@ ob_start();
         </div>
     </div>
 </template>
-<template id="tab-tpl-admins"><div class="tenant-tab-placeholder">Admins tab coming in H5.</div></template>
+<template id="tab-tpl-admins">
+    <div class="tenant-tab-toolbar">
+        <div>
+            <span class="tenants-status">Total tenant admins: <strong id="ta-count">—</strong></span>
+        </div>
+        <button type="button" class="btn btn--primary" id="ta-add-btn">+ Grant admin</button>
+    </div>
+
+    <div class="tenant-tab-placeholder" id="ta-list-placeholder">
+        Full list pending — Wave G follow-up.
+        <br><small>The platform's findAdminsForTenant repo method is not yet
+        implemented; only the count is available. Use the grant/revoke
+        controls above (revoke needs a known userId until the list is wired).</small>
+    </div>
+
+    <!-- Manual revoke fallback while the list is unavailable -->
+    <form class="tenant-form" id="ta-revoke-form" style="margin-top:1rem;">
+        <div class="tenant-form__row">
+            <label for="ta-revoke-uid">Revoke admin by user id</label>
+            <input type="text" name="userId" id="ta-revoke-uid" placeholder="user id (UUID)">
+        </div>
+        <div class="tenant-form__actions">
+            <button type="submit" class="btn btn--ghost">Revoke</button>
+        </div>
+    </form>
+
+    <div class="tenants-modal" id="ta-add-modal" hidden role="dialog" aria-modal="true">
+        <div class="tenants-modal__backdrop" data-close></div>
+        <div class="tenants-modal__panel">
+            <header class="tenants-modal__header">
+                <h2 class="tenants-modal__title">Grant tenant-admin role</h2>
+                <button type="button" class="tenants-modal__close" data-close aria-label="Close">×</button>
+            </header>
+            <form id="ta-add-form" class="tenants-modal__form">
+                <label class="tenants-field">
+                    <span class="tenants-field__label">User id *</span>
+                    <input type="text" name="userId" required placeholder="user id (UUID)">
+                    <small class="tenants-field__hint">User-search component to come; for now paste the id.</small>
+                </label>
+                <div class="tenants-modal__actions">
+                    <button type="button" class="btn btn--ghost" data-close>Cancel</button>
+                    <button type="submit" class="btn btn--primary">Grant</button>
+                </div>
+                <div id="ta-add-error" class="tenants-modal__error" aria-live="polite"></div>
+            </form>
+        </div>
+    </div>
+</template>
 <template id="tab-tpl-modules"><div class="tenant-tab-placeholder">Modules tab coming in H6.</div></template>
 <template id="tab-tpl-danger"><div class="tenant-tab-placeholder">Danger zone coming in H7.</div></template>
 
