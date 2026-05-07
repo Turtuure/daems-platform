@@ -157,6 +157,23 @@ final class I18n
         return htmlspecialchars(self::t($key, $params), ENT_QUOTES, 'UTF-8');
     }
 
+    /**
+     * Merge an extra dictionary into the named locale's in-memory cache.
+     *
+     * Used by site-local lang loaders (e.g. public/sites/_default/lang/<loc>.php)
+     * that need to add page-specific keys without modifying the platform-wide
+     * lang/<loc>.php files. Existing keys are preserved unless $overwrite is true.
+     *
+     * @param array<string, string> $extra
+     */
+    public static function merge(string $locale, array $extra, bool $overwrite = false): void
+    {
+        $existing = self::load($locale);
+        self::$dict[$locale] = $overwrite
+            ? array_merge($existing, $extra)
+            : array_merge($extra, $existing);
+    }
+
     /** @return array<string, string> */
     private static function load(string $locale): array
     {
