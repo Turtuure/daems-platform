@@ -1,0 +1,374 @@
+/* ==========================================================================
+   Wave H — Platform Tenants list
+
+   Adopts the shared backstage design tokens (--surface-*, --text-*,
+   --brand-primary, etc.) and the shared .pill / .btn / .data-explorer
+   patterns. No hover-translate animations (project memory).
+   ========================================================================== */
+
+/* --------------------------------------------------------------------------
+   Toolbar — search + filter row above the table
+   -------------------------------------------------------------------------- */
+.tenants-toolbar {
+    display: flex;
+    gap: var(--space-2);
+    align-items: center;
+    margin: 0 0 var(--space-4);
+}
+
+.tenants-toolbar__search,
+.tenants-toolbar__filter {
+    height: 36px;
+    padding: 0 var(--space-3);
+    border: 1px solid var(--surface-border);
+    border-radius: var(--radius-md);
+    background: var(--surface-dark);
+    color: var(--text-primary);
+    font: inherit;
+    font-size: var(--text-small);
+    transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+.tenants-toolbar__search { flex: 1; min-width: 220px; }
+.tenants-toolbar__filter { min-width: 160px; }
+
+.tenants-toolbar__search:focus-visible,
+.tenants-toolbar__filter:focus-visible {
+    outline: none;
+    border-color: var(--brand-primary);
+    box-shadow: 0 0 0 3px var(--brand-primary-subtle);
+}
+
+.tenants-toolbar__search::placeholder { color: var(--text-muted); }
+
+/* --------------------------------------------------------------------------
+   Status / loading line
+   -------------------------------------------------------------------------- */
+.tenants-status {
+    color: var(--text-secondary);
+    font-size: var(--text-small);
+    padding: 0;
+}
+
+/* --------------------------------------------------------------------------
+   Tenants table — modeled after .data-explorer__data
+   -------------------------------------------------------------------------- */
+.tenants-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.tenants-table thead th {
+    text-align: left;
+    padding: var(--space-3);
+    font-size: var(--text-xs);
+    font-weight: var(--weight-semibold);
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    border-bottom: 1px solid var(--surface-border);
+    background: var(--surface-medium);
+}
+
+.tenants-table tbody td {
+    padding: var(--space-3);
+    font-size: var(--text-small);
+    color: var(--text-primary);
+    vertical-align: middle;
+    border-top: 1px solid var(--surface-border);
+}
+
+.tenants-table tbody tr {
+    cursor: pointer;
+    transition: background-color var(--transition-fast);
+}
+
+/* Hover: background-color only (NO translate/scale per project memory). */
+.tenants-table tbody tr:hover {
+    background: var(--surface-medium);
+}
+[data-theme="dark"] .tenants-table tbody tr:hover {
+    background: var(--surface-light);
+}
+
+.tenants-table tbody tr:focus-visible {
+    outline: 2px solid var(--brand-primary);
+    outline-offset: -2px;
+    background: var(--surface-medium);
+}
+
+.tenants-table code {
+    font-family: var(--font-mono);
+    font-size: 0.78rem;
+    background: var(--surface-light);
+    color: var(--text-primary);
+    padding: 1px 6px;
+    border-radius: var(--radius-sm);
+}
+
+.tenants-table__name {
+    font-weight: var(--weight-semibold);
+}
+
+.tenants-table__num {
+    color: var(--text-secondary);
+    font-variant-numeric: tabular-nums;
+    text-align: right;
+    width: 7ch;
+}
+
+/* --------------------------------------------------------------------------
+   Pills — semantic status badges (alias to shared .pill where possible)
+   -------------------------------------------------------------------------- */
+.tenants-pill {
+    display: inline-flex;
+    align-items: center;
+    padding: 2px 9px;
+    font-size: var(--text-xs);
+    font-weight: var(--weight-semibold);
+    border-radius: var(--radius-full);
+    line-height: 18px;
+    white-space: nowrap;
+    background: rgba(148, 163, 184, 0.15);
+    color: var(--text-secondary);
+}
+
+.tenants-pill--active    { background: var(--status-success-subtle); color: var(--status-success); }
+.tenants-pill--suspended { background: var(--status-error-subtle);   color: var(--status-error); }
+
+/* --------------------------------------------------------------------------
+   Empty state — centered illustration + CTA
+   -------------------------------------------------------------------------- */
+.tenants-empty {
+    padding: var(--space-12) var(--space-6);
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--space-3);
+}
+
+.tenants-empty__icon {
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--brand-primary-subtle);
+    color: var(--brand-primary);
+}
+
+.tenants-empty__title {
+    margin: var(--space-2) 0 0;
+    font-size: var(--text-h3);
+    font-weight: var(--weight-bold);
+    color: var(--text-primary);
+}
+
+.tenants-empty__body {
+    margin: 0;
+    font-size: var(--text-small);
+    color: var(--text-secondary);
+    max-width: 420px;
+}
+
+.tenants-empty__actions {
+    margin-top: var(--space-3);
+    display: flex;
+    gap: var(--space-2);
+    justify-content: center;
+}
+
+/* --------------------------------------------------------------------------
+   Skeleton rows — show while initial fetch is in flight
+   -------------------------------------------------------------------------- */
+.tenants-skeleton__cell {
+    display: inline-block;
+    height: 14px;
+    width: 100%;
+    max-width: 120px;
+    border-radius: var(--radius-sm);
+    background: linear-gradient(90deg,
+                                var(--surface-light) 25%,
+                                var(--surface-lighter) 50%,
+                                var(--surface-light) 75%);
+    background-size: 200% 100%;
+    animation: skeleton-shimmer 1.5s infinite;
+}
+.tenants-skeleton__cell--narrow { max-width: 64px; }
+.tenants-skeleton__cell--pill   {
+    width: 64px; max-width: 64px; height: 18px;
+    border-radius: var(--radius-full);
+}
+
+/* --------------------------------------------------------------------------
+   Modal — dressed in the design-system surface, backdrop blur, fade-in
+   -------------------------------------------------------------------------- */
+.tenants-modal {
+    position: fixed;
+    inset: 0;
+    z-index: var(--z-modal);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: var(--space-4);
+}
+.tenants-modal[hidden] { display: none !important; }
+
+.tenants-modal__backdrop {
+    position: absolute;
+    inset: 0;
+    background: rgba(15, 23, 42, 0.45);
+    backdrop-filter: blur(2px);
+    -webkit-backdrop-filter: blur(2px);
+    animation: tenants-modal-fade 200ms ease;
+}
+
+.tenants-modal__panel {
+    position: relative;
+    background: var(--surface-dark);
+    color: var(--text-primary);
+    border: 1px solid var(--surface-border);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-xl);
+    max-width: 520px;
+    width: 100%;
+    max-height: calc(100vh - var(--space-8));
+    overflow-y: auto;
+    animation: tenants-modal-pop 220ms cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes tenants-modal-fade {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+}
+@keyframes tenants-modal-pop {
+    from { opacity: 0; transform: scale(0.96); }
+    to   { opacity: 1; transform: scale(1); }
+}
+
+.tenants-modal__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: var(--space-4) var(--space-5);
+    border-bottom: 1px solid var(--surface-border);
+}
+
+.tenants-modal__title {
+    margin: 0;
+    font-size: var(--text-h3);
+    font-weight: var(--weight-bold);
+    color: var(--text-primary);
+}
+
+.tenants-modal__close {
+    width: 32px;
+    height: 32px;
+    border-radius: var(--radius-md);
+    border: none;
+    background: transparent;
+    color: var(--text-secondary);
+    font-size: 1.4rem;
+    line-height: 1;
+    cursor: pointer;
+    transition: background-color var(--transition-fast), color var(--transition-fast);
+}
+.tenants-modal__close:hover {
+    background: var(--surface-light);
+    color: var(--text-primary);
+}
+[data-theme="dark"] .tenants-modal__close:hover { background: var(--surface-lighter); }
+
+.tenants-modal__form {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-4);
+    padding: var(--space-5);
+}
+
+/* --------------------------------------------------------------------------
+   Form fields — modal + edit-shell sharable
+   -------------------------------------------------------------------------- */
+.tenants-field {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    border: 0;
+    padding: 0;
+    margin: 0;
+    min-width: 0;
+}
+
+.tenants-field__label {
+    font-weight: var(--weight-semibold);
+    font-size: var(--text-small);
+    color: var(--text-primary);
+}
+
+.tenants-field__hint {
+    color: var(--text-muted);
+    font-size: var(--text-xs);
+    margin-top: 2px;
+}
+
+.tenants-field input[type="text"],
+.tenants-field input[type="search"],
+.tenants-field input[type="email"],
+.tenants-field input[type="url"],
+.tenants-field select,
+.tenants-field textarea {
+    width: 100%;
+    padding: 8px 10px;
+    border: 1px solid var(--surface-border);
+    border-radius: var(--radius-md);
+    background: var(--surface-dark);
+    color: var(--text-primary);
+    font: inherit;
+    font-size: var(--text-small);
+    transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+    box-sizing: border-box;
+}
+.tenants-field input:focus-visible,
+.tenants-field select:focus-visible,
+.tenants-field textarea:focus-visible {
+    outline: none;
+    border-color: var(--brand-primary);
+    box-shadow: 0 0 0 3px var(--brand-primary-subtle);
+}
+
+fieldset.tenants-field {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+fieldset.tenants-field > label {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-2);
+    font-weight: var(--weight-regular);
+    font-size: var(--text-small);
+    color: var(--text-primary);
+    cursor: pointer;
+}
+fieldset.tenants-field input[type="checkbox"] { accent-color: var(--brand-primary); }
+
+.tenants-modal__actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: var(--space-2);
+    margin-top: var(--space-2);
+}
+
+.tenants-modal__error {
+    color: var(--status-error);
+    font-size: var(--text-small);
+    min-height: 1.2em;
+    background: var(--status-error-subtle);
+    padding: 6px 10px;
+    border-radius: var(--radius-md);
+    border-left: 3px solid var(--status-error);
+    display: none;
+}
+.tenants-modal__error:not(:empty) { display: block; }

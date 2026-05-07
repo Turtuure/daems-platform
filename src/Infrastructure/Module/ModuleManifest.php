@@ -5,7 +5,10 @@ namespace Daems\Infrastructure\Module;
 
 final class ModuleManifest
 {
-    /** @param array<string, string> $requires */
+    /**
+     * @param array<string, string> $requires
+     * @param list<string>          $dependsOn
+     */
     private function __construct(
         private readonly string $name,
         private readonly string $version,
@@ -20,6 +23,17 @@ final class ModuleManifest
         private readonly ?string $absoluteBackstagePagesPath,
         private readonly ?string $absoluteAssetsPath,
         private readonly array $requires,
+        // Platform-level metadata — populated via withPlatformMetadata() from
+        // config/modules.php, NOT from module.json. Defaults are safe so the
+        // type still works for modules with no catalog entry.
+        private readonly ?string $category = null,
+        private readonly ?string $nameKey = null,
+        private readonly ?string $descriptionKey = null,
+        private readonly bool $isCore = false,
+        private readonly bool $defaultAvailable = false,
+        private readonly ?SidebarEntry $sidebar = null,
+        private readonly ?RoutePrefixes $routePrefixes = null,
+        private readonly array $dependsOn = [],
     ) {}
 
     /**
@@ -143,4 +157,67 @@ final class ModuleManifest
 
     /** @return array<string, string> */
     public function requires(): array { return $this->requires; }
+
+    public function category(): ?string { return $this->category; }
+    public function nameKey(): ?string { return $this->nameKey; }
+    public function descriptionKey(): ?string { return $this->descriptionKey; }
+    public function isCore(): bool { return $this->isCore; }
+    public function defaultAvailable(): bool { return $this->defaultAvailable; }
+    public function sidebar(): ?SidebarEntry { return $this->sidebar; }
+
+    /**
+     * Returns the route prefixes for this module. If no platform-level entry
+     * was attached (no catalog merge or stand-alone discovery), returns an
+     * empty RoutePrefixes — never null — so callers can chain longestMatch /
+     * overlapsWith without null-guards.
+     */
+    public function routePrefixes(): RoutePrefixes
+    {
+        return $this->routePrefixes ?? new RoutePrefixes(backstage: [], api: []);
+    }
+
+    /** @return list<string> */
+    public function dependsOn(): array { return $this->dependsOn; }
+
+    /**
+     * Returns a NEW manifest with platform-level metadata populated. The
+     * original is untouched; readonly properties survive because we copy
+     * through the constructor.
+     *
+     * @param list<string> $dependsOn
+     */
+    public function withPlatformMetadata(
+        ?string $category,
+        ?string $nameKey,
+        ?string $descriptionKey,
+        bool $isCore,
+        bool $defaultAvailable,
+        ?SidebarEntry $sidebar,
+        RoutePrefixes $routePrefixes,
+        array $dependsOn,
+    ): self {
+        return new self(
+            name: $this->name,
+            version: $this->version,
+            description: $this->description,
+            namespace: $this->namespace,
+            absoluteSrcPath: $this->absoluteSrcPath,
+            absoluteBindingsPath: $this->absoluteBindingsPath,
+            absoluteTestBindingsPath: $this->absoluteTestBindingsPath,
+            absoluteRoutesPath: $this->absoluteRoutesPath,
+            absoluteMigrationsPath: $this->absoluteMigrationsPath,
+            absolutePublicPagesPath: $this->absolutePublicPagesPath,
+            absoluteBackstagePagesPath: $this->absoluteBackstagePagesPath,
+            absoluteAssetsPath: $this->absoluteAssetsPath,
+            requires: $this->requires,
+            category: $category,
+            nameKey: $nameKey,
+            descriptionKey: $descriptionKey,
+            isCore: $isCore,
+            defaultAvailable: $defaultAvailable,
+            sidebar: $sidebar,
+            routePrefixes: $routePrefixes,
+            dependsOn: $dependsOn,
+        );
+    }
 }

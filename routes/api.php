@@ -115,6 +115,81 @@ return static function (Router $router, Container $container): void {
         return $container->make(AuthController::class)->redeemInvite($req);
     }, [TenantContextMiddleware::class]);
 
+    // Backstage — Platform-scope (GSA) tenant management (Wave F)
+    // Platform-admin gate is enforced inside each controller method.
+    $router->get('/api/v1/backstage/platform/tenants', static function (Request $req) use ($container): Response {
+        return $container->make(\Daems\Infrastructure\Adapter\Api\Controller\Backstage\Platform\TenantsController::class)->list($req);
+    }, [TenantContextMiddleware::class, AuthMiddleware::class]);
+
+    $router->post('/api/v1/backstage/platform/tenants', static function (Request $req) use ($container): Response {
+        return $container->make(\Daems\Infrastructure\Adapter\Api\Controller\Backstage\Platform\TenantsController::class)->create($req);
+    }, [TenantContextMiddleware::class, AuthMiddleware::class]);
+
+    $router->get('/api/v1/backstage/platform/tenants/{id}', static function (Request $req, array $params) use ($container): Response {
+        return $container->make(\Daems\Infrastructure\Adapter\Api\Controller\Backstage\Platform\TenantsController::class)->get($req, $params);
+    }, [TenantContextMiddleware::class, AuthMiddleware::class]);
+
+    $router->patch('/api/v1/backstage/platform/tenants/{id}', static function (Request $req, array $params) use ($container): Response {
+        return $container->make(\Daems\Infrastructure\Adapter\Api\Controller\Backstage\Platform\TenantsController::class)->patch($req, $params);
+    }, [TenantContextMiddleware::class, AuthMiddleware::class]);
+
+    $router->post('/api/v1/backstage/platform/tenants/{id}/suspend', static function (Request $req, array $params) use ($container): Response {
+        return $container->make(\Daems\Infrastructure\Adapter\Api\Controller\Backstage\Platform\TenantsController::class)->suspend($req, $params);
+    }, [TenantContextMiddleware::class, AuthMiddleware::class]);
+
+    $router->post('/api/v1/backstage/platform/tenants/{id}/reactivate', static function (Request $req, array $params) use ($container): Response {
+        return $container->make(\Daems\Infrastructure\Adapter\Api\Controller\Backstage\Platform\TenantsController::class)->reactivate($req, $params);
+    }, [TenantContextMiddleware::class, AuthMiddleware::class]);
+
+    // Tenant domains (GSA only)
+    $router->get('/api/v1/backstage/platform/tenants/{id}/domains', static function (Request $req, array $params) use ($container): Response {
+        return $container->make(\Daems\Infrastructure\Adapter\Api\Controller\Backstage\Platform\TenantDomainsController::class)->list($req, $params);
+    }, [TenantContextMiddleware::class, AuthMiddleware::class]);
+
+    $router->post('/api/v1/backstage/platform/tenants/{id}/domains', static function (Request $req, array $params) use ($container): Response {
+        return $container->make(\Daems\Infrastructure\Adapter\Api\Controller\Backstage\Platform\TenantDomainsController::class)->add($req, $params);
+    }, [TenantContextMiddleware::class, AuthMiddleware::class]);
+
+    $router->patch('/api/v1/backstage/platform/tenants/{id}/domains/{did}', static function (Request $req, array $params) use ($container): Response {
+        return $container->make(\Daems\Infrastructure\Adapter\Api\Controller\Backstage\Platform\TenantDomainsController::class)->update($req, $params);
+    }, [TenantContextMiddleware::class, AuthMiddleware::class]);
+
+    $router->delete('/api/v1/backstage/platform/tenants/{id}/domains/{did}', static function (Request $req, array $params) use ($container): Response {
+        return $container->make(\Daems\Infrastructure\Adapter\Api\Controller\Backstage\Platform\TenantDomainsController::class)->remove($req, $params);
+    }, [TenantContextMiddleware::class, AuthMiddleware::class]);
+
+    // Tenant admins (GSA only)
+    $router->get('/api/v1/backstage/platform/tenants/{id}/admins', static function (Request $req, array $params) use ($container): Response {
+        return $container->make(\Daems\Infrastructure\Adapter\Api\Controller\Backstage\Platform\TenantAdminsController::class)->list($req, $params);
+    }, [TenantContextMiddleware::class, AuthMiddleware::class]);
+
+    $router->post('/api/v1/backstage/platform/tenants/{id}/admins', static function (Request $req, array $params) use ($container): Response {
+        return $container->make(\Daems\Infrastructure\Adapter\Api\Controller\Backstage\Platform\TenantAdminsController::class)->grant($req, $params);
+    }, [TenantContextMiddleware::class, AuthMiddleware::class]);
+
+    $router->delete('/api/v1/backstage/platform/tenants/{id}/admins/{uid}', static function (Request $req, array $params) use ($container): Response {
+        return $container->make(\Daems\Infrastructure\Adapter\Api\Controller\Backstage\Platform\TenantAdminsController::class)->revoke($req, $params);
+    }, [TenantContextMiddleware::class, AuthMiddleware::class]);
+
+    // Tenant-modules availability (GSA only)
+    $router->get('/api/v1/backstage/platform/tenants/{id}/modules', static function (Request $req, array $params) use ($container): Response {
+        return $container->make(\Daems\Infrastructure\Adapter\Api\Controller\Backstage\Platform\PlatformTenantModulesController::class)->list($req, $params);
+    }, [TenantContextMiddleware::class, AuthMiddleware::class]);
+
+    $router->post('/api/v1/backstage/platform/tenants/{id}/modules/{slug}/availability', static function (Request $req, array $params) use ($container): Response {
+        return $container->make(\Daems\Infrastructure\Adapter\Api\Controller\Backstage\Platform\PlatformTenantModulesController::class)->availability($req, $params);
+    }, [TenantContextMiddleware::class, AuthMiddleware::class]);
+
+    // Tenant-self modules (admin in current tenant or platform admin)
+    // Tenant id resolved from request's `tenant` attribute set by TenantContextMiddleware.
+    $router->get('/api/v1/backstage/tenant/modules', static function (Request $req) use ($container): Response {
+        return $container->make(\Daems\Infrastructure\Adapter\Api\Controller\Backstage\Tenant\TenantSelfModulesController::class)->list($req);
+    }, [TenantContextMiddleware::class, AuthMiddleware::class]);
+
+    $router->post('/api/v1/backstage/tenant/modules/{slug}/state', static function (Request $req, array $params) use ($container): Response {
+        return $container->make(\Daems\Infrastructure\Adapter\Api\Controller\Backstage\Tenant\TenantSelfModulesController::class)->state($req, $params);
+    }, [TenantContextMiddleware::class, AuthMiddleware::class]);
+
     // Module routes — invoke each discovered module's routes.php.
     $moduleRegistry = $container->make(\Daems\Infrastructure\Module\ModuleRegistry::class);
     $moduleRegistry->registerRoutes($router, $container);

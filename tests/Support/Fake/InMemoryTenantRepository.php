@@ -82,6 +82,58 @@ final class InMemoryTenantRepository implements TenantRepositoryInterface
         );
     }
 
+    public function update(Tenant $tenant): void
+    {
+        // Stub for Wave C; Wave D5 will replace with a full reassignment that
+        // preserves slug + id and overwrites the editable fields.
+        $this->byId[$tenant->id->value()] = $tenant;
+        $this->idBySlug[$tenant->slug->value()] = $tenant->id->value();
+    }
+
+    public function suspend(TenantId $tenantId, string $reason, \DateTimeImmutable $now): void
+    {
+        $existing = $this->byId[$tenantId->value()] ?? null;
+        if ($existing === null) {
+            return;
+        }
+        $this->byId[$tenantId->value()] = new Tenant(
+            id: $existing->id,
+            slug: $existing->slug,
+            name: $existing->name,
+            createdAt: $existing->createdAt,
+            memberNumberPrefix: $existing->memberNumberPrefix,
+            defaultTimeFormat: $existing->defaultTimeFormat,
+            displayNameI18n: $existing->displayNameI18n(),
+            publicDescriptionI18n: $existing->publicDescriptionI18n(),
+            supportedLocales: $existing->supportedLocales(),
+            defaultLocale: $existing->defaultLocale(),
+            suspendedAt: $now,
+            suspendedReason: $reason,
+        );
+    }
+
+    public function reactivate(TenantId $tenantId): void
+    {
+        $existing = $this->byId[$tenantId->value()] ?? null;
+        if ($existing === null) {
+            return;
+        }
+        $this->byId[$tenantId->value()] = new Tenant(
+            id: $existing->id,
+            slug: $existing->slug,
+            name: $existing->name,
+            createdAt: $existing->createdAt,
+            memberNumberPrefix: $existing->memberNumberPrefix,
+            defaultTimeFormat: $existing->defaultTimeFormat,
+            displayNameI18n: $existing->displayNameI18n(),
+            publicDescriptionI18n: $existing->publicDescriptionI18n(),
+            supportedLocales: $existing->supportedLocales(),
+            defaultLocale: $existing->defaultLocale(),
+            suspendedAt: null,
+            suspendedReason: null,
+        );
+    }
+
     /** Test seed helper. */
     public function seedTenant(TenantId $id, string $slug, string $name, ?string $prefix = null): void
     {

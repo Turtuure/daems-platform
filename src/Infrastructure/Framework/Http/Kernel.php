@@ -50,4 +50,14 @@ final class Kernel
     {
         $response->send();
     }
+
+    /**
+     * Expose the wired container so non-routed entry points (e.g. the
+     * public/sites-router.php fallback for tenants without a custom
+     * frontend) can resolve domain services without re-bootstrapping.
+     */
+    public function container(): Container
+    {
+        return $this->container;
+    }
 }

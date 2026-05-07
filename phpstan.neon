@@ -10,6 +10,11 @@ parameters:
         - ../modules/members/backend/src
         - ../modules/projects/backend/src
         - ../modules/events/backend/src
+    excludePaths:
+        # Frontend curl-glue + i18n loader: dynamically-typed JSON in/out of
+        # the API; type-checking these provides ~zero safety value while
+        # forcing noisy mixed-cast annotations everywhere.
+        - src/Frontend/*
     phpVersion: 80100
     ignoreErrors:
         -

@@ -50,6 +50,10 @@ use Daems\Infrastructure\Framework\Logging\LoggerInterface;
 use Daems\Tests\Support\Fake\InMemoryAuthLoginAttemptRepository;
 use Daems\Tests\Support\Fake\InMemoryAuthTokenRepository;
 use Daems\Tests\Support\Fake\ImmediateTransactionManager;
+use Daems\Tests\Support\Fake\InMemoryModuleAuditRepository;
+use Daems\Tests\Support\Fake\InMemoryTenantDomainRepository;
+use Daems\Tests\Support\Fake\InMemoryTenantModulesRepository;
+use Daems\Tests\Support\Fake\InMemoryTenantRepository;
 use Daems\Tests\Support\Fake\InMemoryTenantSlugResolver;
 use Daems\Tests\Support\Fake\InMemoryUserInviteRepository;
 use Daems\Tests\Support\Fake\InMemoryImageStorage;
@@ -69,6 +73,10 @@ final class KernelHarness
     public InMemoryAuthLoginAttemptRepository $attempts;
     public InMemoryUserInviteRepository $invites;
     public InMemoryImageStorage $imageStorage;
+    public InMemoryTenantRepository $tenants;
+    public InMemoryTenantModulesRepository $tenantModules;
+    public InMemoryModuleAuditRepository $moduleAudit;
+    public InMemoryTenantDomainRepository $tenantDomains;
     public FrozenClock $clock;
 
     /** @var array<array{0:string, 1:array<string,mixed>}> */
@@ -79,10 +87,17 @@ final class KernelHarness
         $this->clock = $clock;
         $this->users = new InMemoryUserRepository();
         $this->userTenants = new InMemoryUserTenantRepository();
+        // Wire user-repo into the user-tenants fake so findAdminsForTenant()
+        // can resolve user name/email — the SQL impl does this via INNER JOIN.
+        $this->userTenants->setUsers($this->users);
         $this->tokens = new InMemoryAuthTokenRepository();
         $this->attempts = new InMemoryAuthLoginAttemptRepository();
         $this->invites = new InMemoryUserInviteRepository();
         $this->imageStorage = new InMemoryImageStorage();
+        $this->tenants = new InMemoryTenantRepository();
+        $this->tenantModules = new InMemoryTenantModulesRepository();
+        $this->moduleAudit = new InMemoryModuleAuditRepository();
+        $this->tenantDomains = new InMemoryTenantDomainRepository();
 
         $logs = &$this->logs;
         $logger = new class ($logs) implements LoggerInterface {
@@ -98,9 +113,17 @@ final class KernelHarness
         $this->container = $container;
 
         // Module registry — discover modules under modules/* with TEST bindings.
+        // Loads the platform catalog (config/modules.php) so manifests pick up
+        // platform metadata (is_core, default_available, depends_on, route prefixes).
+        // Without it, every module would be treated as non-core, non-default-available
+        // and CreateTenant would auto-seed zero rows — diverging from production.
         $composerLoader = require dirname(__DIR__, 2) . '/vendor/autoload.php';
         $moduleRegistry = new \Daems\Infrastructure\Module\ModuleRegistry();
-        $moduleRegistry->discover(dirname(__DIR__, 3) . '/modules');
+        $moduleRegistry->discover(
+            dirname(__DIR__, 3) . '/modules',
+            dirname(__DIR__, 2) . '/config/modules.php',
+            dirname(__DIR__, 2) . '/lang/en_GB.php',
+        );
         $moduleRegistry->registerAutoloader($composerLoader);
         $container->bind(\Daems\Infrastructure\Module\ModuleRegistry::class, fn() => $moduleRegistry);
 
@@ -108,15 +131,22 @@ final class KernelHarness
         $container->singleton(Clock::class, fn(): Clock => $this->clock);
         $container->singleton(UserRepositoryInterface::class, fn() => $this->users);
         $container->singleton(UserTenantRepositoryInterface::class, fn() => $this->userTenants);
-        $container->singleton(TenantRepositoryInterface::class, fn() => new class implements TenantRepositoryInterface {
-            public function findById(\Daems\Domain\Tenant\TenantId $id): ?\Daems\Domain\Tenant\Tenant { return null; }
-            public function findBySlug(string $slug): ?\Daems\Domain\Tenant\Tenant { return null; }
-            public function findByDomain(string $domain): ?\Daems\Domain\Tenant\Tenant { return null; }
-            /** @return list<\Daems\Domain\Tenant\Tenant> */
-            public function findAll(): array { return []; }
-            public function updatePrefix(\Daems\Domain\Tenant\TenantId $tenantId, ?string $prefix): void {}
-            public function updateDefaultTimeFormat(\Daems\Domain\Tenant\TenantId $tenantId, string $format): void {}
-        });
+        $container->singleton(TenantRepositoryInterface::class, fn() => $this->tenants);
+        $container->singleton(\Daems\Domain\Tenant\TenantModulesRepositoryInterface::class, fn() => $this->tenantModules);
+        $container->singleton(\Daems\Domain\Tenant\ModuleAuditRepositoryInterface::class, fn() => $this->moduleAudit);
+        $container->singleton(\Daems\Domain\Tenant\TenantDomainRepositoryInterface::class, fn() => $this->tenantDomains);
+        $container->singleton(\Daems\Domain\Tenant\TenantModuleResolver::class, fn(Container $c) => new \Daems\Domain\Tenant\TenantModuleResolver(
+            $c->make(\Daems\Infrastructure\Module\ModuleRegistry::class),
+            $c->make(\Daems\Domain\Tenant\TenantModulesRepositoryInterface::class),
+        ));
+        $container->singleton(\Daems\Domain\Tenant\ModuleRouteGuard::class, fn(Container $c) => new \Daems\Domain\Tenant\ModuleRouteGuard(
+            $c->make(\Daems\Infrastructure\Module\ModuleRegistry::class),
+            $c->make(\Daems\Domain\Tenant\TenantModuleResolver::class),
+        ));
+        $container->singleton(\Daems\Frontend\BackstageSidebar::class, fn(Container $c) => new \Daems\Frontend\BackstageSidebar(
+            $c->make(\Daems\Infrastructure\Module\ModuleRegistry::class),
+            $c->make(\Daems\Domain\Tenant\TenantModuleResolver::class),
+        ));
         $container->singleton(AuthTokenRepositoryInterface::class, fn() => $this->tokens);
         $container->singleton(AuthLoginAttemptRepositoryInterface::class, fn() => $this->attempts);
         $container->singleton(\Daems\Domain\Invite\UserInviteRepositoryInterface::class, fn() => $this->invites);
@@ -274,6 +304,173 @@ final class KernelHarness
             static fn(Container $c) => new \Daems\Infrastructure\Adapter\Api\Controller\SearchController(
                 $c->make(\Daems\Application\Search\Search\Search::class),
             ));
+
+        // Backstage — Platform-scope (GSA) tenant management use cases (Wave F)
+        $container->bind(\Daems\Application\Backstage\Platform\CreateTenant\CreateTenant::class,
+            static fn(Container $c) => new \Daems\Application\Backstage\Platform\CreateTenant\CreateTenant(
+                $c->make(TenantRepositoryInterface::class),
+                $c->make(\Daems\Domain\Tenant\TenantModulesRepositoryInterface::class),
+                $c->make(UserRepositoryInterface::class),
+                $c->make(\Daems\Infrastructure\Module\ModuleRegistry::class),
+                $c->make(Clock::class),
+            ));
+        $container->bind(\Daems\Application\Backstage\Platform\UpdateTenantBasics\UpdateTenantBasics::class,
+            static fn(Container $c) => new \Daems\Application\Backstage\Platform\UpdateTenantBasics\UpdateTenantBasics(
+                $c->make(TenantRepositoryInterface::class),
+                $c->make(UserRepositoryInterface::class),
+            ));
+        $container->bind(\Daems\Application\Backstage\Platform\SuspendTenant\SuspendTenant::class,
+            static fn(Container $c) => new \Daems\Application\Backstage\Platform\SuspendTenant\SuspendTenant(
+                $c->make(TenantRepositoryInterface::class),
+                $c->make(UserRepositoryInterface::class),
+                $c->make(Clock::class),
+            ));
+        $container->bind(\Daems\Application\Backstage\Platform\ReactivateTenant\ReactivateTenant::class,
+            static fn(Container $c) => new \Daems\Application\Backstage\Platform\ReactivateTenant\ReactivateTenant(
+                $c->make(TenantRepositoryInterface::class),
+                $c->make(UserRepositoryInterface::class),
+            ));
+        $container->bind(\Daems\Application\Backstage\Platform\AddTenantDomain\AddTenantDomain::class,
+            static fn(Container $c) => new \Daems\Application\Backstage\Platform\AddTenantDomain\AddTenantDomain(
+                $c->make(TenantRepositoryInterface::class),
+                $c->make(\Daems\Domain\Tenant\TenantDomainRepositoryInterface::class),
+                $c->make(UserRepositoryInterface::class),
+                $c->make(Clock::class),
+            ));
+        $container->bind(\Daems\Application\Backstage\Platform\UpdateTenantDomain\UpdateTenantDomain::class,
+            static fn(Container $c) => new \Daems\Application\Backstage\Platform\UpdateTenantDomain\UpdateTenantDomain(
+                $c->make(\Daems\Domain\Tenant\TenantDomainRepositoryInterface::class),
+                $c->make(UserRepositoryInterface::class),
+            ));
+        $container->bind(\Daems\Application\Backstage\Platform\RemoveTenantDomain\RemoveTenantDomain::class,
+            static fn(Container $c) => new \Daems\Application\Backstage\Platform\RemoveTenantDomain\RemoveTenantDomain(
+                $c->make(TenantRepositoryInterface::class),
+                $c->make(\Daems\Domain\Tenant\TenantDomainRepositoryInterface::class),
+                $c->make(UserRepositoryInterface::class),
+            ));
+        $container->bind(\Daems\Application\Backstage\Platform\GrantAdminToUserForTenant\GrantAdminToUserForTenant::class,
+            static fn(Container $c) => new \Daems\Application\Backstage\Platform\GrantAdminToUserForTenant\GrantAdminToUserForTenant(
+                $c->make(UserTenantRepositoryInterface::class),
+                $c->make(UserRepositoryInterface::class),
+            ));
+        $container->bind(\Daems\Application\Backstage\Platform\RevokeAdminFromUserForTenant\RevokeAdminFromUserForTenant::class,
+            static fn(Container $c) => new \Daems\Application\Backstage\Platform\RevokeAdminFromUserForTenant\RevokeAdminFromUserForTenant(
+                $c->make(UserTenantRepositoryInterface::class),
+                $c->make(UserRepositoryInterface::class),
+            ));
+        $container->bind(\Daems\Application\Backstage\Platform\GrantModuleAvailability\GrantModuleAvailability::class,
+            static fn(Container $c) => new \Daems\Application\Backstage\Platform\GrantModuleAvailability\GrantModuleAvailability(
+                $c->make(\Daems\Domain\Tenant\TenantModulesRepositoryInterface::class),
+                $c->make(\Daems\Domain\Tenant\ModuleAuditRepositoryInterface::class),
+                $c->make(UserRepositoryInterface::class),
+                $c->make(\Daems\Infrastructure\Module\ModuleRegistry::class),
+                $c->make(Clock::class),
+            ));
+        $container->bind(\Daems\Application\Backstage\Platform\RevokeModuleAvailability\RevokeModuleAvailability::class,
+            static fn(Container $c) => new \Daems\Application\Backstage\Platform\RevokeModuleAvailability\RevokeModuleAvailability(
+                $c->make(\Daems\Domain\Tenant\TenantModulesRepositoryInterface::class),
+                $c->make(\Daems\Domain\Tenant\ModuleAuditRepositoryInterface::class),
+                $c->make(UserRepositoryInterface::class),
+                $c->make(\Daems\Infrastructure\Module\ModuleRegistry::class),
+                $c->make(Clock::class),
+                $c->make(\Daems\Domain\Shared\TransactionManagerInterface::class),
+            ));
+        $container->bind(\Daems\Application\Backstage\Platform\ListTenants\ListTenants::class,
+            static fn(Container $c) => new \Daems\Application\Backstage\Platform\ListTenants\ListTenants(
+                $c->make(TenantRepositoryInterface::class),
+                $c->make(\Daems\Domain\Tenant\TenantDomainRepositoryInterface::class),
+                $c->make(\Daems\Domain\Tenant\TenantModulesRepositoryInterface::class),
+                $c->make(UserTenantRepositoryInterface::class),
+                $c->make(UserRepositoryInterface::class),
+            ));
+        $container->bind(\Daems\Application\Backstage\Platform\ListTenantAdmins\ListTenantAdmins::class,
+            static fn(Container $c) => new \Daems\Application\Backstage\Platform\ListTenantAdmins\ListTenantAdmins(
+                $c->make(UserTenantRepositoryInterface::class),
+                $c->make(UserRepositoryInterface::class),
+            ));
+        $container->bind(\Daems\Application\Backstage\Platform\GetTenantDetail\GetTenantDetail::class,
+            static fn(Container $c) => new \Daems\Application\Backstage\Platform\GetTenantDetail\GetTenantDetail(
+                $c->make(TenantRepositoryInterface::class),
+                $c->make(\Daems\Domain\Tenant\TenantDomainRepositoryInterface::class),
+                $c->make(\Daems\Domain\Tenant\TenantModulesRepositoryInterface::class),
+                $c->make(UserTenantRepositoryInterface::class),
+                $c->make(UserRepositoryInterface::class),
+            ));
+        $container->bind(\Daems\Application\Backstage\Platform\ListTenantModules\ListTenantModules::class,
+            static fn(Container $c) => new \Daems\Application\Backstage\Platform\ListTenantModules\ListTenantModules(
+                $c->make(TenantRepositoryInterface::class),
+                $c->make(\Daems\Domain\Tenant\TenantModulesRepositoryInterface::class),
+                $c->make(\Daems\Domain\Tenant\TenantModuleResolver::class),
+                $c->make(\Daems\Infrastructure\Module\ModuleRegistry::class),
+                $c->make(UserRepositoryInterface::class),
+            ));
+
+        // Backstage — Tenant-scope module use cases (Wave F)
+        $container->bind(\Daems\Application\Backstage\Tenant\EnableModuleForTenant\EnableModuleForTenant::class,
+            static fn(Container $c) => new \Daems\Application\Backstage\Tenant\EnableModuleForTenant\EnableModuleForTenant(
+                $c->make(TenantRepositoryInterface::class),
+                $c->make(\Daems\Domain\Tenant\TenantModulesRepositoryInterface::class),
+                $c->make(\Daems\Domain\Tenant\ModuleAuditRepositoryInterface::class),
+                $c->make(UserTenantRepositoryInterface::class),
+                $c->make(UserRepositoryInterface::class),
+                $c->make(\Daems\Infrastructure\Module\ModuleRegistry::class),
+                $c->make(Clock::class),
+            ));
+        $container->bind(\Daems\Application\Backstage\Tenant\DisableModuleForTenant\DisableModuleForTenant::class,
+            static fn(Container $c) => new \Daems\Application\Backstage\Tenant\DisableModuleForTenant\DisableModuleForTenant(
+                $c->make(\Daems\Domain\Tenant\TenantModulesRepositoryInterface::class),
+                $c->make(\Daems\Domain\Tenant\ModuleAuditRepositoryInterface::class),
+                $c->make(UserTenantRepositoryInterface::class),
+                $c->make(UserRepositoryInterface::class),
+                $c->make(\Daems\Infrastructure\Module\ModuleRegistry::class),
+                $c->make(Clock::class),
+            ));
+        $container->bind(\Daems\Application\Backstage\Tenant\ListTenantModulesForCurrentTenant\ListTenantModulesForCurrentTenant::class,
+            static fn(Container $c) => new \Daems\Application\Backstage\Tenant\ListTenantModulesForCurrentTenant\ListTenantModulesForCurrentTenant(
+                $c->make(\Daems\Domain\Tenant\TenantModuleResolver::class),
+                $c->make(\Daems\Domain\Tenant\TenantModulesRepositoryInterface::class),
+                $c->make(UserTenantRepositoryInterface::class),
+                $c->make(UserRepositoryInterface::class),
+                $c->make(\Daems\Infrastructure\Module\ModuleRegistry::class),
+            ));
+
+        // Backstage — Platform-scope + Tenant-scope controllers (Wave F)
+        $container->bind(\Daems\Infrastructure\Adapter\Api\Controller\Backstage\Platform\TenantsController::class,
+            static fn(Container $c) => new \Daems\Infrastructure\Adapter\Api\Controller\Backstage\Platform\TenantsController(
+                $c->make(\Daems\Application\Backstage\Platform\ListTenants\ListTenants::class),
+                $c->make(\Daems\Application\Backstage\Platform\GetTenantDetail\GetTenantDetail::class),
+                $c->make(\Daems\Application\Backstage\Platform\CreateTenant\CreateTenant::class),
+                $c->make(\Daems\Application\Backstage\Platform\UpdateTenantBasics\UpdateTenantBasics::class),
+                $c->make(\Daems\Application\Backstage\Platform\SuspendTenant\SuspendTenant::class),
+                $c->make(\Daems\Application\Backstage\Platform\ReactivateTenant\ReactivateTenant::class),
+            ));
+        $container->bind(\Daems\Infrastructure\Adapter\Api\Controller\Backstage\Platform\TenantDomainsController::class,
+            static fn(Container $c) => new \Daems\Infrastructure\Adapter\Api\Controller\Backstage\Platform\TenantDomainsController(
+                $c->make(\Daems\Application\Backstage\Platform\AddTenantDomain\AddTenantDomain::class),
+                $c->make(\Daems\Application\Backstage\Platform\UpdateTenantDomain\UpdateTenantDomain::class),
+                $c->make(\Daems\Application\Backstage\Platform\RemoveTenantDomain\RemoveTenantDomain::class),
+                $c->make(\Daems\Domain\Tenant\TenantDomainRepositoryInterface::class),
+            ));
+        $container->bind(\Daems\Infrastructure\Adapter\Api\Controller\Backstage\Platform\TenantAdminsController::class,
+            static fn(Container $c) => new \Daems\Infrastructure\Adapter\Api\Controller\Backstage\Platform\TenantAdminsController(
+                $c->make(\Daems\Application\Backstage\Platform\GrantAdminToUserForTenant\GrantAdminToUserForTenant::class),
+                $c->make(\Daems\Application\Backstage\Platform\RevokeAdminFromUserForTenant\RevokeAdminFromUserForTenant::class),
+                $c->make(\Daems\Application\Backstage\Platform\ListTenantAdmins\ListTenantAdmins::class),
+            ));
+        $container->bind(\Daems\Infrastructure\Adapter\Api\Controller\Backstage\Platform\PlatformTenantModulesController::class,
+            static fn(Container $c) => new \Daems\Infrastructure\Adapter\Api\Controller\Backstage\Platform\PlatformTenantModulesController(
+                $c->make(\Daems\Application\Backstage\Platform\ListTenantModules\ListTenantModules::class),
+                $c->make(\Daems\Application\Backstage\Platform\GrantModuleAvailability\GrantModuleAvailability::class),
+                $c->make(\Daems\Application\Backstage\Platform\RevokeModuleAvailability\RevokeModuleAvailability::class),
+            ));
+        $container->bind(\Daems\Infrastructure\Adapter\Api\Controller\Backstage\Tenant\TenantSelfModulesController::class,
+            static fn(Container $c) => new \Daems\Infrastructure\Adapter\Api\Controller\Backstage\Tenant\TenantSelfModulesController(
+                $c->make(\Daems\Application\Backstage\Tenant\ListTenantModulesForCurrentTenant\ListTenantModulesForCurrentTenant::class),
+                $c->make(\Daems\Application\Backstage\Tenant\EnableModuleForTenant\EnableModuleForTenant::class),
+                $c->make(\Daems\Application\Backstage\Tenant\DisableModuleForTenant\DisableModuleForTenant::class),
+                $c->make(UserTenantRepositoryInterface::class),
+            ));
+
         $container->bind(AuthMiddleware::class, static fn(Container $c) => new AuthMiddleware(
             $c->make(AuthenticateToken::class),
             $c->make(TenantRepositoryInterface::class),
@@ -298,6 +495,10 @@ final class KernelHarness
             new DateTimeImmutable('2024-01-01'),
         );
         $this->testTenantId = $stubTenant->id;
+        // Seed the test tenant into the InMemory repo so use cases that call
+        // findById / findBySlug from inside an authenticated request flow find
+        // it without each test having to remember to seedTenant() manually.
+        $this->tenants->save($stubTenant);
         $container->bind(TenantContextMiddleware::class, static fn() => new TenantContextMiddleware(
             new class ($stubTenant) implements TenantResolverInterface {
                 public function __construct(private readonly Tenant $tenant) {}
