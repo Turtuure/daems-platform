@@ -54,6 +54,17 @@ if (!$tenant instanceof \Daems\Domain\Tenant\Tenant) {
 /* Locale negotiation                                                  */
 /* ------------------------------------------------------------------ */
 
+// Pin the tenant's preferred locale BEFORE I18n::locale() runs so anonymous
+// visitors with no Accept-Language / cookie / session fall back to the
+// tenant's default rather than the platform-wide en_GB. Constrained to the
+// tenant's own supported set as a defensive guard against misconfigured
+// tenants_default_locale rows.
+$tenantSupported = $tenant->supportedLocales();
+$tenantDefault   = $tenant->defaultLocale();
+if (in_array($tenantDefault, $tenantSupported, true)) {
+    \Daems\Frontend\I18n::setTenantDefault($tenantDefault);
+}
+
 // Use the same resolver the rest of the platform uses; constrain to the
 // tenant's supportedLocales() and fall back to its defaultLocale().
 $locale = \Daems\Frontend\I18n::locale();

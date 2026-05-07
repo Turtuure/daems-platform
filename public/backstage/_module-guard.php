@@ -52,6 +52,18 @@ if (!isset($GLOBALS['daems_backstage_module_guard'])) {
     $__host = (string) ($_SERVER['HTTP_HOST'] ?? '');
     $__tenant = $__resolver->resolve($__host);
 
+    // Pin the tenant's default locale so I18n::locale() can fall back to it
+    // for anonymous visitors with no Accept-Language / cookie / session
+    // signal. Defensive guard: only set if the tenant's defaultLocale is in
+    // its own supportedLocales list.
+    if ($__tenant !== null) {
+        $__tenantSupported = $__tenant->supportedLocales();
+        $__tenantDefault   = $__tenant->defaultLocale();
+        if (in_array($__tenantDefault, $__tenantSupported, true)) {
+            \Daems\Frontend\I18n::setTenantDefault($__tenantDefault);
+        }
+    }
+
     $GLOBALS['daems_backstage_container']    = $container;
     $GLOBALS['daems_backstage_tenant']       = $__tenant;
     $GLOBALS['daems_backstage_module_guard'] = $__guard;

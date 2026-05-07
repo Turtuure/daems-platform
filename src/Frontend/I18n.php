@@ -18,7 +18,9 @@ namespace Daems\Frontend;
  *   3. $_COOKIE['daems_lang'] across browser tabs.
  *   4. The first of the supported locales found in the
  *      Accept-Language header (supports fi, fi-FI, fi_FI forms).
- *   5. Default: 'en_GB'.
+ *   5. The current tenant's default locale (set via setTenantDefault()
+ *      from sites-router.php or backstage's _module-guard.php).
+ *   6. Platform default: 'en_GB'.
  *
  * Translation files live in /lang/<code>.php at the platform root and
  * return a flat associative array keyed by dotted strings.
@@ -38,8 +40,40 @@ final class I18n
 
     private static ?string $locale = null;
 
+    /**
+     * Locale to fall back to BEFORE the platform-wide default. Set by the
+     * front-controllers (sites-router.php, backstage/_module-guard.php) once
+     * the request's tenant has been resolved, so an anonymous visitor with
+     * no Accept-Language header lands on the tenant's preferred language
+     * rather than the platform default. NULL = no tenant default known.
+     */
+    private static ?string $tenantDefaultLocale = null;
+
     /** @var array<string, array<string, string>> */
     private static array $dict = [];
+
+    /**
+     * Pin the current request's tenant-default locale.
+     *
+     * Pass NULL or an unsupported value to clear (which falls back to the
+     * platform-wide DEFAULT_LOCALE). Callers should constrain the input to
+     * the tenant's supportedLocales() before passing it in — this method
+     * itself only checks against the platform's SUPPORTED list as a final
+     * defensive guard.
+     */
+    public static function setTenantDefault(?string $locale): void
+    {
+        if ($locale === null) {
+            self::$tenantDefaultLocale = null;
+            return;
+        }
+        $norm = self::normalize($locale);
+        if ($norm === null) {
+            self::$tenantDefaultLocale = null;
+            return;
+        }
+        self::$tenantDefaultLocale = $norm;
+    }
 
     public static function locale(): string
     {
@@ -106,6 +140,13 @@ final class I18n
             }
         }
 
+        // 5. Tenant default — set by sites-router.php or backstage's
+        // _module-guard.php once the request's tenant has been resolved.
+        if (self::$tenantDefaultLocale !== null) {
+            return self::$locale = self::$tenantDefaultLocale;
+        }
+
+        // 6. Platform default.
         return self::$locale = self::DEFAULT_LOCALE;
     }
 
