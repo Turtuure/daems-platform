@@ -9,7 +9,7 @@
 
 Add five tightly-related capabilities to the daems-platform:
 
-1. **Module Registry** — a hybrid PHP-manifest + DB-state system that lets each top-level backstage feature (Forum, Events, Projects, Insights, Members, Search, Settings) declare itself as a module, with metadata, dependencies, and route ownership.
+1. **Module Registry extension** — extend the existing `Daems\Infrastructure\Module\ModuleRegistry` (which already discovers `c:/laragon/www/modules/<name>/module.json` at boot) with platform-level gating metadata sourced from a new `config/modules.php` file: category, sidebar position, gating defaults, inter-module dependencies. Five extracted modules (events, forum, insights, members, projects) get entries; Settings/Search/Dashboard are not modules and stay as backstage shell.
 2. **Two-tier tenant module gating** — Global System Admin (GSA) controls which modules are *available* to a tenant; the tenant's own admin chooses which *available* modules to *enable*. Disabled modules return 404 on direct URL access. Data is preserved across toggles.
 3. **Tenant Management backstage UI** — GSA-only screens to create, edit, suspend, and reactivate tenants; manage `tenant_domains`; assign tenant admins; and grant/revoke module availability. Tenant admins get a Settings → Modules page to enable/disable available modules.
 4. **Default public site fallback** — a minimal public site (home + join form + login link + footer + suspended state) served from `public/sites/_default/` when a tenant has no custom `c:/laragon/www/sites/{slug}/` frontend.
@@ -39,91 +39,171 @@ These ship in a single PR because the parts are deeply interdependent (resolver 
 ## 4. Architecture overview
 
 ```text
-┌─────────────────────────────────────────────────────────────────────┐
-│  Bootstrap                                                           │
-│  ┌─────────────────────────────────────────────────────────────┐   │
-│  │  ModuleRegistry  (singleton, scans config/modules/*.php)    │   │
-│  │  - validates: slug uniqueness, no cycles, no route overlap  │   │
-│  │  - throws ModuleManifestException on failure                │   │
-│  └─────────────────────────────────────────────────────────────┘   │
-│                              │                                       │
-│                              ▼                                       │
-│  ┌─────────────────────────────────────────────────────────────┐   │
-│  │  TenantModuleResolver                                        │   │
-│  │  - isEnabledFor(TenantId, slug): bool                        │   │
-│  │  - statesForTenant(TenantId): array<slug, ModuleState>       │   │
-│  │  - reads tenant_modules table via repository                 │   │
-│  └─────────────────────────────────────────────────────────────┘   │
-│           │                  │                  │                    │
-│           ▼                  ▼                  ▼                    │
-│  ┌─────────────┐   ┌──────────────┐   ┌────────────────┐           │
-│  │RouteGuard   │   │SidebarBuilder│   │TenantModule-   │           │
-│  │(404 disabled│   │(filters by   │   │ Service (GSA + │           │
-│  │ before auth)│   │ enabled)     │   │ tenant-admin   │           │
-│  │             │   │              │   │ toggle ops)    │           │
-│  └─────────────┘   └──────────────┘   └────────────────┘           │
-└─────────────────────────────────────────────────────────────────────┘
+┌──────────────────────────────────────────────────────────────────────┐
+│  Bootstrap (existing flow + extensions)                              │
+│  ┌────────────────────────────────────────────────────────────────┐ │
+│  │  ModuleRegistry::discover('../modules')   [EXISTING]           │ │
+│  │   1. scan modules/<name>/module.json files                     │ │
+│  │   2. NEW: load config/modules.php and merge per name           │ │
+│  │   3. NEW: validate dependency graph + route prefix overlaps    │ │
+│  │   throws ManifestValidationException on failure                │ │
+│  └────────────────────────────────────────────────────────────────┘ │
+│                              │                                        │
+│                              ▼                                        │
+│  ┌────────────────────────────────────────────────────────────────┐ │
+│  │  TenantModuleResolver                            [NEW]         │ │
+│  │   - isEnabledFor(TenantId, name): bool                         │ │
+│  │   - statesForTenant(TenantId): array<name, ModuleState>        │ │
+│  │   - reads tenant_modules table via repository                  │ │
+│  └────────────────────────────────────────────────────────────────┘ │
+│           │                  │                  │                     │
+│           ▼                  ▼                  ▼                     │
+│  ┌─────────────┐    ┌──────────────┐    ┌────────────────┐          │
+│  │RouteGuard   │    │SidebarBuilder│    │TenantModule-   │          │
+│  │(404 disabled│    │(filters by   │    │Service (GSA +  │          │
+│  │ before auth)│    │ enabled)     │    │tenant-admin    │          │
+│  │  [NEW]      │    │  [NEW]       │    │toggle ops [NEW]│          │
+│  └─────────────┘    └──────────────┘    └────────────────┘          │
+└──────────────────────────────────────────────────────────────────────┘
 ```
 
-The Registry is the source of truth for *what modules exist*. The Resolver is the source of truth for *which modules are active for tenant X right now*. RouteGuard, SidebarBuilder, and TenantModuleService all depend on the Resolver — they are the only places that translate "module is/isn't on" into user-visible behaviour.
+The existing `ModuleRegistry` (in `src/Infrastructure/Module/`) is the source of truth for *what modules exist*, after this spec extends it to merge in platform-level metadata from `config/modules.php`. The Resolver is the source of truth for *which modules are active for tenant X right now*. RouteGuard, SidebarBuilder, and TenantModuleService all depend on the Resolver — they are the only places that translate "module is/isn't on" into user-visible behaviour.
+
+Files marked `[EXISTING]` are extended in place. Files marked `[NEW]` are added by this spec. The bootstrap call sequence in `bootstrap/app.php:76-81` and `:370-371` stays — the registry's `discover()` body grows to also process `config/modules.php` and run the new validations.
 
 ## 5. Module manifest format
 
-### Location
+### Existing system (do not duplicate)
 
-`config/modules/<slug>.php` — one file per module. Returns a PHP array.
+The platform already has a working module discovery system:
 
-### Schema
+- `Daems\Infrastructure\Module\ModuleRegistry` (`src/Infrastructure/Module/ModuleRegistry.php`) — discovers modules at boot via `discover('../modules')`, registers Composer autoloader, invokes per-module `bindings.php` and `routes.php`, exposes migration paths.
+- `Daems\Infrastructure\Module\ModuleManifest` (`src/Infrastructure/Module/ModuleManifest.php`) — value object parsed from `module.json`.
+- `c:/laragon/www/modules/<name>/module.json` — per-module manifest, sibling to the platform repo. Each module is its own git repo (Forum, Events, Projects, Insights, Members were extracted in 2026-04-27 and 2026-04-28).
+- Bootstrap already wires this in `bootstrap/app.php:76-81` and `bootstrap/app.php:370-371`.
+
+This spec does **not** invent a new registry. It **extends** the existing one with platform-level gating metadata and adds the tenant-state layer on top.
+
+### Two-tier manifest split
+
+| Layer | Where | Owner | Purpose |
+|---|---|---|---|
+| Module's own manifest | `c:/laragon/www/modules/<name>/module.json` | Each module's repo | "What this module is" — namespace, paths, version, requires |
+| Platform-level metadata | `config/modules.php` (new, in daems-platform repo) | Platform | "How this platform integrates this module" — category, sidebar position, gating defaults, inter-module dependencies |
+
+The split keeps each module's repo self-describing while letting the platform own its UX integration concerns. A module added later (say, `meetings`) needs an entry in both: its own `module.json` and the platform's `config/modules.php`.
+
+### Existing `module.json` schema (unchanged)
+
+```json
+{
+  "name": "forum",
+  "version": "1.0.0",
+  "description": "...",
+  "namespace": "DaemsModule\\Forum\\",
+  "src_path": "backend/src/",
+  "bindings": "backend/bindings.php",
+  "routes": "backend/routes.php",
+  "migrations_path": "backend/migrations/",
+  "frontend": {
+    "public_pages": "frontend/public/",
+    "backstage_pages": "frontend/backstage/",
+    "assets": "frontend/assets/"
+  },
+  "requires": { "core": ">=1.0.0" }
+}
+```
+
+`name` is kebab-case, lowercase letters/digits/hyphens, must start with a letter (validated by `ModuleManifest::fromArray`). The new tenant-state layer (`tenant_modules.module_slug`) uses this same `name` value as its identifier.
+
+### New `config/modules.php` schema (added in this spec)
+
+A single PHP file at the platform root, returning an associative array keyed by module name:
 
 ```php
 <?php declare(strict_types=1);
 
 return [
-    'slug'              => 'forum',
-    'name_key'          => 'modules.forum.name',
-    'description_key'   => 'modules.forum.description',
-    'category'          => 'community',          // 'core'|'members'|'community'|'governance'|'content'
-    'is_core'           => false,                // true => always-on, not in toggle UI, not in tenant_modules
-    'default_available' => true,                 // backfilled to existing tenants on migration 072
-    'sidebar' => [
-        'group' => 'community',
-        'order' => 30,
-        'icon'  => 'forum',
-        'href'  => '/backstage/forum',
+    'forum' => [
+        'category'          => 'community',          // 'members'|'community'|'governance'|'content'
+        'name_key'          => 'modules.forum.name',
+        'description_key'   => 'modules.forum.description',
+        'is_core'           => false,                // true => always-on, not in toggle UI
+        'default_available' => true,                 // auto-grant to existing tenants in mig 072
+        'sidebar' => [
+            'group' => 'community',
+            'order' => 30,
+            'icon'  => 'forum',
+            'href'  => '/backstage/forum',
+        ],
+        'route_prefixes' => [
+            'backstage' => ['/backstage/forum'],
+            'api'       => ['/api/v1/backstage/forum', '/api/v1/forum'],
+        ],
+        'depends_on' => [],
     ],
-    'routes' => [
-        'backstage' => ['/backstage/forum'],
-        'api'       => ['/api/v1/backstage/forum', '/api/v1/forum'],
-    ],
-    'dependencies' => [],                        // array of slugs this module requires
+    'events'    => [ /* ... */ ],
+    'projects'  => [ /* ... */ ],
+    'insights'  => [ /* ... */ ],
+    'members'   => [ /* ... */ ],
 ];
 ```
 
-### Validation rules (enforced at boot)
+Key naming differs from `module.json`:
+- `route_prefixes` (not `routes`) — reserved word avoidance; module.json's `routes` field is the path to a PHP routes file, this is a list of URL prefixes.
+- `depends_on` (not `requires`) — module.json's `requires` is version-keyed (`{"core": ">=1.0.0"}`), this is a flat list of module names. Different concepts.
 
-1. `slug` is unique across all manifest files.
-2. `slug` matches `/^[a-z][a-z0-9_-]*$/`.
-3. `name_key` and `description_key` exist in `lang/en_GB.php` (English is the platform default; missing keys in other locales fall back to English).
-4. `category` is one of the allowed values.
-5. `dependencies` lists only known slugs (each must resolve to another manifest).
-6. The dependency graph is acyclic.
-7. No two manifests claim overlapping route prefixes (longest-prefix match must be unambiguous).
+### Merged manifest at runtime
 
-Failure ⇒ `ModuleManifestException` at bootstrap time. There is no silent fallback.
+`ModuleManifest` is extended (not replaced) with new optional getter methods that return the merged view:
 
-### Initial module catalog
+```php
+$manifest->name();                   // 'forum' — from module.json (existing)
+$manifest->namespace();              // 'DaemsModule\Forum\\' — from module.json (existing)
+$manifest->category();               // 'community' — from config/modules.php (new)
+$manifest->isCore();                 // false — from config/modules.php (new)
+$manifest->defaultAvailable();       // true — from config/modules.php (new)
+$manifest->sidebar();                // SidebarEntry|null — from config/modules.php (new)
+$manifest->routePrefixes();          // RoutePrefixes — from config/modules.php (new)
+$manifest->dependsOn();              // ['members'] — from config/modules.php (new)
+$manifest->nameKey();                // 'modules.forum.name' — from config/modules.php (new)
+$manifest->descriptionKey();         // 'modules.forum.description' — from config/modules.php (new)
+```
 
-| slug | is_core | default_available | category | retrofit-source |
-|---|---|---|---|---|
-| `settings` | true | — | core | `public/backstage/pages/settings/` |
-| `search` | true | — | core | `src/Domain/Search` |
-| `members` | false | true | members | `src/Domain/Member`, `src/Domain/Membership` |
-| `events` | false | true | content | `src/Domain/Project` (Events part) |
-| `projects` | false | true | content | `src/Domain/Project` |
-| `forum` | false | true | community | `src/Domain/Forum` |
-| `insights` | false | true | content | `src/Domain/Insight` (blog) |
+Loading flow at bootstrap (in `ModuleRegistry::discover()`):
 
-`dashboard` is **not** a module — it is the backstage shell index page, hardcoded into `_shared.php` because it is the entry surface for every backstage user regardless of tenant.
+1. Scan `c:/laragon/www/modules/*/module.json` (existing behaviour, unchanged).
+2. For each manifest, look up `config['modules'][$manifest->name()]` from `config/modules.php`.
+3. If a platform-level entry exists, merge it into the manifest. If absent, apply safe defaults (`category='content'`, `is_core=false`, `default_available=false`, `sidebar=null`, `route_prefixes` empty, `depends_on=[]`). A discovered module without a platform-level entry is silently inert in this platform's deployment — it will not appear in tenant management or the sidebar until added to `config/modules.php`.
+
+### Validation rules (enforced at boot, additive to existing)
+
+The existing `ModuleManifest::fromArray` validations stay (kebab-case name, namespace trailing backslash, required fields, `.php` suffix on bindings/routes). New validations:
+
+1. `category` (when present) is one of `members`, `community`, `governance`, `content`. (Note: there is no `core` category in the gating model — `is_core=true` is the flag for that.)
+2. `name_key` and `description_key` (when present) exist in `lang/en_GB.php`.
+3. `depends_on` (when present) names only modules that are discoverable via `module.json` AND have a platform-level entry. References to absent modules ⇒ validation error.
+4. The `depends_on` graph (across all modules with platform-level entries) is acyclic.
+5. No two `route_prefixes` entries claim overlapping prefixes (longest-prefix match must be unambiguous).
+6. `is_core=true` plus `default_available=false` is rejected as nonsensical.
+
+Failures throw `ManifestValidationException` (existing class) — same exception type, extended message detail. Bootstrap fails fast.
+
+### Initial platform-level catalog
+
+`config/modules.php` ships with these entries (one per discoverable module today):
+
+| `module.json` name | category | is_core | default_available | depends_on | sidebar |
+|---|---|---|---|---|---|
+| `members` | members | false | true | — | order 10 |
+| `events` | content | false | true | — | order 20 |
+| `projects` | content | false | true | — | order 21 |
+| `forum` | community | false | true | — | order 30 |
+| `insights` | content | false | true | — | order 40 |
+
+**`Settings`, `Search`, `Dashboard` are not modules.** They are part of the backstage shell — paths under `public/backstage/pages/settings/`, `public/backstage/pages/search/`, `public/backstage/pages/index.php` are core platform code in `daems-platform`, not extracted modules. The sidebar adds them as hardcoded entries (Dashboard always; Settings always; Search always — Settings is the gateway to module management itself, Search reads across enabled modules but is itself shell). The tenant gating layer never touches these — there is no `tenant_modules` row for them, and `ModuleRouteGuard` matches no prefix that points to them, so they are always allowed.
+
+The earlier brainstorming question about Settings/Search/Members "is_core" status was answered against an assumed flat catalog where everything is a module. Once the actual extraction state is acknowledged (Settings/Search are shell, not extracted), the question dissolves: **only the five extracted modules are in the gating system**, all five toggleable, all five `default_available=true` to preserve current behaviour for the `daems` and `sahegroup` tenants.
 
 ## 6. Database schema
 
@@ -151,9 +231,10 @@ CREATE TABLE tenant_modules (
 ```
 
 Domain-level rules (enforced by `TenantModule` value object and Service layer, not DB constraints):
+
 - `enabled_at` non-null requires `available_at` non-null. Disabling availability of a currently-enabled module cascades to a forced disable in the same transaction.
 - `disabled_at` is the timestamp of the most recent disable; it is preserved across re-enable cycles for audit visibility.
-- `module_slug` is **not** an FK to anything, because the manifest is the source of truth and lives in code, not in the DB. If a manifest is deleted, the orphaned rows render as "unknown module" in the GSA UI with a cleanup option.
+- `module_slug` is **not** an FK to anything. Its value is the module's `name` field from `module.json` (kebab-case, lowercase, validated by `ModuleManifest::fromArray`). The manifest is the source of truth and lives in code, not in the DB. If a module's manifest is removed, orphaned rows render as "unknown module" in the GSA UI with a cleanup option. (The column is named `module_slug` rather than `module_name` to avoid confusion with `tenants.name` and to keep the table column descriptive.)
 
 ### New table: `module_audit`
 
@@ -201,31 +282,43 @@ The existing schema covers these features; the UI exposes them, no schema change
 
 ## 7. Migrations
 
-Numbered sequentially after the current high-water mark (068).
+Numbered sequentially after the current platform-side high-water mark (068). Module-scoped migrations (in `c:/laragon/www/modules/<name>/backend/migrations/`) are the modules' own concern and are unaffected.
 
 - `069_create_tenant_modules_table.sql`
 - `070_create_module_audit_table.sql`
-- `071_extend_tenants_for_management_ui.sql` — column additions plus the inline data block for existing tenants' `display_name_i18n`, `supported_locales`, `default_locale`. Daem Society row gets `default_locale = 'fi_FI'`; Sahegroup row gets `'en_GB'`.
-- `072_seed_tenant_modules.php` — runs `scripts/seed-tenant-modules.php`, which loads the manifests via `ModuleRegistry`, iterates non-core modules with `default_available=true`, and inserts a `tenant_modules` row per (existing tenant × such module) with `available_at = NOW(), available_by = NULL, enabled_at = NOW(), enabled_by = NULL`. This preserves current behaviour exactly: every module currently shipping is auto-enabled for both existing tenants. New tenants created after this migration get the same treatment via `CreateTenant` use case.
+- `071_extend_tenants_for_management_ui.sql` — column additions plus inline data block: existing `daems` and `sahegroup` rows get `display_name_i18n` populated from current `name`, `supported_locales = 'fi_FI,en_GB,sw_TZ'`, `daems.default_locale = 'fi_FI'`, `sahegroup.default_locale = 'en_GB'`.
+- `072_seed_tenant_modules.sql` — straight SQL, no PHP. The migration enumerates the five known modules at write time (`members`, `events`, `projects`, `forum`, `insights`) since the runner is `.sql`-only. For each, an `INSERT ... SELECT` adds a `tenant_modules` row per existing tenant with `available_at = NOW(), enabled_at = NOW()`, preserving current behaviour exactly. `created_at`/`updated_at` are set to NOW(); `available_by`/`enabled_by` are NULL because there is no real GSA actor for the system-seeded baseline.
 
-The `.php` migration suffix is supported by the existing migration runner. If the runner expects `.sql` only, the seed step is run as a post-migration script gated to dev/prod environments via `composer migrate:seed-modules` or equivalent — chosen at plan time after inspecting the runner's behaviour.
+The seed migration hard-codes the five module names because:
+- The migration runner is `.sql`-only (verified at plan time before this commit).
+- The set of "modules currently shipping" is a frozen snapshot of the world at migration write time. Future modules are seeded at GSA-create-tenant time, not via additional migrations.
+- A PHP-based seed would need the bootstrap to run before migrations, which inverts the safe migration order.
+
+Migration tests verify that the five expected `tenant_modules` rows exist after running through 072 against a database seeded with the two existing tenants.
 
 ## 8. Code surface — Domain and Application layers
 
-### `src/Domain/Tenant/`
+### `src/Infrastructure/Module/` (existing — extended)
 
-- `ModuleManifest` (new value object) — immutable, parsed from a PHP file
-- `ModuleRegistry` (new) — singleton, validates and exposes manifests
-- `ModuleManifestException` (new) — thrown from validation
+- `ModuleManifest` (existing) — extended with new optional getters: `category()`, `nameKey()`, `descriptionKey()`, `isCore()`, `defaultAvailable()`, `sidebar(): ?SidebarEntry`, `routePrefixes(): RoutePrefixes`, `dependsOn(): array`. Backward-compatible: existing constructor params stay; new fields default to safe values when `config/modules.php` lacks an entry.
+- `ModuleRegistry` (existing) — extended with: `discover()` now also loads `config/modules.php` and merges per-name; `categoryOf(string $name): string`; `coreModules(): array`; `toggleableModules(): array`; `dependents(string $name): array`; `dependencies(string $name): array`; `validateDependencyGraph(): void` (called at end of `discover()`).
+- `ManifestValidationException` (existing) — keep; new validation paths throw it with extended messages.
+- `SidebarEntry` (new value object) — `group`, `order`, `icon`, `href`.
+- `RoutePrefixes` (new value object) — backstage and api prefix lists; `matches(string $path): bool`; `longestMatch(string $path): ?string`.
+
+### `src/Domain/Tenant/` (existing — extended)
+
 - `ModuleState` (new enum) — `ENABLED | AVAILABLE_NOT_ENABLED | DISABLED | CORE`
-- `TenantModule` (new entity) — represents one row of `tenant_modules`
+- `TenantModule` (new entity) — represents one row of `tenant_modules`. Holds module name (string), state timestamps, actor user IDs.
 - `TenantModulesRepositoryInterface` (new port)
-- `TenantModuleResolver` (new) — pure logic, depends on Registry + repository
-- `ModuleRouteGuard` (new) — pure logic, depends on Registry + Resolver
+- `TenantModuleResolver` (new) — pure logic, depends on `ModuleRegistry` (from `src/Infrastructure/Module/`) and `TenantModulesRepositoryInterface`.
+- `ModuleRouteGuard` (new) — pure logic, depends on `ModuleRegistry` and `TenantModuleResolver`.
 - `ModuleAuditEntry` (new entity)
 - `ModuleAuditRepositoryInterface` (new port)
 - `Tenant.php` (existing) — extended with `displayName(string $locale): string`, `publicDescription(string $locale): ?string`, `supportedLocales(): array`, `defaultLocale(): string`, `suspended(): bool`, `suspendedReason(): ?string`
 - `TenantRepositoryInterface` (existing) — extended with `update(Tenant)`, `suspend(TenantId, string $reason)`, `reactivate(TenantId)`
+
+Note: although `TenantModuleResolver` lives in `src/Domain/Tenant/`, it depends on `ModuleRegistry` from `src/Infrastructure/Module/`. This is acceptable because the registry is a configuration-data source treated as read-only at request time; the dependency is one-directional (resolver → registry, never the reverse). If a stricter Clean Architecture purist later wants to invert the dependency, a `ModuleManifestProviderInterface` port can be added in Domain and the registry implements it. Out of scope for MVP.
 
 ### `src/Domain/Tenant/` — domain exceptions
 
@@ -284,16 +377,17 @@ InMemory fakes to add:
 
 ## 9. Resolver state machine
 
-Given a `(TenantId, slug)`:
+Given a `(TenantId, moduleName)` where `moduleName` is the kebab-case `name` field from `module.json`:
 
 ```text
-manifest exists?
-  no  → ModuleState::DISABLED                (and surfaces as "unknown module" in GSA UI)
+manifest exists in registry (module.json discovered AND config/modules.php entry present)?
+  no  → ModuleState::DISABLED                (and surfaces as "unknown module" in GSA UI
+                                              if a tenant_modules row exists for it)
   yes:
-    manifest.is_core?
+    manifest.isCore() (from config/modules.php)?
       yes → ModuleState::CORE
       no:
-        tenant_modules row exists?
+        tenant_modules row exists for (tenant_id, module_name)?
           no  → ModuleState::DISABLED
           yes:
             available_at IS NOT NULL?
@@ -304,23 +398,25 @@ manifest exists?
                   yes → ModuleState::ENABLED
 ```
 
-Caching: per-request memoisation in the resolver instance only. No app-level cache in MVP — measured cost is sub-millisecond at expected fan-out (8 modules × 1 tenant). Add caching only when a benchmark says so.
+A module discovered via `module.json` but lacking a `config/modules.php` entry is treated the same as "manifest doesn't exist" from the resolver's perspective — it is not in the gating system in this platform's deployment, even though its code is loaded. This preserves the platform's control over which discovered modules participate in the tenant gating UX.
+
+Caching: per-request memoisation in the resolver instance only. No app-level cache in MVP — measured cost is sub-millisecond at expected fan-out (5 modules × 1 tenant). Add caching only when a benchmark says so.
 
 ## 10. Route guard — 404 before auth
 
 The guard runs in both `public/backstage/router.php` and `public/backstage/api-router.php`, **before** `_guard.php`'s auth check. If a route's owning module is `DISABLED` or `AVAILABLE_NOT_ENABLED`, the response is HTTP 404 with no body content beyond a generic Not-Found page — identical to a route that genuinely does not exist. This prevents an unauthenticated visitor from probing whether a module exists, is enabled, or merely disabled.
 
-`is_core` modules always pass the guard. Routes that match no manifest also pass — they are either `core` shell routes (`/backstage/login`, `/backstage/`, `/backstage/api/auth/...`) or, in dev, intentional debug paths.
+`is_core` modules (none in MVP, but the path is supported) always pass the guard. Routes that match no module's `route_prefixes` also pass — they belong to the backstage shell (`/backstage/login`, `/backstage/`, `/backstage/api/auth/...`, Settings, Search, Dashboard, Platform/Tenants admin pages) or, in dev, intentional debug paths.
 
-The longest-prefix-match rule resolves the case where two manifests claim overlapping prefixes — but the validation step at boot rejects such overlaps, so the resolver guarantees one canonical owner per request path.
+The longest-prefix-match rule resolves the case where two modules claim overlapping prefixes — but the validation step at boot rejects such overlaps, so the resolver guarantees one canonical owner per request path.
 
 ## 11. Sidebar rendering
 
 `BackstageSidebar::buildFor(Tenant, User)` returns an ordered list of grouped items:
 
-1. **Hardcoded shell items** — Dashboard always; Platform group (Tenants, Audit) only if `User::is_platform_admin`.
-2. **Module items** — for each module in registry order, included if `ModuleState::ENABLED` or `ModuleState::CORE`. Excluded if `AVAILABLE_NOT_ENABLED` or `DISABLED`. Group label comes from the manifest's `category` translated via i18n.
-3. **Settings → Modules** sub-link — always included if `members` or any non-core module exists in the registry (i.e., the tenant has something they can toggle).
+1. **Hardcoded shell items** — Dashboard, Settings, Search are always present. Platform group (Tenants, Audit) is added only if `User::is_platform_admin`.
+2. **Module items** — for each module in registry order (driven by `sidebar.order`), included if `ModuleState::ENABLED`. Excluded if `AVAILABLE_NOT_ENABLED` or `DISABLED`. Group label comes from the manifest's `category` translated via i18n. Modules without a `sidebar` entry in `config/modules.php` produce no sidebar item even when enabled (they are headless backend-only features).
+3. **Settings → Modules** sub-link — always present (the link sits inside the always-on Settings shell page) so a tenant admin can manage activations.
 
 Available-but-not-enabled modules are surfaced **only** in `/backstage/settings/modules`, with a clear "Activate" affordance. They do not pollute the main sidebar, because the sidebar is for things in active use.
 
@@ -584,13 +680,14 @@ All keys ship in fi_FI, en_GB, and sw_TZ. en_GB is the canonical source; the oth
 
 ### Unit (`tests/Unit/`)
 
-- `ModuleManifestTest` — value object construction, immutability, validation messages
-- `ModuleRegistryTest` — slug uniqueness, cycle detection, route overlap rejection, missing dependency rejection
-- `TenantModuleResolverTest` — every state transition (manifest absent, is_core, no row, available no enabled, available + enabled, suspended tenant)
-- `ModuleRouteGuardTest` — longest-prefix matching, is_core bypass, disabled → NOT_FOUND, unknown route → ALLOW
-- `BackstageSidebarTest` — group ordering, locale-translated labels, hardcoded shell items, platform-group GSA-only visibility
-- `TenantTest` — new field accessors, fallback to `name`, suspended state
-- `LocaleNegotiatorTest` — re-verify under new `DEFAULT_LOCALE = 'en_GB'`
+- `tests/Unit/Infrastructure/Module/ModuleManifestTest` — extend the existing test class. New assertions for the platform-level fields parsed from `config/modules.php`: `category()`, `nameKey()`, `descriptionKey()`, `isCore()`, `defaultAvailable()`, `sidebar()`, `routePrefixes()`, `dependsOn()`. Backwards-compatibility check: existing `module.json`-only construction still works with safe defaults.
+- `tests/Unit/Infrastructure/Module/ModuleRegistryTest` — extend the existing test class. New assertions: `discover()` merges `config/modules.php` per name; cycle detection across `depends_on`; route prefix overlap rejection; nonsensical `is_core=true && default_available=false` rejection; missing-dependency rejection; modules without a platform-level entry get safe defaults and stay inert.
+- `tests/Unit/Domain/Tenant/TenantModuleResolverTest` (new) — every state transition (no manifest, is_core, no row, available no enabled, available + enabled, suspended tenant)
+- `tests/Unit/Domain/Tenant/ModuleRouteGuardTest` (new) — longest-prefix matching, is_core bypass, disabled → NOT_FOUND, unknown route → ALLOW
+- `tests/Unit/Frontend/BackstageSidebarTest` (new) — group ordering, locale-translated labels, hardcoded shell items (Dashboard/Settings/Search), platform-group GSA-only visibility
+- `tests/Unit/Domain/Tenant/TenantTest` — new field accessors, fallback to `name`, suspended state
+- `tests/Unit/Domain/Locale/LocaleNegotiatorTest` — re-verify under new `DEFAULT_LOCALE = 'en_GB'`
+- New value object tests: `SidebarEntryTest`, `RoutePrefixesTest` (longest-match algorithm, prefix-overlap detection)
 
 ### Integration (`tests/Integration/`)
 
@@ -629,7 +726,7 @@ All keys ship in fi_FI, en_GB, and sw_TZ. en_GB is the canonical source; the oth
 ### Performance sanity
 
 - `ModuleRegistry` boot < 50ms on local dev machine
-- `TenantModuleResolver::statesForTenant()` < 5ms with 8 modules and a warm MySQL connection
+- `TenantModuleResolver::statesForTenant()` < 5ms with 5 modules and a warm MySQL connection
 
 These are not strict gates — they are values to record and inspect during testing. Regression beyond 2× either threshold is a flag for review.
 
@@ -637,27 +734,33 @@ These are not strict gates — they are values to record and inspect during test
 
 All changes ship in **one PR** because the parts are interdependent and partial deployment leaves the system in inconsistent states:
 
-1. Migrations 069–072 (tables + extensions + backfill).
-2. Manifests in `config/modules/` for the seven non-dashboard modules.
-3. Domain layer (Registry, Resolver, RouteGuard, value objects, exceptions).
-4. Application layer (use cases and controllers, both Platform and Tenant scopes).
-5. Infrastructure (SQL repositories, InMemory fakes for tests).
-6. DI bindings in `bootstrap/app.php` and `tests/Support/KernelHarness.php`.
-7. Backstage shell integration (sidebar builder, router guard, api-router guard).
-8. UI pages (`public/backstage/pages/platform/`, `public/backstage/pages/settings/modules.php`).
-9. Default public site (`public/sites/_default/`, `public/sites-router.php` integration).
-10. `I18n::DEFAULT_LOCALE` flip and `lang/*.php` additions.
-11. Tests across all four levels.
-12. CLAUDE.md and memory updates (`project_module_registry.md`, `project_default_public_site.md`, `project_i18n_milestone.md` correction).
+1. Migrations 069–072 (tables + extensions + backfill of the five existing tenant_modules rows for daems and sahegroup).
+2. `config/modules.php` with platform-level entries for the five extracted modules (events, forum, insights, members, projects).
+3. Module Registry layer extension: `ModuleManifest` and `ModuleRegistry` in `src/Infrastructure/Module/` gain new fields, getters, validations; new `SidebarEntry` and `RoutePrefixes` value objects.
+4. Domain layer additions (TenantModule, TenantModuleResolver, ModuleRouteGuard, ModuleAuditEntry, ModuleState enum, repository ports, exceptions; Tenant entity extensions).
+5. Application layer (use cases and controllers, both Platform and Tenant scopes).
+6. Infrastructure (SQL repositories, InMemory fakes for tests).
+7. DI bindings in `bootstrap/app.php` and `tests/Support/KernelHarness.php`.
+8. Backstage shell integration (sidebar builder, router guard, api-router guard).
+9. UI pages (`public/backstage/pages/platform/`, `public/backstage/pages/settings/modules.php`).
+10. Default public site (`public/sites/_default/`, `public/sites-router.php` integration).
+11. `I18n::DEFAULT_LOCALE` flip and `lang/*.php` additions.
+12. Tests across all four levels.
+13. CLAUDE.md and memory updates (`project_module_registry.md`, `project_default_public_site.md`, `project_i18n_milestone.md` correction).
 
-Estimated commit count: 30–50, on the `module-registry-tenant-mgmt` branch off `dev`. Final review and merge happens after the manual smoke list passes.
+Estimated commit count: 30–50, on a branch named `module-registry-tenant-mgmt` cut off `dev` (after `backstage-to-platform` merges). Final review and merge happens after the manual smoke list passes.
 
 ## 19. CLAUDE.md updates
 
 Sections to add or modify:
 
-- **Architecture** subsection: add a paragraph on module manifests and the registry-resolver-guard split.
-- **Adding a new module** recipe: step-by-step (create `config/modules/<slug>.php`, add lang keys, add `tenant_modules` rows for existing tenants if `default_available=true`, wire DI for any module-internal services).
+- **Architecture** subsection: add a paragraph on the two-tier manifest split (`module.json` per module + `config/modules.php` platform-level) and the registry-resolver-guard chain.
+- **Adding a new module** recipe: step-by-step:
+  1. In the module's own repo: create/update `module.json` with name, namespace, paths.
+  2. In daems-platform: add an entry to `config/modules.php` with category, sidebar position, route_prefixes, depends_on, gating defaults.
+  3. Add i18n keys `modules.<name>.name` and `modules.<name>.description` to `lang/{fi_FI,en_GB,sw_TZ}.php`.
+  4. If `default_available=true`, add a one-off SQL migration that inserts `tenant_modules` rows for existing tenants (or use the GSA UI per tenant if rollout is gated).
+  5. The module's bindings.php, routes.php, migrations are picked up automatically by ModuleRegistry on next boot.
 - **Default public site** subsection: explain when it kicks in and how to override per-tenant.
 - **i18n notes**: replace "UI chrome default = fi_FI" with "UI chrome default = en_GB; tenants override via `tenants.default_locale`. Daem Society tenant runs in `fi_FI`."
 - **DI wiring — BOTH containers** warning: keep as-is; the new controllers and use cases are added to the listed gotcha-prone items.
@@ -674,7 +777,7 @@ Sections to add or modify:
 The implementation is complete only when **all** of the following hold:
 
 1. Migrations 069–072 apply cleanly to a fresh test DB and to a copy of the current production schema.
-2. `ModuleRegistry` loads all seven module manifests and rejects malformed manifests with `ModuleManifestException` (covered by tests).
+2. `ModuleRegistry::discover()` loads all five extracted module `module.json` manifests AND merges in matching entries from `config/modules.php`, and rejects malformed manifests or invalid platform-level metadata with `ManifestValidationException` (covered by tests).
 3. `TenantModuleResolver` returns the correct `ModuleState` for every input combination (covered by tests).
 4. A direct request to a disabled module's URL (`/backstage/forum` or `/api/v1/backstage/forum/threads`) returns HTTP 404 **before** the auth layer, leaking no information about module state to anonymous visitors.
 5. The sidebar hides disabled modules; `AVAILABLE_NOT_ENABLED` modules surface only on `/backstage/settings/modules`.
@@ -693,7 +796,7 @@ The implementation is complete only when **all** of the following hold:
 
 These are intentionally not decided in this spec — they belong in the plan/execution phase:
 
-- Whether `072_seed_tenant_modules` ships as a `.php` file in `database/migrations/` or as a post-migration command in `composer.json`. Both work; the migration runner's existing behaviour decides.
 - Specific Apache vhost template for the default public site fallback. Documentation-only; not blocking.
 - The shape of the GSA "user-search" component for the Admins tab — autocomplete vs. paginated picker. UX decision at plan time after looking at how the Members admin does user search.
 - Whether the `module_audit` table grows fast enough to justify partitioning or retention policy. Defer until measured.
+- Branch base: cut `module-registry-tenant-mgmt` from `dev` after `backstage-to-platform` merges, OR continue on `backstage-to-platform` if it remains unmerged at execution start. Decide at plan kick-off based on then-current branch state.
