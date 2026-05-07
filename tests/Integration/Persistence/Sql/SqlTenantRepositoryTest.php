@@ -15,7 +15,11 @@ final class SqlTenantRepositoryTest extends MigrationTestCase
     protected function setUp(): void
     {
         parent::setUp();
-        $this->runMigrationsUpTo(64);
+        // SqlTenantRepository's SELECT clauses include columns added in
+        // migration 071 (display_name_i18n, public_description_i18n,
+        // supported_locales, default_locale, suspended_at, suspended_reason).
+        // Bump HWM from 64 to 72 so those columns exist in the test schema.
+        $this->runMigrationsUpTo(72);
         $this->repo = $this->buildRepo();
     }
 

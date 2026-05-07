@@ -78,10 +78,16 @@ final class Migration069Test extends MigrationTestCase
         $this->runMigrationsUpTo(68);
         $this->runMigration('069_create_tenant_modules_table.sql');
 
-        $tenantId = $this->pdo()->query("SELECT id FROM tenants WHERE slug = 'daems' LIMIT 1")?->fetchColumn();
-        $this->assertIsString($tenantId);
-
+        // Insert a fresh tenant with NO tenant_domains rows so it can be deleted.
+        // The seeded daems/sahegroup tenants have tenant_domains rows with
+        // ON DELETE RESTRICT from migration 019, so we use a clean tenant id.
+        $tenantId = '99999999-9999-7000-8000-999999999999';
         $now = (new \DateTimeImmutable())->format('Y-m-d H:i:s');
+        $this->pdo()->exec(
+            "INSERT INTO tenants (id, slug, name, created_at, updated_at)
+             VALUES ('{$tenantId}', 'casc-test', 'Cascade Test', '{$now}', '{$now}')"
+        );
+
         $this->pdo()->exec(
             "INSERT INTO tenant_modules (id, tenant_id, module_slug, created_at, updated_at)
              VALUES ('33333333-3333-3333-3333-333333333333', '{$tenantId}', 'forum', '{$now}', '{$now}')"
