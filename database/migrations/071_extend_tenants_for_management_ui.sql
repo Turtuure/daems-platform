@@ -2,12 +2,15 @@
 -- Adds locale + display + suspension fields to tenants for TenantManagement UI.
 -- Backfills existing daems and sahegroup rows.
 
+-- Migration 019 created tenants WITHOUT a status column. Suspension state is
+-- captured fully by suspended_at (null = active; non-null = suspended); a
+-- separate status column would be redundant.
 ALTER TABLE tenants
     ADD COLUMN display_name_i18n       JSON         NULL          AFTER name,
     ADD COLUMN public_description_i18n JSON         NULL          AFTER display_name_i18n,
     ADD COLUMN supported_locales       VARCHAR(255) NOT NULL DEFAULT 'en_GB' AFTER public_description_i18n,
     ADD COLUMN default_locale          VARCHAR(8)   NOT NULL DEFAULT 'en_GB' AFTER supported_locales,
-    ADD COLUMN suspended_at            DATETIME     NULL          AFTER status,
+    ADD COLUMN suspended_at            DATETIME     NULL          AFTER default_locale,
     ADD COLUMN suspended_reason        TEXT         NULL          AFTER suspended_at;
 
 -- Backfill: Daem Society runs in Finnish today; preserve.

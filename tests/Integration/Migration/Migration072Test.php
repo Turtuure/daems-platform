@@ -71,8 +71,8 @@ final class Migration072Test extends MigrationTestCase
 
         $now = (new \DateTimeImmutable())->format('Y-m-d H:i:s');
         $this->pdo()->exec(
-            "INSERT INTO tenants (id, slug, name, status, created_at, updated_at)
-             VALUES ('55555555-5555-5555-5555-555555555555', 'lateco', 'Late Co', 'active', '{$now}', '{$now}')"
+            "INSERT INTO tenants (id, slug, name, created_at, updated_at)
+             VALUES ('55555555-5555-5555-5555-555555555555', 'lateco', 'Late Co', '{$now}', '{$now}')"
         );
 
         $count = (int) $this->pdo()->query(
