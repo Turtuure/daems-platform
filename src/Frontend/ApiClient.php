@@ -63,26 +63,53 @@ final class ApiClient
 
     public static function post(string $path, array $data): array
     {
-        $payload = json_encode($data);
+        return self::request('POST', $path, $data);
+    }
+
+    /**
+     * @param array<mixed> $data
+     * @return array{status:int, body:array<mixed>}
+     */
+    public static function patch(string $path, array $data): array
+    {
+        return self::request('PATCH', $path, $data);
+    }
+
+    /**
+     * @return array{status:int, body:array<mixed>}
+     */
+    public static function delete(string $path): array
+    {
+        return self::request('DELETE', $path, null);
+    }
+
+    /**
+     * Generic verb dispatcher used by post/patch/delete.
+     *
+     * @param array<mixed>|null $data
+     * @return array{status:int, body:array<mixed>}
+     */
+    private static function request(string $method, string $path, ?array $data): array
+    {
         $url = self::$baseUrl . $path;
+        $payload = $data === null ? '' : (string) json_encode($data);
 
         $ch = curl_init($url);
+        $headers = self::authHeaders();
+        if ($data !== null) {
+            $headers[] = 'Content-Type: application/json';
+            $headers[] = 'Content-Length: ' . strlen($payload);
+        }
         curl_setopt_array($ch, [
             CURLOPT_RETURNTRANSFER => true,
             CURLOPT_TIMEOUT        => 5,
-            CURLOPT_POST           => true,
+            CURLOPT_CUSTOMREQUEST  => $method,
             CURLOPT_POSTFIELDS     => $payload,
-            CURLOPT_HTTPHEADER     => array_merge(
-                self::authHeaders(),
-                [
-                    'Content-Type: application/json',
-                    'Content-Length: ' . strlen((string) $payload),
-                ],
-            ),
+            CURLOPT_HTTPHEADER     => $headers,
         ]);
 
         $json = curl_exec($ch);
-        $status = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        $status = (int) curl_getinfo($ch, CURLINFO_HTTP_CODE);
         curl_close($ch);
 
         if ($json === false) {

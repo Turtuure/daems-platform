@@ -67,11 +67,23 @@ $map = [
     '/notifications'     => __DIR__ . '/pages/notifications/index.php',
     '/search'            => __DIR__ . '/pages/search/index.php',
     '/settings'          => __DIR__ . '/pages/settings/index.php',
+    '/settings/modules'  => __DIR__ . '/pages/settings/modules/index.php',
     '/project-proposals' => __DIR__ . '/pages/project-proposals/index.php',
+    '/platform/tenants'  => __DIR__ . '/pages/platform/tenants/index.php',
 ];
 
 if (isset($map[$sub]) && is_file($map[$sub])) {
     require $map[$sub];
+    exit;
+}
+
+// Wave H — platform tenant edit shell. /backstage/platform/tenants/<id> →
+// the edit shell (5 tabs dispatched via ?tab=). The router lacks regex
+// segment support, so we match the prefix manually and forward the trailing
+// id as $tenantIdParam to the page.
+if (preg_match('#^/platform/tenants/([A-Za-z0-9_\-]+)$#', $sub, $tm)) {
+    $tenantIdParam = $tm[1];
+    require __DIR__ . '/pages/platform/tenants/edit.php';
     exit;
 }
 

@@ -50,6 +50,8 @@ $map = [
     '/api/backstage/forum'           => __DIR__ . '/api/forum.php',
     '/api/backstage/insights'        => __DIR__ . '/api/insights.php',
     '/api/backstage/tenant-settings' => __DIR__ . '/api/tenant-settings.php',
+    '/api/backstage/platform-tenants' => __DIR__ . '/api/platform-tenants.php',
+    '/api/backstage/tenant-modules'   => __DIR__ . '/api/tenant-modules.php',
 ];
 
 if (isset($map[$uri]) && is_file($map[$uri])) {
