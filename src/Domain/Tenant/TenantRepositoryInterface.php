@@ -10,6 +10,13 @@ interface TenantRepositoryInterface
 
     public function findBySlug(string $slug): ?Tenant;
 
+    /**
+     * Insert a new tenant row. Persists every field on the entity (slug,
+     * name, i18n maps, supported_locales, default_locale, member_number_prefix,
+     * default_time_format, created_at). Used by the GSA CreateTenant use case.
+     */
+    public function save(Tenant $tenant): void;
+
     public function findByDomain(string $domain): ?Tenant;
 
     /** @return list<Tenant> */

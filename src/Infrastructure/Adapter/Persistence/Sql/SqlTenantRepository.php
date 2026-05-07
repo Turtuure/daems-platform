@@ -154,6 +154,36 @@ final class SqlTenantRepository implements TenantRepositoryInterface
         return $parts === [] ? ['en_GB'] : $parts;
     }
 
+    /**
+     * Insert a new tenant row. Used by the GSA CreateTenant use case.
+     * Slug is enforced unique by the DB (UNIQUE KEY tenants_slug_unique);
+     * a duplicate insert raises a PDOException the caller may catch.
+     */
+    public function save(Tenant $tenant): void
+    {
+        $stmt = $this->pdo->prepare(
+            'INSERT INTO tenants
+                (id, slug, name, created_at, member_number_prefix, default_time_format,
+                 display_name_i18n, public_description_i18n, supported_locales, default_locale,
+                 suspended_at, suspended_reason)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
+        );
+        $stmt->execute([
+            $tenant->id->value(),
+            $tenant->slug->value(),
+            $tenant->name,
+            $tenant->createdAt->format('Y-m-d H:i:s'),
+            $tenant->memberNumberPrefix,
+            $tenant->defaultTimeFormat,
+            self::encodeJsonMap($tenant->displayNameI18n()),
+            self::encodeJsonMap($tenant->publicDescriptionI18n()),
+            implode(',', $tenant->supportedLocales()),
+            $tenant->defaultLocale(),
+            $tenant->suspendedAt()?->format('Y-m-d H:i:s'),
+            $tenant->suspendedReason(),
+        ]);
+    }
+
     public function updatePrefix(TenantId $tenantId, ?string $prefix): void
     {
         $stmt = $this->pdo->prepare('UPDATE tenants SET member_number_prefix = ? WHERE id = ?');

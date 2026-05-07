@@ -92,13 +92,46 @@ final class InMemoryTenantRepository implements TenantRepositoryInterface
 
     public function suspend(TenantId $tenantId, string $reason, \DateTimeImmutable $now): void
     {
-        // Wave D5 fills this in. Stubbed no-op so the InMemory fake stays
-        // construct-compatible with existing tests until then.
+        $existing = $this->byId[$tenantId->value()] ?? null;
+        if ($existing === null) {
+            return;
+        }
+        $this->byId[$tenantId->value()] = new Tenant(
+            id: $existing->id,
+            slug: $existing->slug,
+            name: $existing->name,
+            createdAt: $existing->createdAt,
+            memberNumberPrefix: $existing->memberNumberPrefix,
+            defaultTimeFormat: $existing->defaultTimeFormat,
+            displayNameI18n: $existing->displayNameI18n(),
+            publicDescriptionI18n: $existing->publicDescriptionI18n(),
+            supportedLocales: $existing->supportedLocales(),
+            defaultLocale: $existing->defaultLocale(),
+            suspendedAt: $now,
+            suspendedReason: $reason,
+        );
     }
 
     public function reactivate(TenantId $tenantId): void
     {
-        // Wave D5 fills this in.
+        $existing = $this->byId[$tenantId->value()] ?? null;
+        if ($existing === null) {
+            return;
+        }
+        $this->byId[$tenantId->value()] = new Tenant(
+            id: $existing->id,
+            slug: $existing->slug,
+            name: $existing->name,
+            createdAt: $existing->createdAt,
+            memberNumberPrefix: $existing->memberNumberPrefix,
+            defaultTimeFormat: $existing->defaultTimeFormat,
+            displayNameI18n: $existing->displayNameI18n(),
+            publicDescriptionI18n: $existing->publicDescriptionI18n(),
+            supportedLocales: $existing->supportedLocales(),
+            defaultLocale: $existing->defaultLocale(),
+            suspendedAt: null,
+            suspendedReason: null,
+        );
     }
 
     /** Test seed helper. */
