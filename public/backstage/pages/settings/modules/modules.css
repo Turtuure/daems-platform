@@ -1,80 +1,190 @@
-/* Wave H8 — minimal CSS for Settings → Modules. Cards in a responsive grid. */
+/* ==========================================================================
+   Wave H — Settings → Modules (tenant-admin)
 
-.settings-modules-section { margin-top: 1.5rem; }
+   Card grid where each tile represents a module. Three sections:
+     1. In use     — currently activated; can be deactivated (unless core)
+     2. Available  — granted by GSA, not yet activated
+     3. Disabled   — previously active, currently off (rendered when present)
+   ========================================================================== */
+
+.settings-modules-section {
+    margin-top: var(--space-6);
+}
+.settings-modules-section:first-of-type {
+    margin-top: var(--space-2);
+}
 
 .settings-modules-section__title {
-    margin: 0 0 0.5rem;
-    font-size: 0.95rem;
+    margin: 0 0 var(--space-3);
+    font-size: var(--text-xs);
     text-transform: uppercase;
-    letter-spacing: 0.04em;
-    color: var(--text-secondary, #71717a);
+    letter-spacing: 0.06em;
+    color: var(--text-secondary);
+    font-weight: var(--weight-bold);
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-2);
+}
+.settings-modules-section__title-count {
+    background: var(--surface-light);
+    color: var(--text-secondary);
+    padding: 1px 8px;
+    border-radius: var(--radius-full);
+    font-size: var(--text-xs);
+    text-transform: none;
+    letter-spacing: 0;
+    font-weight: var(--weight-semibold);
 }
 
 .settings-modules-grid {
     display: grid;
-    gap: 0.75rem;
-    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: var(--space-3);
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
 }
 
+/* --------------------------------------------------------------------------
+   Module card
+   -------------------------------------------------------------------------- */
 .settings-module-card {
-    border: 1px solid var(--surface-border, #e4e4e7);
-    border-radius: 8px;
-    padding: 1rem;
-    background: var(--surface-bg, #fff);
+    border: 1px solid var(--surface-border);
+    border-radius: var(--radius-lg);
+    padding: var(--space-4);
+    background: var(--surface-dark);
     display: flex;
     flex-direction: column;
-    gap: 0.5rem;
+    gap: var(--space-2);
+    box-shadow: var(--shadow-sm);
+    transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+/* Hover: border-color only (no translate per project memory). */
+.settings-module-card:hover {
+    border-color: var(--brand-primary);
+    box-shadow: var(--shadow-md);
 }
 
 .settings-module-card__head {
     display: flex;
     justify-content: space-between;
-    align-items: baseline;
-    gap: 0.5rem;
+    align-items: flex-start;
+    gap: var(--space-2);
 }
 
-.settings-module-card__slug {
-    font-family: monospace;
-    font-size: 0.85rem;
-    color: var(--text-secondary, #71717a);
+.settings-module-card__heading {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
 }
 
 .settings-module-card__name {
     margin: 0;
-    font-size: 1rem;
-    font-weight: 600;
+    font-size: var(--text-body);
+    font-weight: var(--weight-bold);
+    color: var(--text-primary);
+    line-height: 1.3;
+    overflow-wrap: anywhere;
+}
+
+.settings-module-card__slug {
+    font-family: var(--font-mono);
+    font-size: var(--text-xs);
+    color: var(--text-muted);
+    background: var(--surface-light);
+    padding: 1px 6px;
+    border-radius: var(--radius-sm);
+    align-self: flex-start;
+}
+
+.settings-module-card__status {
+    flex-shrink: 0;
 }
 
 .settings-module-card__desc {
     margin: 0;
-    font-size: 0.9rem;
-    color: var(--text-secondary, #71717a);
+    font-size: var(--text-small);
+    color: var(--text-secondary);
+    line-height: 1.5;
     flex: 1;
 }
 
 .settings-module-card__since {
-    font-size: 0.78rem;
-    color: var(--text-secondary, #71717a);
+    font-size: var(--text-xs);
+    color: var(--text-muted);
+    border-top: 1px solid var(--surface-border);
+    padding-top: var(--space-2);
+    margin-top: var(--space-1);
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
 }
 
 .settings-module-card__actions {
     display: flex;
     justify-content: flex-end;
+    align-items: center;
+    gap: var(--space-2);
+    margin-top: var(--space-2);
 }
 
-.settings-module-card__core {
-    display: inline-block;
-    padding: 0.1rem 0.45rem;
-    border-radius: 999px;
-    background: var(--surface-muted, #f4f4f5);
-    color: var(--text-secondary, #71717a);
-    font-size: 0.75rem;
+/* --------------------------------------------------------------------------
+   Status pills inside cards (right-edge of head row)
+   -------------------------------------------------------------------------- */
+.settings-module-pill {
+    display: inline-flex;
+    align-items: center;
+    padding: 2px 9px;
+    font-size: var(--text-xs);
+    font-weight: var(--weight-semibold);
+    border-radius: var(--radius-full);
+    line-height: 18px;
+    white-space: nowrap;
 }
+.settings-module-pill--enabled   { background: var(--status-success-subtle); color: var(--status-success); }
+.settings-module-pill--available { background: var(--brand-primary-subtle);  color: var(--brand-primary); }
+.settings-module-pill--disabled  { background: var(--status-warning-subtle); color: var(--status-warning); }
+.settings-module-pill--core      { background: var(--accent-subtle);         color: var(--accent); }
 
+/* --------------------------------------------------------------------------
+   Empty / loading
+   -------------------------------------------------------------------------- */
 .settings-modules-empty {
-    padding: 1rem;
-    border: 1px dashed var(--surface-border, #e4e4e7);
-    border-radius: 8px;
-    color: var(--text-secondary, #71717a);
+    padding: var(--space-6);
+    border: 1px dashed var(--surface-border);
+    border-radius: var(--radius-lg);
+    background: var(--surface-medium);
+    color: var(--text-secondary);
     text-align: center;
+    font-size: var(--text-small);
 }
+
+.settings-modules-status {
+    color: var(--text-secondary);
+    font-size: var(--text-small);
+    padding: var(--space-2) 0;
+}
+
+/* Skeleton card */
+.settings-module-skeleton {
+    border: 1px solid var(--surface-border);
+    border-radius: var(--radius-lg);
+    padding: var(--space-4);
+    background: var(--surface-dark);
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+    min-height: 130px;
+}
+.settings-module-skeleton__line {
+    height: 14px;
+    border-radius: var(--radius-sm);
+    background: linear-gradient(90deg,
+                                var(--surface-light) 25%,
+                                var(--surface-lighter) 50%,
+                                var(--surface-light) 75%);
+    background-size: 200% 100%;
+    animation: skeleton-shimmer 1.5s infinite;
+}
+.settings-module-skeleton__line--short { width: 40%; }
+.settings-module-skeleton__line--mid   { width: 70%; }
+.settings-module-skeleton__line--full  { width: 100%; }

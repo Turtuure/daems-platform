@@ -1,5 +1,5 @@
 /**
- * Wave H8 — Settings → Modules.
+ * Wave H — Settings → Modules.
  *
  * Tenant-admin enable/disable for the modules included in their plan.
  * Talks to /api/backstage/tenant-modules (proxy → /api/v1/backstage/tenant/modules).
@@ -19,60 +19,159 @@
             .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
     }
 
+    function _t(key) {
+        var T = window.DAEMS_TENANT_MODULES_I18N || {};
+        return T[key] || key;
+    }
+    function _tf(key, params) {
+        var s = _t(key);
+        if (!params) return s;
+        if (Object.prototype.toString.call(params) === '[object Array]') {
+            params.forEach(function (v) { s = s.replace('%s', v); });
+        } else {
+            Object.keys(params).forEach(function (k) {
+                s = s.split('{' + k + '}').join(String(params[k]));
+            });
+        }
+        return s;
+    }
+
     function toast(msg, kind) {
         if (window.DAEMS_TOASTS) window.DAEMS_TOASTS.show(String(msg || ''), kind || 'info');
     }
 
-    function renderCards(container, entries, action) {
+    // -----------------------------------------------------------------------
+    // Skeleton — three placeholder cards while initial fetch is in flight
+    // -----------------------------------------------------------------------
+    function skeletonHtml() {
+        var line = '<div class="settings-module-skeleton__line settings-module-skeleton__line--';
+        var card = ''
+            + '<div class="settings-module-skeleton" aria-hidden="true">'
+            +   line + 'mid"></div>'
+            +   line + 'short"></div>'
+            +   line + 'full"></div>'
+            +   line + 'full"></div>'
+            + '</div>';
+        return card + card + card;
+    }
+
+    function showSkeletons() {
+        ['modules-enabled', 'modules-available'].forEach(function (id) {
+            var el = document.getElementById(id);
+            if (el) el.innerHTML = skeletonHtml();
+        });
+    }
+
+    // -----------------------------------------------------------------------
+    // Render
+    // -----------------------------------------------------------------------
+    function pillFor(state) {
+        var cls = 'settings-module-pill settings-module-pill--' + state;
+        var labelKey = 'settings.modules.pill.' + state;
+        var label = _t(labelKey);
+        if (label === labelKey) label = state;
+        return '<span class="' + cls + '">' + escapeHtml(label) + '</span>';
+    }
+
+    function renderCards(container, entries, action, emptyKey) {
         if (!container) return;
         if (!entries || entries.length === 0) {
-            container.innerHTML = '<div class="settings-modules-empty">Nothing here.</div>';
+            container.innerHTML = '<div class="settings-modules-empty">' +
+                escapeHtml(_t(emptyKey || 'settings.modules.empty')) + '</div>';
             return;
         }
         container.innerHTML = entries.map(function (e) {
             var name = e.nameKey || e.slug;
             var desc = e.descriptionKey || '';
-            var since = e.sinceAt ? '<div class="settings-module-card__since">Since ' + escapeHtml(e.sinceAt) + '</div>' : '';
-            // Core modules surface as enabled but cannot be disabled — annotate.
+            // State drives the pill colour. "core" overrides "enabled" so the user
+            // sees that the module can't be deactivated.
+            var pillState = e.isCore ? 'core'
+                : (action === 'disable' ? 'enabled'
+                : (action === 'enable'  ? (e.state === 'disabled' ? 'disabled' : 'available')
+                : 'available'));
+
+            var statusPill = pillFor(pillState);
+
+            var since = '';
+            if (e.sinceAt) {
+                since = '<div class="settings-module-card__since">' +
+                          '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
+                            '<circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/>' +
+                          '</svg>' +
+                          escapeHtml(_tf('settings.modules.granted_at', [e.sinceAt])) +
+                        '</div>';
+            }
+
             var btn = '';
             if (action === 'disable') {
                 btn = e.isCore
-                    ? '<span class="settings-module-card__core">Core</span>'
-                    : '<button type="button" class="btn btn--ghost btn--sm" data-action="disable" data-slug="' + escapeHtml(e.slug) + '">Disable</button>';
+                    ? ''   // core modules: no action button — pill alone communicates the state
+                    : '<button type="button" class="btn btn--ghost btn--sm" data-action="disable" data-slug="' + escapeHtml(e.slug) + '">' +
+                      escapeHtml(_t('settings.modules.deactivate')) + '</button>';
             } else if (action === 'enable') {
-                btn = '<button type="button" class="btn btn--primary btn--sm" data-action="enable" data-slug="' + escapeHtml(e.slug) + '">Activate</button>';
+                btn = '<button type="button" class="btn btn--primary btn--sm" data-action="enable" data-slug="' + escapeHtml(e.slug) + '">' +
+                      escapeHtml(_t('settings.modules.activate')) + '</button>';
             }
+
             return '' +
                 '<article class="settings-module-card">' +
                     '<header class="settings-module-card__head">' +
-                        '<h3 class="settings-module-card__name">' + escapeHtml(name) + '</h3>' +
-                        '<span class="settings-module-card__slug">' + escapeHtml(e.slug) + '</span>' +
+                        '<div class="settings-module-card__heading">' +
+                            '<h3 class="settings-module-card__name">' + escapeHtml(name) + '</h3>' +
+                            '<span class="settings-module-card__slug">' + escapeHtml(e.slug) + '</span>' +
+                        '</div>' +
+                        '<span class="settings-module-card__status">' + statusPill + '</span>' +
                     '</header>' +
-                    (desc ? '<p class="settings-module-card__desc">' + escapeHtml(desc) + '</p>' : '<p class="settings-module-card__desc">—</p>') +
+                    (desc
+                        ? '<p class="settings-module-card__desc">' + escapeHtml(desc) + '</p>'
+                        : '<p class="settings-module-card__desc">—</p>') +
                     since +
-                    '<div class="settings-module-card__actions">' + btn + '</div>' +
+                    (btn ? '<div class="settings-module-card__actions">' + btn + '</div>' : '') +
                 '</article>';
         }).join('');
     }
 
+    function setSectionCount(id, n) {
+        var el = document.getElementById(id);
+        if (!el) return;
+        if (n > 0) {
+            el.hidden = false;
+            el.textContent = String(n);
+        } else {
+            el.hidden = true;
+        }
+    }
+
+    // -----------------------------------------------------------------------
+    // Load
+    // -----------------------------------------------------------------------
     function load() {
         var status = document.getElementById('modules-status');
-        if (status) status.textContent = 'Loading…';
+        if (status) status.textContent = '';
+        showSkeletons();
 
         fetch(PROXY + '?op=list', { headers: { 'Accept': 'application/json' } })
             .then(function (r) { return r.json().then(function (b) { return { ok: r.ok, body: b }; }); })
             .then(function (res) {
-                if (!res.ok) throw new Error((res.body && res.body.error) || 'Failed to load modules');
+                if (!res.ok) throw new Error((res.body && res.body.error) || _t('settings.modules.error.load_failed'));
                 var data = (res.body && res.body.data) || {};
-                renderCards(document.getElementById('modules-enabled'),   data.enabled || [],             'disable');
-                renderCards(document.getElementById('modules-available'), data.availableNotEnabled || [], 'enable');
 
-                var dis = data.disabled || [];
+                var enabled   = data.enabled || [];
+                var available = data.availableNotEnabled || [];
+                var disabled  = data.disabled || [];
+
+                renderCards(document.getElementById('modules-enabled'),   enabled,   'disable', 'settings.modules.empty.enabled');
+                renderCards(document.getElementById('modules-available'), available, 'enable',  'settings.modules.empty.available');
+
+                setSectionCount('mod-enabled-count',   enabled.length);
+                setSectionCount('mod-available-count', available.length);
+                setSectionCount('mod-disabled-count',  disabled.length);
+
                 var disHost = document.getElementById('modules-disabled');
                 var disSection = document.getElementById('modules-disabled-section');
-                if (dis.length > 0) {
+                if (disabled.length > 0) {
                     if (disSection) disSection.hidden = false;
-                    renderCards(disHost, dis, 'enable');
+                    renderCards(disHost, disabled, 'enable', 'settings.modules.empty');
                 } else {
                     if (disSection) disSection.hidden = true;
                 }
@@ -80,8 +179,12 @@
                 if (status) status.textContent = '';
             })
             .catch(function (err) {
-                if (status) status.textContent = 'Error: ' + err.message;
-                toast('Modules load failed: ' + err.message, 'error');
+                if (status) status.textContent = _t('settings.modules.error.load_failed') + ': ' + err.message;
+                ['modules-enabled', 'modules-available'].forEach(function (id) {
+                    var el = document.getElementById(id);
+                    if (el) el.innerHTML = '';
+                });
+                toast(_t('settings.modules.error.load_failed') + ': ' + err.message, 'error');
             });
     }
 
@@ -95,15 +198,19 @@
             .then(function (res) {
                 if (!res.ok) {
                     var msg = (res.body && res.body.error) || ('HTTP ' + res.status);
-                    // Server-side dependency rejection messages contain "depends_on"
-                    // or "dependent" — surface them verbatim.
-                    toast(action.charAt(0).toUpperCase() + action.slice(1) + ' failed: ' + msg, 'error');
+                    var failKey = action === 'enable'
+                        ? 'settings.modules.toast.activate_failed'
+                        : 'settings.modules.toast.deactivate_failed';
+                    toast(_t(failKey) + ': ' + msg, 'error');
                     return;
                 }
-                toast('Module ' + slug + ' ' + (action === 'enable' ? 'activated' : 'disabled') + '.', 'success');
+                var okKey = action === 'enable'
+                    ? 'settings.modules.toast.activated'
+                    : 'settings.modules.toast.deactivated';
+                toast(_tf(okKey, [slug]), 'success');
                 load();
             })
-            .catch(function (e) { toast('Network error: ' + e.message, 'error'); });
+            .catch(function (e) { toast(_t('platform.common.network_error') + ': ' + e.message, 'error'); });
     }
 
     function init() {
@@ -115,7 +222,7 @@
             var action = btn.getAttribute('data-action');
             var slug   = btn.getAttribute('data-slug');
             if (!action || !slug) return;
-            if (action === 'disable' && !confirm('Disable module ' + slug + '?')) return;
+            if (action === 'disable' && !confirm(_tf('settings.modules.confirm_deactivate', [slug]))) return;
             toggle(slug, action);
         });
 
