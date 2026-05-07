@@ -99,6 +99,17 @@ final class TenantModulesIsolationTest extends IsolationTestCase
         $this->tenantModules->save($row);
     }
 
+    /**
+     * Wipe migration 072's seed rows so each test starts from a known empty
+     * tenant_modules table. Without this, every tenant has all 5 modules
+     * available+enabled by default and per-test seedRow() additions are
+     * indistinguishable in cross-tenant assertions.
+     */
+    private function clearAllTenantModules(): void
+    {
+        $this->conn->pdo()->exec('DELETE FROM tenant_modules');
+    }
+
     private function makeListUseCase(): ListTenantModulesForCurrentTenant
     {
         return new ListTenantModulesForCurrentTenant(
@@ -125,6 +136,10 @@ final class TenantModulesIsolationTest extends IsolationTestCase
 
     public function test_tenant_a_modules_do_not_leak_into_tenant_b_list(): void
     {
+        // Wipe migration 072's default seeds so the assertions below test only
+        // the rows we explicitly insert.
+        $this->clearAllTenantModules();
+
         // Asymmetric seeds — daems gets `forum` enabled, sahegroup gets `events`
         // enabled. A leaky impl (e.g. dropping tenant_id from the WHERE) would
         // surface forum in sahegroup's enabled bucket.
@@ -135,7 +150,7 @@ final class TenantModulesIsolationTest extends IsolationTestCase
         $saheAdmin = $this->makeActingUser(
             tenantSlug: 'sahegroup',
             role: UserTenantRole::Admin,
-            userId: '01958000-0000-7000-8000-isolatesahe',
+            userId: '01958000-0000-7000-8000-1501a7e5a4e0',
             email: 'sahe-admin@isolation.test',
         );
 
@@ -151,6 +166,7 @@ final class TenantModulesIsolationTest extends IsolationTestCase
 
     public function test_gsa_can_read_every_tenant_module_list_across_boundaries(): void
     {
+        $this->clearAllTenantModules();
         $this->seedRow('daems', 'forum', enabled: true);
         $this->seedRow('sahegroup', 'events', enabled: true);
 
@@ -158,7 +174,7 @@ final class TenantModulesIsolationTest extends IsolationTestCase
             tenantSlug:      'daems',  // role is irrelevant — is_platform_admin grants global
             role:            null,
             isPlatformAdmin: true,
-            userId:          '01958000-0000-7000-8000-isolategsaaa',
+            userId:          '01958000-0000-7000-8000-1501a7e95aaa',
             email:           'gsa@isolation.test',
         );
 
@@ -182,6 +198,7 @@ final class TenantModulesIsolationTest extends IsolationTestCase
 
     public function test_tenant_b_admin_cannot_toggle_tenant_a_modules(): void
     {
+        $this->clearAllTenantModules();
         // Seed an available-but-not-enabled row in daems so there's something
         // a daems admin could legitimately enable.
         $this->seedRow('daems', 'forum', enabled: false);
@@ -190,7 +207,7 @@ final class TenantModulesIsolationTest extends IsolationTestCase
         $saheAdmin = $this->makeActingUser(
             tenantSlug: 'sahegroup',
             role:       UserTenantRole::Admin,
-            userId:     '01958000-0000-7000-8000-isolatesahe2',
+            userId:     '01958000-0000-7000-8000-1501a7e5a4e2',
             email:      'sahe-admin2@isolation.test',
         );
 
