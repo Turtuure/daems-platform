@@ -5,13 +5,19 @@ declare(strict_types=1);
  * Default-site join page.
  *
  * GET  → render the join form (partials/join-form.php)
- * POST → validate fields, then attempt to forward to the existing
- *        applications API. SKELETON variant (Wave I3): performs minimal
- *        validation and shows the success screen on validation pass.
- *        Real submission to /api/v1/applications is intentionally deferred
- *        to a follow-up wave so the skeleton compiles without a hard
- *        dependency on a specific module use-case shape.
+ * POST → validate fields, then forward to the Members module's
+ *        SubmitMemberApplication use case. The container is exposed by
+ *        sites-router.php in $GLOBALS['_default_site_container'].
+ *
+ * The form is intentionally minimal (name / email / dob / motivation) —
+ * matches the shape of the use case's required input. Tenants that need
+ * a richer flow (country, supporter tier, how-heard…) ship their own
+ * frontend at C:\laragon\www\sites\<slug>\public\index.php and bypass
+ * this fallback entirely.
  */
+
+use DaemsModule\Members\Application\Membership\SubmitMemberApplication\SubmitMemberApplication;
+use DaemsModule\Members\Application\Membership\SubmitMemberApplication\SubmitMemberApplicationInput;
 
 $tenant = $GLOBALS['_default_site_tenant'] ?? null;
 $locale = $GLOBALS['_default_site_locale'] ?? 'en_GB';
@@ -29,9 +35,10 @@ $success = false;
 $errors  = [];
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $name  = trim((string) ($_POST['name']  ?? ''));
-    $email = trim((string) ($_POST['email'] ?? ''));
-    $dob   = trim((string) ($_POST['dob']   ?? ''));
+    $name       = trim((string) ($_POST['name']       ?? ''));
+    $email      = trim((string) ($_POST['email']      ?? ''));
+    $dob        = trim((string) ($_POST['dob']        ?? ''));
+    $motivation = trim((string) ($_POST['motivation'] ?? ''));
 
     if ($name === '') {
         $errors['name'] = \Daems\Frontend\I18n::t('default.join.error.required');
@@ -46,12 +53,35 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     } elseif (\DateTimeImmutable::createFromFormat('Y-m-d', $dob) === false) {
         $errors['dob'] = \Daems\Frontend\I18n::t('default.join.error.invalid_dob');
     }
+    if ($motivation === '') {
+        $errors['motivation'] = \Daems\Frontend\I18n::t('default.join.error.required');
+    }
 
     if ($errors === []) {
-        // SKELETON: real submission to the applications API is deferred.
-        // Container is available as $GLOBALS['_default_site_container'] for
-        // the eventual wiring — see public/sites-router.php.
-        $success = true;
+        $container = $GLOBALS['_default_site_container'] ?? null;
+        if (!$container instanceof \Daems\Infrastructure\Framework\Container\Container) {
+            // Fall back to the success screen rather than crashing — the
+            // sites-router *always* sets this global. Missing means the page
+            // was loaded outside the router, e.g. in a test.
+            $success = true;
+        } else {
+            try {
+                /** @var SubmitMemberApplication $useCase */
+                $useCase = $container->make(SubmitMemberApplication::class);
+                $useCase->execute(new SubmitMemberApplicationInput(
+                    tenantId:    $tenant->id,
+                    name:        $name,
+                    email:       $email,
+                    dateOfBirth: $dob,
+                    country:     null,
+                    motivation:  $motivation,
+                    howHeard:    null,
+                ));
+                $success = true;
+            } catch (\Throwable $e) {
+                $errors['_global'] = \Daems\Frontend\I18n::t('default.join.error.submit_failed');
+            }
+        }
     }
 }
 

@@ -4,10 +4,14 @@ declare(strict_types=1);
 
 namespace Daems\Tests\E2E\Public;
 
+use Daems\Domain\Membership\MemberApplicationRepositoryInterface;
 use Daems\Domain\Tenant\Tenant;
 use Daems\Domain\Tenant\TenantId;
 use Daems\Domain\Tenant\TenantSlug;
 use Daems\Frontend\I18n;
+use Daems\Infrastructure\Framework\Container\Container;
+use DaemsModule\Members\Application\Membership\SubmitMemberApplication\SubmitMemberApplication;
+use DaemsModule\Members\Tests\Support\InMemoryMemberApplicationRepository;
 use DateTimeImmutable;
 use PHPUnit\Framework\TestCase;
 
@@ -127,6 +131,27 @@ final class DefaultPublicSiteE2ETest extends TestCase
         self::assertStringContainsString('href="/join"', $html);
     }
 
+    /**
+     * Build a minimal container that binds SubmitMemberApplication to an
+     * in-memory repository fake — sufficient for verifying that join.php
+     * actually persists submissions.
+     */
+    private function makeJoinContainer(InMemoryMemberApplicationRepository $repo): Container
+    {
+        $container = new Container();
+        $container->singleton(
+            MemberApplicationRepositoryInterface::class,
+            static fn() => $repo,
+        );
+        $container->bind(
+            SubmitMemberApplication::class,
+            static fn(Container $c) => new SubmitMemberApplication(
+                $c->make(MemberApplicationRepositoryInterface::class),
+            ),
+        );
+        return $container;
+    }
+
     public function test_join_get_renders_form(): void
     {
         $tenant = $this->makeTenant();
@@ -148,19 +173,24 @@ final class DefaultPublicSiteE2ETest extends TestCase
         self::assertStringContainsString('name="name"', $html);
         self::assertStringContainsString('name="email"', $html);
         self::assertStringContainsString('name="dob"', $html);
+        self::assertStringContainsString('name="motivation"', $html);
     }
 
-    public function test_join_post_with_valid_fields_shows_success(): void
+    public function test_join_post_with_valid_fields_persists_application_and_shows_success(): void
     {
         $tenant = $this->makeTenant();
-        $GLOBALS['_default_site_tenant'] = $tenant;
-        $GLOBALS['_default_site_locale'] = 'en_GB';
+        $repo   = new InMemoryMemberApplicationRepository();
+
+        $GLOBALS['_default_site_tenant']    = $tenant;
+        $GLOBALS['_default_site_locale']    = 'en_GB';
+        $GLOBALS['_default_site_container'] = $this->makeJoinContainer($repo);
 
         $_SERVER['REQUEST_METHOD'] = 'POST';
         $_POST = [
-            'name'  => 'Alice',
-            'email' => 'alice@example.test',
-            'dob'   => '1990-01-01',
+            'name'       => 'Alice',
+            'email'      => 'alice@example.test',
+            'dob'        => '1990-01-01',
+            'motivation' => 'I want to contribute.',
         ];
         try {
             $html = $this->renderPage('join.php');
@@ -172,19 +202,33 @@ final class DefaultPublicSiteE2ETest extends TestCase
         self::assertStringContainsString('Your application has been submitted.', $html);
         // Form NOT shown after success.
         self::assertStringNotContainsString('<form method="post" action="/join"', $html);
+
+        // The use case ran: an application row was actually persisted.
+        self::assertCount(1, $repo->applications);
+        $saved = $repo->applications[0];
+        self::assertSame('Alice', $saved->name());
+        self::assertSame('alice@example.test', $saved->email());
+        self::assertSame('1990-01-01', $saved->dateOfBirth());
+        self::assertSame('I want to contribute.', $saved->motivation());
+        self::assertSame('pending', $saved->status());
+        self::assertTrue($saved->tenantId()->equals($tenant->id));
     }
 
-    public function test_join_post_with_invalid_email_shows_errors(): void
+    public function test_join_post_with_invalid_email_shows_errors_and_does_not_persist(): void
     {
         $tenant = $this->makeTenant();
-        $GLOBALS['_default_site_tenant'] = $tenant;
-        $GLOBALS['_default_site_locale'] = 'en_GB';
+        $repo   = new InMemoryMemberApplicationRepository();
+
+        $GLOBALS['_default_site_tenant']    = $tenant;
+        $GLOBALS['_default_site_locale']    = 'en_GB';
+        $GLOBALS['_default_site_container'] = $this->makeJoinContainer($repo);
 
         $_SERVER['REQUEST_METHOD'] = 'POST';
         $_POST = [
-            'name'  => 'Alice',
-            'email' => 'bad-email',
-            'dob'   => '1990-01-01',
+            'name'       => 'Alice',
+            'email'      => 'bad-email',
+            'dob'        => '1990-01-01',
+            'motivation' => 'I want to contribute.',
         ];
         try {
             $html = $this->renderPage('join.php');
@@ -198,6 +242,38 @@ final class DefaultPublicSiteE2ETest extends TestCase
         self::assertStringContainsString('Invalid', $html);
         // Form still rendered for retry.
         self::assertStringContainsString('<form method="post" action="/join"', $html);
+        // Nothing persisted on validation failure.
+        self::assertSame([], $repo->applications);
+    }
+
+    public function test_join_post_without_motivation_shows_error_and_does_not_persist(): void
+    {
+        $tenant = $this->makeTenant();
+        $repo   = new InMemoryMemberApplicationRepository();
+
+        $GLOBALS['_default_site_tenant']    = $tenant;
+        $GLOBALS['_default_site_locale']    = 'en_GB';
+        $GLOBALS['_default_site_container'] = $this->makeJoinContainer($repo);
+
+        $_SERVER['REQUEST_METHOD'] = 'POST';
+        $_POST = [
+            'name'       => 'Alice',
+            'email'      => 'alice@example.test',
+            'dob'        => '1990-01-01',
+            'motivation' => '',
+        ];
+        try {
+            $html = $this->renderPage('join.php');
+        } finally {
+            unset($_SERVER['REQUEST_METHOD']);
+            $_POST = [];
+        }
+
+        self::assertStringContainsString('motivation:', $html);
+        // Form still rendered for retry.
+        self::assertStringContainsString('<form method="post" action="/join"', $html);
+        // Use case never invoked.
+        self::assertSame([], $repo->applications);
     }
 
     public function test_login_redirects_to_backstage(): void

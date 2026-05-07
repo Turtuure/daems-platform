@@ -22,8 +22,16 @@ declare(strict_types=1);
     <input type="email" id="join-email" name="email" required>
   </div>
   <div class="form-row">
-    <label for="join-dob">DOB</label>
+    <label for="join-dob">
+      <?= htmlspecialchars(\Daems\Frontend\I18n::t('default.join.field.dob'), ENT_QUOTES, 'UTF-8') ?>
+    </label>
     <input type="date" id="join-dob" name="dob" required>
+  </div>
+  <div class="form-row">
+    <label for="join-motivation">
+      <?= htmlspecialchars(\Daems\Frontend\I18n::t('default.join.field.motivation'), ENT_QUOTES, 'UTF-8') ?>
+    </label>
+    <textarea id="join-motivation" name="motivation" rows="4" required></textarea>
   </div>
   <button type="submit" class="cta cta-primary">
     <?= htmlspecialchars(\Daems\Frontend\I18n::t('default.join.submit'), ENT_QUOTES, 'UTF-8') ?>
