@@ -6,12 +6,13 @@ namespace Daems\Infrastructure\Adapter\Api\Controller\Backstage\Platform;
 
 use Daems\Application\Backstage\Platform\GrantAdminToUserForTenant\GrantAdminToUserForTenant;
 use Daems\Application\Backstage\Platform\GrantAdminToUserForTenant\GrantAdminToUserForTenantInput;
+use Daems\Application\Backstage\Platform\ListTenantAdmins\ListTenantAdmins;
+use Daems\Application\Backstage\Platform\ListTenantAdmins\ListTenantAdminsInput;
 use Daems\Application\Backstage\Platform\RevokeAdminFromUserForTenant\RevokeAdminFromUserForTenant;
 use Daems\Application\Backstage\Platform\RevokeAdminFromUserForTenant\RevokeAdminFromUserForTenantInput;
 use Daems\Domain\Auth\ActingUser;
 use Daems\Domain\Auth\ForbiddenException;
 use Daems\Domain\Tenant\TenantId;
-use Daems\Domain\Tenant\UserTenantRepositoryInterface;
 use Daems\Domain\User\UserId;
 use Daems\Infrastructure\Framework\Http\Request;
 use Daems\Infrastructure\Framework\Http\Response;
@@ -19,27 +20,24 @@ use DomainException;
 use InvalidArgumentException;
 
 /**
- * GSA-only HTTP wrapper for tenant-admin grant/revoke flows.
+ * GSA-only HTTP wrapper for tenant-admin list/grant/revoke flows.
  *
- * NOTE: the `list()` method intentionally returns an empty array for now.
- * UserTenantRepositoryInterface exposes only `countAdminsForTenant()` (Wave A);
- * the full enumeration method needed for the GSA admins page (`findAdminsForTenant`
- * returning user_id + name + email) is a Wave G read-side follow-up. The route
- * is wired so the front-end can query a stable URL today and start receiving
- * real rows once that method lands.
+ * `list()` returns the full admins enumeration (user_id, name, email,
+ * granted_at) plus a total count. The list endpoint is consumed by the
+ * platform tenant-edit "Admins" tab.
  */
 final class TenantAdminsController
 {
     public function __construct(
         private readonly GrantAdminToUserForTenant $grantAdmin,
         private readonly RevokeAdminFromUserForTenant $revokeAdmin,
-        private readonly UserTenantRepositoryInterface $userTenants,
+        private readonly ListTenantAdmins $listAdmins,
     ) {}
 
     /** @param array<string, string> $params */
     public function list(Request $request, array $params): Response
     {
-        $this->requirePlatformAdmin($request);
+        $actor = $this->requirePlatformAdmin($request);
         $id = $params['id'] ?? '';
         if ($id === '') {
             return Response::badRequest('Tenant ID is required.');
@@ -51,12 +49,18 @@ final class TenantAdminsController
             return Response::json(['error' => $e->getMessage()], 422);
         }
 
-        $count = $this->userTenants->countAdminsForTenant($tenantId);
+        try {
+            $output = $this->listAdmins->execute(new ListTenantAdminsInput(
+                actingUserId: $actor->id,
+                tenantId:     $tenantId,
+            ));
+        } catch (ForbiddenException $e) {
+            return Response::json(['error' => $e->getMessage()], 403);
+        }
 
-        // Read-side enumeration deferred — see class doc-block.
         return Response::json(['data' => [
-            'admins' => [],
-            'total'  => $count,
+            'admins' => $output->admins,
+            'total'  => $output->total,
         ]]);
     }
 

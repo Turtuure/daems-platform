@@ -87,6 +87,9 @@ final class KernelHarness
         $this->clock = $clock;
         $this->users = new InMemoryUserRepository();
         $this->userTenants = new InMemoryUserTenantRepository();
+        // Wire user-repo into the user-tenants fake so findAdminsForTenant()
+        // can resolve user name/email — the SQL impl does this via INNER JOIN.
+        $this->userTenants->setUsers($this->users);
         $this->tokens = new InMemoryAuthTokenRepository();
         $this->attempts = new InMemoryAuthLoginAttemptRepository();
         $this->invites = new InMemoryUserInviteRepository();
@@ -376,6 +379,11 @@ final class KernelHarness
                 $c->make(UserTenantRepositoryInterface::class),
                 $c->make(UserRepositoryInterface::class),
             ));
+        $container->bind(\Daems\Application\Backstage\Platform\ListTenantAdmins\ListTenantAdmins::class,
+            static fn(Container $c) => new \Daems\Application\Backstage\Platform\ListTenantAdmins\ListTenantAdmins(
+                $c->make(UserTenantRepositoryInterface::class),
+                $c->make(UserRepositoryInterface::class),
+            ));
         $container->bind(\Daems\Application\Backstage\Platform\GetTenantDetail\GetTenantDetail::class,
             static fn(Container $c) => new \Daems\Application\Backstage\Platform\GetTenantDetail\GetTenantDetail(
                 $c->make(TenantRepositoryInterface::class),
@@ -443,7 +451,7 @@ final class KernelHarness
             static fn(Container $c) => new \Daems\Infrastructure\Adapter\Api\Controller\Backstage\Platform\TenantAdminsController(
                 $c->make(\Daems\Application\Backstage\Platform\GrantAdminToUserForTenant\GrantAdminToUserForTenant::class),
                 $c->make(\Daems\Application\Backstage\Platform\RevokeAdminFromUserForTenant\RevokeAdminFromUserForTenant::class),
-                $c->make(UserTenantRepositoryInterface::class),
+                $c->make(\Daems\Application\Backstage\Platform\ListTenantAdmins\ListTenantAdmins::class),
             ));
         $container->bind(\Daems\Infrastructure\Adapter\Api\Controller\Backstage\Platform\PlatformTenantModulesController::class,
             static fn(Container $c) => new \Daems\Infrastructure\Adapter\Api\Controller\Backstage\Platform\PlatformTenantModulesController(

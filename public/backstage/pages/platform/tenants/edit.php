@@ -215,20 +215,23 @@ ob_start();
         </button>
     </div>
 
-    <div class="tenant-tab-placeholder" id="ta-list-placeholder">
-        <strong><?= I18n::e('platform.tenants.admins.list_pending_title') ?></strong>
-        <small><?= I18n::e('platform.tenants.admins.list_pending_body') ?></small>
+    <div class="tenants-status" id="ta-status"></div>
+    <div class="tenant-tab-placeholder" id="ta-empty" hidden>
+        <strong><?= I18n::e('platform.tenants.admins.empty_title') ?></strong>
+        <small><?= I18n::e('platform.tenants.admins.empty_body') ?></small>
     </div>
 
-    <form class="tenant-form" id="ta-revoke-form" style="margin-top:1rem;">
-        <div class="tenant-form__row">
-            <label for="ta-revoke-uid"><?= I18n::e('platform.tenants.admins.revoke.heading') ?></label>
-            <input type="text" name="userId" id="ta-revoke-uid" placeholder="user id (UUID)" autocomplete="off">
-        </div>
-        <div class="tenant-form__actions">
-            <button type="submit" class="btn btn--danger-outline btn--sm"><?= I18n::e('platform.tenants.admins.action.revoke') ?></button>
-        </div>
-    </form>
+    <table class="tenant-tab-table" id="ta-table" hidden>
+        <thead>
+            <tr>
+                <th><?= I18n::e('platform.tenants.admins.col.name') ?></th>
+                <th><?= I18n::e('platform.tenants.admins.col.email') ?></th>
+                <th><?= I18n::e('platform.tenants.admins.col.granted_at') ?></th>
+                <th class="tenant-tab-table__actions" aria-label="actions"></th>
+            </tr>
+        </thead>
+        <tbody id="ta-tbody"></tbody>
+    </table>
 
     <div class="tenants-modal" id="ta-add-modal" hidden role="dialog" aria-modal="true" aria-labelledby="ta-add-title">
         <div class="tenants-modal__backdrop" data-close></div>
@@ -377,6 +380,8 @@ window.DAEMS_TENANTS_I18N = Object.assign(window.DAEMS_TENANTS_I18N || {}, {
     'platform.tenants.admins.toast.revoked':         <?= json_encode(I18n::t('platform.tenants.admins.toast.revoked'),         JSON_UNESCAPED_UNICODE) ?>,
     'platform.tenants.admins.confirm_revoke':        <?= json_encode(I18n::t('platform.tenants.admins.confirm_revoke'),        JSON_UNESCAPED_UNICODE) ?>,
     'platform.tenants.admins.error.user_id_required':<?= json_encode(I18n::t('platform.tenants.admins.error.user_id_required'),JSON_UNESCAPED_UNICODE) ?>,
+    'platform.tenants.admins.empty_title':           <?= json_encode(I18n::t('platform.tenants.admins.empty_title'),           JSON_UNESCAPED_UNICODE) ?>,
+    'platform.tenants.admins.action.revoke':         <?= json_encode(I18n::t('platform.tenants.admins.action.revoke'),         JSON_UNESCAPED_UNICODE) ?>,
     'platform.tenants.modules.state.enabled':        <?= json_encode(I18n::t('platform.tenants.modules.state.enabled'),        JSON_UNESCAPED_UNICODE) ?>,
     'platform.tenants.modules.state.available':      <?= json_encode(I18n::t('platform.tenants.modules.state.available'),      JSON_UNESCAPED_UNICODE) ?>,
     'platform.tenants.modules.state.disabled':       <?= json_encode(I18n::t('platform.tenants.modules.state.disabled'),       JSON_UNESCAPED_UNICODE) ?>,

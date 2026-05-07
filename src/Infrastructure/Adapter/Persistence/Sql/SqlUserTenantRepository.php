@@ -57,6 +57,67 @@ final class SqlUserTenantRepository implements UserTenantRepositoryInterface
         return is_numeric($val) ? (int) $val : 0;
     }
 
+    /**
+     * @return list<array{
+     *   user_id: string,
+     *   name: string,
+     *   email: string,
+     *   granted_at: \DateTimeImmutable
+     * }>
+     */
+    public function findAdminsForTenant(TenantId $tenantId): array
+    {
+        // user_tenants has `joined_at` (NOT created_at — see migration 022).
+        // We expose it as `granted_at` since the moment a user gained the
+        // admin role on this tenant is the latest attach() call.
+        $stmt = $this->pdo->prepare(
+            'SELECT
+                ut.user_id,
+                u.name,
+                u.email,
+                ut.joined_at AS granted_at
+             FROM user_tenants ut
+             INNER JOIN users u ON u.id = ut.user_id
+             WHERE ut.tenant_id = ? AND ut.role = ? AND ut.left_at IS NULL
+             ORDER BY u.name ASC'
+        );
+        $stmt->execute([$tenantId->value(), UserTenantRole::Admin->value]);
+
+        $out = [];
+        foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
+            if (!is_array($row)) {
+                continue;
+            }
+            $userId = is_string($row['user_id'] ?? null) ? $row['user_id'] : '';
+            $name   = is_string($row['name'] ?? null)    ? $row['name']    : '';
+            $email  = is_string($row['email'] ?? null)   ? $row['email']   : '';
+            $raw    = $row['granted_at'] ?? null;
+
+            $granted = null;
+            if (is_string($raw) && $raw !== '') {
+                try {
+                    $granted = new \DateTimeImmutable($raw);
+                } catch (\Exception) {
+                    $granted = null;
+                }
+            }
+            if ($granted === null) {
+                // Fallback: if joined_at is NULL/unparseable, use epoch as a
+                // deterministic placeholder. SQL schema sets DEFAULT NOW so
+                // this should never trigger in practice.
+                $granted = new \DateTimeImmutable('@0');
+            }
+
+            $out[] = [
+                'user_id'    => $userId,
+                'name'       => $name,
+                'email'      => $email,
+                'granted_at' => $granted,
+            ];
+        }
+        return $out;
+    }
+
     public function markAllLeftForUser(string $userId, \DateTimeImmutable $now): void
     {
         $stmt = $this->pdo->prepare(

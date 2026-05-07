@@ -449,27 +449,90 @@
     // -----------------------------------------------------------------------
     window.DaemsTenantTabs.admins = {
         load: function (host) {
-            var id    = window.DAEMS_TENANT_EDIT.tenantId;
+            var id       = window.DAEMS_TENANT_EDIT.tenantId;
             var countEl  = host.querySelector('#ta-count');
+            var statusEl = host.querySelector('#ta-status');
+            var emptyEl  = host.querySelector('#ta-empty');
+            var table    = host.querySelector('#ta-table');
+            var tbody    = host.querySelector('#ta-tbody');
             var addBtn   = host.querySelector('#ta-add-btn');
             var modal    = host.querySelector('#ta-add-modal');
             var addForm  = host.querySelector('#ta-add-form');
             var addError = host.querySelector('#ta-add-error');
-            var revoke   = host.querySelector('#ta-revoke-form');
 
-            function loadCount() {
+            function fmtDate(iso) {
+                if (!iso) return '—';
+                // Show YYYY-MM-DD HH:MM (UTC) — keep it terse and locale-agnostic
+                // until a proper time-format formatter is in scope on this page.
+                var d = new Date(iso);
+                if (isNaN(d.getTime())) return iso;
+                var pad = function (n) { return n < 10 ? '0' + n : String(n); };
+                return d.getUTCFullYear() + '-' + pad(d.getUTCMonth() + 1) + '-' + pad(d.getUTCDate()) +
+                       ' ' + pad(d.getUTCHours()) + ':' + pad(d.getUTCMinutes()) + 'Z';
+            }
+
+            function loadList() {
+                if (statusEl) statusEl.textContent = _t('platform.common.loading');
                 fetch(PROXY + '?op=admins.list&id=' + encodeURIComponent(id))
                     .then(function (r) { return r.json().then(function (b) { return { ok: r.ok, body: b }; }); })
                     .then(function (res) {
                         if (!res.ok) throw new Error((res.body && res.body.error) || 'Load failed');
-                        var total = (res.body && res.body.data && res.body.data.total) || 0;
-                        if (countEl) countEl.textContent = String(total);
+                        var data    = (res.body && res.body.data) || {};
+                        var rows    = Array.isArray(data.admins) ? data.admins : [];
+                        var total   = (typeof data.total === 'number') ? data.total : rows.length;
+
+                        if (countEl)  countEl.textContent = String(total);
+                        if (statusEl) statusEl.textContent = '';
+
+                        if (rows.length === 0) {
+                            if (table)   table.hidden = true;
+                            if (tbody)   tbody.innerHTML = '';
+                            if (emptyEl) emptyEl.hidden = false;
+                            return;
+                        }
+                        if (emptyEl) emptyEl.hidden = true;
+                        if (table)   table.hidden = false;
+
+                        var revokeLabel = _t('platform.tenants.admins.action.revoke');
+                        tbody.innerHTML = rows.map(function (a) {
+                            return '' +
+                                '<tr data-uid="' + escapeHtml(a.userId || '') + '">' +
+                                    '<td>' + escapeHtml(a.name || a.userId || '—') + '</td>' +
+                                    '<td>' + escapeHtml(a.email || '—') + '</td>' +
+                                    '<td>' + escapeHtml(fmtDate(a.grantedAt)) + '</td>' +
+                                    '<td class="tenant-tab-table__actions">' +
+                                        '<button type="button" class="btn btn--danger-outline btn--sm" data-action="revoke">' +
+                                            escapeHtml(revokeLabel) +
+                                        '</button>' +
+                                    '</td>' +
+                                '</tr>';
+                        }).join('');
                     })
                     .catch(function (e) {
-                        if (countEl) countEl.textContent = '—';
-                        toast('Admin count load failed: ' + e.message, 'error');
+                        if (countEl)  countEl.textContent = '—';
+                        if (statusEl) statusEl.textContent = _t('platform.common.error_prefix') + ': ' + e.message;
+                        toast('Admin list load failed: ' + e.message, 'error');
                     });
             }
+
+            // Inline revoke handler bound on tbody (rows are re-rendered each load).
+            tbody.addEventListener('click', function (e) {
+                var btn = e.target.closest && e.target.closest('button[data-action="revoke"]');
+                if (!btn) return;
+                var row = btn.closest('tr[data-uid]');
+                if (!row) return;
+                var uid = row.getAttribute('data-uid') || '';
+                if (!uid) return;
+                if (!confirm(_tf('platform.tenants.admins.confirm_revoke', [uid]))) return;
+                fetch(PROXY + '?op=admins.revoke&id=' + encodeURIComponent(id) + '&uid=' + encodeURIComponent(uid), { method: 'POST' })
+                    .then(function (r) { return r.text().then(function (t) { var b = {}; try { b = t ? JSON.parse(t) : {}; } catch (_) {} return { ok: r.ok, body: b, status: r.status }; }); })
+                    .then(function (res) {
+                        if (!res.ok) { toast('Revoke failed: ' + ((res.body && res.body.error) || res.status), 'error'); return; }
+                        toast(_t('platform.tenants.admins.toast.revoked'), 'success');
+                        loadList();
+                    })
+                    .catch(function (e) { toast('Revoke failed: ' + e.message, 'error'); });
+            });
 
             addBtn.addEventListener('click', function () { modal.hidden = false; });
             modal.addEventListener('click', function (e) {
@@ -503,28 +566,12 @@
                         modal.hidden = true;
                         addForm.reset();
                         toast(_t('platform.tenants.admins.toast.granted'), 'success');
-                        loadCount();
+                        loadList();
                     })
                     .catch(function (e) { if (addError) addError.textContent = _t('platform.common.network_error') + ': ' + e.message; });
             });
 
-            revoke.addEventListener('submit', function (e) {
-                e.preventDefault();
-                var uid = String(new FormData(revoke).get('userId') || '').trim();
-                if (!uid) return;
-                if (!confirm(_tf('platform.tenants.admins.confirm_revoke', [uid]))) return;
-                fetch(PROXY + '?op=admins.revoke&id=' + encodeURIComponent(id) + '&uid=' + encodeURIComponent(uid), { method: 'POST' })
-                    .then(function (r) { return r.text().then(function (t) { var b = {}; try { b = t ? JSON.parse(t) : {}; } catch (_) {} return { ok: r.ok, body: b, status: r.status }; }); })
-                    .then(function (res) {
-                        if (!res.ok) { toast('Revoke failed: ' + ((res.body && res.body.error) || res.status), 'error'); return; }
-                        toast(_t('platform.tenants.admins.toast.revoked'), 'success');
-                        revoke.reset();
-                        loadCount();
-                    })
-                    .catch(function (e) { toast('Revoke failed: ' + e.message, 'error'); });
-            });
-
-            loadCount();
+            loadList();
         }
     };
 

@@ -10,12 +10,10 @@ use Daems\Tests\Support\KernelHarness;
 use PHPUnit\Framework\TestCase;
 
 /**
- * GSA-only grant/revoke admin endpoints for tenant memberships.
+ * GSA-only list/grant/revoke admin endpoints for tenant memberships.
  *
- * The list endpoint intentionally returns an empty array (Wave G read-side
- * follow-up — see TenantAdminsController class doc-block) and only emits
- * the count from `countAdminsForTenant`. The test pins the SHAPE of that
- * stable response so a future enrichment is a deliberate breakage.
+ * The list endpoint returns the full enumeration of admins (user_id, name,
+ * email, granted_at) plus a total count.
  */
 final class TenantAdminsE2ETest extends TestCase
 {
@@ -70,9 +68,9 @@ final class TenantAdminsE2ETest extends TestCase
         self::assertNotSame(UserTenantRole::Admin, $role);
     }
 
-    public function test_get_returns_count_and_admins_shape(): void
+    public function test_get_returns_admins_with_metadata(): void
     {
-        // Seed two admins so the count is non-trivial.
+        // Seed two admins so the list is non-trivial.
         $a = $this->h->seedUser('admin-a@x.com', 'pass1234');
         $b = $this->h->seedUser('admin-b@x.com', 'pass1234');
         $this->h->userTenants->attach($a->id(), $this->h->testTenantId, UserTenantRole::Admin);
@@ -83,16 +81,39 @@ final class TenantAdminsE2ETest extends TestCase
             '/api/v1/backstage/platform/tenants/' . $this->tenantId . '/admins',
             $this->gsaToken,
         );
-        self::assertSame(200, $resp->status());
+        self::assertSame(200, $resp->status(), 'list body: ' . $resp->body());
 
         $body = json_decode($resp->body(), true);
         self::assertIsArray($body);
         self::assertArrayHasKey('admins', $body['data']);
         self::assertArrayHasKey('total', $body['data']);
         self::assertSame(2, $body['data']['total']);
-        // List body itself is intentionally empty until Wave G — assert that
-        // contract is still in force.
-        self::assertSame([], $body['data']['admins']);
+
+        $admins = $body['data']['admins'];
+        self::assertIsArray($admins);
+        self::assertCount(2, $admins);
+
+        // Both seeded users have name 'Test User' (KernelHarness::seedUser),
+        // so we just assert that the per-row shape is correct and that both
+        // emails round-trip back.
+        $emails = array_column($admins, 'email');
+        sort($emails);
+        self::assertSame(['admin-a@x.com', 'admin-b@x.com'], $emails);
+
+        foreach ($admins as $row) {
+            self::assertArrayHasKey('userId',    $row);
+            self::assertArrayHasKey('name',      $row);
+            self::assertArrayHasKey('email',     $row);
+            self::assertArrayHasKey('grantedAt', $row);
+            self::assertIsString($row['userId']);
+            self::assertIsString($row['name']);
+            self::assertIsString($row['email']);
+            self::assertIsString($row['grantedAt']);
+            self::assertMatchesRegularExpression(
+                '/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/',
+                $row['grantedAt'],
+            );
+        }
     }
 
     public function test_non_gsa_gets_403(): void

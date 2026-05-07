@@ -495,6 +495,12 @@ $container->bind(\Daems\Application\Backstage\Platform\ListTenants\ListTenants::
         $c->make(UserRepositoryInterface::class),
     ),
 );
+$container->bind(\Daems\Application\Backstage\Platform\ListTenantAdmins\ListTenantAdmins::class,
+    static fn(Container $c) => new \Daems\Application\Backstage\Platform\ListTenantAdmins\ListTenantAdmins(
+        $c->make(UserTenantRepositoryInterface::class),
+        $c->make(UserRepositoryInterface::class),
+    ),
+);
 $container->bind(\Daems\Application\Backstage\Platform\GetTenantDetail\GetTenantDetail::class,
     static fn(Container $c) => new \Daems\Application\Backstage\Platform\GetTenantDetail\GetTenantDetail(
         $c->make(TenantRepositoryInterface::class),
@@ -569,7 +575,7 @@ $container->singleton(\Daems\Infrastructure\Adapter\Api\Controller\Backstage\Pla
     static fn(Container $c) => new \Daems\Infrastructure\Adapter\Api\Controller\Backstage\Platform\TenantAdminsController(
         $c->make(\Daems\Application\Backstage\Platform\GrantAdminToUserForTenant\GrantAdminToUserForTenant::class),
         $c->make(\Daems\Application\Backstage\Platform\RevokeAdminFromUserForTenant\RevokeAdminFromUserForTenant::class),
-        $c->make(UserTenantRepositoryInterface::class),
+        $c->make(\Daems\Application\Backstage\Platform\ListTenantAdmins\ListTenantAdmins::class),
     ),
 );
 $container->singleton(\Daems\Infrastructure\Adapter\Api\Controller\Backstage\Platform\PlatformTenantModulesController::class,

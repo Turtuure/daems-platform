@@ -29,6 +29,20 @@ interface UserTenantRepositoryInterface
     public function countAdminsForTenant(TenantId $tenantId): int;
 
     /**
+     * Returns admin (role='admin') user records for the given tenant, joined
+     * with the users table for name/email metadata. Only active memberships
+     * (left_at IS NULL) are returned. Sorted by user name ascending.
+     *
+     * @return list<array{
+     *   user_id: string,
+     *   name: string,
+     *   email: string,
+     *   granted_at: \DateTimeImmutable
+     * }>
+     */
+    public function findAdminsForTenant(TenantId $tenantId): array;
+
+    /**
      * Aggregate membership stats for the backstage Members dashboard.
      *
      * Each KPI returns a value (full-history total) plus a 30-entry zero-filled
