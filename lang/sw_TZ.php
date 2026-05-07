@@ -464,11 +464,13 @@ return [
     'sidebar.group.community'     => 'Jamii',
     'sidebar.group.content'       => 'Maudhui',
     'sidebar.group.governance'    => 'Utawala',
+    'sidebar.group.system'        => 'Mfumo',
 
     // ── Shell items ──────────────────────────────────────────────
-    'shell.dashboard' => 'Dashibodi',
-    'shell.search'    => 'Tafuta',
-    'shell.settings'  => 'Mipangilio',
+    'shell.dashboard'     => 'Dashibodi',
+    'shell.search'        => 'Tafuta',
+    'shell.settings'      => 'Mipangilio',
+    'shell.notifications' => 'Arifa',
 
     // ── Platform / tenant management UI ──────────────────────────
     'platform.breadcrumb.platform'          => 'Mfumo',

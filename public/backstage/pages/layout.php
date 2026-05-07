@@ -249,17 +249,19 @@ $__renderIcon = static function (string $name) use ($__sidebarIcons): string {
     <nav class="sidebar__nav">
 <?php if (!empty($__groupedItems)): /* Wave G3 — module-aware sidebar render */ ?>
         <?php
-        // Group label key fallback chain — Wave J will add full localised
-        // keys for every group; until then I18n::t() returns the key
-        // verbatim, which is fine as a placeholder.
+        // Group label key. Wave J added the localised keys; missing keys
+        // gracefully render as the key itself.
         $__groupLabelKey = static fn(string $g): string => 'sidebar.group.' . $g;
-        // Items whose href maps to one of these activePage values keep the
-        // page-specific badges from the existing layout. Notifications is
-        // appended by the legacy markup below since BackstageSidebar does
-        // not (yet) include it.
-        foreach ($__groupedItems as $__groupName => $__items): ?>
+        // Hide the section label for single-item groups (Members, Forum) so
+        // we don't get a redundant "Members > Members" stack of labels. Group
+        // headers only render when the group has 2+ items.
+        foreach ($__groupedItems as $__groupName => $__items):
+            $__hideGroupLabel = count($__items) < 2;
+        ?>
         <div class="sidebar__section" data-group="<?= htmlspecialchars((string) $__groupName, ENT_QUOTES, 'UTF-8') ?>">
+            <?php if (!$__hideGroupLabel): ?>
             <span class="sidebar__section-label"><?= htmlspecialchars(I18n::t($__groupLabelKey($__groupName)), ENT_QUOTES, 'UTF-8') ?></span>
+            <?php endif; ?>
             <ul class="sidebar__list" role="list">
                 <?php foreach ($__items as $__item):
                     $__href      = (string) $__item['href'];
@@ -281,6 +283,8 @@ $__renderIcon = static function (string $name) use ($__sidebarIcons): string {
                         <?php elseif ($__href === '/backstage/forum' && $__pendingForumReportCount > 0): ?>
                             <span class="sidebar__badge sidebar__badge--danger" id="forum-badge"
                                   title="<?= I18n::e('backstage.layout.forum.open_reports') ?>"><?= (int) $__pendingForumReportCount ?></span>
+                        <?php elseif ($__href === '/backstage/notifications' && !empty($__pendingApps) && isset($__pendingApps['total']) && (int) $__pendingApps['total'] > 0): ?>
+                            <span class="sidebar__badge sidebar__badge--danger"><?= (int) $__pendingApps['total'] ?></span>
                         <?php endif; ?>
                     </a>
                 </li>
@@ -288,27 +292,6 @@ $__renderIcon = static function (string $name) use ($__sidebarIcons): string {
             </ul>
         </div>
         <?php endforeach; ?>
-
-        <!-- System (kept hardcoded — BackstageSidebar does not yet include
-             Notifications; everything here is shell/system-level chrome) -->
-        <div class="sidebar__section">
-            <span class="sidebar__section-label"><?= I18n::e('backstage.layout.section.system') ?></span>
-            <ul class="sidebar__list" role="list">
-                <li>
-                    <a href="/backstage/notifications" class="sidebar__item <?= $__isActive('notifications') ?>"
-                       <?= $__activePage === 'notifications' ? 'aria-current="page"' : '' ?>>
-                        <svg class="sidebar__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
-                            <path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/>
-                            <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
-                        </svg>
-                        <span class="sidebar__label"><?= I18n::e('backstage.layout.nav.notifications') ?></span>
-                        <?php if (!empty($__pendingApps) && isset($__pendingApps['total']) && (int) $__pendingApps['total'] > 0): ?>
-                            <span class="sidebar__badge sidebar__badge--danger"><?= (int) $__pendingApps['total'] ?></span>
-                        <?php endif; ?>
-                    </a>
-                </li>
-            </ul>
-        </div>
 <?php else: /* Fallback — legacy hardcoded sidebar when BackstageSidebar is unavailable */ ?>
         <!-- Main -->
         <div class="sidebar__section">

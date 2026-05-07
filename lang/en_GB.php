@@ -460,11 +460,13 @@ return [
     'sidebar.group.community'     => 'Community',
     'sidebar.group.content'       => 'Content',
     'sidebar.group.governance'    => 'Governance',
+    'sidebar.group.system'        => 'System',
 
     // ── Shell items ──────────────────────────────────────────────
-    'shell.dashboard' => 'Dashboard',
-    'shell.search'    => 'Search',
-    'shell.settings'  => 'Settings',
+    'shell.dashboard'     => 'Dashboard',
+    'shell.search'        => 'Search',
+    'shell.settings'      => 'Settings',
+    'shell.notifications' => 'Notifications',
 
     // ── Platform / tenant management UI ──────────────────────────
     'platform.breadcrumb.platform'          => 'Platform',

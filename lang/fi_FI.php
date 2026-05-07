@@ -460,11 +460,13 @@ return [
     'sidebar.group.community'     => 'Yhteisö',
     'sidebar.group.content'       => 'Sisältö',
     'sidebar.group.governance'    => 'Hallinto',
+    'sidebar.group.system'        => 'Järjestelmä',
 
     // ── Shell items ──────────────────────────────────────────────
-    'shell.dashboard' => 'Hallintapaneeli',
-    'shell.search'    => 'Haku',
-    'shell.settings'  => 'Asetukset',
+    'shell.dashboard'     => 'Hallintapaneeli',
+    'shell.search'        => 'Haku',
+    'shell.settings'      => 'Asetukset',
+    'shell.notifications' => 'Ilmoitukset',
 
     // ── Platform / tenant management UI ──────────────────────────
     'platform.breadcrumb.platform'          => 'Alusta',

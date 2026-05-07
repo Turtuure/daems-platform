@@ -34,11 +34,11 @@ final class BackstageSidebar
 {
     private const GROUP_RANK = [
         'shell'      => 0,
-        'platform'   => 1,
-        'members'    => 2,
-        'content'    => 3,
-        'community'  => 4,
-        'governance' => 5,
+        'members'    => 1,
+        'content'    => 2,
+        'community'  => 3,
+        'governance' => 4,
+        'system'     => 5,
     ];
     private const GROUP_RANK_DEFAULT = 99;
 
@@ -54,19 +54,22 @@ final class BackstageSidebar
     {
         $items = [];
 
-        // 1. Hardcoded shell items. Search is intentionally NOT here — see class
-        //    docblock; header Ctrl+K is the canonical search affordance.
-        $items[] = ['group' => 'shell', 'label_key' => 'shell.dashboard', 'href' => '/backstage/',         'icon' => 'home',     'order' => 0];
-        $items[] = ['group' => 'shell', 'label_key' => 'shell.settings',  'href' => '/backstage/settings', 'icon' => 'settings', 'order' => 999];
+        // 1. Hardcoded shell items. Dashboard stands alone at the top of the
+        //    nav. Search is intentionally NOT here — see class docblock;
+        //    header Ctrl+K is the canonical search affordance.
+        $items[] = ['group' => 'shell', 'label_key' => 'shell.dashboard', 'href' => '/backstage/', 'icon' => 'home', 'order' => 0];
 
-        // 2. Platform group — only for platform admins.
+        // 2. System group — admin/configuration items grouped at the bottom.
+        //    Notifications (everyone), Settings (everyone), Tenants (GSA only).
+        $items[] = ['group' => 'system', 'label_key' => 'shell.notifications', 'href' => '/backstage/notifications', 'icon' => 'bell',     'order' => 10];
+        $items[] = ['group' => 'system', 'label_key' => 'shell.settings',      'href' => '/backstage/settings',      'icon' => 'settings', 'order' => 20];
         if ($user->isPlatformAdmin()) {
             $items[] = [
-                'group'     => 'platform',
+                'group'     => 'system',
                 'label_key' => 'platform.tenants.title',
                 'href'      => '/backstage/platform/tenants',
                 'icon'      => 'layers',
-                'order'     => 0,
+                'order'     => 30,
             ];
         }
 

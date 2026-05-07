@@ -93,7 +93,7 @@ final class BackstageSidebarTest extends TestCase
         return new InMemoryTenantModulesRepository();
     }
 
-    public function testRendersDashboardAndSettingsForAnyUser(): void
+    public function testRendersDashboardSettingsAndNotificationsForAnyUser(): void
     {
         $registry = $this->makeRegistry([]);
         $repo = $this->makeRepo();
@@ -104,14 +104,14 @@ final class BackstageSidebarTest extends TestCase
         $hrefs = array_map(static fn(array $i) => $i['href'], $items);
         $this->assertContains('/backstage/', $hrefs);
         $this->assertContains('/backstage/settings', $hrefs);
+        $this->assertContains('/backstage/notifications', $hrefs);
         // Search is NOT in the sidebar — header Ctrl+K is canonical.
         $this->assertNotContains('/backstage/search', $hrefs);
-        // No platform group for non-admin.
-        $platformGroups = array_filter($items, static fn(array $i) => $i['group'] === 'platform');
-        $this->assertCount(0, $platformGroups);
+        // No Tenants link for non-platform-admin user.
+        $this->assertNotContains('/backstage/platform/tenants', $hrefs);
     }
 
-    public function testAddsPlatformGroupOnlyForPlatformAdmin(): void
+    public function testAddsTenantsToSystemGroupOnlyForPlatformAdmin(): void
     {
         $registry = $this->makeRegistry([]);
         $repo = $this->makeRepo();
@@ -119,10 +119,13 @@ final class BackstageSidebarTest extends TestCase
 
         $items = $sidebar->buildFor($this->makeTenant(), $this->makeUser(true));
 
-        $platform = array_values(array_filter($items, static fn(array $i) => $i['group'] === 'platform'));
-        $this->assertCount(1, $platform);
-        $this->assertSame('/backstage/platform/tenants', $platform[0]['href']);
-        $this->assertSame('platform.tenants.title', $platform[0]['label_key']);
+        $system = array_values(array_filter($items, static fn(array $i) => $i['group'] === 'system'));
+        // GSA sees Notifications + Settings + Tenants in the system group.
+        $this->assertCount(3, $system);
+        $hrefs = array_map(static fn(array $i) => $i['href'], $system);
+        $this->assertContains('/backstage/platform/tenants', $hrefs);
+        $tenantsItem = array_values(array_filter($system, static fn(array $i) => $i['href'] === '/backstage/platform/tenants'))[0];
+        $this->assertSame('platform.tenants.title', $tenantsItem['label_key']);
     }
 
     public function testExcludesModulesWithDisabledOrAvailableNotEnabledState(): void
@@ -200,21 +203,22 @@ final class BackstageSidebarTest extends TestCase
         $items = $sidebar->buildFor($this->makeTenant(), $this->makeUser(false));
         $hrefs = array_values(array_map(static fn(array $i) => $i['href'], $items));
 
-        // Expected ordering:
-        //   shell: dashboard(0), settings(999)
-        //   members: /backstage/members (rank 2, order 0)
-        //   content: /backstage/events  (rank 3, order 0)
-        //   community: /backstage/forum (rank 4, order 0)
+        // Expected ordering (after Search drop + System group regrouping):
+        //   shell:     /backstage/             (rank 0, order 0)
+        //   members:   /backstage/members      (rank 1, order 0)
+        //   content:   /backstage/events       (rank 2, order 0)
+        //   community: /backstage/forum        (rank 3, order 0)
+        //   system:    /backstage/notifications(rank 5, order 10)
+        //              /backstage/settings     (rank 5, order 20)
         //
-        // All shell items group together at the top because their rank=0 is
-        // lower than any module group; settings (order=999) appears last
-        // within the shell group but still before any rank>=2 group.
+        // System group sits at the bottom because its rank (5) is highest.
         $this->assertSame([
             '/backstage/',
-            '/backstage/settings',
             '/backstage/members',
             '/backstage/events',
             '/backstage/forum',
+            '/backstage/notifications',
+            '/backstage/settings',
         ], $hrefs);
     }
 
@@ -258,8 +262,9 @@ final class BackstageSidebarTest extends TestCase
         $items = $sidebar->buildFor($this->makeTenant(), $this->makeUser(false));
         $hrefs = array_map(static fn(array $i) => $i['href'], $items);
         $this->assertNotContains('/backstage/webhook', $hrefs);
-        // Only the 2 shell items remain (Dashboard + Settings; Search is no longer in sidebar).
-        $this->assertCount(2, $items);
+        // Only the 3 baseline shell+system items remain: Dashboard,
+        // Notifications, Settings (Search dropped; Tenants only for GSA).
+        $this->assertCount(3, $items);
     }
 
     public function testModuleNameKeyFallsBackToConventionalKey(): void
