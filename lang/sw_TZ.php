@@ -283,7 +283,7 @@ return [
     // ── Backstage / Members admin ───────────────────────────────
     // NOTE: Swahili translations below are best-effort initial drafts —
     // refine with a native speaker before shipping. Missing keys fall
-    // back to fi_FI per I18n::DEFAULT_LOCALE, so leaving any value as
+    // back to en_GB per I18n::DEFAULT_LOCALE, so leaving any value as
     // English placeholder is also acceptable until reviewed.
     'backstage.members.title'                          => 'Wanachama',
     'backstage.members.subtitle.register'              => 'Daftari rasmi la kategoria za kannattava, perus, varsinainen na kunniajäsen.',

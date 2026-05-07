@@ -8,8 +8,9 @@ namespace Daems\Frontend;
  * Minimal static i18n for the backstage UI.
  *
  * Full-locale form (fi_FI, en_GB, sw_TZ) matches the platform API's
- * Daems\Domain\Locale\SupportedLocale. The backend's content fallback is
- * en_GB; the UI chrome default is fi_FI.
+ * Daems\Domain\Locale\SupportedLocale. The platform-wide UI chrome default
+ * is en_GB, aligned with the backend's content fallback. Tenants may
+ * override via tenants.default_locale (e.g. Daem Society stays on fi_FI).
  *
  * Locale resolution (first match wins):
  *   1. $_GET['lang'] on the current request — also sets a cookie + session.
@@ -17,7 +18,7 @@ namespace Daems\Frontend;
  *   3. $_COOKIE['daems_lang'] across browser tabs.
  *   4. The first of the supported locales found in the
  *      Accept-Language header (supports fi, fi-FI, fi_FI forms).
- *   5. Default: 'fi_FI'.
+ *   5. Default: 'en_GB'.
  *
  * Translation files live in /lang/<code>.php at the platform root and
  * return a flat associative array keyed by dotted strings.
@@ -25,7 +26,7 @@ namespace Daems\Frontend;
 final class I18n
 {
     public const SUPPORTED = ['fi_FI', 'en_GB', 'sw_TZ'];
-    public const DEFAULT_LOCALE = 'fi_FI';
+    public const DEFAULT_LOCALE = 'en_GB';
     public const CONTENT_FALLBACK = 'en_GB';
 
     /** Maps short 2-letter codes to full-locale form. */
