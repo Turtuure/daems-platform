@@ -44,6 +44,28 @@ final class Router
         ];
     }
 
+    /** @param list<class-string<MiddlewareInterface>> $middleware */
+    public function patch(string $path, callable $handler, array $middleware = []): void
+    {
+        $this->routes[] = [
+            'method'     => 'PATCH',
+            'pattern'    => $path,
+            'handler'    => $handler,
+            'middleware' => $middleware,
+        ];
+    }
+
+    /** @param list<class-string<MiddlewareInterface>> $middleware */
+    public function delete(string $path, callable $handler, array $middleware = []): void
+    {
+        $this->routes[] = [
+            'method'     => 'DELETE',
+            'pattern'    => $path,
+            'handler'    => $handler,
+            'middleware' => $middleware,
+        ];
+    }
+
     public function dispatch(Request $request): Response
     {
         foreach ($this->routes as $route) {
