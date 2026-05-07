@@ -74,7 +74,10 @@ use Daems\Domain\Tenant\UserTenantRepositoryInterface;
 // type references resolve. Bindings and routes are registered after core bindings.
 $composerLoader = require __DIR__ . '/../vendor/autoload.php';
 $moduleRegistry = new \Daems\Infrastructure\Module\ModuleRegistry();
-$moduleRegistry->discover(__DIR__ . '/../../modules');
+$moduleRegistry->discover(
+    __DIR__ . '/../../modules',
+    __DIR__ . '/../config/modules.php',
+);
 $moduleRegistry->registerAutoloader($composerLoader);
 
 $container = new Container();
