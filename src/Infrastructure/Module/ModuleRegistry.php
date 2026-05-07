@@ -25,8 +25,15 @@ final class ModuleRegistry
      * file into each manifest and run validateGraph(). Catalog entries that
      * reference an undiscovered module name throw — surfacing the misconfig
      * at boot, not at first request.
+     *
+     * $langPath, when provided, points to a PHP file returning an
+     * `array<string, string>` of i18n keys; every name_key/description_key
+     * declared in the catalog must exist in that array. When `null`,
+     * lang-key validation is skipped (used by unit tests that fabricate
+     * synthetic catalogs); the production boot path passes lang/en_GB.php
+     * explicitly via bootstrap/app.php.
      */
-    public function discover(string $modulesDir, ?string $platformCatalogPath = null): void
+    public function discover(string $modulesDir, ?string $platformCatalogPath = null, ?string $langPath = null): void
     {
         $real = realpath($modulesDir);
         if ($real === false || !is_dir($real)) {
@@ -57,7 +64,7 @@ final class ModuleRegistry
 
         if ($platformCatalogPath !== null && is_file($platformCatalogPath)) {
             $this->mergePlatformMetadata($platformCatalogPath);
-            $this->validateGraph();
+            $this->validateGraph($langPath);
         }
     }
 
@@ -331,8 +338,13 @@ final class ModuleRegistry
      *   1. every depends_on target exists
      *   2. graph is acyclic (DFS coloring)
      *   3. no two modules share an overlapping route prefix
+     *   4. every name_key / description_key referenced by config/modules.php
+     *      exists in $langPath (defaulting to lang/en_GB.php). Spec §5 rule 2 —
+     *      surface typos at boot, not at sidebar render. Skipped gracefully
+     *      when the lang file is not on disk so unit tests with fabricated
+     *      catalogs don't have to ship a fake lang fixture.
      */
-    private function validateGraph(): void
+    private function validateGraph(?string $langPath = null): void
     {
         // 1. Unknown dependency check.
         foreach ($this->modules as $name => $manifest) {
@@ -369,6 +381,38 @@ final class ModuleRegistry
                         "modules '{$a}' and '{$b}' have overlapping route_prefixes"
                     );
                 }
+            }
+        }
+
+        // 4. name_key / description_key existence check against lang/en_GB.php.
+        $this->validateLangKeys($langPath);
+    }
+
+    private function validateLangKeys(?string $langPath): void
+    {
+        if ($langPath === null) {
+            return; // Caller explicitly opted out (test mode).
+        }
+        if (!is_file($langPath)) {
+            return; // Lang file missing on this deployment — skip rather than block boot.
+        }
+        /** @var mixed $lang */
+        $lang = require $langPath;
+        if (!is_array($lang)) {
+            return; // Malformed lang file — leave to a separate check.
+        }
+        foreach ($this->modules as $name => $manifest) {
+            $nameKey = $manifest->nameKey();
+            if ($nameKey !== null && !array_key_exists($nameKey, $lang)) {
+                throw new \RuntimeException(
+                    "modules.{$name}.name_key '{$nameKey}' not found in lang/en_GB.php"
+                );
+            }
+            $descriptionKey = $manifest->descriptionKey();
+            if ($descriptionKey !== null && !array_key_exists($descriptionKey, $lang)) {
+                throw new \RuntimeException(
+                    "modules.{$name}.description_key '{$descriptionKey}' not found in lang/en_GB.php"
+                );
             }
         }
     }

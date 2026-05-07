@@ -85,6 +85,7 @@ $moduleRegistry = new \Daems\Infrastructure\Module\ModuleRegistry();
 $moduleRegistry->discover(
     __DIR__ . '/../../modules',
     __DIR__ . '/../config/modules.php',
+    __DIR__ . '/../lang/en_GB.php',
 );
 $moduleRegistry->registerAutoloader($composerLoader);
 

@@ -119,6 +119,7 @@ final class KernelHarness
         $moduleRegistry->discover(
             dirname(__DIR__, 3) . '/modules',
             dirname(__DIR__, 2) . '/config/modules.php',
+            dirname(__DIR__, 2) . '/lang/en_GB.php',
         );
         $moduleRegistry->registerAutoloader($composerLoader);
         $container->bind(\Daems\Infrastructure\Module\ModuleRegistry::class, fn() => $moduleRegistry);

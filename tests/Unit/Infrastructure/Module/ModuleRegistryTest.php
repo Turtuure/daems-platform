@@ -540,6 +540,87 @@ final class ModuleRegistryTest extends TestCase
         return $path;
     }
 
+    public function test_rejects_unknown_name_key_against_lang_file(): void
+    {
+        $this->writeModule('events', []);
+        $catalog = $this->writeCatalog([
+            'events' => [
+                'category'          => 'content',
+                'name_key'          => 'modules.events.bogus_key',
+                'description_key'   => 'modules.events.description',
+                'is_core'           => false,
+                'default_available' => true,
+                'sidebar'           => 'null',
+                'route_prefixes'    => 'new \\Daems\\Infrastructure\\Module\\RoutePrefixes(backstage: ["/backstage/events"], api: [])',
+                'depends_on'        => [],
+            ],
+        ]);
+        // Stub lang file with only the description_key, NOT the bogus name_key.
+        $langPath = $this->tmp . '/lang.php';
+        file_put_contents(
+            $langPath,
+            "<?php return ['modules.events.description' => 'desc'];",
+        );
+
+        $r = new ModuleRegistry();
+        $this->expectException(\RuntimeException::class);
+        $this->expectExceptionMessageMatches("/name_key.*bogus_key.*not found/");
+        $r->discover($this->tmp, $catalog, $langPath);
+    }
+
+    public function test_rejects_unknown_description_key_against_lang_file(): void
+    {
+        $this->writeModule('events', []);
+        $catalog = $this->writeCatalog([
+            'events' => [
+                'category'          => 'content',
+                'name_key'          => 'modules.events.name',
+                'description_key'   => 'modules.events.bogus_description',
+                'is_core'           => false,
+                'default_available' => true,
+                'sidebar'           => 'null',
+                'route_prefixes'    => 'new \\Daems\\Infrastructure\\Module\\RoutePrefixes(backstage: ["/backstage/events"], api: [])',
+                'depends_on'        => [],
+            ],
+        ]);
+        $langPath = $this->tmp . '/lang.php';
+        file_put_contents(
+            $langPath,
+            "<?php return ['modules.events.name' => 'Events'];",
+        );
+
+        $r = new ModuleRegistry();
+        $this->expectException(\RuntimeException::class);
+        $this->expectExceptionMessageMatches("/description_key.*bogus_description.*not found/");
+        $r->discover($this->tmp, $catalog, $langPath);
+    }
+
+    public function test_passes_when_all_keys_exist_in_lang_file(): void
+    {
+        $this->writeModule('events', []);
+        $catalog = $this->writeCatalog([
+            'events' => [
+                'category'          => 'content',
+                'name_key'          => 'modules.events.name',
+                'description_key'   => 'modules.events.description',
+                'is_core'           => false,
+                'default_available' => true,
+                'sidebar'           => 'null',
+                'route_prefixes'    => 'new \\Daems\\Infrastructure\\Module\\RoutePrefixes(backstage: ["/backstage/events"], api: [])',
+                'depends_on'        => [],
+            ],
+        ]);
+        $langPath = $this->tmp . '/lang.php';
+        file_put_contents(
+            $langPath,
+            "<?php return ['modules.events.name' => 'Events', 'modules.events.description' => 'desc'];",
+        );
+
+        $r = new ModuleRegistry();
+        $r->discover($this->tmp, $catalog, $langPath);
+        self::assertNotNull($r->get('events'));
+    }
+
     private function rrmdir(string $dir): void
     {
         if (!is_dir($dir)) return;
