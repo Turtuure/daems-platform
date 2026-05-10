@@ -610,7 +610,7 @@ $container->singleton(
 $container->bind(
     \Daems\Domain\Dashboard\UserDashboardRepositoryInterface::class,
     static fn(Container $c) => new \Daems\Infrastructure\Dashboard\SqlUserDashboardRepository(
-        $c->make(Connection::class),
+        $c->make(Connection::class)->pdo(),
     ),
 );
 $container->bind(
