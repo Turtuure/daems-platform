@@ -81,15 +81,39 @@
         var trigger = document.getElementById('user-dropdown-trigger');
         if (!wrap || !trigger) return;
 
+        var submenus = wrap.querySelectorAll('[data-submenu]');
+
+        function closeAllSubmenus() {
+            submenus.forEach(function (sub) {
+                sub.classList.remove('is-open');
+                var btn = sub.querySelector('.user-dropdown__submenu-trigger');
+                if (btn) btn.setAttribute('aria-expanded', 'false');
+            });
+        }
+
         trigger.addEventListener('click', function () {
             var isOpen = wrap.classList.toggle('is-open');
             trigger.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+            if (!isOpen) closeAllSubmenus();
+        });
+
+        submenus.forEach(function (sub) {
+            var btn = sub.querySelector('.user-dropdown__submenu-trigger');
+            if (!btn) return;
+            btn.addEventListener('click', function (e) {
+                e.stopPropagation();
+                var willOpen = !sub.classList.contains('is-open');
+                closeAllSubmenus();
+                sub.classList.toggle('is-open', willOpen);
+                btn.setAttribute('aria-expanded', willOpen ? 'true' : 'false');
+            });
         });
 
         document.addEventListener('click', function (e) {
             if (!wrap.contains(e.target)) {
                 wrap.classList.remove('is-open');
                 trigger.setAttribute('aria-expanded', 'false');
+                closeAllSubmenus();
             }
         });
     }

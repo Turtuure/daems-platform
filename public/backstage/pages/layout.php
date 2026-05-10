@@ -400,18 +400,32 @@ $__renderIcon = static function (string $name) use ($__sidebarIcons): string {
     </nav>
 
     <div class="sidebar__footer">
-        <a href="/" class="sidebar__footer-link" aria-label="<?= I18n::e('backstage.layout.nav.public_site') ?>">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
-                <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
-                <polyline points="9 22 9 12 15 12 15 22"/>
+        <a href="#" class="sidebar__footer-link sidebar__footer-link--report" aria-label="<?= I18n::e('backstage.layout.nav.report_issue') ?>">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
+                <path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+                <line x1="12" y1="9" x2="12" y2="13"/>
+                <line x1="12" y1="17" x2="12.01" y2="17"/>
             </svg>
-            <span><?= I18n::e('backstage.layout.nav.public_site') ?></span>
+            <span><?= I18n::e('backstage.layout.nav.report_issue') ?></span>
         </a>
     </div>
 </aside>
 
 <!-- Main area -->
 <div class="main-area">
+    <?php if (!$__isPlatformHost && $__viewAs !== null): ?>
+    <div class="view-as-banner" role="status">
+        <i class="bi bi-eye view-as-banner__icon" aria-hidden="true"></i>
+        <span class="view-as-banner__text">
+            <?= I18n::e('backstage.layout.viewas.banner_prefix') ?>
+            <strong><?= htmlspecialchars($__viewAsLabels[$__viewAs] ?? $__viewAs, ENT_QUOTES, 'UTF-8') ?></strong>
+        </span>
+        <a href="/view-as-exit" class="view-as-banner__exit">
+            <i class="bi bi-x-lg" aria-hidden="true"></i>
+            <?= I18n::e('backstage.layout.viewas.exit') ?>
+        </a>
+    </div>
+    <?php endif; ?>
     <header class="header-bar">
         <div class="header-bar__left">
             <button class="sidebar-toggle" id="sidebar-toggle" aria-label="<?= I18n::e('backstage.layout.nav.open_navigation') ?>" aria-expanded="false">
@@ -452,9 +466,12 @@ $__renderIcon = static function (string $name) use ($__sidebarIcons): string {
 
         <div class="header-bar__right">
             <?php if ($__tenantName !== null): ?>
-                <span class="header-bar__tenant" title="<?= I18n::e('backstage.layout.tenant.title') ?>">
-                    <?= htmlspecialchars($__tenantName, ENT_QUOTES, 'UTF-8') ?>
-                </span>
+                <a href="/" class="header-bar__tenant" title="<?= I18n::e('backstage.layout.tenant.public_site_title') ?>">
+                    <span class="header-bar__tenant-name"><?= htmlspecialchars($__tenantName, ENT_QUOTES, 'UTF-8') ?></span>
+                    <svg class="header-bar__tenant-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
+                        <path d="M14 3h7v7"/><path d="M10 14 21 3"/><path d="M21 14v5a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5"/>
+                    </svg>
+                </a>
             <?php endif; ?>
 
             <!-- Theme toggle -->
@@ -506,46 +523,74 @@ $__renderIcon = static function (string $name) use ($__sidebarIcons): string {
                         </svg>
                         <?= I18n::e('backstage.layout.user.frontend') ?>
                     </a>
+                    <div class="user-dropdown__divider"></div>
                     <?php if (!$__isPlatformHost): ?>
-                    <div class="user-dropdown__divider"></div>
-                    <span class="user-dropdown__item" role="menuitem" aria-disabled="true"><?= I18n::e('backstage.layout.user.view_as') ?></span>
-                    <?php foreach ($__viewAsLabels as $__role => $__label): ?>
-                    <a href="/view-as?role=<?= rawurlencode($__role) ?>" class="user-dropdown__item" role="menuitem">
-                        <?php if ($__viewAs === $__role): ?>
-                        <i class="bi bi-check2 me-2" aria-hidden="true"></i>
-                        <?php else: ?>
-                        <i class="bi bi-person-badge me-2 opacity-50" aria-hidden="true"></i>
-                        <?php endif; ?>
-                        <?= htmlspecialchars($__label, ENT_QUOTES, 'UTF-8') ?>
-                    </a>
-                    <?php endforeach; ?>
-                    <?php if ($__viewAs): ?>
-                    <a href="/view-as-exit" class="user-dropdown__item" role="menuitem">
-                        <?= I18n::e('backstage.layout.user.exit_view_as') ?>
-                    </a>
+                    <div class="user-dropdown__submenu-wrap" data-submenu>
+                        <button type="button" class="user-dropdown__item user-dropdown__submenu-trigger" aria-haspopup="menu" aria-expanded="false">
+                            <i class="bi bi-person-badge" aria-hidden="true"></i>
+                            <span class="user-dropdown__submenu-label"><?= I18n::e('backstage.layout.user.view_as') ?></span>
+                            <svg class="user-dropdown__submenu-chevron" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                                <polyline points="9 6 15 12 9 18"/>
+                            </svg>
+                        </button>
+                        <div class="user-dropdown__submenu" role="menu">
+                            <?php foreach ($__viewAsLabels as $__role => $__label): ?>
+                            <a href="/view-as?role=<?= rawurlencode($__role) ?>" class="user-dropdown__item" role="menuitem">
+                                <?php if ($__viewAs === $__role): ?>
+                                <i class="bi bi-check2" aria-hidden="true"></i>
+                                <?php else: ?>
+                                <i class="bi bi-person-badge opacity-50" aria-hidden="true"></i>
+                                <?php endif; ?>
+                                <?= htmlspecialchars($__label, ENT_QUOTES, 'UTF-8') ?>
+                            </a>
+                            <?php endforeach; ?>
+                            <?php if ($__viewAs): ?>
+                            <div class="user-dropdown__divider"></div>
+                            <a href="/view-as-exit" class="user-dropdown__item" role="menuitem">
+                                <i class="bi bi-x-lg" aria-hidden="true"></i>
+                                <?= I18n::e('backstage.layout.user.exit_view_as') ?>
+                            </a>
+                            <?php endif; ?>
+                        </div>
+                    </div>
                     <?php endif; ?>
-                    <?php endif; ?>
-                    <div class="user-dropdown__divider"></div>
-                    <span class="user-dropdown__item user-dropdown__item--section-label" role="menuitem" aria-disabled="true">
-                        <?= I18n::e('backstage.layout.user.language') ?>
-                    </span>
                     <?php
                     $__currentLocale = \Daems\Frontend\I18n::locale();
                     $__currentPath = parse_url((string) ($_SERVER['REQUEST_URI'] ?? '/'), PHP_URL_PATH) ?: '/';
                     $__qsBase = $_GET;
-                    foreach (\Daems\Frontend\I18n::SUPPORTED as $__loc):
-                        $__qsBase['lang'] = $__loc;
-                        $__langUrl = $__currentPath . '?' . http_build_query($__qsBase);
+                    $__localeFlagFiles = [
+                        'fi_FI' => '/backstage/assets/img/flags/fi.svg',
+                        'en_GB' => '/backstage/assets/img/flags/gb.svg',
+                        'sw_TZ' => '/backstage/assets/img/flags/tz.svg',
+                    ];
                     ?>
-                    <a href="<?= htmlspecialchars($__langUrl, ENT_QUOTES, 'UTF-8') ?>" class="user-dropdown__item" role="menuitem">
-                        <?php if ($__loc === $__currentLocale): ?>
-                            <i class="bi bi-check2 me-2" aria-hidden="true"></i>
-                        <?php else: ?>
-                            <i class="bi bi-translate me-2 opacity-50" aria-hidden="true"></i>
-                        <?php endif; ?>
-                        <?= I18n::e('locale.' . $__loc) ?>
-                    </a>
-                    <?php endforeach; ?>
+                    <div class="user-dropdown__submenu-wrap" data-submenu>
+                        <button type="button" class="user-dropdown__item user-dropdown__submenu-trigger" aria-haspopup="menu" aria-expanded="false">
+                            <i class="bi bi-translate" aria-hidden="true"></i>
+                            <span class="user-dropdown__submenu-label"><?= I18n::e('backstage.layout.user.language') ?></span>
+                            <svg class="user-dropdown__submenu-chevron" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                                <polyline points="9 6 15 12 9 18"/>
+                            </svg>
+                        </button>
+                        <div class="user-dropdown__submenu" role="menu">
+                            <?php foreach (\Daems\Frontend\I18n::SUPPORTED as $__loc):
+                                $__qsBase['lang'] = $__loc;
+                                $__langUrl = $__currentPath . '?' . http_build_query($__qsBase);
+                                $__flagFile = $__localeFlagFiles[$__loc] ?? '';
+                                $__localeName = I18n::t('locale.' . $__loc);
+                            ?>
+                            <a href="<?= htmlspecialchars($__langUrl, ENT_QUOTES, 'UTF-8') ?>" class="user-dropdown__item user-dropdown__item--lang" role="menuitem">
+                                <?php if ($__flagFile !== ''): ?>
+                                <img src="<?= $__flagFile ?>" alt="" class="user-dropdown__flag" width="20" height="15" aria-hidden="true">
+                                <?php endif; ?>
+                                <span class="user-dropdown__lang-name"><?= htmlspecialchars($__localeName, ENT_QUOTES, 'UTF-8') ?></span>
+                                <?php if ($__loc === $__currentLocale): ?>
+                                <i class="bi bi-check2 user-dropdown__active-mark" aria-hidden="true"></i>
+                                <?php endif; ?>
+                            </a>
+                            <?php endforeach; ?>
+                        </div>
+                    </div>
                     <div class="user-dropdown__divider"></div>
                     <a href="/backstage/logout" class="user-dropdown__item user-dropdown__item--danger" role="menuitem">
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">

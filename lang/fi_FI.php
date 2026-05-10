@@ -130,6 +130,7 @@ return [
     'backstage.layout.nav.notifications'               => 'Ilmoitukset',
     'backstage.layout.nav.settings'                    => 'Asetukset',
     'backstage.layout.nav.public_site'                 => 'Julkinen sivusto',
+    'backstage.layout.nav.report_issue'                => 'Ilmoita ongelmasta',
     'backstage.layout.nav.collapse_sidebar'            => 'Pienennä sivupalkki',
     'backstage.layout.nav.open_navigation'             => 'Avaa navigaatio',
     'backstage.layout.search.button_aria'              => 'Haku (Ctrl+K)',
@@ -146,6 +147,7 @@ return [
     'backstage.layout.cmd.pending_apps'                => 'Odottavat hakemukset',
     'backstage.layout.theme.toggle'                    => 'Vaihda teema',
     'backstage.layout.tenant.title'                    => 'Aktiivinen tenant',
+    'backstage.layout.tenant.public_site_title'        => 'Avaa julkinen sivusto',
     'backstage.layout.forum.open_reports'              => 'Avoimia raportteja',
     'backstage.layout.breadcrumb.aria'                 => 'Murupolku',
     'backstage.layout.breadcrumb.root'                 => 'Backstage',
@@ -169,6 +171,9 @@ return [
     'backstage.layout.user.viewas.moderator'           => 'Moderaattori',
     'backstage.layout.user.viewas.administrator'       => 'Ylläpitäjä',
     'backstage.layout.user.viewas.system_administrator' => 'Järjestelmäylläpitäjä',
+
+    'backstage.layout.viewas.banner_prefix'            => 'Katselet sivua roolilla',
+    'backstage.layout.viewas.exit'                     => 'Poistu',
 
     'backstage.title.dashboard'                        => 'Etusivu',
     'backstage.title.members'                          => 'Jäsenet',

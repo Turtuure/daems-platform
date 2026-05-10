@@ -43,3 +43,20 @@ if (!$__isAdmin) {
     header('Location: /backstage/login?redirect=' . rawurlencode((string) ($_SERVER['REQUEST_URI'] ?? '/backstage')));
     exit;
 }
+
+/**
+ * View-as gate — when GSA impersonates a role that has no backstage access,
+ * bounce them to the tenant public site. Backstage is reserved for
+ * administrator / moderator / system_administrator. Real session role still
+ * grants access at the storage layer; only the UI redirect changes.
+ */
+$__viewAsRole = $_SESSION['view_as_role'] ?? null;
+$__viewAsBackstageAllowed = ['administrator', 'moderator', 'system_administrator'];
+if (
+    is_string($__viewAsRole)
+    && $__viewAsRole !== ''
+    && !in_array($__viewAsRole, $__viewAsBackstageAllowed, true)
+) {
+    header('Location: /');
+    exit;
+}

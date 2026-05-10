@@ -130,6 +130,7 @@ return [
     'backstage.layout.nav.notifications'               => 'Notifications',
     'backstage.layout.nav.settings'                    => 'Settings',
     'backstage.layout.nav.public_site'                 => 'Public site',
+    'backstage.layout.nav.report_issue'                => 'Report issue',
     'backstage.layout.nav.collapse_sidebar'            => 'Collapse sidebar',
     'backstage.layout.nav.open_navigation'             => 'Open navigation',
     'backstage.layout.search.button_aria'              => 'Search (Ctrl+K)',
@@ -146,6 +147,7 @@ return [
     'backstage.layout.cmd.pending_apps'                => 'Pending applications',
     'backstage.layout.theme.toggle'                    => 'Toggle theme',
     'backstage.layout.tenant.title'                    => 'Active tenant',
+    'backstage.layout.tenant.public_site_title'        => 'Open public site',
     'backstage.layout.forum.open_reports'              => 'Open reports',
     'backstage.layout.breadcrumb.aria'                 => 'Breadcrumb',
     'backstage.layout.breadcrumb.root'                 => 'Backstage',
@@ -169,6 +171,9 @@ return [
     'backstage.layout.user.viewas.moderator'           => 'Moderator',
     'backstage.layout.user.viewas.administrator'       => 'Administrator',
     'backstage.layout.user.viewas.system_administrator' => 'System Administrator',
+
+    'backstage.layout.viewas.banner_prefix'            => 'You are viewing the site as',
+    'backstage.layout.viewas.exit'                     => 'Exit',
 
     'backstage.title.dashboard'                        => 'Dashboard',
     'backstage.title.members'                          => 'Members',

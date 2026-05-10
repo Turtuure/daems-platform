@@ -364,7 +364,6 @@ ul, li { list-style: none; margin: 0; padding: 0; }
 /* Footer: link back to public site */
 .sidebar__footer {
   padding: var(--space-3) var(--space-4);
-  border-top: var(--border-default);
   margin-top: auto;
   overflow: hidden;
 }
@@ -387,6 +386,27 @@ ul, li { list-style: none; margin: 0; padding: 0; }
 
 .sidebar.is-collapsed .sidebar__footer-link span { display: none; }
 .sidebar.is-collapsed .sidebar__footer-link { justify-content: center; }
+
+/* Report-issue ghost button — distinct from regular nav, signals attention */
+.sidebar__footer-link--report {
+  justify-content: center;
+  border: 1px solid var(--status-error);
+  color: var(--status-error);
+  background: transparent;
+  font-weight: var(--weight-semibold);
+  letter-spacing: 0.02em;
+}
+
+.sidebar__footer-link--report:hover,
+.sidebar__footer-link--report:focus-visible {
+  background: var(--status-error-subtle);
+  color: var(--status-error-hover);
+  border-color: var(--status-error-hover);
+}
+
+.sidebar.is-collapsed .sidebar__footer-link--report {
+  padding: var(--space-2);
+}
 
 /* --------------------------------------------------------------------------
    Main Area
@@ -626,6 +646,138 @@ ul, li { list-style: none; margin: 0; padding: 0; }
   height: 1px;
   background: var(--surface-border);
   margin: var(--space-1) 0;
+}
+
+/* Submenu (View as / Language flyout) */
+.user-dropdown__submenu-wrap { position: relative; }
+
+.user-dropdown__submenu-trigger {
+  background: transparent;
+  border: 0;
+  text-align: left;
+  font: inherit;
+}
+
+.user-dropdown__submenu-label { flex: 1; }
+
+.user-dropdown__submenu-chevron {
+  margin-left: auto;
+  opacity: 0.6;
+  flex-shrink: 0;
+  transition: transform var(--transition-fast);
+}
+
+.user-dropdown__submenu-wrap.is-open .user-dropdown__submenu-trigger {
+  background: var(--surface-light);
+  color: var(--text-primary);
+}
+
+.user-dropdown__submenu-wrap.is-open .user-dropdown__submenu-chevron {
+  opacity: 1;
+}
+
+.user-dropdown__submenu {
+  position: absolute;
+  top: 0;
+  right: 100%;
+  min-width: 200px;
+  background: var(--surface-dark);
+  border: var(--border-default);
+  border-radius: var(--radius-md);
+  padding: var(--space-1) 0;
+  box-shadow: var(--shadow-lg);
+  z-index: var(--z-dropdown);
+  display: none;
+}
+
+.user-dropdown__submenu-wrap.is-open .user-dropdown__submenu { display: block; }
+
+/* Open on hover for pointer-precise devices (desktop). Touch + keyboard
+   continue to use click via the existing JS handler. */
+@media (hover: hover) and (pointer: fine) {
+  .user-dropdown__submenu-wrap:hover .user-dropdown__submenu { display: block; }
+  .user-dropdown__submenu-wrap:hover .user-dropdown__submenu-trigger {
+    background: var(--surface-light);
+    color: var(--text-primary);
+  }
+  .user-dropdown__submenu-wrap:hover .user-dropdown__submenu-chevron {
+    opacity: 1;
+  }
+}
+
+/* Mobile: flip submenu inline so it doesn't overflow viewport edge */
+@media (max-width: 640px) {
+  .user-dropdown__submenu {
+    position: static;
+    margin: 0 0 0 var(--space-4);
+    border: 0;
+    border-left: var(--border-default);
+    border-radius: 0;
+    box-shadow: none;
+    background: transparent;
+    min-width: 0;
+  }
+}
+
+/* Language item: flag · name · checkmark (right-aligned) */
+.user-dropdown__item--lang { padding-right: var(--space-3); }
+
+.user-dropdown__flag {
+  width: 20px;
+  height: 15px;
+  border-radius: 2px;
+  object-fit: cover;
+  flex-shrink: 0;
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.05);
+  display: block;
+}
+
+.user-dropdown__lang-name { flex: 1; }
+
+.user-dropdown__active-mark {
+  margin-left: auto;
+  color: var(--brand-primary, var(--text-primary));
+  flex-shrink: 0;
+}
+
+/* View-as banner — appears above the topnav when impersonating a role */
+.view-as-banner {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-3);
+  padding: var(--space-2) var(--space-4);
+  background: var(--status-warning-subtle);
+  color: var(--status-warning);
+  border-bottom: 1px solid var(--status-warning);
+  font-size: var(--text-small);
+  font-weight: var(--weight-medium);
+  letter-spacing: 0.01em;
+}
+
+.view-as-banner__icon {
+  font-size: 1rem;
+  line-height: 1;
+}
+
+.view-as-banner__text strong { font-weight: var(--weight-semibold); }
+
+.view-as-banner__exit {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding: 2px var(--space-2);
+  border-radius: var(--radius-sm);
+  border: 1px solid currentColor;
+  font-weight: var(--weight-semibold);
+  font-size: var(--text-xs);
+  transition: background var(--transition-fast);
+}
+
+.view-as-banner__exit:hover,
+.view-as-banner__exit:focus-visible {
+  background: var(--status-warning);
+  color: var(--text-inverse);
 }
 
 /* --------------------------------------------------------------------------
@@ -1593,10 +1745,11 @@ ul, li { list-style: none; margin: 0; padding: 0; }
     min-height: 0;
 }
 
-/* --- Header-bar tenant pill --- */
+/* --- Header-bar tenant pill (links to tenant public site) --- */
 .header-bar__tenant {
     display: inline-flex;
     align-items: center;
+    gap: 6px;
     padding: 4px 10px;
     margin-right: 4px;
     border-radius: 6px;
@@ -1604,10 +1757,32 @@ ul, li { list-style: none; margin: 0; padding: 0; }
     color: var(--text-secondary, #6b7280);
     font-size: 13px;
     font-weight: 500;
-    max-width: 160px;
+    max-width: 180px;
     white-space: nowrap;
+    transition: background var(--transition-fast), color var(--transition-fast);
+}
+
+.header-bar__tenant:hover,
+.header-bar__tenant:focus-visible {
+    background: var(--surface-lighter);
+    color: var(--text-primary);
+}
+
+.header-bar__tenant-name {
     overflow: hidden;
     text-overflow: ellipsis;
+    min-width: 0;
+}
+
+.header-bar__tenant-icon {
+    flex-shrink: 0;
+    opacity: 0.65;
+    transition: opacity var(--transition-fast);
+}
+
+.header-bar__tenant:hover .header-bar__tenant-icon,
+.header-bar__tenant:focus-visible .header-bar__tenant-icon {
+    opacity: 1;
 }
 
 /* === Application list tables (pending / decided) === */

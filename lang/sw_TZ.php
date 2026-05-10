@@ -130,6 +130,7 @@ return [
     'backstage.layout.nav.notifications'               => 'Arifa',
     'backstage.layout.nav.settings'                    => 'Mipangilio',
     'backstage.layout.nav.public_site'                 => 'Tovuti ya umma',
+    'backstage.layout.nav.report_issue'                => 'Ripoti tatizo',
     'backstage.layout.nav.collapse_sidebar'            => 'Funga upau wa kando',
     'backstage.layout.nav.open_navigation'             => 'Fungua urambazaji',
     'backstage.layout.search.button_aria'              => 'Tafuta (Ctrl+K)',
@@ -146,6 +147,7 @@ return [
     'backstage.layout.cmd.pending_apps'                => 'Maombi yanayosubiri',
     'backstage.layout.theme.toggle'                    => 'Badilisha mandhari',
     'backstage.layout.tenant.title'                    => 'Mteja anayetumika',
+    'backstage.layout.tenant.public_site_title'        => 'Fungua tovuti ya umma',
     'backstage.layout.forum.open_reports'              => 'Ripoti zilizo wazi',
     'backstage.layout.breadcrumb.aria'                 => 'Njia ya makombo',
     'backstage.layout.breadcrumb.root'                 => 'Backstage',
@@ -169,6 +171,9 @@ return [
     'backstage.layout.user.viewas.moderator'           => 'Msimamizi wa mjadala',
     'backstage.layout.user.viewas.administrator'       => 'Msimamizi',
     'backstage.layout.user.viewas.system_administrator' => 'Msimamizi wa Mfumo',
+
+    'backstage.layout.viewas.banner_prefix'            => 'Unaona tovuti kama',
+    'backstage.layout.viewas.exit'                     => 'Toka',
 
     'backstage.title.dashboard'                        => 'Dashibodi',
     'backstage.title.members'                          => 'Wanachama',
