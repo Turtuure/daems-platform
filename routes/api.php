@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use Daems\Infrastructure\Adapter\Api\Controller\AdminController;
 use Daems\Infrastructure\Adapter\Api\Controller\AuthController;
+use Daems\Infrastructure\Adapter\Api\Controller\DashboardController;
 use Daems\Infrastructure\Adapter\Api\Controller\UserController;
 use Daems\Infrastructure\Framework\Container\Container;
 use Daems\Infrastructure\Framework\Http\Middleware\AuthMiddleware;
@@ -36,6 +37,23 @@ return static function (Router $router, Container $container): void {
 
     $router->get('/api/v1/backstage/member-growth', static function (Request $req) use ($container): Response {
         return $container->make(AdminController::class)->memberGrowth($req);
+    }, [TenantContextMiddleware::class, AuthMiddleware::class]);
+
+    // Backstage — Dashboard (layout + widget catalog)
+    $router->get('/api/v1/backstage/dashboard/layout', static function (Request $req) use ($container): Response {
+        return $container->make(DashboardController::class)->getLayout($req);
+    }, [TenantContextMiddleware::class, AuthMiddleware::class]);
+
+    $router->put('/api/v1/backstage/dashboard/layout', static function (Request $req) use ($container): Response {
+        return $container->make(DashboardController::class)->putLayout($req);
+    }, [TenantContextMiddleware::class, AuthMiddleware::class]);
+
+    $router->delete('/api/v1/backstage/dashboard/layout', static function (Request $req) use ($container): Response {
+        return $container->make(DashboardController::class)->deleteLayout($req);
+    }, [TenantContextMiddleware::class, AuthMiddleware::class]);
+
+    $router->get('/api/v1/backstage/dashboard/catalog', static function (Request $req) use ($container): Response {
+        return $container->make(DashboardController::class)->getCatalog($req);
     }, [TenantContextMiddleware::class, AuthMiddleware::class]);
 
     // Users — all protected

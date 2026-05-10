@@ -45,6 +45,17 @@ final class Router
     }
 
     /** @param list<class-string<MiddlewareInterface>> $middleware */
+    public function put(string $path, callable $handler, array $middleware = []): void
+    {
+        $this->routes[] = [
+            'method'     => 'PUT',
+            'pattern'    => $path,
+            'handler'    => $handler,
+            'middleware' => $middleware,
+        ];
+    }
+
+    /** @param list<class-string<MiddlewareInterface>> $middleware */
     public function patch(string $path, callable $handler, array $middleware = []): void
     {
         $this->routes[] = [

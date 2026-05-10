@@ -640,6 +640,16 @@ $container->bind(
         $c->make(\Daems\Domain\Dashboard\WidgetRegistry::class),
     ),
 );
+$container->bind(
+    \Daems\Infrastructure\Adapter\Api\Controller\DashboardController::class,
+    static fn(Container $c) => new \Daems\Infrastructure\Adapter\Api\Controller\DashboardController(
+        $c->make(\Daems\Application\Dashboard\GetUserLayout\GetUserLayout::class),
+        $c->make(\Daems\Application\Dashboard\SaveUserLayout\SaveUserLayout::class),
+        $c->make(\Daems\Application\Dashboard\ResetUserLayout\ResetUserLayout::class),
+        $c->make(\Daems\Application\Dashboard\ListCatalog\ListCatalog::class),
+        $c->make(\Daems\Domain\Tenant\TenantModuleResolver::class),
+    ),
+);
 
 // Register core + platform widgets. Module widgets register themselves
 // inside each module's bindings.php (loaded just below).

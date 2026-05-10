@@ -582,6 +582,16 @@ final class KernelHarness
                 $c->make(\Daems\Domain\Dashboard\WidgetRegistry::class),
             ),
         );
+        $container->bind(
+            \Daems\Infrastructure\Adapter\Api\Controller\DashboardController::class,
+            static fn(Container $c) => new \Daems\Infrastructure\Adapter\Api\Controller\DashboardController(
+                $c->make(\Daems\Application\Dashboard\GetUserLayout\GetUserLayout::class),
+                $c->make(\Daems\Application\Dashboard\SaveUserLayout\SaveUserLayout::class),
+                $c->make(\Daems\Application\Dashboard\ResetUserLayout\ResetUserLayout::class),
+                $c->make(\Daems\Application\Dashboard\ListCatalog\ListCatalog::class),
+                $c->make(\Daems\Domain\Tenant\TenantModuleResolver::class),
+            ),
+        );
 
         $registry = $container->make(\Daems\Domain\Dashboard\WidgetRegistry::class);
         $registry->register(new \Daems\Infrastructure\Dashboard\CoreWidgets\MembersKpiWidget(
