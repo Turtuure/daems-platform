@@ -510,6 +510,100 @@ final class KernelHarness
         ));
         $container->bind(LocaleMiddleware::class, static fn() => new LocaleMiddleware());
 
+        // Dashboard — widget registry, repo, use cases, widget instances.
+        // MUST be bound before module bindings run so modules can register their widgets.
+        $container->singleton(
+            \Daems\Domain\Dashboard\WidgetRegistry::class,
+            static fn() => new \Daems\Domain\Dashboard\WidgetRegistry(),
+        );
+        $container->singleton(
+            \Daems\Domain\Dashboard\UserDashboardRepositoryInterface::class,
+            static fn() => new \Daems\Infrastructure\Dashboard\InMemoryUserDashboardRepository(),
+        );
+        $container->singleton(
+            \Daems\Domain\Admin\AdminStatsRepositoryInterface::class,
+            static fn(): \Daems\Domain\Admin\AdminStatsRepositoryInterface => new class implements \Daems\Domain\Admin\AdminStatsRepositoryInterface {
+                public function getStatsForTenant(\Daems\Domain\Tenant\TenantId $tenantId): \Daems\Domain\Admin\AdminStats
+                {
+                    return new \Daems\Domain\Admin\AdminStats(
+                        members: 0,
+                        pendingApplications: 0,
+                        upcomingEvents: 0,
+                        activeProjects: 0,
+                        membersSparkline: [],
+                        applicationsSparkline: [],
+                        eventsSparkline: [],
+                        projectsSparkline: [],
+                        forumSparkline: [],
+                        insightsSparkline: [],
+                        membersChange: 0.0,
+                        applicationsChange: 0.0,
+                        eventsChange: 0.0,
+                        projectsChange: 0.0,
+                        memberGrowth: ['labels' => [], 'series' => []],
+                    );
+                }
+                public function getMemberGrowthForTenant(string $period, \Daems\Domain\Tenant\TenantId $tenantId): array
+                {
+                    return ['labels' => [], 'series' => []];
+                }
+            },
+        );
+        $container->bind(
+            \Daems\Application\Admin\GetAdminStats\GetAdminStats::class,
+            static fn(Container $c) => new \Daems\Application\Admin\GetAdminStats\GetAdminStats(
+                $c->make(\Daems\Domain\Admin\AdminStatsRepositoryInterface::class),
+            ),
+        );
+        $container->bind(
+            \Daems\Application\Dashboard\GetUserLayout\GetUserLayout::class,
+            static fn(Container $c) => new \Daems\Application\Dashboard\GetUserLayout\GetUserLayout(
+                $c->make(\Daems\Domain\Dashboard\WidgetRegistry::class),
+                $c->make(\Daems\Domain\Dashboard\UserDashboardRepositoryInterface::class),
+            ),
+        );
+        $container->bind(
+            \Daems\Application\Dashboard\SaveUserLayout\SaveUserLayout::class,
+            static fn(Container $c) => new \Daems\Application\Dashboard\SaveUserLayout\SaveUserLayout(
+                $c->make(\Daems\Domain\Dashboard\WidgetRegistry::class),
+                $c->make(\Daems\Domain\Dashboard\UserDashboardRepositoryInterface::class),
+                new \DateTimeImmutable(),
+            ),
+        );
+        $container->bind(
+            \Daems\Application\Dashboard\ResetUserLayout\ResetUserLayout::class,
+            static fn(Container $c) => new \Daems\Application\Dashboard\ResetUserLayout\ResetUserLayout(
+                $c->make(\Daems\Domain\Dashboard\UserDashboardRepositoryInterface::class),
+            ),
+        );
+        $container->bind(
+            \Daems\Application\Dashboard\ListCatalog\ListCatalog::class,
+            static fn(Container $c) => new \Daems\Application\Dashboard\ListCatalog\ListCatalog(
+                $c->make(\Daems\Domain\Dashboard\WidgetRegistry::class),
+            ),
+        );
+
+        $registry = $container->make(\Daems\Domain\Dashboard\WidgetRegistry::class);
+        $registry->register(new \Daems\Infrastructure\Dashboard\CoreWidgets\MembersKpiWidget(
+            $container->make(\Daems\Application\Admin\GetAdminStats\GetAdminStats::class),
+        ));
+        $registry->register(new \Daems\Infrastructure\Dashboard\CoreWidgets\ApplicationsKpiWidget(
+            $container->make(\Daems\Application\Admin\GetAdminStats\GetAdminStats::class),
+        ));
+        $registry->register(new \Daems\Infrastructure\Dashboard\CoreWidgets\MemberGrowthChartWidget(
+            $container->make(\Daems\Application\Admin\GetAdminStats\GetAdminStats::class),
+        ));
+        $registry->register(new \Daems\Infrastructure\Dashboard\CoreWidgets\PlatformActivityChartWidget());
+        $registry->register(new \Daems\Infrastructure\Dashboard\CoreWidgets\QuickActionsWidget());
+        $registry->register(new \Daems\Infrastructure\Dashboard\CoreWidgets\PendingAppsListWidget());
+        $registry->register(new \Daems\Infrastructure\Dashboard\CoreWidgets\ActivityFeedWidget());
+        $registry->register(new \Daems\Infrastructure\Dashboard\PlatformWidgets\TenantsKpiWidget());
+        $registry->register(new \Daems\Infrastructure\Dashboard\PlatformWidgets\PlatformUsersKpiWidget());
+        $registry->register(new \Daems\Infrastructure\Dashboard\PlatformWidgets\DbSizeKpiWidget());
+        $registry->register(new \Daems\Infrastructure\Dashboard\PlatformWidgets\UptimeKpiWidget());
+        $registry->register(new \Daems\Infrastructure\Dashboard\PlatformWidgets\TenantStatusGridWidget());
+        $registry->register(new \Daems\Infrastructure\Dashboard\PlatformWidgets\TenantActivityChartWidget());
+
         // Module bindings (TEST mode — uses bindings.test.php if present, else bindings.php).
         $moduleRegistry->registerBindings($container, \Daems\Infrastructure\Module\ModuleRegistry::TEST);
 

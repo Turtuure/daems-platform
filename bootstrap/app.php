@@ -601,6 +601,69 @@ $container->singleton(\Daems\Infrastructure\Adapter\Api\Controller\Backstage\Ten
     ),
 );
 
+// Dashboard — widget registry, repo, use cases, widget instances.
+// MUST be bound before module bindings run so modules can register their widgets.
+$container->singleton(
+    \Daems\Domain\Dashboard\WidgetRegistry::class,
+    static fn() => new \Daems\Domain\Dashboard\WidgetRegistry(),
+);
+$container->bind(
+    \Daems\Domain\Dashboard\UserDashboardRepositoryInterface::class,
+    static fn(Container $c) => new \Daems\Infrastructure\Dashboard\SqlUserDashboardRepository(
+        $c->make(Connection::class),
+    ),
+);
+$container->bind(
+    \Daems\Application\Dashboard\GetUserLayout\GetUserLayout::class,
+    static fn(Container $c) => new \Daems\Application\Dashboard\GetUserLayout\GetUserLayout(
+        $c->make(\Daems\Domain\Dashboard\WidgetRegistry::class),
+        $c->make(\Daems\Domain\Dashboard\UserDashboardRepositoryInterface::class),
+    ),
+);
+$container->bind(
+    \Daems\Application\Dashboard\SaveUserLayout\SaveUserLayout::class,
+    static fn(Container $c) => new \Daems\Application\Dashboard\SaveUserLayout\SaveUserLayout(
+        $c->make(\Daems\Domain\Dashboard\WidgetRegistry::class),
+        $c->make(\Daems\Domain\Dashboard\UserDashboardRepositoryInterface::class),
+        new \DateTimeImmutable(),
+    ),
+);
+$container->bind(
+    \Daems\Application\Dashboard\ResetUserLayout\ResetUserLayout::class,
+    static fn(Container $c) => new \Daems\Application\Dashboard\ResetUserLayout\ResetUserLayout(
+        $c->make(\Daems\Domain\Dashboard\UserDashboardRepositoryInterface::class),
+    ),
+);
+$container->bind(
+    \Daems\Application\Dashboard\ListCatalog\ListCatalog::class,
+    static fn(Container $c) => new \Daems\Application\Dashboard\ListCatalog\ListCatalog(
+        $c->make(\Daems\Domain\Dashboard\WidgetRegistry::class),
+    ),
+);
+
+// Register core + platform widgets. Module widgets register themselves
+// inside each module's bindings.php (loaded just below).
+$registry = $container->make(\Daems\Domain\Dashboard\WidgetRegistry::class);
+$registry->register(new \Daems\Infrastructure\Dashboard\CoreWidgets\MembersKpiWidget(
+    $container->make(GetAdminStats::class),
+));
+$registry->register(new \Daems\Infrastructure\Dashboard\CoreWidgets\ApplicationsKpiWidget(
+    $container->make(GetAdminStats::class),
+));
+$registry->register(new \Daems\Infrastructure\Dashboard\CoreWidgets\MemberGrowthChartWidget(
+    $container->make(GetAdminStats::class),
+));
+$registry->register(new \Daems\Infrastructure\Dashboard\CoreWidgets\PlatformActivityChartWidget());
+$registry->register(new \Daems\Infrastructure\Dashboard\CoreWidgets\QuickActionsWidget());
+$registry->register(new \Daems\Infrastructure\Dashboard\CoreWidgets\PendingAppsListWidget());
+$registry->register(new \Daems\Infrastructure\Dashboard\CoreWidgets\ActivityFeedWidget());
+$registry->register(new \Daems\Infrastructure\Dashboard\PlatformWidgets\TenantsKpiWidget());
+$registry->register(new \Daems\Infrastructure\Dashboard\PlatformWidgets\PlatformUsersKpiWidget());
+$registry->register(new \Daems\Infrastructure\Dashboard\PlatformWidgets\DbSizeKpiWidget());
+$registry->register(new \Daems\Infrastructure\Dashboard\PlatformWidgets\UptimeKpiWidget());
+$registry->register(new \Daems\Infrastructure\Dashboard\PlatformWidgets\TenantStatusGridWidget());
+$registry->register(new \Daems\Infrastructure\Dashboard\PlatformWidgets\TenantActivityChartWidget());
+
 // Module bindings — invoke each discovered module's bindings.php.
 $moduleRegistry->registerBindings($container, \Daems\Infrastructure\Module\ModuleRegistry::PROD);
 
