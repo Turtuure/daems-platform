@@ -76,6 +76,15 @@ final class ApiClient
     }
 
     /**
+     * @param array<mixed> $data
+     * @return array{status:int, body:array<mixed>}
+     */
+    public static function put(string $path, array $data): array
+    {
+        return self::request('PUT', $path, $data);
+    }
+
+    /**
      * @return array{status:int, body:array<mixed>}
      */
     public static function delete(string $path): array
