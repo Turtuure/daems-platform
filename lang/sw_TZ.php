@@ -279,6 +279,13 @@ return [
     'backstage.dashboard.widget.recent_posts_list.label'     => 'Machapisho ya hivi karibuni',
     'backstage.dashboard.widget.recent_posts_list.description' => 'Machapisho 5 ya hivi karibuni kwenye jukwaa.',
 
+    'backstage.dashboard.tenant.status.active'         => 'Hai',
+    'backstage.dashboard.tenant.status.suspended'      => 'Imesimamishwa',
+    'backstage.dashboard.tenant.col.name'              => 'Mteja',
+    'backstage.dashboard.tenant.col.slug'              => 'Kitambulisho',
+    'backstage.dashboard.tenant.col.status'            => 'Hali',
+    'backstage.dashboard.tenant.col.members'           => 'Wanachama',
+
     'backstage.settings.title'                         => 'Mipangilio',
     'backstage.settings.subtitle'                      => 'Akaunti, mteja na muhtasari wa jukwaa kwa mtazamo mmoja.',
     'backstage.settings.error.load_failed'             => 'Imeshindikana kupakia data:',

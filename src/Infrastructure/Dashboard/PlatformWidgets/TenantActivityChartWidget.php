@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 namespace Daems\Infrastructure\Dashboard\PlatformWidgets;
 
+use Daems\Application\Platform\GetPlatformStats\GetPlatformStats;
 use Daems\Domain\Dashboard\MinRole;
 use Daems\Domain\Dashboard\Widget;
 use Daems\Domain\Dashboard\WidgetCategory;
@@ -14,7 +15,9 @@ use Daems\Infrastructure\Dashboard\WidgetRenderer;
 
 final class TenantActivityChartWidget extends Widget
 {
-    public function __construct() {}
+    public function __construct(
+        private readonly GetPlatformStats $stats,
+    ) {}
 
     public function id(): string             { return 'platform.tenant_activity_chart'; }
     public function category(): WidgetCategory { return WidgetCategory::Charts; }
@@ -26,15 +29,19 @@ final class TenantActivityChartWidget extends Widget
 
     public function render(TenantId $tenantId, User $user): string
     {
+        $d = $this->data($tenantId);
         return WidgetRenderer::chart(
-            I18n::t($this->labelKey()),
-            'chart-' . str_replace('.', '-', $this->id()),
+            title:   I18n::t($this->labelKey()),
+            chartId: 'chart-' . str_replace('.', '-', $this->id()),
+            labels:  $d['labels'],
+            series:  $d['series'],
+            color:   'purple',
         );
     }
 
     public function data(TenantId $tenantId): array
     {
-        // TODO(v1+): wire real data source (cross-tenant activity time series)
-        return ['labels' => [], 'series' => []];
+        $s = $this->stats->execute();
+        return $s->tenantActivity;
     }
 }

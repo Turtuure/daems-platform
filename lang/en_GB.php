@@ -279,6 +279,13 @@ return [
     'backstage.dashboard.widget.recent_posts_list.label'     => 'Recent forum posts',
     'backstage.dashboard.widget.recent_posts_list.description' => 'Latest 5 posts across the forum.',
 
+    'backstage.dashboard.tenant.status.active'         => 'Active',
+    'backstage.dashboard.tenant.status.suspended'      => 'Suspended',
+    'backstage.dashboard.tenant.col.name'              => 'Tenant',
+    'backstage.dashboard.tenant.col.slug'              => 'Slug',
+    'backstage.dashboard.tenant.col.status'            => 'Status',
+    'backstage.dashboard.tenant.col.members'           => 'Members',
+
     'backstage.settings.title'                         => 'Settings',
     'backstage.settings.subtitle'                      => 'Account, tenant and platform overview at a glance.',
     'backstage.settings.error.load_failed'             => 'Could not load data:',

@@ -50,8 +50,7 @@
         };
     }
 
-    function renderAll() {
-        if (typeof ApexCharts === 'undefined') return;
+    function renderSparklines() {
         var els = document.querySelectorAll('.metric-spark[data-spark]');
         els.forEach(function (el) {
             if (el.dataset.sparkRendered === '1') return;
@@ -68,6 +67,63 @@
             new ApexCharts(el, sparkOpts(color, data)).render();
             el.dataset.sparkRendered = '1';
         });
+    }
+
+    function chartOpts(color, labels, series) {
+        var isDark = (document.documentElement.getAttribute('data-theme') || 'light') === 'dark';
+        var cs = getComputedStyle(document.documentElement);
+        var textSecondary = cs.getPropertyValue('--text-secondary').trim() || '#64748b';
+        return {
+            chart: {
+                type: 'area', height: 200,
+                background: 'transparent', fontFamily: 'inherit',
+                toolbar: { show: false }, zoom: { enabled: false },
+                animations: { enabled: true, easing: 'easeinout', speed: 500 },
+            },
+            theme: { mode: isDark ? 'dark' : 'light' },
+            series: [{ name: '', data: series }],
+            colors: [color],
+            xaxis: {
+                categories: labels,
+                labels: { style: { colors: textSecondary, fontSize: '11px' }, rotate: 0 },
+                axisBorder: { show: false }, axisTicks: { show: false },
+            },
+            yaxis: {
+                labels: { style: { colors: textSecondary, fontSize: '11px' }, formatter: function (v) { return Math.round(v); } },
+                min: 0,
+            },
+            stroke: { curve: 'smooth', width: 2 },
+            fill: { type: 'gradient', gradient: { shadeIntensity: 1, opacityFrom: 0.35, opacityTo: 0.05, stops: [0, 100] } },
+            grid: { borderColor: cs.getPropertyValue('--surface-border').trim() || '#e2e8f0', strokeDashArray: 3 },
+            dataLabels: { enabled: false },
+        };
+    }
+
+    function renderCharts() {
+        var els = document.querySelectorAll('.chart-container[data-chart-labels]');
+        els.forEach(function (el) {
+            if (el.dataset.chartRendered === '1') return;
+            var rawL = el.getAttribute('data-chart-labels');
+            var rawS = el.getAttribute('data-chart-series');
+            if (!rawL || !rawS) return;
+            var labels, series;
+            try {
+                labels = JSON.parse(rawL);
+                series = JSON.parse(rawS);
+            } catch (e) {
+                return;
+            }
+            if (!Array.isArray(series) || series.length === 0) return;
+            var color = colorFor(el.getAttribute('data-chart-color') || 'blue');
+            new ApexCharts(el, chartOpts(color, labels, series)).render();
+            el.dataset.chartRendered = '1';
+        });
+    }
+
+    function renderAll() {
+        if (typeof ApexCharts === 'undefined') return;
+        renderSparklines();
+        renderCharts();
     }
 
     if (document.readyState === 'loading') {

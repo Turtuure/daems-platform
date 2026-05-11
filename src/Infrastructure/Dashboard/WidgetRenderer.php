@@ -114,13 +114,32 @@ final class WidgetRenderer
             . '</div></div>';
     }
 
-    public static function chart(string $title, string $chartId): string
-    {
+    /**
+     * @param list<string>|null $labels Optional category labels (X axis)
+     * @param list<int>|null    $series Optional data series (Y axis)
+     */
+    public static function chart(
+        string $title,
+        string $chartId,
+        ?array $labels = null,
+        ?array $series = null,
+        string $color = 'blue',
+    ): string {
+        $attrs = '';
+        if ($labels !== null && $series !== null) {
+            $labelsJson = json_encode($labels);
+            $seriesJson = json_encode($series);
+            if ($labelsJson !== false && $seriesJson !== false) {
+                $attrs = ' data-chart-labels="' . htmlspecialchars($labelsJson, ENT_QUOTES, 'UTF-8') . '"'
+                    . ' data-chart-series="' . htmlspecialchars($seriesJson, ENT_QUOTES, 'UTF-8') . '"'
+                    . ' data-chart-color="' . htmlspecialchars($color, ENT_QUOTES, 'UTF-8') . '"';
+            }
+        }
         return '<div class="card">'
             . '<div class="card__body">'
             . '<p class="card__title">' . htmlspecialchars($title, ENT_QUOTES, 'UTF-8') . '</p>'
             . '<div id="' . htmlspecialchars($chartId, ENT_QUOTES, 'UTF-8') . '" '
-            . 'class="chart-container" style="min-height:200px;"></div>'
+            . 'class="chart-container" style="min-height:200px;"' . $attrs . '></div>'
             . '</div></div>';
     }
 }

@@ -613,6 +613,18 @@ $container->bind(
         $c->make(Connection::class)->pdo(),
     ),
 );
+$container->singleton(
+    \Daems\Domain\Platform\PlatformStatsRepositoryInterface::class,
+    static fn(Container $c) => new \Daems\Infrastructure\Adapter\Persistence\Sql\SqlPlatformStatsRepository(
+        $c->make(Connection::class)->pdo(),
+    ),
+);
+$container->bind(
+    \Daems\Application\Platform\GetPlatformStats\GetPlatformStats::class,
+    static fn(Container $c) => new \Daems\Application\Platform\GetPlatformStats\GetPlatformStats(
+        $c->make(\Daems\Domain\Platform\PlatformStatsRepositoryInterface::class),
+    ),
+);
 $container->bind(
     \Daems\Application\Dashboard\GetUserLayout\GetUserLayout::class,
     static fn(Container $c) => new \Daems\Application\Dashboard\GetUserLayout\GetUserLayout(
@@ -666,13 +678,27 @@ $registry->register(new \Daems\Infrastructure\Dashboard\CoreWidgets\MemberGrowth
 $registry->register(new \Daems\Infrastructure\Dashboard\CoreWidgets\PlatformActivityChartWidget());
 $registry->register(new \Daems\Infrastructure\Dashboard\CoreWidgets\QuickActionsWidget());
 $registry->register(new \Daems\Infrastructure\Dashboard\CoreWidgets\PendingAppsListWidget());
-$registry->register(new \Daems\Infrastructure\Dashboard\CoreWidgets\ActivityFeedWidget());
-$registry->register(new \Daems\Infrastructure\Dashboard\PlatformWidgets\TenantsKpiWidget());
-$registry->register(new \Daems\Infrastructure\Dashboard\PlatformWidgets\PlatformUsersKpiWidget());
-$registry->register(new \Daems\Infrastructure\Dashboard\PlatformWidgets\DbSizeKpiWidget());
-$registry->register(new \Daems\Infrastructure\Dashboard\PlatformWidgets\UptimeKpiWidget());
-$registry->register(new \Daems\Infrastructure\Dashboard\PlatformWidgets\TenantStatusGridWidget());
-$registry->register(new \Daems\Infrastructure\Dashboard\PlatformWidgets\TenantActivityChartWidget());
+$registry->register(new \Daems\Infrastructure\Dashboard\CoreWidgets\ActivityFeedWidget(
+    $container->make(\Daems\Application\Platform\GetPlatformStats\GetPlatformStats::class),
+));
+$registry->register(new \Daems\Infrastructure\Dashboard\PlatformWidgets\TenantsKpiWidget(
+    $container->make(\Daems\Application\Platform\GetPlatformStats\GetPlatformStats::class),
+));
+$registry->register(new \Daems\Infrastructure\Dashboard\PlatformWidgets\PlatformUsersKpiWidget(
+    $container->make(\Daems\Application\Platform\GetPlatformStats\GetPlatformStats::class),
+));
+$registry->register(new \Daems\Infrastructure\Dashboard\PlatformWidgets\DbSizeKpiWidget(
+    $container->make(\Daems\Application\Platform\GetPlatformStats\GetPlatformStats::class),
+));
+$registry->register(new \Daems\Infrastructure\Dashboard\PlatformWidgets\UptimeKpiWidget(
+    $container->make(\Daems\Application\Platform\GetPlatformStats\GetPlatformStats::class),
+));
+$registry->register(new \Daems\Infrastructure\Dashboard\PlatformWidgets\TenantStatusGridWidget(
+    $container->make(\Daems\Application\Platform\GetPlatformStats\GetPlatformStats::class),
+));
+$registry->register(new \Daems\Infrastructure\Dashboard\PlatformWidgets\TenantActivityChartWidget(
+    $container->make(\Daems\Application\Platform\GetPlatformStats\GetPlatformStats::class),
+));
 
 // Module bindings — invoke each discovered module's bindings.php.
 $moduleRegistry->registerBindings($container, \Daems\Infrastructure\Module\ModuleRegistry::PROD);

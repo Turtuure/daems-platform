@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 namespace Daems\Infrastructure\Dashboard\PlatformWidgets;
 
+use Daems\Application\Platform\GetPlatformStats\GetPlatformStats;
 use Daems\Domain\Dashboard\MinRole;
 use Daems\Domain\Dashboard\Widget;
 use Daems\Domain\Dashboard\WidgetCategory;
@@ -16,7 +17,9 @@ final class UptimeKpiWidget extends Widget
 {
     private const ICON = '<circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>';
 
-    public function __construct() {}
+    public function __construct(
+        private readonly GetPlatformStats $stats,
+    ) {}
 
     public function id(): string             { return 'platform.uptime_kpi'; }
     public function category(): WidgetCategory { return WidgetCategory::Numbers; }
@@ -29,10 +32,11 @@ final class UptimeKpiWidget extends Widget
     public function render(TenantId $tenantId, User $user): string
     {
         $d = $this->data($tenantId);
+        // Render the value as days (cleaner than seconds). 0 days falls back to "<1d".
         return WidgetRenderer::kpi(
             value:   (int) $d['value'],
             change:  (float) $d['change'],
-            label:   I18n::t($this->labelKey()),
+            label:   I18n::t($this->labelKey()) . ' (d)',
             color:   'amber',
             iconSvg: self::ICON,
         );
@@ -40,7 +44,11 @@ final class UptimeKpiWidget extends Widget
 
     public function data(TenantId $tenantId): array
     {
-        // TODO(v1+): wire real data source (uptime percentage as integer, e.g. 99)
-        return ['value' => 0, 'change' => 0.0];
+        $s = $this->stats->execute();
+        $days = (int) floor($s->mysqlUptimeSeconds / 86400);
+        return [
+            'value'  => $days,
+            'change' => 0.0,
+        ];
     }
 }

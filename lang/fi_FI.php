@@ -279,6 +279,13 @@ return [
     'backstage.dashboard.widget.recent_posts_list.label'     => 'Viimeisimmät foorumiviestit',
     'backstage.dashboard.widget.recent_posts_list.description' => 'Viimeisimmät 5 viestiä foorumilla.',
 
+    'backstage.dashboard.tenant.status.active'         => 'Aktiivinen',
+    'backstage.dashboard.tenant.status.suspended'      => 'Keskeytetty',
+    'backstage.dashboard.tenant.col.name'              => 'Tenant',
+    'backstage.dashboard.tenant.col.slug'              => 'Tunniste',
+    'backstage.dashboard.tenant.col.status'            => 'Tila',
+    'backstage.dashboard.tenant.col.members'           => 'Jäseniä',
+
     'backstage.settings.title'                         => 'Asetukset',
     'backstage.settings.subtitle'                      => 'Tilin, tenantin ja alustan tiedot yhdellä silmäyksellä.',
     'backstage.settings.error.load_failed'             => 'Tietoja ei voitu ladata:',

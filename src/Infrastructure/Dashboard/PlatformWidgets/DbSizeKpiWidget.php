@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 namespace Daems\Infrastructure\Dashboard\PlatformWidgets;
 
+use Daems\Application\Platform\GetPlatformStats\GetPlatformStats;
 use Daems\Domain\Dashboard\MinRole;
 use Daems\Domain\Dashboard\Widget;
 use Daems\Domain\Dashboard\WidgetCategory;
@@ -16,7 +17,9 @@ final class DbSizeKpiWidget extends Widget
 {
     private const ICON = '<ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/>';
 
-    public function __construct() {}
+    public function __construct(
+        private readonly GetPlatformStats $stats,
+    ) {}
 
     public function id(): string             { return 'platform.db_size_kpi'; }
     public function category(): WidgetCategory { return WidgetCategory::Numbers; }
@@ -32,7 +35,7 @@ final class DbSizeKpiWidget extends Widget
         return WidgetRenderer::kpi(
             value:   (int) $d['value'],
             change:  (float) $d['change'],
-            label:   I18n::t($this->labelKey()),
+            label:   I18n::t($this->labelKey()) . ' (MB)',
             color:   'green',
             iconSvg: self::ICON,
         );
@@ -40,7 +43,10 @@ final class DbSizeKpiWidget extends Widget
 
     public function data(TenantId $tenantId): array
     {
-        // TODO(v1+): wire real data source (total DB size in MB)
-        return ['value' => 0, 'change' => 0.0];
+        $s = $this->stats->execute();
+        return [
+            'value'  => $s->dbSizeMb,
+            'change' => 0.0,
+        ];
     }
 }

@@ -2148,3 +2148,27 @@ ul, li { list-style: none; margin: 0; padding: 0; }
     .dashboard-grid .dashboard-cell { grid-column: span 2 !important; }
     .dashboard-catalog-modal__grid { grid-template-columns: 1fr; }
 }
+
+/* Dashboard table/list helpers used by tenant_status_grid + activity_feed */
+.badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 999px;
+    font-size: var(--text-xs, 11px);
+    font-weight: var(--weight-medium, 500);
+    line-height: 1.5;
+}
+.badge--success {
+    background: var(--status-success-subtle, rgba(22, 163, 74, 0.1));
+    color: var(--status-success, #16a34a);
+}
+.badge--error {
+    background: var(--status-error-subtle, rgba(220, 38, 38, 0.1));
+    color: var(--status-error, #dc2626);
+}
+
+.dashboard-list__time {
+    color: var(--text-muted, #6b7280);
+    font-variant-numeric: tabular-nums;
+    font-size: var(--text-xs, 11px);
+}

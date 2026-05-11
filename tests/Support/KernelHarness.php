@@ -555,6 +555,32 @@ final class KernelHarness
                 $c->make(\Daems\Domain\Admin\AdminStatsRepositoryInterface::class),
             ),
         );
+        $container->singleton(
+            \Daems\Domain\Platform\PlatformStatsRepositoryInterface::class,
+            static fn(): \Daems\Domain\Platform\PlatformStatsRepositoryInterface => new class implements \Daems\Domain\Platform\PlatformStatsRepositoryInterface {
+                public function get(): \Daems\Domain\Platform\PlatformStats
+                {
+                    return new \Daems\Domain\Platform\PlatformStats(
+                        tenantCount:        0,
+                        userCount:          0,
+                        dbSizeMb:           0,
+                        mysqlUptimeSeconds: 0,
+                        usersSparkline:     [],
+                        tenantsSparkline:   [],
+                        activitySparkline:  [],
+                        tenants:            [],
+                        tenantActivity:     ['labels' => [], 'series' => []],
+                        recentActivity:     [],
+                    );
+                }
+            },
+        );
+        $container->bind(
+            \Daems\Application\Platform\GetPlatformStats\GetPlatformStats::class,
+            static fn(Container $c) => new \Daems\Application\Platform\GetPlatformStats\GetPlatformStats(
+                $c->make(\Daems\Domain\Platform\PlatformStatsRepositoryInterface::class),
+            ),
+        );
         $container->bind(
             \Daems\Application\Dashboard\GetUserLayout\GetUserLayout::class,
             static fn(Container $c) => new \Daems\Application\Dashboard\GetUserLayout\GetUserLayout(
@@ -606,13 +632,27 @@ final class KernelHarness
         $registry->register(new \Daems\Infrastructure\Dashboard\CoreWidgets\PlatformActivityChartWidget());
         $registry->register(new \Daems\Infrastructure\Dashboard\CoreWidgets\QuickActionsWidget());
         $registry->register(new \Daems\Infrastructure\Dashboard\CoreWidgets\PendingAppsListWidget());
-        $registry->register(new \Daems\Infrastructure\Dashboard\CoreWidgets\ActivityFeedWidget());
-        $registry->register(new \Daems\Infrastructure\Dashboard\PlatformWidgets\TenantsKpiWidget());
-        $registry->register(new \Daems\Infrastructure\Dashboard\PlatformWidgets\PlatformUsersKpiWidget());
-        $registry->register(new \Daems\Infrastructure\Dashboard\PlatformWidgets\DbSizeKpiWidget());
-        $registry->register(new \Daems\Infrastructure\Dashboard\PlatformWidgets\UptimeKpiWidget());
-        $registry->register(new \Daems\Infrastructure\Dashboard\PlatformWidgets\TenantStatusGridWidget());
-        $registry->register(new \Daems\Infrastructure\Dashboard\PlatformWidgets\TenantActivityChartWidget());
+        $registry->register(new \Daems\Infrastructure\Dashboard\CoreWidgets\ActivityFeedWidget(
+            $container->make(\Daems\Application\Platform\GetPlatformStats\GetPlatformStats::class),
+        ));
+        $registry->register(new \Daems\Infrastructure\Dashboard\PlatformWidgets\TenantsKpiWidget(
+            $container->make(\Daems\Application\Platform\GetPlatformStats\GetPlatformStats::class),
+        ));
+        $registry->register(new \Daems\Infrastructure\Dashboard\PlatformWidgets\PlatformUsersKpiWidget(
+            $container->make(\Daems\Application\Platform\GetPlatformStats\GetPlatformStats::class),
+        ));
+        $registry->register(new \Daems\Infrastructure\Dashboard\PlatformWidgets\DbSizeKpiWidget(
+            $container->make(\Daems\Application\Platform\GetPlatformStats\GetPlatformStats::class),
+        ));
+        $registry->register(new \Daems\Infrastructure\Dashboard\PlatformWidgets\UptimeKpiWidget(
+            $container->make(\Daems\Application\Platform\GetPlatformStats\GetPlatformStats::class),
+        ));
+        $registry->register(new \Daems\Infrastructure\Dashboard\PlatformWidgets\TenantStatusGridWidget(
+            $container->make(\Daems\Application\Platform\GetPlatformStats\GetPlatformStats::class),
+        ));
+        $registry->register(new \Daems\Infrastructure\Dashboard\PlatformWidgets\TenantActivityChartWidget(
+            $container->make(\Daems\Application\Platform\GetPlatformStats\GetPlatformStats::class),
+        ));
 
         // Module bindings (TEST mode — uses bindings.test.php if present, else bindings.php).
         $moduleRegistry->registerBindings($container, \Daems\Infrastructure\Module\ModuleRegistry::TEST);
