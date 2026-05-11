@@ -9,10 +9,13 @@ use Daems\Domain\Dashboard\WidgetCategory;
 use Daems\Domain\Dashboard\WidgetSpan;
 use Daems\Domain\Tenant\TenantId;
 use Daems\Domain\User\User;
+use Daems\Frontend\I18n;
 use Daems\Infrastructure\Dashboard\WidgetRenderer;
 
 final class UptimeKpiWidget extends Widget
 {
+    private const ICON = '<circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>';
+
     public function __construct() {}
 
     public function id(): string             { return 'platform.uptime_kpi'; }
@@ -26,12 +29,18 @@ final class UptimeKpiWidget extends Widget
     public function render(TenantId $tenantId, User $user): string
     {
         $d = $this->data($tenantId);
-        return WidgetRenderer::kpi($d['value'], (float) $d['change']);
+        return WidgetRenderer::kpi(
+            value:   (int) $d['value'],
+            change:  (float) $d['change'],
+            label:   I18n::t($this->labelKey()),
+            color:   'amber',
+            iconSvg: self::ICON,
+        );
     }
 
     public function data(TenantId $tenantId): array
     {
         // TODO(v1+): wire real data source (uptime percentage as integer, e.g. 99)
-        return ['value' => 0, 'change' => 0];
+        return ['value' => 0, 'change' => 0.0];
     }
 }

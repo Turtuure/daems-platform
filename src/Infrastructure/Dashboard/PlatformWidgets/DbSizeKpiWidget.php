@@ -9,10 +9,13 @@ use Daems\Domain\Dashboard\WidgetCategory;
 use Daems\Domain\Dashboard\WidgetSpan;
 use Daems\Domain\Tenant\TenantId;
 use Daems\Domain\User\User;
+use Daems\Frontend\I18n;
 use Daems\Infrastructure\Dashboard\WidgetRenderer;
 
 final class DbSizeKpiWidget extends Widget
 {
+    private const ICON = '<ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/>';
+
     public function __construct() {}
 
     public function id(): string             { return 'platform.db_size_kpi'; }
@@ -26,12 +29,18 @@ final class DbSizeKpiWidget extends Widget
     public function render(TenantId $tenantId, User $user): string
     {
         $d = $this->data($tenantId);
-        return WidgetRenderer::kpi($d['value'], (float) $d['change']);
+        return WidgetRenderer::kpi(
+            value:   (int) $d['value'],
+            change:  (float) $d['change'],
+            label:   I18n::t($this->labelKey()),
+            color:   'green',
+            iconSvg: self::ICON,
+        );
     }
 
     public function data(TenantId $tenantId): array
     {
         // TODO(v1+): wire real data source (total DB size in MB)
-        return ['value' => 0, 'change' => 0];
+        return ['value' => 0, 'change' => 0.0];
     }
 }

@@ -211,6 +211,7 @@ $__renderIcon = static function (string $name) use ($__sidebarIcons): string {
     <script src="https://cdn.jsdelivr.net/npm/apexcharts@3/dist/apexcharts.min.js"></script>
     <script src="/backstage/assets/js/vendor/sortable.min.js" defer></script>
     <script src="/backstage/assets/js/dashboard-edit.js" defer></script>
+    <script src="/backstage/assets/js/dashboard-sparklines.js" defer></script>
     <script>
     (function(){
         var t = localStorage.getItem('daems-admin-theme') || 'light';
