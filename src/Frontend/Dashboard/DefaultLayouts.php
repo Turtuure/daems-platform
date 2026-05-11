@@ -24,14 +24,15 @@ final class DefaultLayouts
     private static function admin(): array
     {
         return [
-            new LayoutEntry('core.members_kpi',         WidgetSpan::of(1)),
-            new LayoutEntry('core.applications_kpi',    WidgetSpan::of(1)),
-            new LayoutEntry('events.events_kpi',        WidgetSpan::of(1)),
-            new LayoutEntry('projects.projects_kpi',    WidgetSpan::of(1)),
-            new LayoutEntry('core.member_growth_chart', WidgetSpan::of(3)),
-            new LayoutEntry('core.quick_actions',       WidgetSpan::of(1)),
-            new LayoutEntry('core.pending_apps_list',   WidgetSpan::of(2)),
-            new LayoutEntry('core.activity_feed',       WidgetSpan::of(2)),
+            new LayoutEntry('core.members_kpi',                WidgetSpan::of(1)),
+            new LayoutEntry('core.applications_kpi',           WidgetSpan::of(1)),
+            new LayoutEntry('events.events_kpi',               WidgetSpan::of(1)),
+            new LayoutEntry('projects.projects_kpi',           WidgetSpan::of(1)),
+            new LayoutEntry('members.members_by_tier_kpi',     WidgetSpan::of(2)),
+            new LayoutEntry('core.member_growth_chart',        WidgetSpan::of(3)),
+            new LayoutEntry('core.quick_actions',              WidgetSpan::of(1)),
+            new LayoutEntry('core.pending_apps_list',          WidgetSpan::of(2)),
+            new LayoutEntry('core.activity_feed',              WidgetSpan::of(2)),
         ];
     }
 
@@ -61,6 +62,7 @@ final class DefaultLayouts
             new LayoutEntry('core.applications_kpi',          WidgetSpan::of(1)),
             new LayoutEntry('events.events_kpi',              WidgetSpan::of(1)),
             new LayoutEntry('projects.projects_kpi',          WidgetSpan::of(1)),
+            new LayoutEntry('members.members_by_tier_kpi',    WidgetSpan::of(2)),
             new LayoutEntry('core.member_growth_chart',       WidgetSpan::of(3)),
             new LayoutEntry('core.pending_apps_list',         WidgetSpan::of(1)),
             // Platform-wide overview (cross-tenant)

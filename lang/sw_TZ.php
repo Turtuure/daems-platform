@@ -247,6 +247,21 @@ return [
     'backstage.dashboard.widget.activity_feed.label'         => 'Shughuli za hivi karibuni',
     'backstage.dashboard.widget.activity_feed.description'   => 'Matukio ya hivi karibuni kwenye jukwaa.',
 
+    'backstage.dashboard.widget.members_by_tier_kpi.label'       => 'Wanachama kwa kiwango',
+    'backstage.dashboard.widget.members_by_tier_kpi.description' => 'Idadi ya wanachama imegawanywa katika makundi manne yaliyofafanuliwa katika katiba.',
+
+    'membership.type.supporting'         => 'Mwanachama wa kuunga mkono',
+    'membership.type.basic'              => 'Mwanachama wa kawaida',
+    'membership.type.full'               => 'Mwanachama kamili',
+    'membership.type.honorary'           => 'Mwanachama wa heshima',
+
+    'membership.subtier.bronze'          => 'Shaba',
+    'membership.subtier.silver'          => 'Fedha',
+    'membership.subtier.gold'            => 'Dhahabu',
+    'membership.subtier.platinum'        => 'Platinamu',
+
+    'backstage.members.col.tier'         => 'Kiwango',
+
     'backstage.dashboard.widget.tenants_kpi.label'           => 'Wateja',
     'backstage.dashboard.widget.tenants_kpi.description'     => 'Idadi ya wateja hai kwenye jukwaa.',
     'backstage.dashboard.widget.users_kpi.label'             => 'Watumiaji wa jukwaa',

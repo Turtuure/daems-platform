@@ -151,6 +151,12 @@ final class CoreWidgetsTest extends TestCase
             {
                 return ['labels' => [], 'series' => []];
             }
+
+            /** @return array{supporting:int, basic:int, full:int, honorary:int} */
+            public function getMembersByTier(TenantId $tenantId): array
+            {
+                return ['supporting' => 4, 'basic' => 12, 'full' => 3, 'honorary' => 0];
+            }
         };
 
         return new GetAdminStats($repo);

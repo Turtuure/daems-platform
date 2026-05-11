@@ -601,6 +601,26 @@ $container->singleton(\Daems\Infrastructure\Adapter\Api\Controller\Backstage\Ten
     ),
 );
 
+// Membership Core v2 / 0.6a — tier system + sub-tier honor catalog.
+$container->bind(
+    \Daems\Domain\Membership\TenantMembershipSubTierRepositoryInterface::class,
+    static fn(Container $c) => new \Daems\Infrastructure\Adapter\Persistence\Sql\SqlTenantMembershipSubTierRepository(
+        $c->make(Connection::class)->pdo(),
+    ),
+);
+$container->bind(
+    \Daems\Application\Membership\ListMembershipSubTiers\ListMembershipSubTiers::class,
+    static fn(Container $c) => new \Daems\Application\Membership\ListMembershipSubTiers\ListMembershipSubTiers(
+        $c->make(\Daems\Domain\Membership\TenantMembershipSubTierRepositoryInterface::class),
+    ),
+);
+$container->bind(
+    \Daems\Infrastructure\Adapter\Api\Controller\Backstage\MembershipSubTiersController::class,
+    static fn(Container $c) => new \Daems\Infrastructure\Adapter\Api\Controller\Backstage\MembershipSubTiersController(
+        $c->make(\Daems\Application\Membership\ListMembershipSubTiers\ListMembershipSubTiers::class),
+    ),
+);
+
 // Dashboard — widget registry, repo, use cases, widget instances.
 // MUST be bound before module bindings run so modules can register their widgets.
 $container->singleton(
@@ -668,6 +688,9 @@ $container->bind(
 $registry = $container->make(\Daems\Domain\Dashboard\WidgetRegistry::class);
 $registry->register(new \Daems\Infrastructure\Dashboard\CoreWidgets\MembersKpiWidget(
     $container->make(GetAdminStats::class),
+));
+$registry->register(new \Daems\Infrastructure\Dashboard\CoreWidgets\MembersByTierKpiWidget(
+    $container->make(\Daems\Domain\Admin\AdminStatsRepositoryInterface::class),
 ));
 $registry->register(new \Daems\Infrastructure\Dashboard\CoreWidgets\ApplicationsKpiWidget(
     $container->make(GetAdminStats::class),

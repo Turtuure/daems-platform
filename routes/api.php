@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use Daems\Infrastructure\Adapter\Api\Controller\AdminController;
 use Daems\Infrastructure\Adapter\Api\Controller\AuthController;
+use Daems\Infrastructure\Adapter\Api\Controller\Backstage\MembershipSubTiersController;
 use Daems\Infrastructure\Adapter\Api\Controller\DashboardController;
 use Daems\Infrastructure\Adapter\Api\Controller\UserController;
 use Daems\Infrastructure\Framework\Container\Container;
@@ -107,6 +108,13 @@ return static function (Router $router, Container $container): void {
     // Backstage — tenant settings (currently only member_number_prefix)
     $router->post('/api/v1/backstage/tenant/settings', static function (Request $req) use ($container): Response {
         return $container->make(\Daems\Infrastructure\Adapter\Api\Controller\BackstageController::class)->updateTenantSettings($req);
+    }, [TenantContextMiddleware::class, AuthMiddleware::class]);
+
+    // Backstage — membership sub-tier (honor) catalog (per-tenant). Admin/GSA only.
+    $router->get('/api/v1/backstage/tenant-settings/membership-subtiers', static function (Request $req) use ($container): Response {
+        return $container->make(
+            \Daems\Infrastructure\Adapter\Api\Controller\Backstage\MembershipSubTiersController::class
+        )->index($req);
     }, [TenantContextMiddleware::class, AuthMiddleware::class]);
 
     // Me — public-profile privacy toggle (public_avatar_visible)

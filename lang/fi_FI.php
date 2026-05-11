@@ -247,6 +247,21 @@ return [
     'backstage.dashboard.widget.activity_feed.label'         => 'Viimeisin aktiviteetti',
     'backstage.dashboard.widget.activity_feed.description'   => 'Uusimmat tapahtumat alustalla.',
 
+    'backstage.dashboard.widget.members_by_tier_kpi.label'       => 'Jäsenet jäsenryhmittäin',
+    'backstage.dashboard.widget.members_by_tier_kpi.description' => 'Jäsenten määrä jaettuna sääntöjen mukaisiin neljään jäsenryhmään.',
+
+    'membership.type.supporting'         => 'Kannattava jäsen',
+    'membership.type.basic'              => 'Perusjäsen',
+    'membership.type.full'               => 'Varsinainen jäsen',
+    'membership.type.honorary'           => 'Kunniajäsen',
+
+    'membership.subtier.bronze'          => 'Pronssi',
+    'membership.subtier.silver'          => 'Hopea',
+    'membership.subtier.gold'            => 'Kulta',
+    'membership.subtier.platinum'        => 'Platina',
+
+    'backstage.members.col.tier'         => 'Jäsenryhmä',
+
     'backstage.dashboard.widget.tenants_kpi.label'           => 'Tenantit',
     'backstage.dashboard.widget.tenants_kpi.description'     => 'Alustan aktiivisten tenanttien kokonaismäärä.',
     'backstage.dashboard.widget.users_kpi.label'             => 'Alustan käyttäjät',

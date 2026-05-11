@@ -247,6 +247,21 @@ return [
     'backstage.dashboard.widget.activity_feed.label'         => 'Recent activity',
     'backstage.dashboard.widget.activity_feed.description'   => 'Latest events across the platform.',
 
+    'backstage.dashboard.widget.members_by_tier_kpi.label'       => 'Members by tier',
+    'backstage.dashboard.widget.members_by_tier_kpi.description' => 'Member count grouped by the four bylaws-defined membership groups.',
+
+    'membership.type.supporting'         => 'Supporting member',
+    'membership.type.basic'              => 'Basic member',
+    'membership.type.full'               => 'Full member',
+    'membership.type.honorary'           => 'Honorary member',
+
+    'membership.subtier.bronze'          => 'Bronze',
+    'membership.subtier.silver'          => 'Silver',
+    'membership.subtier.gold'            => 'Gold',
+    'membership.subtier.platinum'        => 'Platinum',
+
+    'backstage.members.col.tier'         => 'Tier',
+
     'backstage.dashboard.widget.tenants_kpi.label'           => 'Tenants',
     'backstage.dashboard.widget.tenants_kpi.description'     => 'Total active tenants on the platform.',
     'backstage.dashboard.widget.users_kpi.label'             => 'Platform users',

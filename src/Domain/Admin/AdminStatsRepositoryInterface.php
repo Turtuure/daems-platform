@@ -17,4 +17,13 @@ interface AdminStatsRepositoryInterface
      * @return array{ labels: string[], series: int[] }
      */
     public function getMemberGrowthForTenant(string $period, TenantId $tenantId): array;
+
+    /**
+     * Returns active-member count grouped by canonical MembershipType per
+     * Daem Society bylaws § 3 (Supporting / Basic / Full / Honorary).
+     * Only `membership_status='active'` rows count.
+     *
+     * @return array{supporting:int, basic:int, full:int, honorary:int}
+     */
+    public function getMembersByTier(TenantId $tenantId): array;
 }
