@@ -521,6 +521,12 @@ final class KernelHarness
                 $c->make(\Daems\Domain\Membership\TenantMembershipSubTierRepositoryInterface::class),
             ),
         );
+        $container->bind(
+            \Daems\Infrastructure\Adapter\Api\Controller\Backstage\MembershipSubTiersController::class,
+            static fn(Container $c) => new \Daems\Infrastructure\Adapter\Api\Controller\Backstage\MembershipSubTiersController(
+                $c->make(\Daems\Application\Membership\ListMembershipSubTiers\ListMembershipSubTiers::class),
+            ),
+        );
 
         // Seed the test tenant with default sub-tier rows (4 slugs × 2 appliesTo = 8 rows).
         $subTierRepo = $container->make(\Daems\Domain\Membership\TenantMembershipSubTierRepositoryInterface::class);

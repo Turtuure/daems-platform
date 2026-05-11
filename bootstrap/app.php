@@ -614,6 +614,12 @@ $container->bind(
         $c->make(\Daems\Domain\Membership\TenantMembershipSubTierRepositoryInterface::class),
     ),
 );
+$container->bind(
+    \Daems\Infrastructure\Adapter\Api\Controller\Backstage\MembershipSubTiersController::class,
+    static fn(Container $c) => new \Daems\Infrastructure\Adapter\Api\Controller\Backstage\MembershipSubTiersController(
+        $c->make(\Daems\Application\Membership\ListMembershipSubTiers\ListMembershipSubTiers::class),
+    ),
+);
 
 // Dashboard — widget registry, repo, use cases, widget instances.
 // MUST be bound before module bindings run so modules can register their widgets.
