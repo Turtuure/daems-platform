@@ -689,6 +689,9 @@ $registry = $container->make(\Daems\Domain\Dashboard\WidgetRegistry::class);
 $registry->register(new \Daems\Infrastructure\Dashboard\CoreWidgets\MembersKpiWidget(
     $container->make(GetAdminStats::class),
 ));
+$registry->register(new \Daems\Infrastructure\Dashboard\CoreWidgets\MembersByTierKpiWidget(
+    $container->make(\Daems\Domain\Admin\AdminStatsRepositoryInterface::class),
+));
 $registry->register(new \Daems\Infrastructure\Dashboard\CoreWidgets\ApplicationsKpiWidget(
     $container->make(GetAdminStats::class),
 ));

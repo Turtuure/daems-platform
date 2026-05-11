@@ -658,6 +658,9 @@ final class KernelHarness
         $registry->register(new \Daems\Infrastructure\Dashboard\CoreWidgets\MembersKpiWidget(
             $container->make(\Daems\Application\Admin\GetAdminStats\GetAdminStats::class),
         ));
+        $registry->register(new \Daems\Infrastructure\Dashboard\CoreWidgets\MembersByTierKpiWidget(
+            $container->make(\Daems\Domain\Admin\AdminStatsRepositoryInterface::class),
+        ));
         $registry->register(new \Daems\Infrastructure\Dashboard\CoreWidgets\ApplicationsKpiWidget(
             $container->make(\Daems\Application\Admin\GetAdminStats\GetAdminStats::class),
         ));
