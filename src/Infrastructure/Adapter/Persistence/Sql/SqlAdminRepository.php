@@ -18,7 +18,12 @@ final class SqlAdminRepository implements AdminStatsRepositoryInterface
         $tid = $tenantId->value();
 
         $members = $this->scalarInt($this->db->queryOne(
-            'SELECT COUNT(DISTINCT user_id) AS n FROM user_tenants WHERE tenant_id = ? AND left_at IS NULL',
+            "SELECT COUNT(DISTINCT ut.user_id) AS n
+               FROM user_tenants ut
+               JOIN users u ON u.id = ut.user_id
+              WHERE ut.tenant_id = ?
+                AND ut.left_at IS NULL
+                AND u.membership_status = 'active'",
             [$tid],
         ), 'n');
 

@@ -1,138 +1,171 @@
 <?php
 /**
- * Admin Dashboard — metric cards and activity overview.
- * Session is started in public/backstage.php; ApiClient is autoloaded.
+ * Admin Dashboard — server-rendered widget grid.
+ *
+ * Layout resolution flow (server-side, single request):
+ *   1. Pull container + tenant + session user out of $GLOBALS / $_SESSION.
+ *   2. Resolve MinRole from session is_platform_admin + user_tenants.role.
+ *   3. Ask GetUserLayout for the resolved layout (saved or role default,
+ *      module-filtered, role-filtered).
+ *   4. For each entry, look up the Widget instance in WidgetRegistry and
+ *      call render() with the active Tenant + the looked-up User entity.
+ *
+ * Edit mode is gated by ?edit=1 — JS in dashboard-edit.js handles drag-drop
+ * and posts to /api/backstage/dashboard/layout when the user makes changes.
  */
 
-use Daems\Frontend\ApiClient;
+declare(strict_types=1);
+
+use Daems\Application\Dashboard\GetUserLayout\GetUserLayout;
+use Daems\Domain\Dashboard\MinRole;
+use Daems\Domain\Dashboard\WidgetRegistry;
+use Daems\Domain\Tenant\Tenant;
+use Daems\Domain\Tenant\TenantModuleResolver;
+use Daems\Domain\Tenant\UserTenantRepositoryInterface;
+use Daems\Domain\Tenant\UserTenantRole;
+use Daems\Domain\User\User;
+use Daems\Domain\User\UserId;
+use Daems\Domain\User\UserRepositoryInterface;
 use Daems\Frontend\I18n;
+use Daems\Infrastructure\Framework\Container\Container;
 
 $pageTitle   = 'backstage.title.dashboard';
 $activePage  = 'dashboard';
 $breadcrumbs = [];
 
-$stats = ApiClient::get('/backstage/stats');
+$editMode      = isset($_GET['edit']);
+$layoutEntries = [];
+$widgets       = [];
+$role          = MinRole::Admin;
 
-// Normalise stat values — API returns { value, change, sparkline } per key
-$members      = (int)($stats['members']['value']              ?? $stats['members']              ?? 0);
-$applications = (int)($stats['pending_applications']['value'] ?? $stats['pending_applications'] ?? 0);
-$events       = (int)($stats['upcoming_events']['value']      ?? $stats['upcoming_events']      ?? 0);
-$projects     = (int)($stats['active_projects']['value']      ?? $stats['active_projects']      ?? 0);
+$__container = $GLOBALS['daems_backstage_container'] ?? null;
+$__tenant    = $GLOBALS['daems_backstage_tenant']    ?? null;
+$__session   = $_SESSION['user'] ?? null;
 
-$changes = [
-    'members'      => (float)($stats['members']['change']              ?? 0),
-    'applications' => (float)($stats['pending_applications']['change'] ?? 0),
-    'events'       => (float)($stats['upcoming_events']['change']      ?? 0),
-    'projects'     => (float)($stats['active_projects']['change']      ?? 0),
-];
+if (
+    $__container instanceof Container
+    && $__tenant instanceof Tenant
+    && is_array($__session)
+    && is_string($__session['id'] ?? null)
+    && $__session['id'] !== ''
+) {
+    /** @var UserRepositoryInterface $__userRepo */
+    $__userRepo  = $__container->make(UserRepositoryInterface::class);
+    /** @var UserTenantRepositoryInterface $__userTenants */
+    $__userTenants = $__container->make(UserTenantRepositoryInterface::class);
+    /** @var TenantModuleResolver $__modules */
+    $__modules   = $__container->make(TenantModuleResolver::class);
+    /** @var WidgetRegistry $__registry */
+    $__registry  = $__container->make(WidgetRegistry::class);
+    /** @var GetUserLayout $__useCase */
+    $__useCase   = $__container->make(GetUserLayout::class);
 
-$sparklines = [
-    'members'      => $stats['members']['sparkline']              ?? [],
-    'applications' => $stats['pending_applications']['sparkline'] ?? [],
-    'events'       => $stats['upcoming_events']['sparkline']      ?? [],
-    'projects'     => $stats['active_projects']['sparkline']      ?? [],
-    'forum'        => $stats['forum_activity']['sparkline']       ?? [],
-    'insights'     => $stats['insights_activity']['sparkline']    ?? [],
-];
+    $__userId = UserId::fromString($__session['id']);
+    $__user   = $__userRepo->findById($__session['id']);
 
-$memberGrowth = $stats['member_growth'] ?? ['labels' => [], 'series' => []];
+    if ($__user instanceof User) {
+        $__tenantRole = $__userTenants->findRole($__userId, $__tenant->id);
+        $role = match (true) {
+            !empty($__session['is_platform_admin']) || $__user->isPlatformAdmin() => MinRole::Gsa,
+            $__tenantRole === UserTenantRole::Admin                                => MinRole::Admin,
+            $__tenantRole === UserTenantRole::Moderator                            => MinRole::Moderator,
+            default                                                                => MinRole::Member,
+        };
 
-// Locale-aware date for the subtitle. IntlDateFormatter understands fi_FI/en_GB/sw_TZ.
-$__locale = I18n::locale();
-$__bcp47  = str_replace('_', '-', $__locale);
-$__dateFmt = class_exists(\IntlDateFormatter::class)
-    ? new \IntlDateFormatter($__bcp47, \IntlDateFormatter::FULL, \IntlDateFormatter::NONE)
-    : null;
-$__today = $__dateFmt !== null ? $__dateFmt->format(time()) : date('l, j F Y');
+        $__output       = $__useCase->execute($__userId, $__tenant->id, $role, $__modules->enabledSlugsFor($__tenant->id));
+        $layoutEntries  = $__output->layout();
+
+        foreach ($layoutEntries as $__entry) {
+            $widgets[$__entry->widgetId()] = $__registry->find($__entry->widgetId());
+        }
+    }
+}
 
 ob_start();
 ?>
 <div class="page-header">
     <div>
         <h1 class="page-header__title"><?= I18n::e('backstage.dashboard.title') ?></h1>
-        <p class="page-header__subtitle"><?= htmlspecialchars(I18n::t('backstage.dashboard.subtitle', ['date' => $__today]), ENT_QUOTES, 'UTF-8') ?></p>
+    </div>
+    <div class="page-header__actions">
+        <?php if ($editMode): ?>
+            <a href="?" class="btn btn--ghost"><?= I18n::e('backstage.dashboard.edit_cancel') ?></a>
+            <button type="button" class="btn btn--primary" id="dashboard-save-done">
+                <?= I18n::e('backstage.dashboard.edit_done') ?>
+            </button>
+        <?php else: ?>
+            <a href="?edit=1" class="btn btn--ghost" id="dashboard-edit-toggle">
+                <i class="bi bi-pencil"></i>
+                <?= I18n::e('backstage.dashboard.edit_mode') ?>
+            </a>
+        <?php endif; ?>
     </div>
 </div>
 
-<!-- Metric cards — 4 columns matching SIP layout -->
-<div class="metric-grid">
-    <?php
-    $cards = [
-        [
-            'id'     => 'members',
-            'label'  => I18n::t('backstage.dashboard.card.members'),
-            'color'  => 'blue',
-            'value'  => $members,
-            'change' => $changes['members'],
-            'enter'  => 1,
-            'icon'   => '<path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>',
-        ],
-        [
-            'id'     => 'applications',
-            'label'  => I18n::t('backstage.dashboard.card.applications'),
-            'color'  => 'amber',
-            'value'  => $applications,
-            'change' => $changes['applications'],
-            'enter'  => 2,
-            'icon'   => '<path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/><line x1="9" y1="12" x2="15" y2="12"/><line x1="9" y1="16" x2="13" y2="16"/>',
-        ],
-        [
-            'id'     => 'events',
-            'label'  => I18n::t('backstage.dashboard.card.events'),
-            'color'  => 'green',
-            'value'  => $events,
-            'change' => $changes['events'],
-            'enter'  => 3,
-            'icon'   => '<rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>',
-        ],
-        [
-            'id'     => 'projects',
-            'label'  => I18n::t('backstage.dashboard.card.projects'),
-            'color'  => 'purple',
-            'value'  => $projects,
-            'change' => $changes['projects'],
-            'enter'  => 4,
-            'icon'   => '<path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>',
-        ],
-    ];
-    foreach ($cards as $card):
-        extract($card);
-        require __DIR__ . '/partials/metric-card.php';
-    endforeach;
+<div class="dashboard-grid <?= $editMode ? 'is-editing' : '' ?>" id="dashboard-grid">
+    <?php foreach ($layoutEntries as $__entry):
+        $__w = $widgets[$__entry->widgetId()] ?? null;
+        if ($__w === null || !isset($__user) || !($__user instanceof User) || !isset($__tenant) || !($__tenant instanceof Tenant)) {
+            continue;
+        }
     ?>
+    <div class="dashboard-cell"
+         style="grid-column: span <?= $__entry->span()->value() ?>;"
+         data-widget-id="<?= htmlspecialchars($__entry->widgetId(), ENT_QUOTES, 'UTF-8') ?>"
+         data-span="<?= $__entry->span()->value() ?>">
+        <?php if ($editMode): ?>
+        <button type="button" class="dashboard-cell__handle"
+                title="<?= I18n::e('backstage.dashboard.drag_handle') ?>"
+                aria-label="<?= I18n::e('backstage.dashboard.drag_handle') ?>">⋮⋮</button>
+        <button type="button" class="dashboard-cell__remove"
+                data-widget-id="<?= htmlspecialchars($__entry->widgetId(), ENT_QUOTES, 'UTF-8') ?>"
+                title="<?= I18n::e('backstage.dashboard.remove_widget') ?>"
+                aria-label="<?= I18n::e('backstage.dashboard.remove_widget') ?>">✕</button>
+        <?php endif; ?>
+        <?= $__w->render($__tenant->id, $__user) ?>
+    </div>
+    <?php endforeach; ?>
+
+    <?php if ($editMode): ?>
+    <button type="button" class="dashboard-add-widget" id="dashboard-add-widget"
+            style="grid-column: span 4;">
+        <?= I18n::e('backstage.dashboard.add_widget') ?>
+    </button>
+    <?php endif; ?>
 </div>
 
-<!-- Embed chart data for dashboard JS — no XHR needed -->
+<?php if ($editMode): ?>
+<div class="dashboard-edit-footer">
+    <button type="button" class="btn btn--ghost btn--danger" id="dashboard-reset">
+        <?= I18n::e('backstage.dashboard.edit_reset') ?>
+    </button>
+</div>
+<?php endif; ?>
+
 <script>
 window.DaemsDashboard = {
-    sparklines:   <?= json_encode($sparklines,   JSON_UNESCAPED_UNICODE) ?>,
-    memberGrowth: <?= json_encode($memberGrowth, JSON_UNESCAPED_UNICODE) ?>,
+    editMode: <?= $editMode ? 'true' : 'false' ?>,
+    layoutEndpoint: '/api/backstage/dashboard/layout',
+    catalogEndpoint: '/api/backstage/dashboard/catalog',
+    i18n: {
+        resetConfirm:  <?= json_encode(I18n::t('backstage.dashboard.edit_reset_confirm')) ?>,
+        catalogTitle:  <?= json_encode(I18n::t('backstage.dashboard.catalog.title')) ?>,
+        catalogSearch: <?= json_encode(I18n::t('backstage.dashboard.catalog.search')) ?>,
+        catalogEmpty:  <?= json_encode(I18n::t('backstage.dashboard.catalog.empty')) ?>,
+        inLayout:      <?= json_encode(I18n::t('backstage.dashboard.catalog.in_layout')) ?>,
+        saveFailed:    <?= json_encode(I18n::t('backstage.dashboard.error.save_failed')) ?>,
+        addWidget:     <?= json_encode(I18n::t('backstage.dashboard.add_widget')) ?>,
+        removeWidget:  <?= json_encode(I18n::t('backstage.dashboard.remove_widget')) ?>,
+        categoryAll:      <?= json_encode(I18n::t('backstage.dashboard.catalog.category.all')) ?>,
+        categoryNumbers:  <?= json_encode(I18n::t('backstage.dashboard.catalog.category.numbers')) ?>,
+        categoryLists:    <?= json_encode(I18n::t('backstage.dashboard.catalog.category.lists')) ?>,
+        categoryCharts:   <?= json_encode(I18n::t('backstage.dashboard.catalog.category.charts')) ?>,
+        categoryActions:  <?= json_encode(I18n::t('backstage.dashboard.catalog.category.actions')) ?>,
+        categoryActivity: <?= json_encode(I18n::t('backstage.dashboard.catalog.category.activity')) ?>,
+        categoryPlatform: <?= json_encode(I18n::t('backstage.dashboard.catalog.category.platform')) ?>,
+    },
 };
 </script>
-
-<!-- Charts row -->
-<div style="display:grid;grid-template-columns:1fr 1fr;gap:var(--space-4);">
-    <div class="card">
-        <div class="card__body">
-            <div class="flex items-center" style="justify-content:space-between;margin-bottom:var(--space-4);">
-                <p class="card__title"><?= I18n::e('backstage.dashboard.chart.member_growth') ?></p>
-                <div class="chart-period-tabs" role="tablist" aria-label="<?= I18n::e('backstage.dashboard.chart.period_label') ?>">
-                    <button class="chart-period-tab is-active" data-period="30d" role="tab" aria-selected="true"><?= I18n::e('backstage.dashboard.period.30d') ?></button>
-                    <button class="chart-period-tab" data-period="90d" role="tab" aria-selected="false"><?= I18n::e('backstage.dashboard.period.90d') ?></button>
-                    <button class="chart-period-tab" data-period="1y" role="tab" aria-selected="false"><?= I18n::e('backstage.dashboard.period.1y') ?></button>
-                    <button class="chart-period-tab" data-period="all" role="tab" aria-selected="false"><?= I18n::e('backstage.dashboard.period.all') ?></button>
-                </div>
-            </div>
-            <div id="chart-member-growth" style="min-height:200px;"></div>
-        </div>
-    </div>
-    <div class="card">
-        <div class="card__body">
-            <p class="card__title" style="margin-bottom:var(--space-4);"><?= I18n::e('backstage.dashboard.chart.platform_activity') ?></p>
-            <div id="chart-platform-activity" style="min-height:200px;"></div>
-        </div>
-    </div>
-</div>
 <?php
 $pageContent = ob_get_clean();
 require __DIR__ . '/layout.php';

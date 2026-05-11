@@ -1119,10 +1119,9 @@ ul, li { list-style: none; margin: 0; padding: 0; }
 .card--metric:hover {
   border-color: var(--brand-primary);
   box-shadow: var(--shadow-md);
-  transform: translateY(-2px);
 }
 
-/* Stagger entry animation */
+/* Stagger entry animation — opacity only, no translate (per user preference) */
 .card[data-enter] { animation: card-enter 0.3s ease both; }
 .card[data-enter="1"] { animation-delay: 0s; }
 .card[data-enter="2"] { animation-delay: 0.06s; }
@@ -1130,8 +1129,8 @@ ul, li { list-style: none; margin: 0; padding: 0; }
 .card[data-enter="4"] { animation-delay: 0.18s; }
 
 @keyframes card-enter {
-  from { opacity: 0; transform: translateY(8px); }
-  to   { opacity: 1; transform: translateY(0); }
+  from { opacity: 0; }
+  to   { opacity: 1; }
 }
 
 .metric-icon {
@@ -1916,4 +1915,260 @@ ul, li { list-style: none; margin: 0; padding: 0; }
         border-right: none;
         border-bottom: 1px solid var(--surface-border);
     }
+}
+
+/* =============================================================================
+   Dashboard widget grid (Task 24) — 4-col CSS Grid, edit mode chrome, catalog modal
+   ============================================================================= */
+
+.dashboard-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: var(--space-4, 1rem);
+}
+
+.dashboard-cell {
+    position: relative;
+    min-height: 120px;
+}
+
+/* Edit-mode chrome only — outside edit mode the inner .card owns visuals.
+   Without this the outer dashboard-cell and inner .card both render their own
+   border + background, producing a double-border artifact. */
+.dashboard-grid.is-editing .dashboard-cell {
+    background: var(--surface-medium, #fff);
+    border: 1px solid var(--surface-border, #e5e7eb);
+    border-radius: var(--radius-md, 8px);
+    overflow: hidden;
+}
+
+.dashboard-grid.is-editing {
+    padding: var(--space-3, 0.75rem);
+    border: 2px dashed var(--status-warning, #f59e0b);
+    border-radius: var(--radius-md, 8px);
+    background: rgba(245, 158, 11, 0.05);
+}
+
+.dashboard-grid.is-editing .dashboard-cell {
+    cursor: grab;
+}
+
+.dashboard-grid.is-editing .dashboard-cell:active {
+    cursor: grabbing;
+}
+
+.dashboard-cell__handle,
+.dashboard-cell__remove {
+    position: absolute;
+    top: 0.5rem;
+    width: 24px;
+    height: 24px;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    border-radius: var(--radius-sm, 4px);
+    background: var(--surface-light, #f9fafb);
+    border: 1px solid var(--surface-border, #e5e7eb);
+    font-size: 12px;
+    line-height: 1;
+    cursor: pointer;
+    z-index: 5;
+    padding: 0;
+}
+
+.dashboard-cell__handle { left: 0.5rem; color: var(--text-muted, #6b7280); cursor: grab; }
+.dashboard-cell__remove { right: 0.5rem; color: var(--status-error, #dc2626); }
+
+.dashboard-grid.is-editing .dashboard-cell__handle,
+.dashboard-grid.is-editing .dashboard-cell__remove {
+    display: inline-flex;
+}
+
+.dashboard-cell__remove:hover {
+    background: rgba(220, 38, 38, 0.1);
+    border-color: var(--status-error, #dc2626);
+}
+
+.dashboard-add-widget {
+    padding: var(--space-4, 1rem);
+    border: 2px dashed var(--brand-primary, #2563eb);
+    background: rgba(37, 99, 235, 0.05);
+    color: var(--brand-primary, #2563eb);
+    font-weight: 600;
+    border-radius: var(--radius-md, 8px);
+    cursor: pointer;
+    text-align: center;
+}
+
+.dashboard-add-widget:hover {
+    background: rgba(37, 99, 235, 0.1);
+}
+
+.dashboard-edit-footer {
+    margin-top: var(--space-4, 1rem);
+    display: flex;
+    justify-content: flex-start;
+}
+
+.btn--danger {
+    color: var(--status-error, #dc2626);
+}
+
+.btn--danger:hover {
+    background: rgba(220, 38, 38, 0.08);
+    border-color: var(--status-error, #dc2626);
+}
+
+/* Catalog modal */
+.dashboard-catalog-modal {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.45);
+    z-index: var(--z-modal, 1000);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.dashboard-catalog-modal__inner {
+    width: min(720px, 90vw);
+    max-height: 80vh;
+    display: flex;
+    flex-direction: column;
+    background: var(--surface-medium, #fff);
+    border-radius: var(--radius-lg, 12px);
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+    overflow: hidden;
+}
+
+.dashboard-catalog-modal__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: var(--space-4, 1rem);
+    border-bottom: 1px solid var(--surface-border, #e5e7eb);
+}
+
+.dashboard-catalog-modal__header h3 {
+    margin: 0;
+    font-size: 1.125rem;
+    font-weight: 600;
+}
+
+.dashboard-catalog-modal__close {
+    background: transparent;
+    border: 0;
+    font-size: 1.25rem;
+    cursor: pointer;
+    color: var(--text-muted, #6b7280);
+    padding: 0.25rem 0.5rem;
+}
+
+.dashboard-catalog-modal__close:hover {
+    color: var(--text-default, #111827);
+}
+
+.dashboard-catalog-modal__body {
+    padding: var(--space-4, 1rem);
+    overflow-y: auto;
+}
+
+.dashboard-catalog-modal__empty {
+    text-align: center;
+    color: var(--text-muted, #6b7280);
+    margin: 2rem 0;
+}
+
+.dashboard-catalog-modal__category {
+    margin-bottom: var(--space-4, 1rem);
+}
+
+.dashboard-catalog-modal__category h4 {
+    margin: 0 0 0.5rem 0;
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    color: var(--text-muted, #6b7280);
+    letter-spacing: 0.05em;
+}
+
+.dashboard-catalog-modal__grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0.5rem;
+}
+
+.dashboard-catalog-modal__item {
+    padding: 0.75rem;
+    border: 1px solid var(--surface-border, #e5e7eb);
+    border-radius: var(--radius-md, 8px);
+    background: var(--surface-light, #f9fafb);
+    font-size: 0.875rem;
+    cursor: pointer;
+}
+
+.dashboard-catalog-modal__item:hover {
+    border-color: var(--brand-primary, #2563eb);
+    background: rgba(37, 99, 235, 0.05);
+}
+
+.dashboard-catalog-modal__item .title {
+    font-weight: 600;
+    margin-bottom: 0.25rem;
+}
+
+.dashboard-catalog-modal__item .meta {
+    font-size: 0.75rem;
+    color: var(--text-muted, #6b7280);
+}
+
+.dashboard-catalog-modal__item .status {
+    font-size: 0.75rem;
+    color: var(--status-success, #16a34a);
+    margin-top: 0.25rem;
+}
+
+.dashboard-catalog-modal__item.is-in-layout {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.dashboard-catalog-modal__item.is-locked {
+    opacity: 0.5;
+    cursor: not-allowed;
+    border-style: dashed;
+}
+
+.dashboard-catalog-modal__item.is-locked .status {
+    color: var(--text-muted, #6b7280);
+}
+
+@media (max-width: 900px) {
+    .dashboard-grid { grid-template-columns: repeat(2, 1fr); }
+    .dashboard-grid .dashboard-cell { grid-column: span 2 !important; }
+    .dashboard-catalog-modal__grid { grid-template-columns: 1fr; }
+}
+
+/* Dashboard table/list helpers used by tenant_status_grid + activity_feed */
+.badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 999px;
+    font-size: var(--text-xs, 11px);
+    font-weight: var(--weight-medium, 500);
+    line-height: 1.5;
+}
+.badge--success {
+    background: var(--status-success-subtle, rgba(22, 163, 74, 0.1));
+    color: var(--status-success, #16a34a);
+}
+.badge--error {
+    background: var(--status-error-subtle, rgba(220, 38, 38, 0.1));
+    color: var(--status-error, #dc2626);
+}
+
+.dashboard-list__time {
+    color: var(--text-muted, #6b7280);
+    font-variant-numeric: tabular-nums;
+    font-size: var(--text-xs, 11px);
 }

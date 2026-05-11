@@ -1,0 +1,54 @@
+<?php
+declare(strict_types=1);
+
+namespace Daems\Infrastructure\Dashboard\PlatformWidgets;
+
+use Daems\Application\Platform\GetPlatformStats\GetPlatformStats;
+use Daems\Domain\Dashboard\MinRole;
+use Daems\Domain\Dashboard\Widget;
+use Daems\Domain\Dashboard\WidgetCategory;
+use Daems\Domain\Dashboard\WidgetSpan;
+use Daems\Domain\Tenant\TenantId;
+use Daems\Domain\User\User;
+use Daems\Frontend\I18n;
+use Daems\Infrastructure\Dashboard\WidgetRenderer;
+
+final class UptimeKpiWidget extends Widget
+{
+    private const ICON = '<circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>';
+
+    public function __construct(
+        private readonly GetPlatformStats $stats,
+    ) {}
+
+    public function id(): string             { return 'platform.uptime_kpi'; }
+    public function category(): WidgetCategory { return WidgetCategory::Numbers; }
+    public function defaultSpan(): WidgetSpan  { return WidgetSpan::of(1); }
+    public function minRole(): MinRole         { return MinRole::Gsa; }
+    public function module(): string           { return 'platform'; }
+    public function labelKey(): string         { return 'backstage.dashboard.widget.uptime_kpi.label'; }
+    public function descriptionKey(): string   { return 'backstage.dashboard.widget.uptime_kpi.description'; }
+
+    public function render(TenantId $tenantId, User $user): string
+    {
+        $d = $this->data($tenantId);
+        // Render the value as days (cleaner than seconds). 0 days falls back to "<1d".
+        return WidgetRenderer::kpi(
+            value:   (int) $d['value'],
+            change:  (float) $d['change'],
+            label:   I18n::t($this->labelKey()) . ' (d)',
+            color:   'amber',
+            iconSvg: self::ICON,
+        );
+    }
+
+    public function data(TenantId $tenantId): array
+    {
+        $s = $this->stats->execute();
+        $days = (int) floor($s->mysqlUptimeSeconds / 86400);
+        return [
+            'value'  => $days,
+            'change' => 0.0,
+        ];
+    }
+}
