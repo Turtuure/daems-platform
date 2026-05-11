@@ -601,6 +601,20 @@ $container->singleton(\Daems\Infrastructure\Adapter\Api\Controller\Backstage\Ten
     ),
 );
 
+// Membership Core v2 / 0.6a — tier system + sub-tier honor catalog.
+$container->bind(
+    \Daems\Domain\Membership\TenantMembershipSubTierRepositoryInterface::class,
+    static fn(Container $c) => new \Daems\Infrastructure\Adapter\Persistence\Sql\SqlTenantMembershipSubTierRepository(
+        $c->make(Connection::class)->pdo(),
+    ),
+);
+$container->bind(
+    \Daems\Application\Membership\ListMembershipSubTiers\ListMembershipSubTiers::class,
+    static fn(Container $c) => new \Daems\Application\Membership\ListMembershipSubTiers\ListMembershipSubTiers(
+        $c->make(\Daems\Domain\Membership\TenantMembershipSubTierRepositoryInterface::class),
+    ),
+);
+
 // Dashboard — widget registry, repo, use cases, widget instances.
 // MUST be bound before module bindings run so modules can register their widgets.
 $container->singleton(

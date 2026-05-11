@@ -510,6 +510,31 @@ final class KernelHarness
         ));
         $container->bind(LocaleMiddleware::class, static fn() => new LocaleMiddleware());
 
+        // Membership Core v2 / 0.6a — tier system + sub-tier honor catalog.
+        $container->singleton(
+            \Daems\Domain\Membership\TenantMembershipSubTierRepositoryInterface::class,
+            fn() => new \Daems\Tests\Support\Fake\InMemoryTenantMembershipSubTierRepository(),
+        );
+        $container->bind(
+            \Daems\Application\Membership\ListMembershipSubTiers\ListMembershipSubTiers::class,
+            static fn(Container $c) => new \Daems\Application\Membership\ListMembershipSubTiers\ListMembershipSubTiers(
+                $c->make(\Daems\Domain\Membership\TenantMembershipSubTierRepositoryInterface::class),
+            ),
+        );
+
+        // Seed the test tenant with default sub-tier rows (4 slugs × 2 appliesTo = 8 rows).
+        $subTierRepo = $container->make(\Daems\Domain\Membership\TenantMembershipSubTierRepositoryInterface::class);
+        $defaults = [['bronze','Bronze',1],['silver','Silver',2],['gold','Gold',3],['platinum','Platinum',4]];
+        foreach ([\Daems\Domain\Membership\MembershipType::Supporting, \Daems\Domain\Membership\MembershipType::Basic] as $appliesTo) {
+            foreach ($defaults as [$slug, $name, $rank]) {
+                $subTierRepo->save(new \Daems\Domain\Membership\TenantMembershipSubTier(
+                    \Daems\Domain\Membership\TenantMembershipSubTierId::generate(),
+                    $this->testTenantId,
+                    $slug, $name, $rank, $appliesTo,
+                ));
+            }
+        }
+
         // Dashboard — widget registry, repo, use cases, widget instances.
         // MUST be bound before module bindings run so modules can register their widgets.
         $container->singleton(
