@@ -18,6 +18,7 @@ final class MemberDirectoryEntry
         public readonly ?string $country,
         public readonly ?string $dateOfBirth,
         public readonly string $createdAt,       // user account created_at
+        public readonly ?string $subTierSlug,
     ) {}
 
     /** @return array<string, string|null> */
@@ -35,6 +36,7 @@ final class MemberDirectoryEntry
             'date_of_birth'         => $this->dateOfBirth,
             'created_at'            => $this->createdAt,
             'membership_started_at' => $this->joinedAt,
+            'subtier_slug'          => $this->subTierSlug,
         ];
     }
 }
