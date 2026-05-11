@@ -331,4 +331,31 @@ final class SqlAdminRepository implements AdminStatsRepositoryInterface
 
         return round(($this_week - $last_week) / $last_week * 100, 1);
     }
+
+    /**
+     * @return array{supporting:int, basic:int, full:int, honorary:int}
+     */
+    public function getMembersByTier(TenantId $tenantId): array
+    {
+        $rows = $this->db->query(
+            "SELECT u.membership_type AS t, COUNT(DISTINCT u.id) AS n
+               FROM users u
+               JOIN user_tenants ut ON ut.user_id = u.id
+              WHERE ut.tenant_id = :tid
+                AND ut.left_at IS NULL
+                AND u.membership_status = 'active'
+           GROUP BY u.membership_type",
+            ['tid' => $tenantId->value()],
+        );
+
+        $result = ['supporting' => 0, 'basic' => 0, 'full' => 0, 'honorary' => 0];
+        foreach ($rows as $row) {
+            $t = isset($row['t']) && is_string($row['t']) ? strtolower($row['t']) : '';
+            $n = isset($row['n']) && is_numeric($row['n']) ? (int) $row['n'] : 0;
+            if (array_key_exists($t, $result)) {
+                $result[$t] = $n;
+            }
+        }
+        return $result;
+    }
 }

@@ -578,6 +578,10 @@ final class KernelHarness
                 {
                     return ['labels' => [], 'series' => []];
                 }
+                public function getMembersByTier(\Daems\Domain\Tenant\TenantId $tenantId): array
+                {
+                    return ['supporting' => 0, 'basic' => 0, 'full' => 0, 'honorary' => 0];
+                }
             },
         );
         $container->bind(
