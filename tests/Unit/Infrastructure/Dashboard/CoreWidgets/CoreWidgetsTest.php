@@ -4,8 +4,11 @@ declare(strict_types=1);
 namespace Tests\Unit\Infrastructure\Dashboard\CoreWidgets;
 
 use Daems\Application\Admin\GetAdminStats\GetAdminStats;
+use Daems\Application\Platform\GetPlatformStats\GetPlatformStats;
 use Daems\Domain\Admin\AdminStats;
 use Daems\Domain\Admin\AdminStatsRepositoryInterface;
+use Daems\Domain\Platform\PlatformStats;
+use Daems\Domain\Platform\PlatformStatsRepositoryInterface;
 use Daems\Domain\Dashboard\MinRole;
 use Daems\Domain\Dashboard\WidgetCategory;
 use Daems\Domain\Tenant\TenantId;
@@ -31,7 +34,7 @@ final class CoreWidgetsTest extends TestCase
             ['core.platform_activity_chart',  WidgetCategory::Charts,   3, MinRole::Admin, new PlatformActivityChartWidget()],
             ['core.quick_actions',            WidgetCategory::Actions,  1, MinRole::Admin, new QuickActionsWidget()],
             ['core.pending_apps_list',        WidgetCategory::Lists,    2, MinRole::Admin, new PendingAppsListWidget()],
-            ['core.activity_feed',            WidgetCategory::Activity, 2, MinRole::Admin, new ActivityFeedWidget()],
+            ['core.activity_feed',            WidgetCategory::Activity, 2, MinRole::Admin, new ActivityFeedWidget($this->fakePlatformStats())],
         ];
 
         foreach ($cases as [$id, $cat, $span, $role, $w]) {
@@ -91,9 +94,9 @@ final class CoreWidgetsTest extends TestCase
         self::assertSame([], $d['items']);
     }
 
-    public function test_activity_feed_data_stub(): void
+    public function test_activity_feed_data_uses_platform_stats(): void
     {
-        $w = new ActivityFeedWidget();
+        $w = new ActivityFeedWidget($this->fakePlatformStats());
         $d = $w->data(TenantId::generate());
         self::assertSame([], $d['items']);
     }
@@ -151,6 +154,28 @@ final class CoreWidgetsTest extends TestCase
         };
 
         return new GetAdminStats($repo);
+    }
+
+    private function fakePlatformStats(): GetPlatformStats
+    {
+        $repo = new class implements PlatformStatsRepositoryInterface {
+            public function get(): PlatformStats
+            {
+                return new PlatformStats(
+                    tenantCount:        0,
+                    userCount:          0,
+                    dbSizeMb:           0,
+                    mysqlUptimeSeconds: 0,
+                    usersSparkline:     [],
+                    tenantsSparkline:   [],
+                    activitySparkline:  [],
+                    tenants:            [],
+                    tenantActivity:     ['labels' => [], 'series' => []],
+                    recentActivity:     [],
+                );
+            }
+        };
+        return new GetPlatformStats($repo);
     }
 
     private function fakeUser(): \Daems\Domain\User\User
