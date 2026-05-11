@@ -10,5 +10,5 @@ CREATE TABLE IF NOT EXISTS boards (
     PRIMARY KEY (id),
     UNIQUE KEY uniq_board_tenant (tenant_id),
     CONSTRAINT fk_board_tenant FOREIGN KEY (tenant_id) REFERENCES tenants(id) ON DELETE CASCADE,
-    CONSTRAINT fk_board_bootstrapper FOREIGN KEY (bootstrapped_by_user_id) REFERENCES users(id)
+    CONSTRAINT fk_board_bootstrapper FOREIGN KEY (bootstrapped_by_user_id) REFERENCES users(id) ON DELETE RESTRICT
 ) ENGINE=InnoDB CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
