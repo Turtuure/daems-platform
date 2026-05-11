@@ -52,7 +52,18 @@ final class DefaultLayouts
     /** @return list<LayoutEntry> */
     private static function gsa(): array
     {
+        // GSA sees a hybrid: the active tenant's admin KPIs on top (so the
+        // dashboard reflects WHERE you are, not just WHAT you are), then the
+        // cross-tenant platform-overview widgets below.
         return [
+            // Active-tenant KPIs (real data via GetAdminStats)
+            new LayoutEntry('core.members_kpi',               WidgetSpan::of(1)),
+            new LayoutEntry('core.applications_kpi',          WidgetSpan::of(1)),
+            new LayoutEntry('events.events_kpi',              WidgetSpan::of(1)),
+            new LayoutEntry('projects.projects_kpi',          WidgetSpan::of(1)),
+            new LayoutEntry('core.member_growth_chart',       WidgetSpan::of(3)),
+            new LayoutEntry('core.pending_apps_list',         WidgetSpan::of(1)),
+            // Platform-wide overview (cross-tenant)
             new LayoutEntry('platform.tenants_kpi',           WidgetSpan::of(1)),
             new LayoutEntry('platform.users_kpi',             WidgetSpan::of(1)),
             new LayoutEntry('platform.db_size_kpi',           WidgetSpan::of(1)),
