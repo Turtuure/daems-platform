@@ -4,7 +4,25 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const form = document.getElementById('billing-form');
     if (form) form.addEventListener('submit', onSubmitBillingFees);
+
+    const kpi = document.querySelector('.billing-kpi');
+    if (kpi) loadBillingKpi(kpi);
 });
+
+async function loadBillingKpi(kpi) {
+    const year = kpi.dataset.year;
+    const qs = year ? `?year=${encodeURIComponent(year)}` : '';
+    const resp = await fetch(`/api/backstage/governance/billing/kpi${qs}`, {
+        headers: { 'Accept': 'application/json' },
+        credentials: 'same-origin',
+    });
+    if (!resp.ok) return;
+    const data = await resp.json();
+    const counts = data.counts || {};
+    kpi.querySelectorAll('[data-key]').forEach(el => {
+        el.textContent = counts[el.dataset.key] ?? 0;
+    });
+}
 
 async function loadBillingFees(table) {
     const year = table.dataset.year;

@@ -40,6 +40,25 @@ ob_start();
     </form>
 </div>
 
+<section class="billing-kpi" data-year="<?= (int) $year ?>">
+    <div class="billing-kpi__card billing-kpi__card--pending">
+        <h3><?= I18n::e('backstage.governance.billing.kpi.pending') ?></h3>
+        <p class="billing-kpi__value" data-key="PENDING">–</p>
+    </div>
+    <div class="billing-kpi__card billing-kpi__card--overdue">
+        <h3><?= I18n::e('backstage.governance.billing.kpi.overdue') ?></h3>
+        <p class="billing-kpi__value" data-key="OVERDUE">–</p>
+    </div>
+    <div class="billing-kpi__card billing-kpi__card--paid">
+        <h3><?= I18n::e('backstage.governance.billing.kpi.paid') ?></h3>
+        <p class="billing-kpi__value" data-key="PAID">–</p>
+    </div>
+    <div class="billing-kpi__card billing-kpi__card--waived">
+        <h3><?= I18n::e('backstage.governance.billing.kpi.waived') ?></h3>
+        <p class="billing-kpi__value" data-key="WAIVED">–</p>
+    </div>
+</section>
+
 <?php if ($editMode): ?>
     <section class="billing-editor">
         <form id="billing-form" method="post" data-redirect="/backstage/governance/billing?year=<?= (int) $year ?>">

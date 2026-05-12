@@ -352,6 +352,10 @@ return static function (Router $router, Container $container): void {
         return $container->make(\Daems\Infrastructure\Adapter\Api\Controller\Backstage\Governance\BackstageBillingController::class)->invoiceAudit($req, $params);
     }, [TenantContextMiddleware::class, AuthMiddleware::class]);
 
+    $router->get('/api/v1/backstage/governance/billing/kpi', static function (Request $req) use ($container): Response {
+        return $container->make(\Daems\Infrastructure\Adapter\Api\Controller\Backstage\Governance\BackstageBillingController::class)->billingKpi($req);
+    }, [TenantContextMiddleware::class, AuthMiddleware::class]);
+
     // Module routes — invoke each discovered module's routes.php.
     $moduleRegistry = $container->make(\Daems\Infrastructure\Module\ModuleRegistry::class);
     $moduleRegistry->registerRoutes($router, $container);

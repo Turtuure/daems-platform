@@ -661,6 +661,11 @@ return [
     'backstage.governance.billing.invoices.method.bank_transfer' => 'Bank transfer',
     'backstage.governance.billing.invoices.method.cash'         => 'Cash',
     'backstage.governance.billing.invoices.method.other'        => 'Other',
+    'backstage.governance.billing.kpi.heading'                  => 'Invoice summary',
+    'backstage.governance.billing.kpi.pending'                  => 'Pending',
+    'backstage.governance.billing.kpi.overdue'                  => 'Overdue',
+    'backstage.governance.billing.kpi.paid'                     => 'Paid',
+    'backstage.governance.billing.kpi.waived'                   => 'Waived',
 
     // ── Governance / Delegations page ────────────────────────────
     'backstage.title.governance.delegations'                   => 'Delegations',

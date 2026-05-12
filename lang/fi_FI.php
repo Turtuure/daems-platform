@@ -661,6 +661,11 @@ return [
     'backstage.governance.billing.invoices.method.bank_transfer' => 'Pankkisiirto',
     'backstage.governance.billing.invoices.method.cash'         => 'Käteinen',
     'backstage.governance.billing.invoices.method.other'        => 'Muu',
+    'backstage.governance.billing.kpi.heading'                  => 'Lasku-yhteenveto',
+    'backstage.governance.billing.kpi.pending'                  => 'Odottaa',
+    'backstage.governance.billing.kpi.overdue'                  => 'Erääntynyt',
+    'backstage.governance.billing.kpi.paid'                     => 'Maksettu',
+    'backstage.governance.billing.kpi.waived'                   => 'Vapautettu',
 
     // ── Governance / Delegations page ────────────────────────────
     'backstage.title.governance.delegations'                   => 'Delegoinnit',

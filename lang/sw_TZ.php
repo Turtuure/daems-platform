@@ -665,6 +665,11 @@ return [
     'backstage.governance.billing.invoices.method.bank_transfer' => 'Uhamishaji wa benki',
     'backstage.governance.billing.invoices.method.cash'         => 'Pesa taslimu',
     'backstage.governance.billing.invoices.method.other'        => 'Nyingine',
+    'backstage.governance.billing.kpi.heading'                  => 'Muhtasari wa bili',
+    'backstage.governance.billing.kpi.pending'                  => 'Inasubiri',
+    'backstage.governance.billing.kpi.overdue'                  => 'Imepitwa',
+    'backstage.governance.billing.kpi.paid'                     => 'Imelipwa',
+    'backstage.governance.billing.kpi.waived'                   => 'Imesamehewa',
 
     // ── Governance / Delegations page ────────────────────────────
     'backstage.title.governance.delegations'                   => 'Mgawanyo',

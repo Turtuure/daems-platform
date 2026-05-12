@@ -68,6 +68,15 @@ if ($method === 'GET' && preg_match('#/governance/billing/invoices/([0-9a-f-]+)/
     exit;
 }
 
+if ($method === 'GET' && str_contains($uri, '/governance/billing/kpi')) {
+    $qs = '';
+    if (($q = parse_url($uri, PHP_URL_QUERY)) !== null && $q !== false) {
+        $qs = '?' . $q;
+    }
+    proxy_backend_get('/backstage/governance/billing/kpi' . $qs);
+    exit;
+}
+
 if ($method === 'GET' && str_contains($uri, '/governance/billing/invoices')) {
     $qs = '';
     if (($q = parse_url($uri, PHP_URL_QUERY)) !== null && $q !== false) {

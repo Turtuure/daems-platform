@@ -324,6 +324,28 @@ final class BackstageBillingController
         return Response::json(['reduced' => true]);
     }
 
+    public function billingKpi(Request $req): Response
+    {
+        $actor = $req->requireActingUser();
+        if (!$actor->isAdminIn($actor->activeTenant) && !$actor->isPlatformAdmin) {
+            throw new ForbiddenException('admin_required');
+        }
+        $year = $req->int('year') ?? (int) date('Y');
+
+        // TODO(perf): replace with `SELECT status, COUNT(*) ... GROUP BY status` when row counts grow.
+        $counts = [];
+        foreach (['PENDING', 'OVERDUE', 'PAID', 'WAIVED', 'REDUCED'] as $st) {
+            $rows = $this->invoices->listForTenant(
+                $actor->activeTenant,
+                ['year' => $year, 'status' => $st],
+                9999,
+                0,
+            );
+            $counts[$st] = count($rows);
+        }
+        return Response::json(['year' => $year, 'counts' => $counts]);
+    }
+
     /**
      * @param array<string,string> $params
      */
