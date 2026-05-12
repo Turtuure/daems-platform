@@ -1,0 +1,126 @@
+/* Backstage Governance — Hallitus (Board) page styles */
+
+/* Board roster grid */
+.board-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 1rem;
+}
+
+.board-card {
+  border: 1px solid var(--border, #e2e8f0);
+  border-radius: 8px;
+  padding: 1.25rem;
+  background: var(--card-bg, #fff);
+}
+
+.board-card[data-role="chair"] {
+  border-left: 4px solid var(--accent, #4a90e2);
+}
+
+.board-card__role {
+  font-weight: 600;
+  color: var(--accent, #4a90e2);
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin-bottom: 0.25rem;
+}
+
+.board-card__user {
+  font-family: var(--font-mono, monospace);
+  font-size: 0.85em;
+  color: var(--muted, #64748b);
+  margin-bottom: 0.5rem;
+}
+
+.board-card__term {
+  font-size: 0.9em;
+  color: var(--text, #1e293b);
+}
+
+.board-card__days {
+  display: block;
+  color: var(--muted, #64748b);
+  font-size: 0.82em;
+  margin-top: 0.2rem;
+}
+
+.board-card__days--expired {
+  color: var(--status-warning, #d97706);
+}
+
+.board-card__ended {
+  color: var(--status-error, #c33);
+  margin-top: 0.75rem;
+  font-size: 0.85em;
+}
+
+.board-empty {
+  color: var(--muted, #64748b);
+  font-style: italic;
+}
+
+/* Bootstrap (not-yet-seeded) banner */
+.bootstrap-banner {
+  text-align: center;
+  padding: 3rem 2rem;
+  background: var(--surface, #f8fafc);
+  border: 1px solid var(--border, #e2e8f0);
+  border-radius: 8px;
+  max-width: 480px;
+  margin: 2rem auto;
+}
+
+.bootstrap-banner__icon {
+  color: var(--muted, #94a3b8);
+  margin-bottom: 1rem;
+}
+
+.bootstrap-banner h2 {
+  font-size: 1.1rem;
+  margin-bottom: 0.5rem;
+}
+
+.bootstrap-banner p {
+  color: var(--muted, #64748b);
+  margin-bottom: 1.25rem;
+  font-size: 0.9rem;
+}
+
+/* Bootstrap modal rows */
+#bootstrap-modal {
+  min-width: min(640px, 90vw);
+  max-width: 800px;
+}
+
+#bootstrap-rows {
+  margin-bottom: 0.75rem;
+}
+
+.bootstrap-row {
+  display: grid;
+  grid-template-columns: 1fr 130px 145px 145px 34px;
+  gap: 0.5rem;
+  align-items: center;
+  margin-bottom: 0.5rem;
+}
+
+.bootstrap-row input,
+.bootstrap-row select {
+  min-width: 0;
+}
+
+/* Responsive: stack on narrow viewports */
+@media (max-width: 640px) {
+  .bootstrap-row {
+    grid-template-columns: 1fr 34px;
+    grid-template-rows: auto auto auto auto;
+  }
+
+  .bootstrap-row select,
+  .bootstrap-row input[name="term_started_at"],
+  .bootstrap-row input[name="term_ends_at"] {
+    grid-column: 1 / -1;
+  }
+}

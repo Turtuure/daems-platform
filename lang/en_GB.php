@@ -195,6 +195,7 @@ return [
     'backstage.title.notifications'                    => 'Notifications',
     'backstage.title.search'                           => 'Search',
     'backstage.title.project_proposals'                => 'Project Proposals',
+    'backstage.title.governance.board'                 => 'Board',
     'backstage.title.login'                            => 'Backstage login',
 
     'backstage.dashboard.title'                        => 'Dashboard',
@@ -558,10 +559,19 @@ return [
     'sidebar.group.system'        => 'System',
 
     // ── Shell items ──────────────────────────────────────────────
-    'shell.dashboard'     => 'Dashboard',
-    'shell.search'        => 'Search',
-    'shell.settings'      => 'Settings',
-    'shell.notifications' => 'Notifications',
+    'shell.dashboard'        => 'Dashboard',
+    'shell.search'           => 'Search',
+    'shell.settings'         => 'Settings',
+    'shell.notifications'    => 'Notifications',
+    'shell.governance.board' => 'Board',
+
+    // ── Governance / Board page ───────────────────────────────────
+    'backstage.governance.board.not_bootstrapped.heading' => 'Board not yet bootstrapped',
+    'backstage.governance.board.not_bootstrapped.hint'    => 'Only a GSA can bootstrap the first board.',
+    'backstage.governance.board.bootstrap.open'           => 'Bootstrap board',
+    'backstage.governance.board.bootstrap.modal_title'    => 'Bootstrap board',
+    'backstage.governance.board.bootstrap.add_row'        => 'Add member',
+    'backstage.governance.board.bootstrap.submit'         => 'Bootstrap board',
 
     // ── Platform / tenant management UI ──────────────────────────
     'platform.breadcrumb.platform'          => 'Platform',

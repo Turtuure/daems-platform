@@ -195,6 +195,7 @@ return [
     'backstage.title.notifications'                    => 'Ilmoitukset',
     'backstage.title.search'                           => 'Haku',
     'backstage.title.project_proposals'                => 'Projektiehdotukset',
+    'backstage.title.governance.board'                 => 'Hallitus',
     'backstage.title.login'                            => 'Backstage-kirjautuminen',
 
     'backstage.dashboard.title'                        => 'Etusivu',
@@ -558,10 +559,19 @@ return [
     'sidebar.group.system'        => 'Järjestelmä',
 
     // ── Shell items ──────────────────────────────────────────────
-    'shell.dashboard'     => 'Hallintapaneeli',
-    'shell.search'        => 'Haku',
-    'shell.settings'      => 'Asetukset',
-    'shell.notifications' => 'Ilmoitukset',
+    'shell.dashboard'        => 'Hallintapaneeli',
+    'shell.search'           => 'Haku',
+    'shell.settings'         => 'Asetukset',
+    'shell.notifications'    => 'Ilmoitukset',
+    'shell.governance.board' => 'Hallitus',
+
+    // ── Governance / Board page ───────────────────────────────────
+    'backstage.governance.board.not_bootstrapped.heading' => 'Hallitusta ei ole vielä istutettu',
+    'backstage.governance.board.not_bootstrapped.hint'    => 'Vain GSA voi istuttaa ensimmäisen hallituksen.',
+    'backstage.governance.board.bootstrap.open'           => 'Istuta hallitus',
+    'backstage.governance.board.bootstrap.modal_title'    => 'Istuta hallitus',
+    'backstage.governance.board.bootstrap.add_row'        => 'Lisää jäsen',
+    'backstage.governance.board.bootstrap.submit'         => 'Istuta hallitus',
 
     // ── Platform / tenant management UI ──────────────────────────
     'platform.breadcrumb.platform'          => 'Alusta',

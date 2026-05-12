@@ -195,6 +195,7 @@ return [
     'backstage.title.notifications'                    => 'Arifa',
     'backstage.title.search'                           => 'Tafuta',
     'backstage.title.project_proposals'                => 'Mapendekezo ya miradi',
+    'backstage.title.governance.board'                 => 'Bodi',
     'backstage.title.login'                            => 'Ingia kwenye Backstage',
 
     'backstage.dashboard.title'                        => 'Dashibodi',
@@ -562,10 +563,19 @@ return [
     'sidebar.group.system'        => 'Mfumo',
 
     // ── Shell items ──────────────────────────────────────────────
-    'shell.dashboard'     => 'Dashibodi',
-    'shell.search'        => 'Tafuta',
-    'shell.settings'      => 'Mipangilio',
-    'shell.notifications' => 'Arifa',
+    'shell.dashboard'        => 'Dashibodi',
+    'shell.search'           => 'Tafuta',
+    'shell.settings'         => 'Mipangilio',
+    'shell.notifications'    => 'Arifa',
+    'shell.governance.board' => 'Bodi',
+
+    // ── Governance / Board page ───────────────────────────────────
+    'backstage.governance.board.not_bootstrapped.heading' => 'Bodi haijawekwa bado',
+    'backstage.governance.board.not_bootstrapped.hint'    => 'Ni GSA tu anayeweza kuweka bodi ya kwanza.',
+    'backstage.governance.board.bootstrap.open'           => 'Weka bodi',
+    'backstage.governance.board.bootstrap.modal_title'    => 'Weka bodi',
+    'backstage.governance.board.bootstrap.add_row'        => 'Ongeza mwanachama',
+    'backstage.governance.board.bootstrap.submit'         => 'Weka bodi',
 
     // ── Platform / tenant management UI ──────────────────────────
     'platform.breadcrumb.platform'          => 'Mfumo',

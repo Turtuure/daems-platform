@@ -63,13 +63,14 @@ if ($sub === '/applications' && isset($daemsKnownModules['members']['backstage']
 }
 
 $map = [
-    ''                   => __DIR__ . '/pages/index.php',
-    '/notifications'     => __DIR__ . '/pages/notifications/index.php',
-    '/search'            => __DIR__ . '/pages/search/index.php',
-    '/settings'          => __DIR__ . '/pages/settings/index.php',
-    '/settings/modules'  => __DIR__ . '/pages/settings/modules/index.php',
-    '/project-proposals' => __DIR__ . '/pages/project-proposals/index.php',
-    '/platform/tenants'  => __DIR__ . '/pages/platform/tenants/index.php',
+    ''                       => __DIR__ . '/pages/index.php',
+    '/notifications'         => __DIR__ . '/pages/notifications/index.php',
+    '/search'                => __DIR__ . '/pages/search/index.php',
+    '/settings'              => __DIR__ . '/pages/settings/index.php',
+    '/settings/modules'      => __DIR__ . '/pages/settings/modules/index.php',
+    '/project-proposals'     => __DIR__ . '/pages/project-proposals/index.php',
+    '/platform/tenants'      => __DIR__ . '/pages/platform/tenants/index.php',
+    '/governance/board'      => __DIR__ . '/pages/governance/board.php',
 ];
 
 if (isset($map[$sub]) && is_file($map[$sub])) {
