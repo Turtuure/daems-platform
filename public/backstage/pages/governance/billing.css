@@ -1,0 +1,85 @@
+/* Backstage Governance — Laskutus (Billing) page styles */
+
+/* Year picker form */
+.billing-year-form {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.billing-year-form label {
+  font-size: 0.875rem;
+  color: var(--muted, #64748b);
+}
+
+/* Fee schedule table */
+.billing-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 1rem 0;
+}
+
+.billing-table th,
+.billing-table td {
+  text-align: left;
+  padding: 0.5rem 0.75rem;
+  border-bottom: 1px solid var(--border, #e2e8f0);
+}
+
+.billing-table th {
+  font-size: 0.78rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--muted, #64748b);
+}
+
+.billing-table tr[data-status="superseded"] td {
+  color: var(--muted, #94a3b8);
+}
+
+.billing-table tr[data-status="active"] td {
+  font-weight: 500;
+}
+
+/* Editor section */
+.billing-editor {
+  max-width: 480px;
+}
+
+.billing-editor fieldset {
+  border: 1px solid var(--border, #e2e8f0);
+  border-radius: 8px;
+  padding: 1rem 1.25rem;
+  margin: 1rem 0;
+  background: var(--surface, #f8fafc);
+}
+
+.billing-editor legend {
+  font-weight: 600;
+  font-size: 0.9rem;
+  padding: 0 0.25rem;
+}
+
+.billing-editor label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  margin-bottom: 0.75rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.billing-editor label input {
+  font-weight: 400;
+}
+
+.billing-editor .btn + .btn {
+  margin-left: 0.5rem;
+}
+
+.billing-editor__note {
+  margin-top: 0.75rem;
+  font-size: 0.875rem;
+  color: var(--muted, #64748b);
+}

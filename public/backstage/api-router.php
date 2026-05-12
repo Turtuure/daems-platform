@@ -56,6 +56,7 @@ $map = [
     '/api/backstage/dashboard/catalog' => __DIR__ . '/api/dashboard.php',
     '/api/backstage/governance/board'                         => __DIR__ . '/api/governance-board.php',
     '/api/backstage/governance/board/bootstrap'               => __DIR__ . '/api/governance-board.php',
+    '/api/backstage/governance/billing/fee-schedules'         => __DIR__ . '/api/governance-billing.php',
     '/api/backstage/governance/decisions'                     => __DIR__ . '/api/governance-decisions.php',
     '/api/backstage/governance/decisions/approve-basic'       => __DIR__ . '/api/governance-decisions.php',
     '/api/backstage/governance/decisions/invite-full'         => __DIR__ . '/api/governance-decisions.php',

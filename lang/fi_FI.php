@@ -380,6 +380,10 @@ return [
     'backstage.common.network_error'                   => 'Verkkovirhe: {msg}',
     'backstage.common.generic_error'                   => 'virhe',
     'backstage.common.empty'                           => '—',
+    'backstage.common.apply'                           => 'Käytä',
+    'backstage.common.loading'                         => 'Ladataan…',
+    'backstage.common.save'                            => 'Tallenna',
+    'backstage.common.cancel'                          => 'Peruuta',
 
     'backstage.login.heading'                          => 'Backstage',
     'backstage.login.email'                            => 'Sähköposti',
@@ -577,6 +581,20 @@ return [
     'shell.governance.expulsions'   => 'Erottamiset',
     'shell.governance.delegations'  => 'Delegoinnit',
     'shell.governance.settings'     => 'Asetukset',
+    'shell.governance.billing'      => 'Laskutus',
+
+    // ── Governance / Billing page ─────────────────────────────────
+    'backstage.title.governance.billing'              => 'Laskutus',
+    'backstage.governance.billing.year_label'         => 'Vuosi',
+    'backstage.governance.billing.col.fee_type'       => 'Tyyppi',
+    'backstage.governance.billing.col.amount'         => 'Summa',
+    'backstage.governance.billing.col.status'         => 'Tila',
+    'backstage.governance.billing.col.activated'      => 'Aktivoitu',
+    'backstage.governance.billing.col.decision'       => 'Päätös',
+    'backstage.governance.billing.editor_legend'      => 'Vuosimaksut vuodelle',
+    'backstage.governance.billing.editor_note'        => 'Mikäli tenantille on asetettu requires_formal_decision_for_fees=true, hinnasto tallentuu PROPOSED-tilaan ja avaa hallituksen päätös-flow\'n. Muutoin se astuu suoraan voimaan.',
+    'backstage.governance.billing.edit_button'        => 'Muokkaa hinnastoa',
+    'backstage.governance.billing.empty'              => 'Ei hinnastoa tälle vuodelle.',
 
     // ── Governance / Delegations page ────────────────────────────
     'backstage.title.governance.delegations'                   => 'Delegoinnit',

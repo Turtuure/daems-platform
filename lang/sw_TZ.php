@@ -380,6 +380,10 @@ return [
     'backstage.common.network_error'                   => 'Kosa la mtandao: {msg}',
     'backstage.common.generic_error'                   => 'kosa',
     'backstage.common.empty'                           => '—',
+    'backstage.common.apply'                           => 'Tumia',
+    'backstage.common.loading'                         => 'Inapakia…',
+    'backstage.common.save'                            => 'Hifadhi',
+    'backstage.common.cancel'                          => 'Ghairi',
 
     'backstage.login.heading'                          => 'Backstage',
     'backstage.login.email'                            => 'Barua pepe',
@@ -581,6 +585,20 @@ return [
     'shell.governance.expulsions'   => 'Kufukuza',
     'shell.governance.delegations'  => 'Mgawanyo',
     'shell.governance.settings'     => 'Mipangilio',
+    'shell.governance.billing'      => 'Bili',
+
+    // ── Governance / Billing page ─────────────────────────────────
+    'backstage.title.governance.billing'              => 'Bili',
+    'backstage.governance.billing.year_label'         => 'Mwaka',
+    'backstage.governance.billing.col.fee_type'       => 'Aina',
+    'backstage.governance.billing.col.amount'         => 'Kiasi',
+    'backstage.governance.billing.col.status'         => 'Hali',
+    'backstage.governance.billing.col.activated'      => 'Imewashwa',
+    'backstage.governance.billing.col.decision'       => 'Uamuzi',
+    'backstage.governance.billing.editor_legend'      => 'Ada za mwaka wa',
+    'backstage.governance.billing.editor_note'        => 'Ikiwa kuhitaji uamuzi rasmi wa bodi, ada huhifadhiwa kama PROPOSED. La sivyo, huanza kutumika mara moja.',
+    'backstage.governance.billing.edit_button'        => 'Hariri ada',
+    'backstage.governance.billing.empty'              => 'Hakuna ada kwa mwaka huu.',
 
     // ── Governance / Delegations page ────────────────────────────
     'backstage.title.governance.delegations'                   => 'Mgawanyo',

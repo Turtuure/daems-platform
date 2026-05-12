@@ -380,6 +380,10 @@ return [
     'backstage.common.network_error'                   => 'Network error: {msg}',
     'backstage.common.generic_error'                   => 'error',
     'backstage.common.empty'                           => '—',
+    'backstage.common.apply'                           => 'Apply',
+    'backstage.common.loading'                         => 'Loading…',
+    'backstage.common.save'                            => 'Save',
+    'backstage.common.cancel'                          => 'Cancel',
 
     'backstage.login.heading'                          => 'Backstage',
     'backstage.login.email'                            => 'Email',
@@ -577,6 +581,20 @@ return [
     'shell.governance.expulsions'   => 'Expulsions',
     'shell.governance.delegations'  => 'Delegations',
     'shell.governance.settings'     => 'Settings',
+    'shell.governance.billing'      => 'Billing',
+
+    // ── Governance / Billing page ─────────────────────────────────
+    'backstage.title.governance.billing'              => 'Billing',
+    'backstage.governance.billing.year_label'         => 'Year',
+    'backstage.governance.billing.col.fee_type'       => 'Type',
+    'backstage.governance.billing.col.amount'         => 'Amount',
+    'backstage.governance.billing.col.status'         => 'Status',
+    'backstage.governance.billing.col.activated'      => 'Activated',
+    'backstage.governance.billing.col.decision'       => 'Decision',
+    'backstage.governance.billing.editor_legend'      => 'Annual fees for',
+    'backstage.governance.billing.editor_note'        => 'If the tenant requires a formal board decision, fees are saved as PROPOSED. Otherwise they activate immediately.',
+    'backstage.governance.billing.edit_button'        => 'Edit fee schedule',
+    'backstage.governance.billing.empty'              => 'No fee schedule for this year.',
 
     // ── Governance / Delegations page ────────────────────────────
     'backstage.title.governance.delegations'                   => 'Delegations',
