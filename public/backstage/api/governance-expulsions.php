@@ -1,6 +1,8 @@
 <?php
 declare(strict_types=1);
 
+require_once __DIR__ . '/_proxy.php';
+
 use Daems\Frontend\ApiClient;
 
 header('Content-Type: application/json');
@@ -16,9 +18,7 @@ $body = $method === 'POST' ? (json_decode((string) file_get_contents('php://inpu
 $qs   = (string) ($_SERVER['QUERY_STRING'] ?? '');
 
 if ($uri === '/api/backstage/governance/expulsions' && $method === 'GET') {
-    $r = ApiClient::get('/backstage/governance/expulsions' . ($qs !== '' ? '?' . $qs : ''));
-    http_response_code((int) ($r['status'] ?? 500));
-    echo json_encode($r['body'] ?? []);
+    proxy_backend_get('/backstage/governance/expulsions' . ($qs !== '' ? '?' . $qs : ''));
     exit;
 }
 if ($uri === '/api/backstage/governance/expulsions' && $method === 'POST') {
@@ -28,9 +28,7 @@ if ($uri === '/api/backstage/governance/expulsions' && $method === 'POST') {
     exit;
 }
 if (preg_match('#^/api/backstage/governance/expulsions/([0-9a-fA-F-]{36})$#', (string) $uri, $m) && $method === 'GET') {
-    $r = ApiClient::get('/backstage/governance/expulsions/' . $m[1]);
-    http_response_code((int) ($r['status'] ?? 500));
-    echo json_encode($r['body'] ?? []);
+    proxy_backend_get('/backstage/governance/expulsions/' . $m[1]);
     exit;
 }
 foreach (['statement', 'advance-to-vote', 'appeal'] as $action) {

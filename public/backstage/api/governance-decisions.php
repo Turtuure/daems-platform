@@ -1,6 +1,8 @@
 <?php
 declare(strict_types=1);
 
+require_once __DIR__ . '/_proxy.php';
+
 use Daems\Frontend\ApiClient;
 
 header('Content-Type: application/json');
@@ -35,9 +37,12 @@ if (isset($map[(string) $uri])) {
         echo json_encode(['error' => 'method_not_allowed']);
         exit;
     }
-    $r = $method === 'GET'
-        ? ApiClient::get($backendPath . ($_SERVER['QUERY_STRING'] ?? '' ? '?' . $_SERVER['QUERY_STRING'] : ''))
-        : ApiClient::post($backendPath, $body);
+    if ($method === 'GET') {
+        $qs = $_SERVER['QUERY_STRING'] ?? '';
+        proxy_backend_get($backendPath . ($qs !== '' ? '?' . $qs : ''));
+        exit;
+    }
+    $r = ApiClient::post($backendPath, $body);
     http_response_code((int) ($r['status'] ?? 500));
     echo json_encode($r['body'] ?? []);
     exit;
@@ -45,9 +50,7 @@ if (isset($map[(string) $uri])) {
 
 // Pattern routes (with id)
 if (preg_match('#^/api/backstage/governance/decisions/([0-9a-fA-F-]{36})$#', (string) $uri, $m) && $method === 'GET') {
-    $r = ApiClient::get('/backstage/governance/decisions/' . $m[1]);
-    http_response_code((int) ($r['status'] ?? 500));
-    echo json_encode($r['body'] ?? []);
+    proxy_backend_get('/backstage/governance/decisions/' . $m[1]);
     exit;
 }
 if (preg_match('#^/api/backstage/governance/decisions/([0-9a-fA-F-]{36})/vote$#', (string) $uri, $m) && $method === 'POST') {

@@ -1,6 +1,8 @@
 <?php
 declare(strict_types=1);
 
+require_once __DIR__ . '/_proxy.php';
+
 use Daems\Frontend\ApiClient;
 
 header('Content-Type: application/json');
@@ -11,9 +13,7 @@ $method = $_SERVER['REQUEST_METHOD'] ?? 'GET';
 $uri = (string) ($_SERVER['REQUEST_URI'] ?? '');
 
 if ($method === 'GET' && str_contains($uri, '/governance/board')) {
-    $r = ApiClient::get('/backstage/governance/board');
-    http_response_code((int) ($r['status'] ?? 500));
-    echo json_encode($r['body'] ?? []);
+    proxy_backend_get('/backstage/governance/board');
     exit;
 }
 if ($method === 'POST' && str_contains($uri, '/bootstrap')) {
