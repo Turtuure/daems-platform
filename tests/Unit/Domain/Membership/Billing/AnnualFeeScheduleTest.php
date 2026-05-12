@@ -49,6 +49,18 @@ final class AnnualFeeScheduleTest extends TestCase
         $this->assertEquals($actor, $schedule->activatedBy());
     }
 
+    public function test_activate_from_draft(): void
+    {
+        $schedule = $this->schedule(status: AnnualFeeScheduleStatus::Draft);
+        $now = new DateTimeImmutable('2026-11-15T09:00:00');
+        $actor = UserId::fromString('01958000-0000-7000-8000-0000000000ee');
+        $schedule->activate($actor, $now);
+
+        $this->assertSame(AnnualFeeScheduleStatus::Active, $schedule->status());
+        $this->assertEquals($now, $schedule->activatedAt());
+        $this->assertEquals($actor, $schedule->activatedBy());
+    }
+
     public function test_activate_rejects_already_active(): void
     {
         $schedule = $this->schedule(status: AnnualFeeScheduleStatus::Active);
