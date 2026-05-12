@@ -203,20 +203,33 @@ final class BackstageSidebarTest extends TestCase
         $items = $sidebar->buildFor($this->makeTenant(), $this->makeUser(false));
         $hrefs = array_values(array_map(static fn(array $i) => $i['href'], $items));
 
-        // Expected ordering (after Search drop + System group regrouping):
-        //   shell:     /backstage/             (rank 0, order 0)
-        //   members:   /backstage/members      (rank 1, order 0)
-        //   content:   /backstage/events       (rank 2, order 0)
-        //   community: /backstage/forum        (rank 3, order 0)
-        //   system:    /backstage/notifications(rank 5, order 10)
-        //              /backstage/settings     (rank 5, order 20)
+        // Expected ordering (after Search drop + System group regrouping +
+        // hardcoded governance items added in MembershipCore v2 0.6b):
+        //   shell:      /backstage/                          (rank 0, order 0)
+        //   members:    /backstage/members                   (rank 1, order 0)
+        //   content:    /backstage/events                    (rank 2, order 0)
+        //   community:  /backstage/forum                     (rank 3, order 0)
+        //   governance: /backstage/governance/board          (rank 4, order 10)
+        //               /backstage/governance/decisions      (rank 4, order 20)
+        //               /backstage/governance/expulsions     (rank 4, order 30)
+        //               /backstage/governance/delegations    (rank 4, order 40)
+        //               /backstage/governance/settings       (rank 4, order 50)
+        //   system:     /backstage/notifications             (rank 5, order 10)
+        //               /backstage/settings                  (rank 5, order 20)
         //
-        // System group sits at the bottom because its rank (5) is highest.
+        // Governance items are hardcoded in BackstageSidebar and always render
+        // (not gated per-tenant yet); they sit between community (rank 3) and
+        // system (rank 5). System group remains the bottom.
         $this->assertSame([
             '/backstage/',
             '/backstage/members',
             '/backstage/events',
             '/backstage/forum',
+            '/backstage/governance/board',
+            '/backstage/governance/decisions',
+            '/backstage/governance/expulsions',
+            '/backstage/governance/delegations',
+            '/backstage/governance/settings',
             '/backstage/notifications',
             '/backstage/settings',
         ], $hrefs);
@@ -262,9 +275,12 @@ final class BackstageSidebarTest extends TestCase
         $items = $sidebar->buildFor($this->makeTenant(), $this->makeUser(false));
         $hrefs = array_map(static fn(array $i) => $i['href'], $items);
         $this->assertNotContains('/backstage/webhook', $hrefs);
-        // Only the 3 baseline shell+system items remain: Dashboard,
-        // Notifications, Settings (Search dropped; Tenants only for GSA).
-        $this->assertCount(3, $items);
+        // 8 baseline items remain when no modules render to the sidebar:
+        //   - 1 shell: Dashboard
+        //   - 5 governance (hardcoded in BackstageSidebar, always rendered):
+        //     board, decisions, expulsions, delegations, settings
+        //   - 2 system: Notifications, Settings (Tenants only for GSA)
+        $this->assertCount(8, $items);
     }
 
     public function testModuleNameKeyFallsBackToConventionalKey(): void
