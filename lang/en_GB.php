@@ -251,6 +251,15 @@ return [
     'backstage.dashboard.widget.members_by_tier_kpi.label'       => 'Members by tier',
     'backstage.dashboard.widget.members_by_tier_kpi.description' => 'Member count grouped by the four bylaws-defined membership groups.',
 
+    'backstage.dashboard.widget.pending_decisions_for_me_kpi.label'       => 'Pending decisions awaiting my vote',
+    'backstage.dashboard.widget.pending_decisions_for_me_kpi.description' => 'Open board decisions where your vote is still missing.',
+    'backstage.dashboard.widget.eligible_for_full_membership.label'       => 'Eligible for FULL membership',
+    'backstage.dashboard.widget.eligible_for_full_membership.description' => 'Supporting members who can be invited to full membership.',
+    'backstage.dashboard.widget.open_expulsions_kpi.label'                => 'Open expulsions',
+    'backstage.dashboard.widget.open_expulsions_kpi.description'          => 'Ongoing expulsion proceedings (hearing or awaiting vote).',
+    'backstage.dashboard.widget.delegations_active_kpi.label'             => 'Active delegations',
+    'backstage.dashboard.widget.delegations_active_kpi.description'       => 'Active board-granted decision delegations currently in force.',
+
     'membership.type.supporting'         => 'Supporting member',
     'membership.type.basic'              => 'Basic member',
     'membership.type.full'               => 'Full member',

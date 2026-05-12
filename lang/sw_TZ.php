@@ -251,6 +251,15 @@ return [
     'backstage.dashboard.widget.members_by_tier_kpi.label'       => 'Wanachama kwa kiwango',
     'backstage.dashboard.widget.members_by_tier_kpi.description' => 'Idadi ya wanachama imegawanywa katika makundi manne yaliyofafanuliwa katika katiba.',
 
+    'backstage.dashboard.widget.pending_decisions_for_me_kpi.label'       => 'Maamuzi yanayosubiri kura yangu',
+    'backstage.dashboard.widget.pending_decisions_for_me_kpi.description' => 'Maamuzi ya wazi ya bodi ambapo kura yako bado haijatolewa.',
+    'backstage.dashboard.widget.eligible_for_full_membership.label'       => 'Wanastahili uanachama kamili',
+    'backstage.dashboard.widget.eligible_for_full_membership.description' => 'Wanachama wa kuunga mkono wanaoweza kualikwa kuwa wanachama kamili.',
+    'backstage.dashboard.widget.open_expulsions_kpi.label'                => 'Kufukuza wazi',
+    'backstage.dashboard.widget.open_expulsions_kpi.description'          => 'Michakato ya kufukuza inayoendelea (usikilizwaji au inasubiri kura).',
+    'backstage.dashboard.widget.delegations_active_kpi.label'             => 'Mgawanyo unaotumika',
+    'backstage.dashboard.widget.delegations_active_kpi.description'       => 'Mgawanyo wa mamlaka wa bodi unaotumika kwa sasa.',
+
     'membership.type.supporting'         => 'Mwanachama wa kuunga mkono',
     'membership.type.basic'              => 'Mwanachama wa kawaida',
     'membership.type.full'               => 'Mwanachama kamili',

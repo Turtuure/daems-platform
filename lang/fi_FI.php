@@ -251,6 +251,15 @@ return [
     'backstage.dashboard.widget.members_by_tier_kpi.label'       => 'Jäsenet jäsenryhmittäin',
     'backstage.dashboard.widget.members_by_tier_kpi.description' => 'Jäsenten määrä jaettuna sääntöjen mukaisiin neljään jäsenryhmään.',
 
+    'backstage.dashboard.widget.pending_decisions_for_me_kpi.label'       => 'Odottaa ääntäni',
+    'backstage.dashboard.widget.pending_decisions_for_me_kpi.description' => 'Avoimet hallituksen päätökset, joissa äänesi puuttuu.',
+    'backstage.dashboard.widget.eligible_for_full_membership.label'       => 'Kelpoiset FULL-kutsuun',
+    'backstage.dashboard.widget.eligible_for_full_membership.description' => 'Kannattavat jäsenet, joille voidaan tarjota varsinaista jäsenyyttä.',
+    'backstage.dashboard.widget.open_expulsions_kpi.label'                => 'Avoimet erottamiset',
+    'backstage.dashboard.widget.open_expulsions_kpi.description'          => 'Käynnissä olevat erottamismenettelyt (kuuleminen tai äänestys).',
+    'backstage.dashboard.widget.delegations_active_kpi.label'             => 'Aktiiviset delegoinnit',
+    'backstage.dashboard.widget.delegations_active_kpi.description'       => 'Hallituksen myöntämät voimassa olevat päätösvaltuutukset.',
+
     'membership.type.supporting'         => 'Kannattava jäsen',
     'membership.type.basic'              => 'Perusjäsen',
     'membership.type.full'               => 'Varsinainen jäsen',
