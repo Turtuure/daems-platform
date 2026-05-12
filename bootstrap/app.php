@@ -621,6 +621,532 @@ $container->bind(
     ),
 );
 
+// MembershipCore v2 / 0.6b — Governance (board + decisions + expulsions)
+
+// 9 SQL repositories
+$container->bind(
+    \Daems\Domain\Governance\BoardRepositoryInterface::class,
+    static fn(Container $c) => new \Daems\Infrastructure\Adapter\Persistence\Sql\SqlBoardRepository(
+        $c->make(Connection::class)->pdo(),
+    ),
+);
+$container->bind(
+    \Daems\Domain\Governance\BoardMemberRepositoryInterface::class,
+    static fn(Container $c) => new \Daems\Infrastructure\Adapter\Persistence\Sql\SqlBoardMemberRepository(
+        $c->make(Connection::class)->pdo(),
+    ),
+);
+$container->bind(
+    \Daems\Domain\Governance\BoardDecisionRepositoryInterface::class,
+    static fn(Container $c) => new \Daems\Infrastructure\Adapter\Persistence\Sql\SqlBoardDecisionRepository(
+        $c->make(Connection::class)->pdo(),
+    ),
+);
+$container->bind(
+    \Daems\Domain\Governance\BoardDecisionVoteRepositoryInterface::class,
+    static fn(Container $c) => new \Daems\Infrastructure\Adapter\Persistence\Sql\SqlBoardDecisionVoteRepository(
+        $c->make(Connection::class)->pdo(),
+    ),
+);
+$container->bind(
+    \Daems\Domain\Governance\BoardDelegationRepositoryInterface::class,
+    static fn(Container $c) => new \Daems\Infrastructure\Adapter\Persistence\Sql\SqlBoardDelegationRepository(
+        $c->make(Connection::class)->pdo(),
+    ),
+);
+$container->bind(
+    \Daems\Domain\Governance\TenantGovernanceSettingsRepositoryInterface::class,
+    static fn(Container $c) => new \Daems\Infrastructure\Adapter\Persistence\Sql\SqlTenantGovernanceSettingsRepository(
+        $c->make(Connection::class)->pdo(),
+    ),
+);
+$container->bind(
+    \Daems\Domain\Membership\MemberExpulsionRepositoryInterface::class,
+    static fn(Container $c) => new \Daems\Infrastructure\Adapter\Persistence\Sql\SqlMemberExpulsionRepository(
+        $c->make(Connection::class)->pdo(),
+    ),
+);
+$container->bind(
+    \Daems\Domain\Membership\MemberSubTierAwardRepositoryInterface::class,
+    static fn(Container $c) => new \Daems\Infrastructure\Adapter\Persistence\Sql\SqlMemberSubTierAwardRepository(
+        $c->make(Connection::class)->pdo(),
+    ),
+);
+$container->bind(
+    \Daems\Domain\Audit\GsaOverrideRepositoryInterface::class,
+    static fn(Container $c) => new \Daems\Infrastructure\Adapter\Persistence\Sql\SqlGsaOverrideRepository(
+        $c->make(Connection::class)->pdo(),
+    ),
+);
+
+// Pure services
+$container->singleton(
+    \Daems\Application\Governance\BoardDecisionResolutionService::class,
+    static fn() => new \Daems\Application\Governance\BoardDecisionResolutionService(),
+);
+$container->singleton(
+    \Daems\Domain\Membership\IsEligibleForFullMembership::class,
+    static fn() => new \Daems\Domain\Membership\IsEligibleForFullMembership(),
+);
+
+// 9 Executors — each bound with the closures it needs
+$container->bind(
+    \Daems\Application\Governance\Executor\ApproveBasicExecutor::class,
+    static fn(Container $c) => new \Daems\Application\Governance\Executor\ApproveBasicExecutor(
+        static function (string $applicationId, \DateTimeImmutable $at, ?string $viaDelegationDecisionId) use ($c): void {
+            $pdo = $c->make(Connection::class)->pdo();
+            $stmt = $pdo->prepare("UPDATE member_applications SET status = 'approved', approved_at = ? WHERE id = ?");
+            $stmt->execute([$at->format('Y-m-d H:i:s'), $applicationId]);
+        },
+    ),
+);
+$container->bind(
+    \Daems\Application\Governance\Executor\InviteFullExecutor::class,
+    static fn(Container $c) => new \Daems\Application\Governance\Executor\InviteFullExecutor(
+        static function (\Daems\Domain\User\UserId $userId, \DateTimeImmutable $at) use ($c): void {
+            $pdo = $c->make(Connection::class)->pdo();
+            $stmt = $pdo->prepare("UPDATE users SET membership_type = 'FULL', invited_to_full_at = ? WHERE id = ?");
+            $stmt->execute([$at->format('Y-m-d H:i:s'), $userId->value()]);
+        },
+    ),
+);
+$container->bind(
+    \Daems\Application\Governance\Executor\ExpelExecutor::class,
+    static fn(Container $c) => new \Daems\Application\Governance\Executor\ExpelExecutor(
+        static function (\Daems\Domain\User\UserId $userId, string $reason, \DateTimeImmutable $at) use ($c): void {
+            $pdo = $c->make(Connection::class)->pdo();
+            $stmt = $pdo->prepare("UPDATE users SET membership_status = 'expelled', membership_ended_at = ?, membership_status_reason = ? WHERE id = ?");
+            $stmt->execute([$at->format('Y-m-d H:i:s'), $reason, $userId->value()]);
+        },
+        $c->make(\Daems\Domain\Membership\MemberExpulsionRepositoryInterface::class),
+    ),
+);
+$container->bind(
+    \Daems\Application\Governance\Executor\AwardSubTierExecutor::class,
+    static fn(Container $c) => new \Daems\Application\Governance\Executor\AwardSubTierExecutor(
+        static function (\Daems\Domain\User\UserId $userId, string $slug) use ($c): void {
+            $pdo = $c->make(Connection::class)->pdo();
+            $stmt = $pdo->prepare("UPDATE users SET membership_subtier = ? WHERE id = ?");
+            $stmt->execute([$slug, $userId->value()]);
+        },
+        static function (\Daems\Domain\Governance\BoardId $boardId) use ($c): \Daems\Domain\Tenant\TenantId {
+            $pdo = $c->make(Connection::class)->pdo();
+            $stmt = $pdo->prepare('SELECT tenant_id FROM boards WHERE id = ?');
+            $stmt->execute([$boardId->value()]);
+            $tid = $stmt->fetchColumn();
+            if (!is_string($tid)) {
+                throw new \DomainException("board={$boardId->value()} has no tenant");
+            }
+            return \Daems\Domain\Tenant\TenantId::fromString($tid);
+        },
+        $c->make(\Daems\Domain\Membership\MemberSubTierAwardRepositoryInterface::class),
+    ),
+);
+$container->bind(
+    \Daems\Application\Governance\Executor\RevokeSubTierExecutor::class,
+    static fn(Container $c) => new \Daems\Application\Governance\Executor\RevokeSubTierExecutor(
+        static function (\Daems\Domain\User\UserId $userId) use ($c): void {
+            $pdo = $c->make(Connection::class)->pdo();
+            $stmt = $pdo->prepare("UPDATE users SET membership_subtier = NULL WHERE id = ?");
+            $stmt->execute([$userId->value()]);
+        },
+        static function (\Daems\Domain\Governance\BoardId $boardId) use ($c): \Daems\Domain\Tenant\TenantId {
+            $pdo = $c->make(Connection::class)->pdo();
+            $stmt = $pdo->prepare('SELECT tenant_id FROM boards WHERE id = ?');
+            $stmt->execute([$boardId->value()]);
+            $tid = $stmt->fetchColumn();
+            if (!is_string($tid)) {
+                throw new \DomainException("board={$boardId->value()} has no tenant");
+            }
+            return \Daems\Domain\Tenant\TenantId::fromString($tid);
+        },
+        $c->make(\Daems\Domain\Membership\MemberSubTierAwardRepositoryInterface::class),
+    ),
+);
+$container->bind(
+    \Daems\Application\Governance\Executor\SubTierCrudExecutor::class,
+    static fn(Container $c) => new \Daems\Application\Governance\Executor\SubTierCrudExecutor(
+        $c->make(\Daems\Domain\Membership\TenantMembershipSubTierRepositoryInterface::class),
+        static function (\Daems\Domain\Governance\BoardId $boardId) use ($c): \Daems\Domain\Tenant\TenantId {
+            $pdo = $c->make(Connection::class)->pdo();
+            $stmt = $pdo->prepare('SELECT tenant_id FROM boards WHERE id = ?');
+            $stmt->execute([$boardId->value()]);
+            $tid = $stmt->fetchColumn();
+            if (!is_string($tid)) {
+                throw new \DomainException("board={$boardId->value()} has no tenant");
+            }
+            return \Daems\Domain\Tenant\TenantId::fromString($tid);
+        },
+    ),
+);
+$container->bind(
+    \Daems\Application\Governance\Executor\RemoveBoardMemberExecutor::class,
+    static fn(Container $c) => new \Daems\Application\Governance\Executor\RemoveBoardMemberExecutor(
+        $c->make(\Daems\Domain\Governance\BoardMemberRepositoryInterface::class),
+    ),
+);
+$container->bind(
+    \Daems\Application\Governance\Executor\DelegateAuthorityExecutor::class,
+    static fn(Container $c) => new \Daems\Application\Governance\Executor\DelegateAuthorityExecutor(
+        $c->make(\Daems\Domain\Governance\BoardDelegationRepositoryInterface::class),
+        static function (\Daems\Domain\Governance\BoardId $boardId) use ($c): \Daems\Domain\Tenant\TenantId {
+            $pdo = $c->make(Connection::class)->pdo();
+            $stmt = $pdo->prepare('SELECT tenant_id FROM boards WHERE id = ?');
+            $stmt->execute([$boardId->value()]);
+            $tid = $stmt->fetchColumn();
+            if (!is_string($tid)) {
+                throw new \DomainException("board={$boardId->value()} has no tenant");
+            }
+            return \Daems\Domain\Tenant\TenantId::fromString($tid);
+        },
+    ),
+);
+$container->bind(
+    \Daems\Application\Governance\Executor\RevokeDelegationExecutor::class,
+    static fn(Container $c) => new \Daems\Application\Governance\Executor\RevokeDelegationExecutor(
+        $c->make(\Daems\Domain\Governance\BoardDelegationRepositoryInterface::class),
+    ),
+);
+
+// Executor registry (singleton; all 9 executors registered)
+$container->singleton(
+    \Daems\Application\Governance\BoardDecisionExecutorRegistry::class,
+    static function (Container $c): \Daems\Application\Governance\BoardDecisionExecutorRegistry {
+        $reg = new \Daems\Application\Governance\BoardDecisionExecutorRegistry();
+        $reg->register($c->make(\Daems\Application\Governance\Executor\ApproveBasicExecutor::class));
+        $reg->register($c->make(\Daems\Application\Governance\Executor\InviteFullExecutor::class));
+        $reg->register($c->make(\Daems\Application\Governance\Executor\ExpelExecutor::class));
+        $reg->register($c->make(\Daems\Application\Governance\Executor\AwardSubTierExecutor::class));
+        $reg->register($c->make(\Daems\Application\Governance\Executor\RevokeSubTierExecutor::class));
+        $reg->register($c->make(\Daems\Application\Governance\Executor\SubTierCrudExecutor::class));
+        $reg->register($c->make(\Daems\Application\Governance\Executor\RemoveBoardMemberExecutor::class));
+        $reg->register($c->make(\Daems\Application\Governance\Executor\DelegateAuthorityExecutor::class));
+        $reg->register($c->make(\Daems\Application\Governance\Executor\RevokeDelegationExecutor::class));
+        return $reg;
+    },
+);
+
+// Core decision engine
+$container->bind(
+    \Daems\Application\Governance\ResolveBoardDecisionIfReady::class,
+    static fn(Container $c) => new \Daems\Application\Governance\ResolveBoardDecisionIfReady(
+        $c->make(\Daems\Domain\Governance\BoardDecisionRepositoryInterface::class),
+        $c->make(\Daems\Domain\Governance\BoardDecisionVoteRepositoryInterface::class),
+        $c->make(\Daems\Domain\Governance\BoardMemberRepositoryInterface::class),
+        $c->make(\Daems\Application\Governance\BoardDecisionResolutionService::class),
+        $c->make(\Daems\Application\Governance\BoardDecisionExecutorRegistry::class),
+    ),
+);
+$container->bind(
+    \Daems\Application\Governance\CastBoardVote::class,
+    static fn(Container $c) => new \Daems\Application\Governance\CastBoardVote(
+        $c->make(\Daems\Domain\Governance\BoardDecisionRepositoryInterface::class),
+        $c->make(\Daems\Domain\Governance\BoardDecisionVoteRepositoryInterface::class),
+        $c->make(\Daems\Domain\Governance\BoardMemberRepositoryInterface::class),
+        $c->make(\Daems\Application\Governance\ResolveBoardDecisionIfReady::class),
+    ),
+);
+$container->bind(
+    \Daems\Application\Governance\WithdrawBoardDecision::class,
+    static fn(Container $c) => new \Daems\Application\Governance\WithdrawBoardDecision(
+        $c->make(\Daems\Domain\Governance\BoardDecisionRepositoryInterface::class),
+        $c->make(\Daems\Domain\Governance\BoardMemberRepositoryInterface::class),
+    ),
+);
+$container->bind(
+    \Daems\Application\Governance\ExpireOverdueBoardDecisionsCron::class,
+    static fn(Container $c) => new \Daems\Application\Governance\ExpireOverdueBoardDecisionsCron(
+        $c->make(\Daems\Domain\Governance\BoardDecisionRepositoryInterface::class),
+    ),
+);
+
+// BootstrapBoard with user-lookup closure
+$container->bind(
+    \Daems\Application\Governance\BootstrapBoard::class,
+    static fn(Container $c) => new \Daems\Application\Governance\BootstrapBoard(
+        $c->make(\Daems\Domain\Governance\BoardRepositoryInterface::class),
+        $c->make(\Daems\Domain\Governance\BoardMemberRepositoryInterface::class),
+        static function (\Daems\Domain\User\UserId $id) use ($c): array {
+            $pdo = $c->make(Connection::class)->pdo();
+            $stmt = $pdo->prepare('SELECT membership_type, membership_status FROM users WHERE id = ?');
+            $stmt->execute([$id->value()]);
+            $r = $stmt->fetch(\PDO::FETCH_ASSOC);
+            return [
+                'membership_type'   => is_array($r) && is_string($r['membership_type'] ?? null) ? $r['membership_type'] : 'BASIC',
+                'membership_status' => is_array($r) && is_string($r['membership_status'] ?? null) ? $r['membership_status'] : 'inactive',
+            ];
+        },
+    ),
+);
+
+// 8 Propose* use cases
+$container->bind(
+    \Daems\Application\Governance\Propose\ProposeApproveBasic::class,
+    static fn(Container $c) => new \Daems\Application\Governance\Propose\ProposeApproveBasic(
+        $c->make(\Daems\Domain\Governance\BoardRepositoryInterface::class),
+        $c->make(\Daems\Domain\Governance\BoardDecisionRepositoryInterface::class),
+        $c->make(\Daems\Domain\Governance\BoardDelegationRepositoryInterface::class),
+        $c->make(\Daems\Domain\Governance\TenantGovernanceSettingsRepositoryInterface::class),
+        static function (string $applicationId) use ($c): array {
+            $pdo = $c->make(Connection::class)->pdo();
+            $stmt = $pdo->prepare('SELECT status FROM member_applications WHERE id = ?');
+            $stmt->execute([$applicationId]);
+            $r = $stmt->fetch(\PDO::FETCH_ASSOC);
+            return ['status' => is_array($r) && is_string($r['status'] ?? null) ? $r['status'] : 'unknown'];
+        },
+    ),
+);
+$container->bind(
+    \Daems\Application\Governance\Propose\ProposeInviteFull::class,
+    static fn(Container $c) => new \Daems\Application\Governance\Propose\ProposeInviteFull(
+        $c->make(\Daems\Domain\Governance\BoardRepositoryInterface::class),
+        $c->make(\Daems\Domain\Governance\BoardDecisionRepositoryInterface::class),
+        $c->make(\Daems\Domain\Governance\BoardDelegationRepositoryInterface::class),
+        $c->make(\Daems\Domain\Governance\TenantGovernanceSettingsRepositoryInterface::class),
+        $c->make(\Daems\Domain\Membership\IsEligibleForFullMembership::class),
+        static function (\Daems\Domain\User\UserId $id) use ($c): array {
+            $pdo = $c->make(Connection::class)->pdo();
+            $stmt = $pdo->prepare('SELECT membership_type, membership_status, membership_started_at FROM users WHERE id = ?');
+            $stmt->execute([$id->value()]);
+            $r = $stmt->fetch(\PDO::FETCH_ASSOC);
+            return [
+                'membership_type'       => is_array($r) && is_string($r['membership_type']       ?? null) ? $r['membership_type']       : 'BASIC',
+                'membership_status'     => is_array($r) && is_string($r['membership_status']     ?? null) ? $r['membership_status']     : 'inactive',
+                'membership_started_at' => is_array($r) && is_string($r['membership_started_at'] ?? null) ? $r['membership_started_at'] : null,
+            ];
+        },
+    ),
+);
+$container->bind(
+    \Daems\Application\Governance\Propose\ProposeAwardSubTier::class,
+    static fn(Container $c) => new \Daems\Application\Governance\Propose\ProposeAwardSubTier(
+        $c->make(\Daems\Domain\Governance\BoardRepositoryInterface::class),
+        $c->make(\Daems\Domain\Governance\BoardDecisionRepositoryInterface::class),
+        $c->make(\Daems\Domain\Governance\BoardDelegationRepositoryInterface::class),
+        $c->make(\Daems\Domain\Governance\TenantGovernanceSettingsRepositoryInterface::class),
+        $c->make(\Daems\Domain\Membership\TenantMembershipSubTierRepositoryInterface::class),
+        $c->make(\Daems\Domain\Membership\MemberSubTierAwardRepositoryInterface::class),
+        static function (\Daems\Domain\User\UserId $id) use ($c): array {
+            $pdo = $c->make(Connection::class)->pdo();
+            $stmt = $pdo->prepare('SELECT membership_type, membership_status FROM users WHERE id = ?');
+            $stmt->execute([$id->value()]);
+            $r = $stmt->fetch(\PDO::FETCH_ASSOC);
+            return [
+                'membership_type'   => is_array($r) && is_string($r['membership_type']   ?? null) ? $r['membership_type']   : 'BASIC',
+                'membership_status' => is_array($r) && is_string($r['membership_status'] ?? null) ? $r['membership_status'] : 'inactive',
+            ];
+        },
+    ),
+);
+$container->bind(
+    \Daems\Application\Governance\Propose\ProposeRevokeSubTier::class,
+    static fn(Container $c) => new \Daems\Application\Governance\Propose\ProposeRevokeSubTier(
+        $c->make(\Daems\Domain\Governance\BoardRepositoryInterface::class),
+        $c->make(\Daems\Domain\Governance\BoardDecisionRepositoryInterface::class),
+        $c->make(\Daems\Domain\Governance\TenantGovernanceSettingsRepositoryInterface::class),
+        $c->make(\Daems\Domain\Membership\MemberSubTierAwardRepositoryInterface::class),
+    ),
+);
+$container->bind(
+    \Daems\Application\Governance\Propose\ProposeSubTierCrud::class,
+    static fn(Container $c) => new \Daems\Application\Governance\Propose\ProposeSubTierCrud(
+        $c->make(\Daems\Domain\Governance\BoardRepositoryInterface::class),
+        $c->make(\Daems\Domain\Governance\BoardDecisionRepositoryInterface::class),
+        $c->make(\Daems\Domain\Governance\TenantGovernanceSettingsRepositoryInterface::class),
+        $c->make(\Daems\Domain\Membership\TenantMembershipSubTierRepositoryInterface::class),
+        $c->make(\Daems\Domain\Membership\MemberSubTierAwardRepositoryInterface::class),
+    ),
+);
+$container->bind(
+    \Daems\Application\Governance\Propose\ProposeRemoveBoardMember::class,
+    static fn(Container $c) => new \Daems\Application\Governance\Propose\ProposeRemoveBoardMember(
+        $c->make(\Daems\Domain\Governance\BoardRepositoryInterface::class),
+        $c->make(\Daems\Domain\Governance\BoardDecisionRepositoryInterface::class),
+        $c->make(\Daems\Domain\Governance\TenantGovernanceSettingsRepositoryInterface::class),
+        $c->make(\Daems\Domain\Governance\BoardMemberRepositoryInterface::class),
+    ),
+);
+$container->bind(
+    \Daems\Application\Governance\Propose\ProposeDelegateAuthority::class,
+    static fn(Container $c) => new \Daems\Application\Governance\Propose\ProposeDelegateAuthority(
+        $c->make(\Daems\Domain\Governance\BoardRepositoryInterface::class),
+        $c->make(\Daems\Domain\Governance\BoardDecisionRepositoryInterface::class),
+        $c->make(\Daems\Domain\Governance\TenantGovernanceSettingsRepositoryInterface::class),
+    ),
+);
+$container->bind(
+    \Daems\Application\Governance\Propose\ProposeRevokeDelegation::class,
+    static fn(Container $c) => new \Daems\Application\Governance\Propose\ProposeRevokeDelegation(
+        $c->make(\Daems\Domain\Governance\BoardRepositoryInterface::class),
+        $c->make(\Daems\Domain\Governance\BoardDecisionRepositoryInterface::class),
+        $c->make(\Daems\Domain\Governance\TenantGovernanceSettingsRepositoryInterface::class),
+        $c->make(\Daems\Domain\Governance\BoardDelegationRepositoryInterface::class),
+    ),
+);
+
+// Delegate variants (3)
+$container->bind(
+    \Daems\Application\Governance\Delegate\ApproveBasicAsDelegate::class,
+    static fn(Container $c) => new \Daems\Application\Governance\Delegate\ApproveBasicAsDelegate(
+        $c->make(\Daems\Application\Governance\Propose\ProposeApproveBasic::class),
+        $c->make(\Daems\Domain\Governance\BoardDecisionRepositoryInterface::class),
+        $c->make(\Daems\Domain\Governance\BoardDelegationRepositoryInterface::class),
+        $c->make(\Daems\Application\Governance\Executor\ApproveBasicExecutor::class),
+    ),
+);
+$container->bind(
+    \Daems\Application\Governance\Delegate\InviteFullAsDelegate::class,
+    static fn(Container $c) => new \Daems\Application\Governance\Delegate\InviteFullAsDelegate(
+        $c->make(\Daems\Application\Governance\Propose\ProposeInviteFull::class),
+        $c->make(\Daems\Domain\Governance\BoardDecisionRepositoryInterface::class),
+        $c->make(\Daems\Domain\Governance\BoardDelegationRepositoryInterface::class),
+        $c->make(\Daems\Application\Governance\Executor\InviteFullExecutor::class),
+    ),
+);
+$container->bind(
+    \Daems\Application\Governance\Delegate\AwardSubTierAsDelegate::class,
+    static fn(Container $c) => new \Daems\Application\Governance\Delegate\AwardSubTierAsDelegate(
+        $c->make(\Daems\Application\Governance\Propose\ProposeAwardSubTier::class),
+        $c->make(\Daems\Domain\Governance\BoardDecisionRepositoryInterface::class),
+        $c->make(\Daems\Domain\Governance\BoardDelegationRepositoryInterface::class),
+        $c->make(\Daems\Application\Governance\Executor\AwardSubTierExecutor::class),
+    ),
+);
+
+// Membership: 4 expulsion use cases
+$container->bind(
+    \Daems\Application\Membership\InitiateMemberExpulsion::class,
+    static fn(Container $c) => new \Daems\Application\Membership\InitiateMemberExpulsion(
+        $c->make(\Daems\Domain\Governance\BoardRepositoryInterface::class),
+        $c->make(\Daems\Domain\Governance\BoardMemberRepositoryInterface::class),
+        $c->make(\Daems\Domain\Membership\MemberExpulsionRepositoryInterface::class),
+        $c->make(\Daems\Domain\Governance\TenantGovernanceSettingsRepositoryInterface::class),
+    ),
+);
+$container->bind(
+    \Daems\Application\Membership\SubmitExpulsionStatement::class,
+    static fn(Container $c) => new \Daems\Application\Membership\SubmitExpulsionStatement(
+        $c->make(\Daems\Domain\Membership\MemberExpulsionRepositoryInterface::class),
+    ),
+);
+$container->bind(
+    \Daems\Application\Membership\AdvanceExpulsionToVote::class,
+    static fn(Container $c) => new \Daems\Application\Membership\AdvanceExpulsionToVote(
+        $c->make(\Daems\Domain\Governance\BoardRepositoryInterface::class),
+        $c->make(\Daems\Domain\Governance\BoardMemberRepositoryInterface::class),
+        $c->make(\Daems\Domain\Membership\MemberExpulsionRepositoryInterface::class),
+        $c->make(\Daems\Domain\Governance\BoardDecisionRepositoryInterface::class),
+        $c->make(\Daems\Domain\Governance\TenantGovernanceSettingsRepositoryInterface::class),
+    ),
+);
+$container->bind(
+    \Daems\Application\Membership\FileExpulsionAppeal::class,
+    static fn(Container $c) => new \Daems\Application\Membership\FileExpulsionAppeal(
+        $c->make(\Daems\Domain\Membership\MemberExpulsionRepositoryInterface::class),
+    ),
+);
+
+// Audit: GsaForceApproveBasic
+$container->bind(
+    \Daems\Application\Audit\GsaForceApproveBasic::class,
+    static fn(Container $c) => new \Daems\Application\Audit\GsaForceApproveBasic(
+        $c->make(\Daems\Domain\Audit\GsaOverrideRepositoryInterface::class),
+        static function (string $applicationId, \DateTimeImmutable $at, ?string $viaDelegationDecisionId) use ($c): void {
+            $pdo = $c->make(Connection::class)->pdo();
+            $stmt = $pdo->prepare("UPDATE member_applications SET status = 'approved', approved_at = ? WHERE id = ?");
+            $stmt->execute([$at->format('Y-m-d H:i:s'), $applicationId]);
+        },
+    ),
+);
+
+// Controllers (6)
+$container->bind(
+    \Daems\Infrastructure\Adapter\Api\Controller\Backstage\Governance\BoardController::class,
+    static fn(Container $c) => new \Daems\Infrastructure\Adapter\Api\Controller\Backstage\Governance\BoardController(
+        $c->make(\Daems\Domain\Governance\BoardRepositoryInterface::class),
+        $c->make(\Daems\Domain\Governance\BoardMemberRepositoryInterface::class),
+        $c->make(\Daems\Application\Governance\BootstrapBoard::class),
+    ),
+);
+$container->bind(
+    \Daems\Infrastructure\Adapter\Api\Controller\Backstage\Governance\BoardDecisionController::class,
+    static fn(Container $c) => new \Daems\Infrastructure\Adapter\Api\Controller\Backstage\Governance\BoardDecisionController(
+        $c->make(\Daems\Domain\Governance\BoardRepositoryInterface::class),
+        $c->make(\Daems\Domain\Governance\BoardDecisionRepositoryInterface::class),
+        $c->make(\Daems\Domain\Governance\BoardDecisionVoteRepositoryInterface::class),
+        $c->make(\Daems\Domain\Governance\BoardMemberRepositoryInterface::class),
+        $c->make(\Daems\Application\Governance\Propose\ProposeApproveBasic::class),
+        $c->make(\Daems\Application\Governance\Delegate\ApproveBasicAsDelegate::class),
+        $c->make(\Daems\Application\Governance\Propose\ProposeInviteFull::class),
+        $c->make(\Daems\Application\Governance\Delegate\InviteFullAsDelegate::class),
+        $c->make(\Daems\Application\Governance\Propose\ProposeAwardSubTier::class),
+        $c->make(\Daems\Application\Governance\Delegate\AwardSubTierAsDelegate::class),
+        $c->make(\Daems\Application\Governance\Propose\ProposeRevokeSubTier::class),
+        $c->make(\Daems\Application\Governance\Propose\ProposeSubTierCrud::class),
+        $c->make(\Daems\Application\Governance\Propose\ProposeRemoveBoardMember::class),
+        $c->make(\Daems\Application\Governance\Propose\ProposeDelegateAuthority::class),
+        $c->make(\Daems\Application\Governance\Propose\ProposeRevokeDelegation::class),
+        $c->make(\Daems\Application\Governance\CastBoardVote::class),
+        $c->make(\Daems\Application\Governance\WithdrawBoardDecision::class),
+    ),
+);
+$container->bind(
+    \Daems\Infrastructure\Adapter\Api\Controller\Backstage\Governance\ExpulsionController::class,
+    static fn(Container $c) => new \Daems\Infrastructure\Adapter\Api\Controller\Backstage\Governance\ExpulsionController(
+        $c->make(\Daems\Domain\Membership\MemberExpulsionRepositoryInterface::class),
+        $c->make(\Daems\Application\Membership\InitiateMemberExpulsion::class),
+        $c->make(\Daems\Application\Membership\SubmitExpulsionStatement::class),
+        $c->make(\Daems\Application\Membership\AdvanceExpulsionToVote::class),
+        $c->make(\Daems\Application\Membership\FileExpulsionAppeal::class),
+    ),
+);
+$container->bind(
+    \Daems\Infrastructure\Adapter\Api\Controller\Backstage\Governance\DelegationController::class,
+    static fn(Container $c) => new \Daems\Infrastructure\Adapter\Api\Controller\Backstage\Governance\DelegationController(
+        $c->make(\Daems\Domain\Governance\BoardDelegationRepositoryInterface::class),
+    ),
+);
+$container->bind(
+    \Daems\Infrastructure\Adapter\Api\Controller\Backstage\Governance\EligibilityController::class,
+    static fn(Container $c) => new \Daems\Infrastructure\Adapter\Api\Controller\Backstage\Governance\EligibilityController(
+        static function (\Daems\Domain\Tenant\TenantId $tenantId, \DateTimeImmutable $at) use ($c): array {
+            $pdo = $c->make(Connection::class)->pdo();
+            $threshold = $at->modify('-12 months')->format('Y-m-d H:i:s');
+            $stmt = $pdo->prepare(
+                "SELECT u.id, u.name, u.member_number, u.membership_started_at,
+                        TIMESTAMPDIFF(MONTH, u.membership_started_at, ?) AS months_since_join
+                   FROM users u
+                   JOIN user_tenants ut ON ut.user_id = u.id
+                  WHERE ut.tenant_id = ?
+                    AND u.membership_type = 'BASIC'
+                    AND u.membership_status = 'active'
+                    AND u.membership_started_at IS NOT NULL
+                    AND u.membership_started_at <= ?
+                  ORDER BY u.membership_started_at ASC"
+            );
+            $stmt->execute([$at->format('Y-m-d H:i:s'), $tenantId->value(), $threshold]);
+            $out = [];
+            foreach ($stmt->fetchAll(\PDO::FETCH_ASSOC) as $r) {
+                if (!is_array($r)) continue;
+                $out[] = [
+                    'id'                    => is_string($r['id'] ?? null) ? $r['id'] : '',
+                    'name'                  => is_string($r['name'] ?? null) ? $r['name'] : '',
+                    'member_number'         => is_string($r['member_number'] ?? null) ? $r['member_number'] : null,
+                    'membership_started_at' => is_string($r['membership_started_at'] ?? null) ? $r['membership_started_at'] : '',
+                    'months_since_join'     => is_int($r['months_since_join'] ?? null) ? $r['months_since_join'] : (int) (string) ($r['months_since_join'] ?? 0),
+                ];
+            }
+            return $out;
+        },
+    ),
+);
+$container->bind(
+    \Daems\Infrastructure\Adapter\Api\Controller\Backstage\Governance\GsaOverrideController::class,
+    static fn(Container $c) => new \Daems\Infrastructure\Adapter\Api\Controller\Backstage\Governance\GsaOverrideController(
+        $c->make(\Daems\Application\Audit\GsaForceApproveBasic::class),
+    ),
+);
+
 // Dashboard — widget registry, repo, use cases, widget instances.
 // MUST be bound before module bindings run so modules can register their widgets.
 $container->singleton(
