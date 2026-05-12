@@ -1023,11 +1023,11 @@ $container->bind(
         $c->make(Connection::class)->pdo(),
     ),
 );
-// TODO(0.7-wave-d): replace InMemoryUserFeeOverrideRepository with SqlUserFeeOverrideRepository
-//                   before deploying. Test-namespace classes are not autoloaded in prod.
 $container->bind(
     \Daems\Domain\Membership\Billing\UserFeeOverrideRepositoryInterface::class,
-    static fn() => new \Daems\Tests\Support\Fake\InMemoryUserFeeOverrideRepository(),
+    static fn(Container $c) => new \Daems\Infrastructure\Adapter\Persistence\Sql\SqlUserFeeOverrideRepository(
+        $c->make(Connection::class)->pdo(),
+    ),
 );
 $container->bind(
     \Daems\Application\Membership\Billing\GenerateAnniversaryInvoice\GenerateAnniversaryInvoice::class,

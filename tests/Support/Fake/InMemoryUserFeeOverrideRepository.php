@@ -10,27 +10,54 @@ use Daems\Domain\Tenant\TenantId;
 use Daems\Domain\User\UserId;
 use DateTimeImmutable;
 
-/**
- * Wave C version: returns no overrides for any query. Wave D replaces this
- * with a real in-memory store; until then GenerateAnniversaryInvoice always
- * applies the full schedule price (no overrides).
- */
 final class InMemoryUserFeeOverrideRepository implements UserFeeOverrideRepositoryInterface
 {
-    public function findActiveFor(TenantId $tenantId, UserId $userId, string $feeType, DateTimeImmutable $asOf): ?UserFeeOverride
-    {
-        return null;
-    }
+    /** @var array<string, UserFeeOverride> */
+    private array $byId = [];
 
-    public function save(UserFeeOverride $override): void {}
-
-    public function listForTenant(TenantId $tenantId, bool $activeOnly = false): array
+    public function save(UserFeeOverride $override): void
     {
-        return [];
+        $this->byId[$override->id()->value()] = $override;
     }
 
     public function findById(UserFeeOverrideId $id): ?UserFeeOverride
     {
+        return $this->byId[$id->value()] ?? null;
+    }
+
+    public function findActiveFor(TenantId $tenantId, UserId $userId, string $feeType, DateTimeImmutable $asOf): ?UserFeeOverride
+    {
+        foreach ($this->byId as $o) {
+            if (!$o->tenantId()->equals($tenantId)) {
+                continue;
+            }
+            if (!$o->userId()->equals($userId)) {
+                continue;
+            }
+            if ($o->feeType()->value !== $feeType) {
+                continue;
+            }
+            if (!$o->isActiveAt($asOf)) {
+                continue;
+            }
+            return $o;
+        }
         return null;
+    }
+
+    public function listForTenant(TenantId $tenantId, bool $activeOnly = false): array
+    {
+        $now = new DateTimeImmutable();
+        $out = [];
+        foreach ($this->byId as $o) {
+            if (!$o->tenantId()->equals($tenantId)) {
+                continue;
+            }
+            if ($activeOnly && !$o->isActiveAt($now)) {
+                continue;
+            }
+            $out[] = $o;
+        }
+        return array_values($out);
     }
 }
