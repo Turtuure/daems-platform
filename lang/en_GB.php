@@ -564,7 +564,7 @@ return [
     'sidebar.group.members'       => 'Members',
     'sidebar.group.community'     => 'Community',
     'sidebar.group.content'       => 'Content',
-    'sidebar.group.governance'    => 'Governance',
+    'sidebar.group.governance'    => 'Association governance',
     'sidebar.group.system'        => 'System',
 
     // ── Shell items ──────────────────────────────────────────────

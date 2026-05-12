@@ -568,7 +568,7 @@ return [
     'sidebar.group.members'       => 'Wanachama',
     'sidebar.group.community'     => 'Jamii',
     'sidebar.group.content'       => 'Maudhui',
-    'sidebar.group.governance'    => 'Utawala',
+    'sidebar.group.governance'    => 'Utawala wa chama',
     'sidebar.group.system'        => 'Mfumo',
 
     // ── Shell items ──────────────────────────────────────────────

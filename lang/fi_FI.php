@@ -564,7 +564,7 @@ return [
     'sidebar.group.members'       => 'Jäsenet',
     'sidebar.group.community'     => 'Yhteisö',
     'sidebar.group.content'       => 'Sisältö',
-    'sidebar.group.governance'    => 'Hallinto',
+    'sidebar.group.governance'    => 'Yhdistyksen hallinto',
     'sidebar.group.system'        => 'Järjestelmä',
 
     // ── Shell items ──────────────────────────────────────────────

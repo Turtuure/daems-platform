@@ -41,8 +41,8 @@ return [
         'is_core'           => false,
         'default_available' => true,
         'sidebar'           => new SidebarEntry(
-            group: 'members',
-            order: 10,
+            group: 'governance',
+            order: 5,
             icon: 'users',
             href: '/backstage/members',
         ),
