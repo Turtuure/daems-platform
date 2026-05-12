@@ -27,7 +27,7 @@ use InvalidArgumentException;
  * Routes based on tenant_governance_settings.requires_formal_decision_for_fees:
  *   false → create rows status=Active directly, supersede priors, return decision_id=null
  *   true  → create rows status=Proposed + a BoardDecision (decision_type='annual_fee_schedule'),
- *           return its id. AnnualFeeSchedulePassedHandler (B12) flips Proposed→Active on
+ *           return its id. AnnualFeeScheduleExecutor flips Proposed→Active on
  *           decision pass via reverse-FK lookup (no payload on BoardDecision itself).
  */
 final class DraftAnnualFeeSchedule

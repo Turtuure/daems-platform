@@ -19,8 +19,9 @@ interface AnnualFeeScheduleRepositoryInterface
     public function findActiveFor(TenantId $tenantId, int $year, MembershipType $feeType): ?AnnualFeeSchedule;
 
     /**
-     * All proposed-status rows for a year (used by AnnualFeeSchedulePassedHandler
-     * to activate them after a board decision passes).
+     * All proposed-status rows for a year (admin UI listing or pre-decision audit).
+     * For decision-passed activation, prefer `findProposedByDecision()` — it does not
+     * require the year to be known up front.
      *
      * @return list<AnnualFeeSchedule>
      */
