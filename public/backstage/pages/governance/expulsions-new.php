@@ -19,6 +19,9 @@ $breadcrumbs = [
     ['label' => I18n::t('backstage.governance.expulsions.action.initiate')],
 ];
 
+// Pre-fill target_user_id from ?target_user_id= query param (set by members page row-action).
+$prefilledTargetUserId = trim((string) ($_GET['target_user_id'] ?? ''));
+
 ob_start();
 ?>
 <div class="page-header">
@@ -37,6 +40,7 @@ ob_start();
         <label class="expulsions-form__label">
             <?= I18n::e('backstage.governance.expulsions.new.target_label') ?>
             <input name="target_user_id" class="form-control" required
+                   value="<?= htmlspecialchars($prefilledTargetUserId, ENT_QUOTES, 'UTF-8') ?>"
                    placeholder="<?= I18n::e('backstage.governance.expulsions.new.target_placeholder') ?>">
         </label>
 
