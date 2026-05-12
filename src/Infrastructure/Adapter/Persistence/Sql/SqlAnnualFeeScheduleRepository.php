@@ -89,6 +89,22 @@ final class SqlAnnualFeeScheduleRepository implements AnnualFeeScheduleRepositor
         return $out;
     }
 
+    public function findProposedByDecision(string $decisionId): array
+    {
+        $stmt = $this->pdo->prepare(
+            'SELECT * FROM annual_fee_schedules
+             WHERE decision_id = ? AND status = ?'
+        );
+        $stmt->execute([$decisionId, AnnualFeeScheduleStatus::Proposed->value]);
+        $rows = $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
+        $out = [];
+        foreach ($rows as $r) {
+            if (!is_array($r)) continue;
+            $out[] = $this->hydrate($r);
+        }
+        return $out;
+    }
+
     public function listForTenantYear(TenantId $tenantId, int $year): array
     {
         $stmt = $this->pdo->prepare(

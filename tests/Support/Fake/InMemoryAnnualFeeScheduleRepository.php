@@ -52,6 +52,19 @@ final class InMemoryAnnualFeeScheduleRepository implements AnnualFeeScheduleRepo
         return $out;
     }
 
+    public function findProposedByDecision(string $decisionId): array
+    {
+        $out = [];
+        foreach ($this->byId as $s) {
+            if ($s->status() === AnnualFeeScheduleStatus::Proposed
+                && $s->decisionId() === $decisionId
+            ) {
+                $out[] = $s;
+            }
+        }
+        return $out;
+    }
+
     public function listForTenantYear(TenantId $tenantId, int $year): array
     {
         $out = [];

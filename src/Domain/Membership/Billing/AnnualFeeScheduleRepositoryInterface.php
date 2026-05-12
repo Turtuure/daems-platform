@@ -27,6 +27,15 @@ interface AnnualFeeScheduleRepositoryInterface
     public function findProposedFor(TenantId $tenantId, int $year, ?string $decisionId = null): array;
 
     /**
+     * Lookup all proposed rows tied to a specific board_decisions row id.
+     * Used by AnnualFeeScheduleExecutor when the formal-decision-flow decision
+     * resolves to Passed.
+     *
+     * @return list<AnnualFeeSchedule>
+     */
+    public function findProposedByDecision(string $decisionId): array;
+
+    /**
      * All rows for a year (admin UI listing).
      *
      * @return list<AnnualFeeSchedule>
