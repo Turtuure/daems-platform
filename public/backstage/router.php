@@ -70,7 +70,10 @@ $map = [
     '/settings/modules'      => __DIR__ . '/pages/settings/modules/index.php',
     '/project-proposals'     => __DIR__ . '/pages/project-proposals/index.php',
     '/platform/tenants'      => __DIR__ . '/pages/platform/tenants/index.php',
-    '/governance/board'      => __DIR__ . '/pages/governance/board.php',
+    '/governance/board'              => __DIR__ . '/pages/governance/board.php',
+    '/governance/decisions'          => __DIR__ . '/pages/governance/decisions-list.php',
+    '/governance/decisions/new'      => __DIR__ . '/pages/governance/decisions-new.php',
+    '/governance/decisions/detail'   => __DIR__ . '/pages/governance/decisions-detail.php',
 ];
 
 if (isset($map[$sub]) && is_file($map[$sub])) {
