@@ -59,7 +59,44 @@ final class BackstageSidebar
         //    header Ctrl+K is the canonical search affordance.
         $items[] = ['group' => 'shell', 'label_key' => 'shell.dashboard', 'href' => '/backstage/', 'icon' => 'home', 'order' => 0];
 
-        // 2. System group — admin/configuration items grouped at the bottom.
+        // 2. Governance group — board management (admin + GSA).
+        $items[] = [
+            'group'     => 'governance',
+            'label_key' => 'shell.governance.board',
+            'href'      => '/backstage/governance/board',
+            'icon'      => 'shield',
+            'order'     => 10,
+        ];
+        $items[] = [
+            'group'     => 'governance',
+            'label_key' => 'shell.governance.decisions',
+            'href'      => '/backstage/governance/decisions',
+            'icon'      => 'check-square',
+            'order'     => 20,
+        ];
+        $items[] = [
+            'group'     => 'governance',
+            'label_key' => 'shell.governance.expulsions',
+            'href'      => '/backstage/governance/expulsions',
+            'icon'      => 'user-x',
+            'order'     => 30,
+        ];
+        $items[] = [
+            'group'     => 'governance',
+            'label_key' => 'shell.governance.delegations',
+            'href'      => '/backstage/governance/delegations',
+            'icon'      => 'key',
+            'order'     => 40,
+        ];
+        $items[] = [
+            'group'     => 'governance',
+            'label_key' => 'shell.governance.settings',
+            'href'      => '/backstage/governance/settings',
+            'icon'      => 'sliders',
+            'order'     => 50,
+        ];
+
+        // 3. System group — admin/configuration items grouped at the bottom.
         //    Notifications (everyone), Settings (everyone), Tenants (GSA only).
         $items[] = ['group' => 'system', 'label_key' => 'shell.notifications', 'href' => '/backstage/notifications', 'icon' => 'bell',     'order' => 10];
         $items[] = ['group' => 'system', 'label_key' => 'shell.settings',      'href' => '/backstage/settings',      'icon' => 'settings', 'order' => 20];
@@ -73,7 +110,7 @@ final class BackstageSidebar
             ];
         }
 
-        // 3. Module items — only for active modules that declare a sidebar entry.
+        // 4. Module items — only for active modules that declare a sidebar entry.
         foreach ($this->registry->all() as $name => $manifest) {
             $sidebar = $manifest->sidebar();
             if ($sidebar === null) {
@@ -91,7 +128,7 @@ final class BackstageSidebar
             ];
         }
 
-        // 4. Group-aware sort: by group rank, then intra-group order.
+        // 5. Group-aware sort: by group rank, then intra-group order.
         usort(
             $items,
             static function (array $a, array $b): int {

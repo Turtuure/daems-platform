@@ -1,0 +1,126 @@
+/* Backstage Governance — Expulsions shared styles (list, new, detail) */
+
+/* ── Filters bar ─────────────────────────────────────────────────── */
+.expulsions-filters {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+  margin-bottom: 1rem;
+  flex-wrap: wrap;
+}
+
+/* ── List table ──────────────────────────────────────────────────── */
+.expulsions-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.expulsions-table th,
+.expulsions-table td {
+  padding: 0.5rem 0.75rem;
+  border-bottom: 1px solid var(--border, #e2e8f0);
+  text-align: left;
+  font-size: 0.9rem;
+}
+
+.expulsions-table th {
+  font-weight: 600;
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--muted, #64748b);
+}
+
+/* ── Empty state ─────────────────────────────────────────────────── */
+.expulsions-empty {
+  color: var(--muted, #64748b);
+  font-style: italic;
+  padding: 2rem 0;
+}
+
+/* ── Status badges (extends decisions.css badge base) ────────────── */
+/* decisions.css already provides .badge and .badge--pending/passed/rejected/expired/withdrawn */
+/* Additional expulsion-specific statuses: */
+.badge--hearing       { background: #dbeafe; color: #1d4ed8; }
+.badge--awaiting_vote { background: #fef9c3; color: #854d0e; }
+.badge--expelled      { background: #fee2e2; color: #b91c1c; }
+.badge--appealed      { background: #f3e8ff; color: #6b21a8; }
+
+/* ── New form ────────────────────────────────────────────────────── */
+.expulsions-new-wrap {
+  max-width: 640px;
+}
+
+.expulsions-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+}
+
+.expulsions-form__label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  font-weight: 500;
+  font-size: 0.9rem;
+}
+
+.expulsions-form__label input,
+.expulsions-form__label textarea {
+  font-size: 0.95rem;
+  font-weight: 400;
+}
+
+.expulsions-form__actions {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.expulsions-hint {
+  color: var(--muted, #64748b);
+  font-size: 0.85em;
+  margin: 0;
+}
+
+/* ── Detail page ─────────────────────────────────────────────────── */
+.expulsion-meta {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 0.3rem 1.25rem;
+  margin: 1rem 0 1.5rem;
+  font-size: 0.9rem;
+}
+
+.expulsion-meta dt {
+  font-weight: 600;
+  color: var(--muted, #64748b);
+}
+
+.expulsions-section-heading {
+  font-size: 0.95rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--muted, #64748b);
+  margin: 1.5rem 0 0.5rem;
+}
+
+.expulsion-text-block {
+  background: var(--surface, #f8fafc);
+  border: 1px solid var(--border, #e2e8f0);
+  border-radius: 6px;
+  padding: 0.75rem 1rem;
+  font-family: inherit;
+  font-size: 0.9rem;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+/* ── Action panels ───────────────────────────────────────────────── */
+.expulsion-action-panel {
+  margin-top: 2rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--border, #e2e8f0);
+  max-width: 480px;
+}

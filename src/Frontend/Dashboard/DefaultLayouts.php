@@ -24,15 +24,19 @@ final class DefaultLayouts
     private static function admin(): array
     {
         return [
-            new LayoutEntry('core.members_kpi',                WidgetSpan::of(1)),
-            new LayoutEntry('core.applications_kpi',           WidgetSpan::of(1)),
-            new LayoutEntry('events.events_kpi',               WidgetSpan::of(1)),
-            new LayoutEntry('projects.projects_kpi',           WidgetSpan::of(1)),
-            new LayoutEntry('members.members_by_tier_kpi',     WidgetSpan::of(2)),
-            new LayoutEntry('core.member_growth_chart',        WidgetSpan::of(3)),
-            new LayoutEntry('core.quick_actions',              WidgetSpan::of(1)),
-            new LayoutEntry('core.pending_apps_list',          WidgetSpan::of(2)),
-            new LayoutEntry('core.activity_feed',              WidgetSpan::of(2)),
+            new LayoutEntry('core.members_kpi',                           WidgetSpan::of(1)),
+            new LayoutEntry('core.applications_kpi',                      WidgetSpan::of(1)),
+            new LayoutEntry('events.events_kpi',                          WidgetSpan::of(1)),
+            new LayoutEntry('projects.projects_kpi',                      WidgetSpan::of(1)),
+            new LayoutEntry('members.members_by_tier_kpi',                WidgetSpan::of(2)),
+            new LayoutEntry('core.member_growth_chart',                   WidgetSpan::of(3)),
+            new LayoutEntry('core.quick_actions',                         WidgetSpan::of(1)),
+            new LayoutEntry('core.pending_apps_list',                     WidgetSpan::of(2)),
+            new LayoutEntry('core.activity_feed',                         WidgetSpan::of(2)),
+            new LayoutEntry('governance.pending_decisions_for_me_kpi',    WidgetSpan::of(1)),
+            new LayoutEntry('governance.open_expulsions_kpi',             WidgetSpan::of(1)),
+            new LayoutEntry('governance.delegations_active_kpi',          WidgetSpan::of(1)),
+            new LayoutEntry('governance.eligible_for_full_membership',    WidgetSpan::of(2)),
         ];
     }
 
@@ -58,21 +62,25 @@ final class DefaultLayouts
         // cross-tenant platform-overview widgets below.
         return [
             // Active-tenant KPIs (real data via GetAdminStats)
-            new LayoutEntry('core.members_kpi',               WidgetSpan::of(1)),
-            new LayoutEntry('core.applications_kpi',          WidgetSpan::of(1)),
-            new LayoutEntry('events.events_kpi',              WidgetSpan::of(1)),
-            new LayoutEntry('projects.projects_kpi',          WidgetSpan::of(1)),
-            new LayoutEntry('members.members_by_tier_kpi',    WidgetSpan::of(2)),
-            new LayoutEntry('core.member_growth_chart',       WidgetSpan::of(3)),
-            new LayoutEntry('core.pending_apps_list',         WidgetSpan::of(1)),
+            new LayoutEntry('core.members_kpi',                           WidgetSpan::of(1)),
+            new LayoutEntry('core.applications_kpi',                      WidgetSpan::of(1)),
+            new LayoutEntry('events.events_kpi',                          WidgetSpan::of(1)),
+            new LayoutEntry('projects.projects_kpi',                      WidgetSpan::of(1)),
+            new LayoutEntry('members.members_by_tier_kpi',                WidgetSpan::of(2)),
+            new LayoutEntry('core.member_growth_chart',                   WidgetSpan::of(3)),
+            new LayoutEntry('core.pending_apps_list',                     WidgetSpan::of(1)),
+            new LayoutEntry('governance.pending_decisions_for_me_kpi',    WidgetSpan::of(1)),
+            new LayoutEntry('governance.open_expulsions_kpi',             WidgetSpan::of(1)),
+            new LayoutEntry('governance.delegations_active_kpi',          WidgetSpan::of(1)),
+            new LayoutEntry('governance.eligible_for_full_membership',    WidgetSpan::of(2)),
             // Platform-wide overview (cross-tenant)
-            new LayoutEntry('platform.tenants_kpi',           WidgetSpan::of(1)),
-            new LayoutEntry('platform.users_kpi',             WidgetSpan::of(1)),
-            new LayoutEntry('platform.db_size_kpi',           WidgetSpan::of(1)),
-            new LayoutEntry('platform.uptime_kpi',            WidgetSpan::of(1)),
-            new LayoutEntry('platform.tenant_status_grid',    WidgetSpan::of(4)),
-            new LayoutEntry('platform.tenant_activity_chart', WidgetSpan::of(2)),
-            new LayoutEntry('core.activity_feed',             WidgetSpan::of(2)),
+            new LayoutEntry('platform.tenants_kpi',                       WidgetSpan::of(1)),
+            new LayoutEntry('platform.users_kpi',                         WidgetSpan::of(1)),
+            new LayoutEntry('platform.db_size_kpi',                       WidgetSpan::of(1)),
+            new LayoutEntry('platform.uptime_kpi',                        WidgetSpan::of(1)),
+            new LayoutEntry('platform.tenant_status_grid',                WidgetSpan::of(4)),
+            new LayoutEntry('platform.tenant_activity_chart',             WidgetSpan::of(2)),
+            new LayoutEntry('core.activity_feed',                         WidgetSpan::of(2)),
         ];
     }
 }

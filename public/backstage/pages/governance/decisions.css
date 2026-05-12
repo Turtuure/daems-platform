@@ -1,0 +1,246 @@
+/* Backstage Governance — Decisions shared styles (list, new wizard, detail) */
+
+/* ── Filters bar ─────────────────────────────────────────────────── */
+.decisions-filters {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+  margin-bottom: 1rem;
+  flex-wrap: wrap;
+}
+
+.decisions-filters__mine {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+
+/* ── List table ──────────────────────────────────────────────────── */
+.decisions-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.decisions-table th,
+.decisions-table td {
+  padding: 0.5rem 0.75rem;
+  border-bottom: 1px solid var(--border, #e2e8f0);
+  text-align: left;
+  font-size: 0.9rem;
+}
+
+.decisions-table th {
+  font-weight: 600;
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--muted, #64748b);
+}
+
+.decisions-tally {
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.decisions-tally__yes    { color: var(--status-success, #15803d); }
+.decisions-tally__no     { color: var(--status-error, #b91c1c); }
+.decisions-tally__abstain { color: var(--muted, #64748b); }
+
+/* ── Empty state ─────────────────────────────────────────────────── */
+.decisions-empty {
+  color: var(--muted, #64748b);
+  font-style: italic;
+  padding: 2rem 0;
+}
+
+/* ── Status badges ───────────────────────────────────────────────── */
+.badge {
+  display: inline-block;
+  padding: 0.15rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.8em;
+  font-weight: 500;
+  background: var(--surface, #f1f5f9);
+  color: var(--text, #1e293b);
+}
+
+.badge--pending   { background: #fef9c3; color: #854d0e; }
+.badge--passed    { background: #dcfce7; color: #15803d; }
+.badge--rejected  { background: #fee2e2; color: #b91c1c; }
+.badge--expired   { background: #f1f5f9; color: #475569; }
+.badge--withdrawn { background: #f1f5f9; color: #475569; }
+
+/* ── New wizard form ─────────────────────────────────────────────── */
+.decisions-new-wrap {
+  max-width: 640px;
+}
+
+.decisions-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+}
+
+.decisions-form__label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  font-weight: 500;
+  font-size: 0.9rem;
+}
+
+.decisions-form__label input,
+.decisions-form__label select,
+.decisions-form__label textarea {
+  font-size: 0.95rem;
+  font-weight: 400;
+}
+
+.decisions-form__type-fields {
+  border: 1px solid var(--border, #e2e8f0);
+  border-radius: 6px;
+  padding: 0.75rem 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.decisions-form__type-fields legend {
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--muted, #64748b);
+  padding: 0 0.25rem;
+}
+
+.decisions-form__actions {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.decisions-form--inline {
+  flex-direction: row;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.decisions-form__radio {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+
+/* ── Detail page ─────────────────────────────────────────────────── */
+.decision-meta {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 0.3rem 1.25rem;
+  margin: 1rem 0 1.5rem;
+  font-size: 0.9rem;
+}
+
+.decision-meta dt {
+  font-weight: 600;
+  color: var(--muted, #64748b);
+}
+
+.decisions-section-heading {
+  font-size: 0.95rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--muted, #64748b);
+  margin: 1.5rem 0 0.5rem;
+}
+
+.decision-payload {
+  background: var(--surface, #f8fafc);
+  border: 1px solid var(--border, #e2e8f0);
+  border-radius: 6px;
+  padding: 0.75rem 1rem;
+  font-family: var(--font-mono, monospace);
+  font-size: 0.82em;
+  overflow-x: auto;
+  white-space: pre-wrap;
+  word-break: break-all;
+}
+
+.decision-tally-summary {
+  font-variant-numeric: tabular-nums;
+  font-size: 0.9rem;
+  margin-bottom: 0.5rem;
+}
+
+.decision-votes-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  font-size: 0.88rem;
+  font-family: var(--font-mono, monospace);
+  color: var(--muted, #64748b);
+}
+
+.decision-votes-list li {
+  padding: 0.25rem 0;
+  border-bottom: 1px solid var(--border, #f1f5f9);
+}
+
+.decision-votes-list__empty {
+  font-style: italic;
+  font-family: inherit;
+}
+
+/* ── Action panels ───────────────────────────────────────────────── */
+.decision-action-panel {
+  margin-top: 2rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--border, #e2e8f0);
+  max-width: 480px;
+}
+
+/* ── Delegations table ───────────────────────────────────────────── */
+.delegations-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.delegations-table th,
+.delegations-table td {
+  padding: 0.5rem 0.75rem;
+  border-bottom: 1px solid var(--border, #e2e8f0);
+  text-align: left;
+  font-size: 0.9rem;
+}
+
+.delegations-table th {
+  font-weight: 600;
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--muted, #64748b);
+}
+
+/* ── Settings page ───────────────────────────────────────────────── */
+.settings-meta {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 0.5rem 1rem;
+  margin: 1rem 0;
+  max-width: 600px;
+}
+
+.settings-meta dt {
+  font-weight: 500;
+}
+
+/* ── Small button variant ────────────────────────────────────────── */
+.btn-sm {
+  font-size: 0.85em;
+  padding: 0.25rem 0.5rem;
+}

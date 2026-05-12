@@ -63,13 +63,22 @@ if ($sub === '/applications' && isset($daemsKnownModules['members']['backstage']
 }
 
 $map = [
-    ''                   => __DIR__ . '/pages/index.php',
-    '/notifications'     => __DIR__ . '/pages/notifications/index.php',
-    '/search'            => __DIR__ . '/pages/search/index.php',
-    '/settings'          => __DIR__ . '/pages/settings/index.php',
-    '/settings/modules'  => __DIR__ . '/pages/settings/modules/index.php',
-    '/project-proposals' => __DIR__ . '/pages/project-proposals/index.php',
-    '/platform/tenants'  => __DIR__ . '/pages/platform/tenants/index.php',
+    ''                       => __DIR__ . '/pages/index.php',
+    '/notifications'         => __DIR__ . '/pages/notifications/index.php',
+    '/search'                => __DIR__ . '/pages/search/index.php',
+    '/settings'              => __DIR__ . '/pages/settings/index.php',
+    '/settings/modules'      => __DIR__ . '/pages/settings/modules/index.php',
+    '/project-proposals'     => __DIR__ . '/pages/project-proposals/index.php',
+    '/platform/tenants'      => __DIR__ . '/pages/platform/tenants/index.php',
+    '/governance/board'              => __DIR__ . '/pages/governance/board.php',
+    '/governance/decisions'          => __DIR__ . '/pages/governance/decisions-list.php',
+    '/governance/decisions/new'      => __DIR__ . '/pages/governance/decisions-new.php',
+    '/governance/decisions/detail'   => __DIR__ . '/pages/governance/decisions-detail.php',
+    '/governance/expulsions'         => __DIR__ . '/pages/governance/expulsions-list.php',
+    '/governance/expulsions/new'     => __DIR__ . '/pages/governance/expulsions-new.php',
+    '/governance/expulsions/detail'  => __DIR__ . '/pages/governance/expulsions-detail.php',
+    '/governance/delegations'        => __DIR__ . '/pages/governance/delegations.php',
+    '/governance/settings'           => __DIR__ . '/pages/governance/settings.php',
 ];
 
 if (isset($map[$sub]) && is_file($map[$sub])) {

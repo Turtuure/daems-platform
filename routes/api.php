@@ -216,6 +216,99 @@ return static function (Router $router, Container $container): void {
         return $container->make(\Daems\Infrastructure\Adapter\Api\Controller\Backstage\Tenant\TenantSelfModulesController::class)->state($req, $params);
     }, [TenantContextMiddleware::class, AuthMiddleware::class]);
 
+    // Governance — board, decisions, expulsions, delegations, eligibility, GSA overrides
+    $router->get('/api/v1/backstage/governance/board', static function (Request $req) use ($container): Response {
+        return $container->make(\Daems\Infrastructure\Adapter\Api\Controller\Backstage\Governance\BoardController::class)->index($req);
+    }, [TenantContextMiddleware::class, AuthMiddleware::class]);
+
+    $router->post('/api/v1/backstage/governance/board/bootstrap', static function (Request $req) use ($container): Response {
+        return $container->make(\Daems\Infrastructure\Adapter\Api\Controller\Backstage\Governance\BoardController::class)->bootstrap($req);
+    }, [TenantContextMiddleware::class, AuthMiddleware::class]);
+
+    $router->get('/api/v1/backstage/governance/decisions', static function (Request $req) use ($container): Response {
+        return $container->make(\Daems\Infrastructure\Adapter\Api\Controller\Backstage\Governance\BoardDecisionController::class)->index($req);
+    }, [TenantContextMiddleware::class, AuthMiddleware::class]);
+
+    $router->get('/api/v1/backstage/governance/decisions/{id}', static function (Request $req, array $params) use ($container): Response {
+        return $container->make(\Daems\Infrastructure\Adapter\Api\Controller\Backstage\Governance\BoardDecisionController::class)->show($req, $params['id']);
+    }, [TenantContextMiddleware::class, AuthMiddleware::class]);
+
+    $router->post('/api/v1/backstage/governance/decisions/approve-basic', static function (Request $req) use ($container): Response {
+        return $container->make(\Daems\Infrastructure\Adapter\Api\Controller\Backstage\Governance\BoardDecisionController::class)->proposeApproveBasic($req);
+    }, [TenantContextMiddleware::class, AuthMiddleware::class]);
+
+    $router->post('/api/v1/backstage/governance/decisions/invite-full', static function (Request $req) use ($container): Response {
+        return $container->make(\Daems\Infrastructure\Adapter\Api\Controller\Backstage\Governance\BoardDecisionController::class)->proposeInviteFull($req);
+    }, [TenantContextMiddleware::class, AuthMiddleware::class]);
+
+    $router->post('/api/v1/backstage/governance/decisions/award-subtier', static function (Request $req) use ($container): Response {
+        return $container->make(\Daems\Infrastructure\Adapter\Api\Controller\Backstage\Governance\BoardDecisionController::class)->proposeAwardSubTier($req);
+    }, [TenantContextMiddleware::class, AuthMiddleware::class]);
+
+    $router->post('/api/v1/backstage/governance/decisions/revoke-subtier', static function (Request $req) use ($container): Response {
+        return $container->make(\Daems\Infrastructure\Adapter\Api\Controller\Backstage\Governance\BoardDecisionController::class)->proposeRevokeSubTier($req);
+    }, [TenantContextMiddleware::class, AuthMiddleware::class]);
+
+    $router->post('/api/v1/backstage/governance/decisions/subtier-crud', static function (Request $req) use ($container): Response {
+        return $container->make(\Daems\Infrastructure\Adapter\Api\Controller\Backstage\Governance\BoardDecisionController::class)->proposeSubTierCrud($req);
+    }, [TenantContextMiddleware::class, AuthMiddleware::class]);
+
+    $router->post('/api/v1/backstage/governance/decisions/remove-board-member', static function (Request $req) use ($container): Response {
+        return $container->make(\Daems\Infrastructure\Adapter\Api\Controller\Backstage\Governance\BoardDecisionController::class)->proposeRemoveBoardMember($req);
+    }, [TenantContextMiddleware::class, AuthMiddleware::class]);
+
+    $router->post('/api/v1/backstage/governance/decisions/delegate-authority', static function (Request $req) use ($container): Response {
+        return $container->make(\Daems\Infrastructure\Adapter\Api\Controller\Backstage\Governance\BoardDecisionController::class)->proposeDelegateAuthority($req);
+    }, [TenantContextMiddleware::class, AuthMiddleware::class]);
+
+    $router->post('/api/v1/backstage/governance/decisions/revoke-delegation', static function (Request $req) use ($container): Response {
+        return $container->make(\Daems\Infrastructure\Adapter\Api\Controller\Backstage\Governance\BoardDecisionController::class)->proposeRevokeDelegation($req);
+    }, [TenantContextMiddleware::class, AuthMiddleware::class]);
+
+    $router->post('/api/v1/backstage/governance/decisions/{id}/vote', static function (Request $req, array $params) use ($container): Response {
+        return $container->make(\Daems\Infrastructure\Adapter\Api\Controller\Backstage\Governance\BoardDecisionController::class)->vote($req, $params['id']);
+    }, [TenantContextMiddleware::class, AuthMiddleware::class]);
+
+    $router->post('/api/v1/backstage/governance/decisions/{id}/withdraw', static function (Request $req, array $params) use ($container): Response {
+        return $container->make(\Daems\Infrastructure\Adapter\Api\Controller\Backstage\Governance\BoardDecisionController::class)->withdraw($req, $params['id']);
+    }, [TenantContextMiddleware::class, AuthMiddleware::class]);
+
+    $router->get('/api/v1/backstage/governance/expulsions', static function (Request $req) use ($container): Response {
+        return $container->make(\Daems\Infrastructure\Adapter\Api\Controller\Backstage\Governance\ExpulsionController::class)->index($req);
+    }, [TenantContextMiddleware::class, AuthMiddleware::class]);
+
+    $router->get('/api/v1/backstage/governance/expulsions/{id}', static function (Request $req, array $params) use ($container): Response {
+        return $container->make(\Daems\Infrastructure\Adapter\Api\Controller\Backstage\Governance\ExpulsionController::class)->show($req, $params['id']);
+    }, [TenantContextMiddleware::class, AuthMiddleware::class]);
+
+    $router->post('/api/v1/backstage/governance/expulsions', static function (Request $req) use ($container): Response {
+        return $container->make(\Daems\Infrastructure\Adapter\Api\Controller\Backstage\Governance\ExpulsionController::class)->initiate($req);
+    }, [TenantContextMiddleware::class, AuthMiddleware::class]);
+
+    $router->post('/api/v1/backstage/governance/expulsions/{id}/statement', static function (Request $req, array $params) use ($container): Response {
+        return $container->make(\Daems\Infrastructure\Adapter\Api\Controller\Backstage\Governance\ExpulsionController::class)->submitStatement($req, $params['id']);
+    }, [TenantContextMiddleware::class, AuthMiddleware::class]);
+
+    $router->post('/api/v1/backstage/governance/expulsions/{id}/advance-to-vote', static function (Request $req, array $params) use ($container): Response {
+        return $container->make(\Daems\Infrastructure\Adapter\Api\Controller\Backstage\Governance\ExpulsionController::class)->advance($req, $params['id']);
+    }, [TenantContextMiddleware::class, AuthMiddleware::class]);
+
+    $router->post('/api/v1/backstage/governance/expulsions/{id}/appeal', static function (Request $req, array $params) use ($container): Response {
+        return $container->make(\Daems\Infrastructure\Adapter\Api\Controller\Backstage\Governance\ExpulsionController::class)->appeal($req, $params['id']);
+    }, [TenantContextMiddleware::class, AuthMiddleware::class]);
+
+    $router->get('/api/v1/backstage/governance/delegations', static function (Request $req) use ($container): Response {
+        return $container->make(\Daems\Infrastructure\Adapter\Api\Controller\Backstage\Governance\DelegationController::class)->index($req);
+    }, [TenantContextMiddleware::class, AuthMiddleware::class]);
+
+    $router->get('/api/v1/backstage/governance/eligibility/full-membership', static function (Request $req) use ($container): Response {
+        return $container->make(\Daems\Infrastructure\Adapter\Api\Controller\Backstage\Governance\EligibilityController::class)->fullMembership($req);
+    }, [TenantContextMiddleware::class, AuthMiddleware::class]);
+
+    $router->post('/api/v1/backstage/governance/gsa-overrides/approve-basic', static function (Request $req) use ($container): Response {
+        return $container->make(\Daems\Infrastructure\Adapter\Api\Controller\Backstage\Governance\GsaOverrideController::class)->forceApproveBasic($req);
+    }, [TenantContextMiddleware::class, AuthMiddleware::class]);
+
     // Module routes — invoke each discovered module's routes.php.
     $moduleRegistry = $container->make(\Daems\Infrastructure\Module\ModuleRegistry::class);
     $moduleRegistry->registerRoutes($router, $container);

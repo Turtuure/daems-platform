@@ -54,10 +54,36 @@ $map = [
     '/api/backstage/tenant-modules'   => __DIR__ . '/api/tenant-modules.php',
     '/api/backstage/dashboard/layout' => __DIR__ . '/api/dashboard.php',
     '/api/backstage/dashboard/catalog' => __DIR__ . '/api/dashboard.php',
+    '/api/backstage/governance/board'                         => __DIR__ . '/api/governance-board.php',
+    '/api/backstage/governance/board/bootstrap'               => __DIR__ . '/api/governance-board.php',
+    '/api/backstage/governance/decisions'                     => __DIR__ . '/api/governance-decisions.php',
+    '/api/backstage/governance/decisions/approve-basic'       => __DIR__ . '/api/governance-decisions.php',
+    '/api/backstage/governance/decisions/invite-full'         => __DIR__ . '/api/governance-decisions.php',
+    '/api/backstage/governance/decisions/award-subtier'       => __DIR__ . '/api/governance-decisions.php',
+    '/api/backstage/governance/decisions/revoke-subtier'      => __DIR__ . '/api/governance-decisions.php',
+    '/api/backstage/governance/decisions/subtier-crud'        => __DIR__ . '/api/governance-decisions.php',
+    '/api/backstage/governance/decisions/remove-board-member' => __DIR__ . '/api/governance-decisions.php',
+    '/api/backstage/governance/decisions/delegate-authority'  => __DIR__ . '/api/governance-decisions.php',
+    '/api/backstage/governance/decisions/revoke-delegation'   => __DIR__ . '/api/governance-decisions.php',
+    '/api/backstage/governance/expulsions'                       => __DIR__ . '/api/governance-expulsions.php',
+    '/api/backstage/governance/delegations'                      => __DIR__ . '/api/governance-delegations.php',
+    '/api/backstage/governance/eligibility/full-membership'      => __DIR__ . '/api/governance-eligibility.php',
+    '/api/backstage/governance/gsa-overrides/approve-basic'      => __DIR__ . '/api/governance-gsa-overrides.php',
 ];
 
 if (isset($map[$uri]) && is_file($map[$uri])) {
     require $map[$uri];
+    exit;
+}
+
+// Pattern fallback for governance routes with IDs
+if (str_starts_with($uri, '/api/backstage/governance/decisions/')) {
+    require __DIR__ . '/api/governance-decisions.php';
+    exit;
+}
+
+if (str_starts_with($uri, '/api/backstage/governance/expulsions/')) {
+    require __DIR__ . '/api/governance-expulsions.php';
     exit;
 }
 

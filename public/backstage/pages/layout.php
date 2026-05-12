@@ -163,16 +163,17 @@ try {
 
 /** Map item href → active-page key the rest of the layout uses. */
 $__hrefToActive = [
-    '/backstage/'         => 'dashboard',
-    '/backstage'          => 'dashboard',
-    '/backstage/search'   => 'search',
-    '/backstage/settings' => 'settings',
-    '/backstage/members'  => 'members',
-    '/backstage/events'   => 'events',
-    '/backstage/projects' => 'projects',
-    '/backstage/forum'    => 'forum',
-    '/backstage/insights' => 'insights',
-    '/backstage/platform/tenants' => 'platform-tenants',
+    '/backstage/'                  => 'dashboard',
+    '/backstage'                   => 'dashboard',
+    '/backstage/search'            => 'search',
+    '/backstage/settings'          => 'settings',
+    '/backstage/members'           => 'members',
+    '/backstage/events'            => 'events',
+    '/backstage/projects'          => 'projects',
+    '/backstage/forum'             => 'forum',
+    '/backstage/insights'          => 'insights',
+    '/backstage/platform/tenants'  => 'platform-tenants',
+    '/backstage/governance/board'  => 'governance-board',
 ];
 
 /** Group items by `group` while preserving the BackstageSidebar order. */
@@ -365,6 +366,22 @@ $__renderIcon = static function (string $name) use ($__sidebarIcons): string {
                             <span class="sidebar__badge sidebar__badge--danger" id="forum-badge"
                                   title="<?= I18n::e('backstage.layout.forum.open_reports') ?>"><?= (int) $__pendingForumReportCount ?></span>
                         <?php endif; ?>
+                    </a>
+                </li>
+            </ul>
+        </div>
+
+        <!-- Governance -->
+        <div class="sidebar__section">
+            <span class="sidebar__section-label"><?= I18n::e('sidebar.group.governance') ?></span>
+            <ul class="sidebar__list" role="list">
+                <li>
+                    <a href="/backstage/governance/board" class="sidebar__item <?= $__isActive('governance-board') ?>"
+                       <?= $__activePage === 'governance-board' ? 'aria-current="page"' : '' ?>>
+                        <svg class="sidebar__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
+                            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                        </svg>
+                        <span class="sidebar__label"><?= I18n::e('shell.governance.board') ?></span>
                     </a>
                 </li>
             </ul>
