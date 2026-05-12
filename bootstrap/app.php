@@ -807,8 +807,14 @@ $container->bind(
         $c->make(\Daems\Domain\Governance\BoardDelegationRepositoryInterface::class),
     ),
 );
+$container->bind(
+    \Daems\Application\Governance\Executor\AnnualFeeScheduleExecutor::class,
+    static fn(Container $c) => new \Daems\Application\Governance\Executor\AnnualFeeScheduleExecutor(
+        $c->make(\Daems\Application\Membership\Billing\ActivateAnnualFeeSchedule\ActivateAnnualFeeSchedule::class),
+    ),
+);
 
-// Executor registry (singleton; all 9 executors registered)
+// Executor registry (singleton; all 10 executors registered)
 $container->singleton(
     \Daems\Application\Governance\BoardDecisionExecutorRegistry::class,
     static function (Container $c): \Daems\Application\Governance\BoardDecisionExecutorRegistry {
@@ -822,6 +828,7 @@ $container->singleton(
         $reg->register($c->make(\Daems\Application\Governance\Executor\RemoveBoardMemberExecutor::class));
         $reg->register($c->make(\Daems\Application\Governance\Executor\DelegateAuthorityExecutor::class));
         $reg->register($c->make(\Daems\Application\Governance\Executor\RevokeDelegationExecutor::class));
+        $reg->register($c->make(\Daems\Application\Governance\Executor\AnnualFeeScheduleExecutor::class));
         return $reg;
     },
 );
@@ -981,6 +988,31 @@ $container->bind(
         $c->make(\Daems\Domain\Governance\BoardDecisionRepositoryInterface::class),
         $c->make(\Daems\Domain\Governance\TenantGovernanceSettingsRepositoryInterface::class),
         $c->make(\Daems\Domain\Governance\BoardDelegationRepositoryInterface::class),
+    ),
+);
+
+// Membership Billing — fee schedules (0.7)
+$container->bind(
+    \Daems\Domain\Membership\Billing\AnnualFeeScheduleRepositoryInterface::class,
+    static fn(Container $c) => new \Daems\Infrastructure\Adapter\Persistence\Sql\SqlAnnualFeeScheduleRepository(
+        $c->make(Connection::class)->pdo(),
+    ),
+);
+$container->bind(
+    \Daems\Application\Membership\Billing\DraftAnnualFeeSchedule\DraftAnnualFeeSchedule::class,
+    static fn(Container $c) => new \Daems\Application\Membership\Billing\DraftAnnualFeeSchedule\DraftAnnualFeeSchedule(
+        $c->make(\Daems\Domain\Membership\Billing\AnnualFeeScheduleRepositoryInterface::class),
+        $c->make(\Daems\Domain\Governance\BoardDecisionRepositoryInterface::class),
+        $c->make(\Daems\Domain\Governance\TenantGovernanceSettingsRepositoryInterface::class),
+        $c->make(\Daems\Domain\Governance\BoardRepositoryInterface::class),
+        $c->make(Clock::class),
+    ),
+);
+$container->bind(
+    \Daems\Application\Membership\Billing\ActivateAnnualFeeSchedule\ActivateAnnualFeeSchedule::class,
+    static fn(Container $c) => new \Daems\Application\Membership\Billing\ActivateAnnualFeeSchedule\ActivateAnnualFeeSchedule(
+        $c->make(\Daems\Domain\Membership\Billing\AnnualFeeScheduleRepositoryInterface::class),
+        $c->make(Clock::class),
     ),
 );
 
