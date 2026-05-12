@@ -1224,6 +1224,9 @@ $container->bind(
     static fn(Container $c) => new \Daems\Infrastructure\Adapter\Api\Controller\Backstage\Governance\BackstageBillingController(
         $c->make(\Daems\Application\Membership\Billing\DraftAnnualFeeSchedule\DraftAnnualFeeSchedule::class),
         $c->make(\Daems\Domain\Membership\Billing\AnnualFeeScheduleRepositoryInterface::class),
+        $c->make(\Daems\Application\Membership\Billing\SetUserFeeOverride\SetUserFeeOverride::class),
+        $c->make(\Daems\Application\Membership\Billing\RevokeUserFeeOverride\RevokeUserFeeOverride::class),
+        $c->make(\Daems\Domain\Membership\Billing\UserFeeOverrideRepositoryInterface::class),
     ),
 );
 
