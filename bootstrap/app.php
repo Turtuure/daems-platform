@@ -1041,6 +1041,22 @@ $container->bind(
     ),
 );
 
+// User fee override use cases (Wave D)
+$container->bind(
+    \Daems\Application\Membership\Billing\SetUserFeeOverride\SetUserFeeOverride::class,
+    static fn(Container $c) => new \Daems\Application\Membership\Billing\SetUserFeeOverride\SetUserFeeOverride(
+        $c->make(\Daems\Domain\Membership\Billing\UserFeeOverrideRepositoryInterface::class),
+        $c->make(Clock::class),
+    ),
+);
+$container->bind(
+    \Daems\Application\Membership\Billing\RevokeUserFeeOverride\RevokeUserFeeOverride::class,
+    static fn(Container $c) => new \Daems\Application\Membership\Billing\RevokeUserFeeOverride\RevokeUserFeeOverride(
+        $c->make(\Daems\Domain\Membership\Billing\UserFeeOverrideRepositoryInterface::class),
+        $c->make(Clock::class),
+    ),
+);
+
 // Delegate variants (3)
 $container->bind(
     \Daems\Application\Governance\Delegate\ApproveBasicAsDelegate::class,
