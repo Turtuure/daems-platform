@@ -74,6 +74,13 @@ final class BackstageSidebar
             'icon'      => 'check-square',
             'order'     => 20,
         ];
+        $items[] = [
+            'group'     => 'governance',
+            'label_key' => 'shell.governance.expulsions',
+            'href'      => '/backstage/governance/expulsions',
+            'icon'      => 'user-x',
+            'order'     => 30,
+        ];
 
         // 3. System group — admin/configuration items grouped at the bottom.
         //    Notifications (everyone), Settings (everyone), Tenants (GSA only).

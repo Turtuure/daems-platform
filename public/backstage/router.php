@@ -74,6 +74,9 @@ $map = [
     '/governance/decisions'          => __DIR__ . '/pages/governance/decisions-list.php',
     '/governance/decisions/new'      => __DIR__ . '/pages/governance/decisions-new.php',
     '/governance/decisions/detail'   => __DIR__ . '/pages/governance/decisions-detail.php',
+    '/governance/expulsions'         => __DIR__ . '/pages/governance/expulsions-list.php',
+    '/governance/expulsions/new'     => __DIR__ . '/pages/governance/expulsions-new.php',
+    '/governance/expulsions/detail'  => __DIR__ . '/pages/governance/expulsions-detail.php',
 ];
 
 if (isset($map[$sub]) && is_file($map[$sub])) {
