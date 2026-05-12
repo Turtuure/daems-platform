@@ -65,6 +65,10 @@ $map = [
     '/api/backstage/governance/decisions/remove-board-member' => __DIR__ . '/api/governance-decisions.php',
     '/api/backstage/governance/decisions/delegate-authority'  => __DIR__ . '/api/governance-decisions.php',
     '/api/backstage/governance/decisions/revoke-delegation'   => __DIR__ . '/api/governance-decisions.php',
+    '/api/backstage/governance/expulsions'                       => __DIR__ . '/api/governance-expulsions.php',
+    '/api/backstage/governance/delegations'                      => __DIR__ . '/api/governance-delegations.php',
+    '/api/backstage/governance/eligibility/full-membership'      => __DIR__ . '/api/governance-eligibility.php',
+    '/api/backstage/governance/gsa-overrides/approve-basic'      => __DIR__ . '/api/governance-gsa-overrides.php',
 ];
 
 if (isset($map[$uri]) && is_file($map[$uri])) {
@@ -75,6 +79,11 @@ if (isset($map[$uri]) && is_file($map[$uri])) {
 // Pattern fallback for governance routes with IDs
 if (str_starts_with($uri, '/api/backstage/governance/decisions/')) {
     require __DIR__ . '/api/governance-decisions.php';
+    exit;
+}
+
+if (str_starts_with($uri, '/api/backstage/governance/expulsions/')) {
+    require __DIR__ . '/api/governance-expulsions.php';
     exit;
 }
 
