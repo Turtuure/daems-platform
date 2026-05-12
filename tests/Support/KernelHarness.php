@@ -851,6 +851,27 @@ final class KernelHarness
             ),
         );
 
+        // Membership Billing — member fee invoices + anniversary use case (0.7 Wave C) — InMemory fakes
+        $container->singleton(
+            \Daems\Domain\Membership\Billing\MemberFeeInvoiceRepositoryInterface::class,
+            static fn() => new \Daems\Tests\Support\Fake\InMemoryMemberFeeInvoiceRepository(),
+        );
+        $container->singleton(
+            \Daems\Domain\Membership\Billing\UserFeeOverrideRepositoryInterface::class,
+            static fn() => new \Daems\Tests\Support\Fake\InMemoryUserFeeOverrideRepository(),
+        );
+        $container->bind(
+            \Daems\Application\Membership\Billing\GenerateAnniversaryInvoice\GenerateAnniversaryInvoice::class,
+            static fn(Container $c) => new \Daems\Application\Membership\Billing\GenerateAnniversaryInvoice\GenerateAnniversaryInvoice(
+                $c->make(\Daems\Domain\User\UserRepositoryInterface::class),
+                $c->make(\Daems\Domain\Membership\Billing\AnnualFeeScheduleRepositoryInterface::class),
+                $c->make(\Daems\Domain\Membership\Billing\UserFeeOverrideRepositoryInterface::class),
+                $c->make(\Daems\Domain\Membership\Billing\MemberFeeInvoiceRepositoryInterface::class),
+                $c->make(\Daems\Domain\Governance\TenantGovernanceSettingsRepositoryInterface::class),
+                $c->make(Clock::class),
+            ),
+        );
+
         // Delegate variants (3)
         $container->bind(
             \Daems\Application\Governance\Delegate\ApproveBasicAsDelegate::class,

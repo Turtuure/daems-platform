@@ -3,6 +3,12 @@ declare(strict_types=1);
 
 use Daems\Infrastructure\Console\CommandRegistry;
 use Daems\Infrastructure\Console\ConsoleKernel;
+use Daems\Infrastructure\Console\CronLogger;
+use Daems\Infrastructure\Console\LockManager;
+
+/** @var \Daems\Infrastructure\Framework\Http\Kernel $httpKernel */
+$httpKernel = require __DIR__ . '/app.php';
+$container  = $httpKernel->container();
 
 $registry = new CommandRegistry();
 
@@ -17,6 +23,14 @@ $registry->register(new class implements \Daems\Infrastructure\Console\CommandIn
     }
 });
 
-// Real commands are registered in later tasks (Wave C: anniversary-cron, Wave F: overdue + lapse).
+// Membership Billing — anniversary invoice cron (0.7 Wave C)
+$now = new DateTimeImmutable();
+$registry->register(new \Daems\Application\Membership\Billing\Cron\GenerateAnniversaryInvoicesCommand(
+    pdo:         $container->make(\Daems\Infrastructure\Framework\Database\Connection::class)->pdo(),
+    useCase:     $container->make(\Daems\Application\Membership\Billing\GenerateAnniversaryInvoice\GenerateAnniversaryInvoice::class),
+    lockManager: new LockManager(__DIR__ . '/../var/run'),
+    logger:      new CronLogger(__DIR__ . '/../var/log/cron', 'membership:generate-anniversary-invoices', $now),
+    clock:       $container->make(\Daems\Domain\Shared\Clock::class),
+));
 
 return new ConsoleKernel($registry);

@@ -1016,6 +1016,31 @@ $container->bind(
     ),
 );
 
+// Membership Billing — member fee invoices + anniversary use case (0.7 Wave C)
+$container->bind(
+    \Daems\Domain\Membership\Billing\MemberFeeInvoiceRepositoryInterface::class,
+    static fn(Container $c) => new \Daems\Infrastructure\Adapter\Persistence\Sql\SqlMemberFeeInvoiceRepository(
+        $c->make(Connection::class)->pdo(),
+    ),
+);
+// TODO(0.7-wave-d): replace InMemoryUserFeeOverrideRepository with SqlUserFeeOverrideRepository
+//                   before deploying. Test-namespace classes are not autoloaded in prod.
+$container->bind(
+    \Daems\Domain\Membership\Billing\UserFeeOverrideRepositoryInterface::class,
+    static fn() => new \Daems\Tests\Support\Fake\InMemoryUserFeeOverrideRepository(),
+);
+$container->bind(
+    \Daems\Application\Membership\Billing\GenerateAnniversaryInvoice\GenerateAnniversaryInvoice::class,
+    static fn(Container $c) => new \Daems\Application\Membership\Billing\GenerateAnniversaryInvoice\GenerateAnniversaryInvoice(
+        $c->make(UserRepositoryInterface::class),
+        $c->make(\Daems\Domain\Membership\Billing\AnnualFeeScheduleRepositoryInterface::class),
+        $c->make(\Daems\Domain\Membership\Billing\UserFeeOverrideRepositoryInterface::class),
+        $c->make(\Daems\Domain\Membership\Billing\MemberFeeInvoiceRepositoryInterface::class),
+        $c->make(\Daems\Domain\Governance\TenantGovernanceSettingsRepositoryInterface::class),
+        $c->make(Clock::class),
+    ),
+);
+
 // Delegate variants (3)
 $container->bind(
     \Daems\Application\Governance\Delegate\ApproveBasicAsDelegate::class,
