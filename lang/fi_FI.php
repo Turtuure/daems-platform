@@ -566,6 +566,24 @@ return [
     'shell.governance.board'        => 'Hallitus',
     'shell.governance.decisions'    => 'Päätökset',
     'shell.governance.expulsions'   => 'Erottamiset',
+    'shell.governance.delegations'  => 'Delegoinnit',
+    'shell.governance.settings'     => 'Asetukset',
+
+    // ── Governance / Delegations page ────────────────────────────
+    'backstage.title.governance.delegations'                   => 'Delegoinnit',
+    'backstage.governance.delegations.hint'                    => 'Voimassa olevat hallituksen myöntämät delegoinnit. Peruutus vaatii hallituksen enemmistöpäätöksen.',
+    'backstage.governance.delegations.empty'                   => 'Ei voimassa olevia delegointeja.',
+    'backstage.governance.delegations.col.decision_type'       => 'Päätöstyyppi',
+    'backstage.governance.delegations.col.delegated_to'        => 'Kenelle',
+    'backstage.governance.delegations.col.valid_from'          => 'Voimassa alkaen',
+    'backstage.governance.delegations.col.source_decision'     => 'Lähdepäätös',
+
+    // ── Governance / Settings page ────────────────────────────────
+    'backstage.title.governance.settings'                      => 'Hallinnon asetukset',
+    'backstage.governance.settings.hint'                       => 'Per-tenant-asetukset. Muokkaus vaatii 0.6c-version (endpoint puuttuu vielä). Oletukset:',
+    'backstage.governance.settings.expulsion_hearing_days'     => 'Erottamisen kuulemisaika',
+    'backstage.governance.settings.decision_expiration_days'   => 'Päätöksen vanhenemisaika',
+    'backstage.governance.settings.db_note'                    => 'Tenantin omat arvot tallennetaan tenant_governance_settings-tauluun. GSA voi muokata arvoja suoraan tietokannasta.',
 
     // ── Governance / Decisions pages ─────────────────────────────
     'backstage.title.governance.decisions'              => 'Hallituksen päätökset',

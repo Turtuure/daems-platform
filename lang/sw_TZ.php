@@ -570,6 +570,24 @@ return [
     'shell.governance.board'        => 'Bodi',
     'shell.governance.decisions'    => 'Maamuzi',
     'shell.governance.expulsions'   => 'Kufukuza',
+    'shell.governance.delegations'  => 'Mgawanyo',
+    'shell.governance.settings'     => 'Mipangilio',
+
+    // ── Governance / Delegations page ────────────────────────────
+    'backstage.title.governance.delegations'                   => 'Mgawanyo',
+    'backstage.governance.delegations.hint'                    => 'Mgawanyo wa mamlaka ulioidhinishwa na bodi. Kufuta kunahitaji uamuzi wa wingi wa bodi.',
+    'backstage.governance.delegations.empty'                   => 'Hakuna mgawanyo wa mamlaka unaotumika.',
+    'backstage.governance.delegations.col.decision_type'       => 'Aina ya uamuzi',
+    'backstage.governance.delegations.col.delegated_to'        => 'Imepewa',
+    'backstage.governance.delegations.col.valid_from'          => 'Inatumika tangu',
+    'backstage.governance.delegations.col.source_decision'     => 'Uamuzi chanzo',
+
+    // ── Governance / Settings page ────────────────────────────────
+    'backstage.title.governance.settings'                      => 'Mipangilio ya utawala',
+    'backstage.governance.settings.hint'                       => 'Mipangilio kwa kila tenant. Uhariri unahitaji toleo la 0.6c (endpoint haipo bado). Mipangilio ya kawaida:',
+    'backstage.governance.settings.expulsion_hearing_days'     => 'Kipindi cha kusikiliza ufukuzaji',
+    'backstage.governance.settings.decision_expiration_days'   => 'Kipindi cha kuisha kwa uamuzi',
+    'backstage.governance.settings.db_note'                    => 'Maadili maalum ya tenant huhifadhiwa katika jedwali la tenant_governance_settings. GSA anaweza kuhariri maadili moja kwa moja kwenye hifadhidata.',
 
     // ── Governance / Decisions pages ─────────────────────────────
     'backstage.title.governance.decisions'              => 'Maamuzi ya bodi',

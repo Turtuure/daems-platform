@@ -81,6 +81,20 @@ final class BackstageSidebar
             'icon'      => 'user-x',
             'order'     => 30,
         ];
+        $items[] = [
+            'group'     => 'governance',
+            'label_key' => 'shell.governance.delegations',
+            'href'      => '/backstage/governance/delegations',
+            'icon'      => 'key',
+            'order'     => 40,
+        ];
+        $items[] = [
+            'group'     => 'governance',
+            'label_key' => 'shell.governance.settings',
+            'href'      => '/backstage/governance/settings',
+            'icon'      => 'sliders',
+            'order'     => 50,
+        ];
 
         // 3. System group — admin/configuration items grouped at the bottom.
         //    Notifications (everyone), Settings (everyone), Tenants (GSA only).

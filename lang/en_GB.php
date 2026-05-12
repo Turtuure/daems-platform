@@ -566,6 +566,24 @@ return [
     'shell.governance.board'        => 'Board',
     'shell.governance.decisions'    => 'Decisions',
     'shell.governance.expulsions'   => 'Expulsions',
+    'shell.governance.delegations'  => 'Delegations',
+    'shell.governance.settings'     => 'Settings',
+
+    // ── Governance / Delegations page ────────────────────────────
+    'backstage.title.governance.delegations'                   => 'Delegations',
+    'backstage.governance.delegations.hint'                    => 'Active delegations granted by the board. Revocation requires a board majority decision.',
+    'backstage.governance.delegations.empty'                   => 'No active delegations.',
+    'backstage.governance.delegations.col.decision_type'       => 'Decision type',
+    'backstage.governance.delegations.col.delegated_to'        => 'Delegated to',
+    'backstage.governance.delegations.col.valid_from'          => 'Valid from',
+    'backstage.governance.delegations.col.source_decision'     => 'Source decision',
+
+    // ── Governance / Settings page ────────────────────────────────
+    'backstage.title.governance.settings'                      => 'Governance settings',
+    'backstage.governance.settings.hint'                       => 'Per-tenant settings. Editing requires version 0.6c (endpoint not yet available). Defaults:',
+    'backstage.governance.settings.expulsion_hearing_days'     => 'Expulsion hearing period',
+    'backstage.governance.settings.decision_expiration_days'   => 'Decision expiration period',
+    'backstage.governance.settings.db_note'                    => 'Tenant-specific values are stored in the tenant_governance_settings table. GSA can edit values directly in the database.',
 
     // ── Governance / Decisions pages ─────────────────────────────
     'backstage.title.governance.decisions'              => 'Board decisions',

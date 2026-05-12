@@ -203,3 +203,44 @@
   border-top: 1px solid var(--border, #e2e8f0);
   max-width: 480px;
 }
+
+/* ── Delegations table ───────────────────────────────────────────── */
+.delegations-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.delegations-table th,
+.delegations-table td {
+  padding: 0.5rem 0.75rem;
+  border-bottom: 1px solid var(--border, #e2e8f0);
+  text-align: left;
+  font-size: 0.9rem;
+}
+
+.delegations-table th {
+  font-weight: 600;
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--muted, #64748b);
+}
+
+/* ── Settings page ───────────────────────────────────────────────── */
+.settings-meta {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 0.5rem 1rem;
+  margin: 1rem 0;
+  max-width: 600px;
+}
+
+.settings-meta dt {
+  font-weight: 500;
+}
+
+/* ── Small button variant ────────────────────────────────────────── */
+.btn-sm {
+  font-size: 0.85em;
+  padding: 0.25rem 0.5rem;
+}
