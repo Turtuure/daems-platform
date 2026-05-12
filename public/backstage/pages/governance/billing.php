@@ -31,6 +31,9 @@ ob_start();
         <label for="billing-year"><?= I18n::e('backstage.governance.billing.year_label') ?></label>
         <input id="billing-year" type="number" name="year" min="2026" max="2099" value="<?= (int) $year ?>">
         <button type="submit" class="btn btn--ghost btn--sm"><?= I18n::e('backstage.common.apply') ?></button>
+        <a class="btn btn--ghost btn--sm" href="/backstage/governance/billing/invoices">
+            <?= I18n::e('backstage.governance.billing.invoices.link') ?> &rarr;
+        </a>
         <a class="btn btn--ghost btn--sm" href="/backstage/governance/billing/overrides">
             <?= I18n::e('backstage.governance.billing.overrides.link') ?> &rarr;
         </a>

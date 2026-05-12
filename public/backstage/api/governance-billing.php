@@ -54,5 +54,28 @@ if ($method === 'POST' && str_contains($uri, '/governance/billing/overrides')) {
     exit;
 }
 
+// Invoice list + row actions + audit (Wave E)
+if ($method === 'POST' && preg_match('#/governance/billing/invoices/([0-9a-f-]+)/(mark-paid|waive|reduce)#', $uri, $m) === 1) {
+    $body = json_decode((string) file_get_contents('php://input'), true);
+    $r = ApiClient::post('/backstage/governance/billing/invoices/' . $m[1] . '/' . $m[2], is_array($body) ? $body : []);
+    http_response_code((int) ($r['status'] ?? 500));
+    echo json_encode($r['body'] ?? []);
+    exit;
+}
+
+if ($method === 'GET' && preg_match('#/governance/billing/invoices/([0-9a-f-]+)/audit#', $uri, $m) === 1) {
+    proxy_backend_get('/backstage/governance/billing/invoices/' . $m[1] . '/audit');
+    exit;
+}
+
+if ($method === 'GET' && str_contains($uri, '/governance/billing/invoices')) {
+    $qs = '';
+    if (($q = parse_url($uri, PHP_URL_QUERY)) !== null && $q !== false) {
+        $qs = '?' . $q;
+    }
+    proxy_backend_get('/backstage/governance/billing/invoices' . $qs);
+    exit;
+}
+
 http_response_code(405);
 echo json_encode(['error' => 'method_not_allowed']);

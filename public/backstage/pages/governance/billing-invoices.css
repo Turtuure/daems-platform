@@ -1,0 +1,106 @@
+.billing-invoices__filters {
+    display: flex;
+    gap: 1rem;
+    align-items: end;
+    flex-wrap: wrap;
+}
+
+.billing-invoices__filters label {
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+    font-size: 0.85rem;
+    color: var(--text-muted, #666);
+}
+
+.billing-invoices__list {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 1rem;
+}
+
+.billing-invoices__list th,
+.billing-invoices__list td {
+    padding: 0.6rem 0.75rem;
+    text-align: left;
+    border-bottom: 1px solid var(--border-subtle, #e2e2e2);
+    vertical-align: middle;
+}
+
+.billing-invoices__list td small {
+    color: var(--text-muted, #777);
+    margin-left: 0.4rem;
+}
+
+.status-badge {
+    display: inline-block;
+    padding: 0.15rem 0.55rem;
+    border-radius: 999px;
+    font-size: 0.85em;
+    color: #fff;
+    background: var(--surface-muted, #888);
+}
+
+.status-PENDING { background: #5b9bd5; }
+.status-PAID    { background: #3aa856; }
+.status-OVERDUE { background: #c0392b; }
+.status-WAIVED  { background: #888; }
+.status-REDUCED { background: #d39e2c; }
+
+.billing-invoices__dialog {
+    width: min(540px, 92vw);
+    padding: 1.25rem 1.5rem;
+    border: 1px solid var(--border-strong, #999);
+    border-radius: 8px;
+}
+
+.billing-invoices__dialog form {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.billing-invoices__dialog label {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    font-weight: 500;
+}
+
+.billing-invoices__dialog input,
+.billing-invoices__dialog select,
+.billing-invoices__dialog textarea {
+    font: inherit;
+    padding: 0.4rem 0.55rem;
+    border: 1px solid var(--border-subtle, #d4d4d4);
+    border-radius: 4px;
+}
+
+.billing-invoices__dialog menu {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.5rem;
+    margin: 0;
+    padding: 0;
+}
+
+.billing-invoices__dialog ul {
+    list-style: none;
+    padding: 0;
+    margin: 0.5rem 0 1rem;
+    max-height: 60vh;
+    overflow-y: auto;
+}
+
+.billing-invoices__dialog li {
+    padding: 0.5rem 0;
+    border-bottom: 1px solid var(--border-subtle, #e2e2e2);
+}
+
+.billing-invoices__dialog pre {
+    background: var(--surface-muted, #f7f7f7);
+    padding: 0.4rem 0.5rem;
+    border-radius: 4px;
+    font-size: 0.85em;
+    overflow-x: auto;
+}
