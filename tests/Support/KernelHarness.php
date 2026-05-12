@@ -918,6 +918,17 @@ final class KernelHarness
             ),
         );
 
+        // MarkOverdueInvoices cron (Wave F)
+        $container->bind(
+            \Daems\Application\Membership\Billing\MarkOverdueInvoices\MarkOverdueInvoices::class,
+            static fn(Container $c) => new \Daems\Application\Membership\Billing\MarkOverdueInvoices\MarkOverdueInvoices(
+                $c->make(\Daems\Domain\Membership\Billing\MemberFeeInvoiceRepositoryInterface::class),
+                $c->make(\Daems\Domain\Membership\Billing\FeeInvoiceAuditRepositoryInterface::class),
+                $c->make(\Daems\Domain\Governance\TenantGovernanceSettingsRepositoryInterface::class),
+                $c->make(Clock::class),
+            ),
+        );
+
         // Delegate variants (3)
         $container->bind(
             \Daems\Application\Governance\Delegate\ApproveBasicAsDelegate::class,

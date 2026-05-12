@@ -33,4 +33,12 @@ $registry->register(new \Daems\Application\Membership\Billing\Cron\GenerateAnniv
     clock:       $container->make(\Daems\Domain\Shared\Clock::class),
 ));
 
+// Membership Billing — mark-overdue cron (0.7 Wave F)
+$registry->register(new \Daems\Application\Membership\Billing\Cron\MarkOverdueInvoicesCommand(
+    pdo:         $container->make(\Daems\Infrastructure\Framework\Database\Connection::class)->pdo(),
+    useCase:     $container->make(\Daems\Application\Membership\Billing\MarkOverdueInvoices\MarkOverdueInvoices::class),
+    lockManager: new LockManager(__DIR__ . '/../var/run'),
+    logger:      new CronLogger(__DIR__ . '/../var/log/cron', 'membership:mark-overdue-invoices', $now),
+));
+
 return new ConsoleKernel($registry);
