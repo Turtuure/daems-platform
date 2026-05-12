@@ -1057,6 +1057,38 @@ $container->bind(
     ),
 );
 
+// Invoice audit + state-change use cases (Wave E)
+$container->bind(
+    \Daems\Domain\Membership\Billing\FeeInvoiceAuditRepositoryInterface::class,
+    static fn(Container $c) => new \Daems\Infrastructure\Adapter\Persistence\Sql\SqlFeeInvoiceAuditRepository(
+        $c->make(Connection::class)->pdo(),
+    ),
+);
+$container->bind(
+    \Daems\Application\Membership\Billing\WaiveMemberFeeInvoice\WaiveMemberFeeInvoice::class,
+    static fn(Container $c) => new \Daems\Application\Membership\Billing\WaiveMemberFeeInvoice\WaiveMemberFeeInvoice(
+        $c->make(\Daems\Domain\Membership\Billing\MemberFeeInvoiceRepositoryInterface::class),
+        $c->make(\Daems\Domain\Membership\Billing\FeeInvoiceAuditRepositoryInterface::class),
+        $c->make(Clock::class),
+    ),
+);
+$container->bind(
+    \Daems\Application\Membership\Billing\ReduceMemberFeeInvoice\ReduceMemberFeeInvoice::class,
+    static fn(Container $c) => new \Daems\Application\Membership\Billing\ReduceMemberFeeInvoice\ReduceMemberFeeInvoice(
+        $c->make(\Daems\Domain\Membership\Billing\MemberFeeInvoiceRepositoryInterface::class),
+        $c->make(\Daems\Domain\Membership\Billing\FeeInvoiceAuditRepositoryInterface::class),
+        $c->make(Clock::class),
+    ),
+);
+$container->bind(
+    \Daems\Application\Membership\Billing\RecordManualPayment\RecordManualPayment::class,
+    static fn(Container $c) => new \Daems\Application\Membership\Billing\RecordManualPayment\RecordManualPayment(
+        $c->make(\Daems\Domain\Membership\Billing\MemberFeeInvoiceRepositoryInterface::class),
+        $c->make(\Daems\Domain\Membership\Billing\FeeInvoiceAuditRepositoryInterface::class),
+        $c->make(Clock::class),
+    ),
+);
+
 // Delegate variants (3)
 $container->bind(
     \Daems\Application\Governance\Delegate\ApproveBasicAsDelegate::class,
@@ -1227,6 +1259,11 @@ $container->bind(
         $c->make(\Daems\Application\Membership\Billing\SetUserFeeOverride\SetUserFeeOverride::class),
         $c->make(\Daems\Application\Membership\Billing\RevokeUserFeeOverride\RevokeUserFeeOverride::class),
         $c->make(\Daems\Domain\Membership\Billing\UserFeeOverrideRepositoryInterface::class),
+        $c->make(\Daems\Application\Membership\Billing\WaiveMemberFeeInvoice\WaiveMemberFeeInvoice::class),
+        $c->make(\Daems\Application\Membership\Billing\ReduceMemberFeeInvoice\ReduceMemberFeeInvoice::class),
+        $c->make(\Daems\Application\Membership\Billing\RecordManualPayment\RecordManualPayment::class),
+        $c->make(\Daems\Domain\Membership\Billing\MemberFeeInvoiceRepositoryInterface::class),
+        $c->make(\Daems\Domain\Membership\Billing\FeeInvoiceAuditRepositoryInterface::class),
     ),
 );
 

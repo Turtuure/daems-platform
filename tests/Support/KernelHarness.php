@@ -888,6 +888,36 @@ final class KernelHarness
             ),
         );
 
+        // Invoice audit + state-change use cases (Wave E)
+        $container->singleton(
+            \Daems\Domain\Membership\Billing\FeeInvoiceAuditRepositoryInterface::class,
+            static fn() => new \Daems\Tests\Support\Fake\InMemoryFeeInvoiceAuditRepository(),
+        );
+        $container->bind(
+            \Daems\Application\Membership\Billing\WaiveMemberFeeInvoice\WaiveMemberFeeInvoice::class,
+            static fn(Container $c) => new \Daems\Application\Membership\Billing\WaiveMemberFeeInvoice\WaiveMemberFeeInvoice(
+                $c->make(\Daems\Domain\Membership\Billing\MemberFeeInvoiceRepositoryInterface::class),
+                $c->make(\Daems\Domain\Membership\Billing\FeeInvoiceAuditRepositoryInterface::class),
+                $c->make(Clock::class),
+            ),
+        );
+        $container->bind(
+            \Daems\Application\Membership\Billing\ReduceMemberFeeInvoice\ReduceMemberFeeInvoice::class,
+            static fn(Container $c) => new \Daems\Application\Membership\Billing\ReduceMemberFeeInvoice\ReduceMemberFeeInvoice(
+                $c->make(\Daems\Domain\Membership\Billing\MemberFeeInvoiceRepositoryInterface::class),
+                $c->make(\Daems\Domain\Membership\Billing\FeeInvoiceAuditRepositoryInterface::class),
+                $c->make(Clock::class),
+            ),
+        );
+        $container->bind(
+            \Daems\Application\Membership\Billing\RecordManualPayment\RecordManualPayment::class,
+            static fn(Container $c) => new \Daems\Application\Membership\Billing\RecordManualPayment\RecordManualPayment(
+                $c->make(\Daems\Domain\Membership\Billing\MemberFeeInvoiceRepositoryInterface::class),
+                $c->make(\Daems\Domain\Membership\Billing\FeeInvoiceAuditRepositoryInterface::class),
+                $c->make(Clock::class),
+            ),
+        );
+
         // Delegate variants (3)
         $container->bind(
             \Daems\Application\Governance\Delegate\ApproveBasicAsDelegate::class,
@@ -1028,6 +1058,11 @@ final class KernelHarness
                 $c->make(\Daems\Application\Membership\Billing\SetUserFeeOverride\SetUserFeeOverride::class),
                 $c->make(\Daems\Application\Membership\Billing\RevokeUserFeeOverride\RevokeUserFeeOverride::class),
                 $c->make(\Daems\Domain\Membership\Billing\UserFeeOverrideRepositoryInterface::class),
+                $c->make(\Daems\Application\Membership\Billing\WaiveMemberFeeInvoice\WaiveMemberFeeInvoice::class),
+                $c->make(\Daems\Application\Membership\Billing\ReduceMemberFeeInvoice\ReduceMemberFeeInvoice::class),
+                $c->make(\Daems\Application\Membership\Billing\RecordManualPayment\RecordManualPayment::class),
+                $c->make(\Daems\Domain\Membership\Billing\MemberFeeInvoiceRepositoryInterface::class),
+                $c->make(\Daems\Domain\Membership\Billing\FeeInvoiceAuditRepositoryInterface::class),
             ),
         );
 

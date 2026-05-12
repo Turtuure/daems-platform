@@ -5,12 +5,23 @@ namespace Daems\Infrastructure\Adapter\Api\Controller\Backstage\Governance;
 
 use Daems\Application\Membership\Billing\DraftAnnualFeeSchedule\DraftAnnualFeeSchedule;
 use Daems\Application\Membership\Billing\DraftAnnualFeeSchedule\DraftAnnualFeeScheduleInput;
+use Daems\Application\Membership\Billing\RecordManualPayment\RecordManualPayment;
+use Daems\Application\Membership\Billing\RecordManualPayment\RecordManualPaymentInput;
+use Daems\Application\Membership\Billing\ReduceMemberFeeInvoice\ReduceMemberFeeInvoice;
+use Daems\Application\Membership\Billing\ReduceMemberFeeInvoice\ReduceMemberFeeInvoiceInput;
 use Daems\Application\Membership\Billing\RevokeUserFeeOverride\RevokeUserFeeOverride;
 use Daems\Application\Membership\Billing\RevokeUserFeeOverride\RevokeUserFeeOverrideInput;
 use Daems\Application\Membership\Billing\SetUserFeeOverride\SetUserFeeOverride;
 use Daems\Application\Membership\Billing\SetUserFeeOverride\SetUserFeeOverrideInput;
+use Daems\Application\Membership\Billing\WaiveMemberFeeInvoice\WaiveMemberFeeInvoice;
+use Daems\Application\Membership\Billing\WaiveMemberFeeInvoice\WaiveMemberFeeInvoiceInput;
 use Daems\Domain\Auth\ForbiddenException;
 use Daems\Domain\Membership\Billing\AnnualFeeScheduleRepositoryInterface;
+use Daems\Domain\Membership\Billing\Exception\InvoiceAlreadyPaidException;
+use Daems\Domain\Membership\Billing\FeeInvoiceAuditRepositoryInterface;
+use Daems\Domain\Membership\Billing\MemberFeeInvoice;
+use Daems\Domain\Membership\Billing\MemberFeeInvoiceId;
+use Daems\Domain\Membership\Billing\MemberFeeInvoiceRepositoryInterface;
 use Daems\Domain\Membership\Billing\UserFeeOverrideId;
 use Daems\Domain\Membership\Billing\UserFeeOverrideRepositoryInterface;
 use Daems\Domain\User\UserId;
@@ -27,6 +38,11 @@ final class BackstageBillingController
         private readonly SetUserFeeOverride                   $setOverride,
         private readonly RevokeUserFeeOverride                $revokeOverride,
         private readonly UserFeeOverrideRepositoryInterface   $overrides,
+        private readonly WaiveMemberFeeInvoice                $waive,
+        private readonly ReduceMemberFeeInvoice               $reduce,
+        private readonly RecordManualPayment                  $markPaid,
+        private readonly MemberFeeInvoiceRepositoryInterface  $invoices,
+        private readonly FeeInvoiceAuditRepositoryInterface   $audit,
     ) {}
 
     public function listFeeSchedules(Request $req): Response
@@ -186,5 +202,172 @@ final class BackstageBillingController
             return Response::json(['error' => $e->getMessage()], 400);
         }
         return Response::json(['revoked' => true]);
+    }
+
+    public function listInvoices(Request $req): Response
+    {
+        $actor = $req->requireActingUser();
+        if (!$actor->isAdminIn($actor->activeTenant) && !$actor->isPlatformAdmin) {
+            throw new ForbiddenException('admin_required');
+        }
+
+        $filter = [];
+        if (($v = $req->query('year'))     !== null && is_string($v)) { $filter['year']     = (int) $v; }
+        if (($v = $req->query('status'))   !== null && is_string($v)) { $filter['status']   = $v; }
+        if (($v = $req->query('fee_type')) !== null && is_string($v)) { $filter['fee_type'] = $v; }
+        if (($v = $req->query('user_id'))  !== null && is_string($v)) { $filter['user_id']  = $v; }
+
+        $pageRaw = $req->query('page');
+        $page = is_string($pageRaw) || is_int($pageRaw) ? max(1, (int) $pageRaw) : 1;
+        $perPage = 50;
+        $rows = $this->invoices->listForTenant($actor->activeTenant, $filter, $perPage, ($page - 1) * $perPage);
+
+        return Response::json([
+            'page'    => $page,
+            'filter'  => $filter,
+            'rows'    => array_map(fn(MemberFeeInvoice $i) => $this->serializeInvoice($i), $rows),
+        ]);
+    }
+
+    /**
+     * @param array<string,string> $params
+     */
+    public function markInvoicePaid(Request $req, array $params): Response
+    {
+        $actor = $req->requireActingUser();
+        $idRaw = $params['id'] ?? '';
+        $body = $req->all();
+        $amountRaw    = $body['amount_cents'] ?? null;
+        $paidAtRaw    = $body['paid_at']      ?? null;
+        $methodRaw    = $body['method']       ?? null;
+        $referenceRaw = $body['reference']    ?? '';
+
+        if (!is_string($paidAtRaw) || !is_string($methodRaw) || !(is_int($amountRaw) || is_string($amountRaw))) {
+            return Response::json(['error' => 'amount_cents, paid_at, method are required'], 400);
+        }
+
+        try {
+            $this->markPaid->handle(new RecordManualPaymentInput(
+                actor:       $actor,
+                invoiceId:   MemberFeeInvoiceId::fromString($idRaw),
+                amountCents: (int) $amountRaw,
+                paidAt:      new DateTimeImmutable($paidAtRaw),
+                method:      $methodRaw,
+                reference:   is_string($referenceRaw) ? $referenceRaw : '',
+            ));
+        } catch (ForbiddenException $e) {
+            return Response::json(['error' => $e->getMessage()], 403);
+        } catch (InvoiceAlreadyPaidException $e) {
+            return Response::json(['error' => $e->getMessage()], 409);
+        } catch (InvalidArgumentException $e) {
+            return Response::json(['error' => $e->getMessage()], 400);
+        } catch (\DomainException $e) {
+            return Response::json(['error' => $e->getMessage()], 404);
+        }
+        return Response::json(['marked_paid' => true]);
+    }
+
+    /**
+     * @param array<string,string> $params
+     */
+    public function waiveInvoice(Request $req, array $params): Response
+    {
+        $actor = $req->requireActingUser();
+        $idRaw = $params['id'] ?? '';
+        $reasonRaw = $req->all()['reason'] ?? '';
+
+        try {
+            $this->waive->handle(new WaiveMemberFeeInvoiceInput(
+                actor:     $actor,
+                invoiceId: MemberFeeInvoiceId::fromString($idRaw),
+                reason:    is_string($reasonRaw) ? $reasonRaw : '',
+            ));
+        } catch (ForbiddenException $e) {
+            return Response::json(['error' => $e->getMessage()], 403);
+        } catch (InvalidArgumentException $e) {
+            return Response::json(['error' => $e->getMessage()], 400);
+        } catch (\DomainException $e) {
+            return Response::json(['error' => $e->getMessage()], 404);
+        }
+        return Response::json(['waived' => true]);
+    }
+
+    /**
+     * @param array<string,string> $params
+     */
+    public function reduceInvoice(Request $req, array $params): Response
+    {
+        $actor = $req->requireActingUser();
+        $idRaw = $params['id'] ?? '';
+        $body = $req->all();
+        $amountRaw = $body['amount_cents'] ?? null;
+        $reasonRaw = $body['reason']       ?? '';
+
+        if (!(is_int($amountRaw) || is_string($amountRaw))) {
+            return Response::json(['error' => 'amount_cents is required'], 400);
+        }
+
+        try {
+            $this->reduce->handle(new ReduceMemberFeeInvoiceInput(
+                actor:          $actor,
+                invoiceId:      MemberFeeInvoiceId::fromString($idRaw),
+                newAmountCents: (int) $amountRaw,
+                reason:         is_string($reasonRaw) ? $reasonRaw : '',
+            ));
+        } catch (ForbiddenException $e) {
+            return Response::json(['error' => $e->getMessage()], 403);
+        } catch (InvalidArgumentException $e) {
+            return Response::json(['error' => $e->getMessage()], 400);
+        } catch (\DomainException $e) {
+            return Response::json(['error' => $e->getMessage()], 404);
+        }
+        return Response::json(['reduced' => true]);
+    }
+
+    /**
+     * @param array<string,string> $params
+     */
+    public function invoiceAudit(Request $req, array $params): Response
+    {
+        $actor = $req->requireActingUser();
+        if (!$actor->isAdminIn($actor->activeTenant) && !$actor->isPlatformAdmin) {
+            throw new ForbiddenException('admin_required');
+        }
+        $idRaw = $params['id'] ?? '';
+        $rows = $this->audit->listForInvoice(MemberFeeInvoiceId::fromString($idRaw));
+        return Response::json([
+            'rows' => array_map(static fn($r) => [
+                'action'       => $r->action->value,
+                'performed_by' => $r->performedBy?->value(),
+                'performed_at' => $r->performedAt->format(\DateTimeImmutable::ATOM),
+                'payload'      => $r->payloadJson !== null ? json_decode($r->payloadJson, true) : null,
+            ], $rows),
+        ]);
+    }
+
+    /**
+     * @return array<string,mixed>
+     */
+    private function serializeInvoice(MemberFeeInvoice $i): array
+    {
+        return [
+            'id'                    => $i->id()->value(),
+            'user_id'               => $i->userId()->value(),
+            'year'                  => $i->year(),
+            'fee_type'              => $i->feeType()->value,
+            'anniversary_date'      => $i->anniversaryDate()->format('Y-m-d'),
+            'amount_cents'          => $i->amountCents(),
+            'original_amount_cents' => $i->originalAmountCents(),
+            'currency'              => $i->currency(),
+            'due_date'              => $i->dueDate()->format('Y-m-d'),
+            'status'                => $i->status()->value,
+            'paid_at'               => $i->paidAt()?->format(\DateTimeImmutable::ATOM),
+            'paid_amount_cents'     => $i->paidAmountCents(),
+            'paid_method'           => $i->paidMethod(),
+            'paid_reference'        => $i->paidReference(),
+            'waived_at'             => $i->waivedAt()?->format(\DateTimeImmutable::ATOM),
+            'waive_reason'          => $i->waiveReason(),
+            'override_id'           => $i->overrideId(),
+        ];
     }
 }
