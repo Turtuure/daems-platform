@@ -29,5 +29,30 @@ if ($method === 'POST' && str_contains($uri, '/governance/billing/fee-schedules'
     exit;
 }
 
+// Per-user fee overrides (Wave D)
+if ($method === 'POST' && preg_match('#/governance/billing/overrides/([0-9a-f-]+)/revoke#', $uri, $m) === 1) {
+    $r = ApiClient::post('/backstage/governance/billing/overrides/' . $m[1] . '/revoke', []);
+    http_response_code((int) ($r['status'] ?? 500));
+    echo json_encode($r['body'] ?? []);
+    exit;
+}
+
+if ($method === 'GET' && str_contains($uri, '/governance/billing/overrides')) {
+    $qs = '';
+    if (($q = parse_url($uri, PHP_URL_QUERY)) !== null && $q !== false) {
+        $qs = '?' . $q;
+    }
+    proxy_backend_get('/backstage/governance/billing/overrides' . $qs);
+    exit;
+}
+
+if ($method === 'POST' && str_contains($uri, '/governance/billing/overrides')) {
+    $body = json_decode((string) file_get_contents('php://input'), true);
+    $r = ApiClient::post('/backstage/governance/billing/overrides', is_array($body) ? $body : []);
+    http_response_code((int) ($r['status'] ?? 500));
+    echo json_encode($r['body'] ?? []);
+    exit;
+}
+
 http_response_code(405);
 echo json_encode(['error' => 'method_not_allowed']);
