@@ -49,7 +49,7 @@ final class InMemoryAnnualFeeScheduleRepository implements AnnualFeeScheduleRepo
             if ($decisionId !== null && $s->decisionId() !== $decisionId) continue;
             $out[] = $s;
         }
-        return array_values($out);
+        return $out;
     }
 
     public function listForTenantYear(TenantId $tenantId, int $year): array
@@ -60,6 +60,6 @@ final class InMemoryAnnualFeeScheduleRepository implements AnnualFeeScheduleRepo
                 $out[] = $s;
             }
         }
-        return array_values($out);
+        return $out;
     }
 }
