@@ -12,11 +12,16 @@ final class DefaultLayoutsTest extends TestCase
     public function test_admin_default_has_expected_widgets(): void
     {
         $layout = DefaultLayouts::for(MinRole::Admin);
-        // 8 baseline + 1 added in MembershipCore 0.6a (members_by_tier_kpi).
-        self::assertCount(9, $layout);
+        // 8 baseline + 1 added in MembershipCore 0.6a (members_by_tier_kpi)
+        // + 4 added in MembershipCore 0.6b (governance widgets).
+        self::assertCount(13, $layout);
         self::assertSame('core.members_kpi', $layout[0]->widgetId());
         $ids = array_map(fn($e) => $e->widgetId(), $layout);
         self::assertContains('members.members_by_tier_kpi', $ids);
+        self::assertContains('governance.pending_decisions_for_me_kpi', $ids);
+        self::assertContains('governance.open_expulsions_kpi', $ids);
+        self::assertContains('governance.delegations_active_kpi', $ids);
+        self::assertContains('governance.eligible_for_full_membership', $ids);
     }
 
     public function test_moderator_default_has_forum_focus(): void

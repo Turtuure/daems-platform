@@ -1086,6 +1086,21 @@ final class KernelHarness
         $registry->register(new \Daems\Infrastructure\Dashboard\CoreWidgets\ActivityFeedWidget(
             $container->make(\Daems\Application\Platform\GetPlatformStats\GetPlatformStats::class),
         ));
+        $registry->register(new \Daems\Infrastructure\Dashboard\CoreWidgets\PendingDecisionsForMeKpiWidget(
+            $container->make(\Daems\Domain\Governance\BoardRepositoryInterface::class),
+            $container->make(\Daems\Domain\Governance\BoardDecisionRepositoryInterface::class),
+            $container->make(\Daems\Domain\Governance\BoardMemberRepositoryInterface::class),
+            $container->make(\Daems\Domain\Governance\BoardDecisionVoteRepositoryInterface::class),
+        ));
+        $registry->register(new \Daems\Infrastructure\Dashboard\CoreWidgets\OpenExpulsionsKpiWidget(
+            $container->make(\Daems\Domain\Membership\MemberExpulsionRepositoryInterface::class),
+        ));
+        $registry->register(new \Daems\Infrastructure\Dashboard\CoreWidgets\DelegationsActiveKpiWidget(
+            $container->make(\Daems\Domain\Governance\BoardDelegationRepositoryInterface::class),
+        ));
+        $registry->register(new \Daems\Infrastructure\Dashboard\CoreWidgets\EligibleForFullMembershipWidget(
+            static fn(): array => [],
+        ));
         $registry->register(new \Daems\Infrastructure\Dashboard\PlatformWidgets\TenantsKpiWidget(
             $container->make(\Daems\Application\Platform\GetPlatformStats\GetPlatformStats::class),
         ));

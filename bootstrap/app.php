@@ -1230,6 +1230,49 @@ $registry->register(new \Daems\Infrastructure\Dashboard\CoreWidgets\PendingAppsL
 $registry->register(new \Daems\Infrastructure\Dashboard\CoreWidgets\ActivityFeedWidget(
     $container->make(\Daems\Application\Platform\GetPlatformStats\GetPlatformStats::class),
 ));
+$registry->register(new \Daems\Infrastructure\Dashboard\CoreWidgets\PendingDecisionsForMeKpiWidget(
+    $container->make(\Daems\Domain\Governance\BoardRepositoryInterface::class),
+    $container->make(\Daems\Domain\Governance\BoardDecisionRepositoryInterface::class),
+    $container->make(\Daems\Domain\Governance\BoardMemberRepositoryInterface::class),
+    $container->make(\Daems\Domain\Governance\BoardDecisionVoteRepositoryInterface::class),
+));
+$registry->register(new \Daems\Infrastructure\Dashboard\CoreWidgets\OpenExpulsionsKpiWidget(
+    $container->make(\Daems\Domain\Membership\MemberExpulsionRepositoryInterface::class),
+));
+$registry->register(new \Daems\Infrastructure\Dashboard\CoreWidgets\DelegationsActiveKpiWidget(
+    $container->make(\Daems\Domain\Governance\BoardDelegationRepositoryInterface::class),
+));
+$registry->register(new \Daems\Infrastructure\Dashboard\CoreWidgets\EligibleForFullMembershipWidget(
+    static function (\Daems\Domain\Tenant\TenantId $tenantId, \DateTimeImmutable $at) use ($container): array {
+        $pdo = $container->make(\Daems\Infrastructure\Framework\Database\Connection::class)->pdo();
+        $threshold = $at->modify('-12 months')->format('Y-m-d H:i:s');
+        $stmt = $pdo->prepare(
+            "SELECT u.id, u.name, u.member_number, u.membership_started_at,
+                    TIMESTAMPDIFF(MONTH, u.membership_started_at, ?) AS months_since_join
+               FROM users u
+               JOIN user_tenants ut ON ut.user_id = u.id
+              WHERE ut.tenant_id = ?
+                AND u.membership_type = 'BASIC'
+                AND u.membership_status = 'active'
+                AND u.membership_started_at IS NOT NULL
+                AND u.membership_started_at <= ?
+              ORDER BY u.membership_started_at ASC"
+        );
+        $stmt->execute([$at->format('Y-m-d H:i:s'), $tenantId->value(), $threshold]);
+        $out = [];
+        foreach ($stmt->fetchAll(\PDO::FETCH_ASSOC) as $r) {
+            if (!is_array($r)) continue;
+            $out[] = [
+                'id'                    => is_string($r['id'] ?? null) ? $r['id'] : '',
+                'name'                  => is_string($r['name'] ?? null) ? $r['name'] : '',
+                'member_number'         => is_string($r['member_number'] ?? null) ? $r['member_number'] : null,
+                'membership_started_at' => is_string($r['membership_started_at'] ?? null) ? $r['membership_started_at'] : '',
+                'months_since_join'     => is_int($r['months_since_join'] ?? null) ? $r['months_since_join'] : (int) (string) ($r['months_since_join'] ?? 0),
+            ];
+        }
+        return $out;
+    },
+));
 $registry->register(new \Daems\Infrastructure\Dashboard\PlatformWidgets\TenantsKpiWidget(
     $container->make(\Daems\Application\Platform\GetPlatformStats\GetPlatformStats::class),
 ));
