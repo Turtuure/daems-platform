@@ -67,13 +67,10 @@ final class GenerateAnniversaryInvoice
         $amount = $schedule->amountCents();
         $overrideId = null;
 
-        // Wave D will read overrideAmountCents() + id() from the override entity here.
-        // Wave C placeholder UserFeeOverride has no such methods; InMemoryUserFeeOverrideRepository
-        // always returns null from findActiveFor() so this lookup never produces a hit.
         $override = $this->overrides->findActiveFor($in->tenantId, $in->userId, $type->value, $today);
         if ($override !== null) {
-            // Wave D fills override-application logic here.
-            $overrideId = null;
+            $amount = $override->overrideAmountCents();
+            $overrideId = $override->id()->value();
         }
 
         $tenantSettings = $this->settings->find($in->tenantId);
