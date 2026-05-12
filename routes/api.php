@@ -309,6 +309,15 @@ return static function (Router $router, Container $container): void {
         return $container->make(\Daems\Infrastructure\Adapter\Api\Controller\Backstage\Governance\GsaOverrideController::class)->forceApproveBasic($req);
     }, [TenantContextMiddleware::class, AuthMiddleware::class]);
 
+    // Governance — billing fee schedules
+    $router->get('/api/v1/backstage/governance/billing/fee-schedules', static function (Request $req) use ($container): Response {
+        return $container->make(\Daems\Infrastructure\Adapter\Api\Controller\Backstage\Governance\BackstageBillingController::class)->listFeeSchedules($req);
+    }, [TenantContextMiddleware::class, AuthMiddleware::class]);
+
+    $router->post('/api/v1/backstage/governance/billing/fee-schedules', static function (Request $req) use ($container): Response {
+        return $container->make(\Daems\Infrastructure\Adapter\Api\Controller\Backstage\Governance\BackstageBillingController::class)->createFeeSchedule($req);
+    }, [TenantContextMiddleware::class, AuthMiddleware::class]);
+
     // Module routes — invoke each discovered module's routes.php.
     $moduleRegistry = $container->make(\Daems\Infrastructure\Module\ModuleRegistry::class);
     $moduleRegistry->registerRoutes($router, $container);

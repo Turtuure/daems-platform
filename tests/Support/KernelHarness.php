@@ -983,6 +983,13 @@ final class KernelHarness
                 $c->make(\Daems\Application\Audit\GsaForceApproveBasic::class),
             ),
         );
+        $container->bind(
+            \Daems\Infrastructure\Adapter\Api\Controller\Backstage\Governance\BackstageBillingController::class,
+            static fn(Container $c) => new \Daems\Infrastructure\Adapter\Api\Controller\Backstage\Governance\BackstageBillingController(
+                $c->make(\Daems\Application\Membership\Billing\DraftAnnualFeeSchedule\DraftAnnualFeeSchedule::class),
+                $c->make(\Daems\Domain\Membership\Billing\AnnualFeeScheduleRepositoryInterface::class),
+            ),
+        );
 
         // Dashboard — widget registry, repo, use cases, widget instances.
         // MUST be bound before module bindings run so modules can register their widgets.
@@ -1160,6 +1167,12 @@ final class KernelHarness
         });
 
         $this->kernel = new Kernel($container, $logger, $debug);
+    }
+
+    /** Returns the TenantId for the seeded test tenant (slug: daems). */
+    public function daemsTenantId(): TenantId
+    {
+        return $this->testTenantId;
     }
 
     /**
