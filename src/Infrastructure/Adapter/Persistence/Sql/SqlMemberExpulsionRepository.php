@@ -24,6 +24,14 @@ final class SqlMemberExpulsionRepository implements MemberExpulsionRepositoryInt
         return is_array($r) ? $this->hydrate($r) : null;
     }
 
+    public function findByDecisionId(BoardDecisionId $decisionId): ?MemberExpulsion
+    {
+        $stmt = $this->pdo->prepare('SELECT * FROM member_expulsions WHERE decision_id = ? LIMIT 1');
+        $stmt->execute([$decisionId->value()]);
+        $r = $stmt->fetch(PDO::FETCH_ASSOC);
+        return is_array($r) ? $this->hydrate($r) : null;
+    }
+
     public function listForTenant(TenantId $tenantId, ?MemberExpulsionStatus $status = null): array
     {
         $sql = 'SELECT * FROM member_expulsions WHERE tenant_id = ?';

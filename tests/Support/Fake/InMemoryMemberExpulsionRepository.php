@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 namespace Daems\Tests\Support\Fake;
 
+use Daems\Domain\Governance\BoardDecisionId;
 use Daems\Domain\Membership\MemberExpulsion;
 use Daems\Domain\Membership\MemberExpulsionId;
 use Daems\Domain\Membership\MemberExpulsionRepositoryInterface;
@@ -17,6 +18,14 @@ final class InMemoryMemberExpulsionRepository implements MemberExpulsionReposito
     public function find(MemberExpulsionId $id): ?MemberExpulsion
     {
         return $this->byId[$id->value()] ?? null;
+    }
+
+    public function findByDecisionId(BoardDecisionId $decisionId): ?MemberExpulsion
+    {
+        foreach ($this->byId as $e) {
+            if ($e->decisionId !== null && $e->decisionId->value() === $decisionId->value()) return $e;
+        }
+        return null;
     }
 
     public function listForTenant(TenantId $tenantId, ?MemberExpulsionStatus $status = null): array
