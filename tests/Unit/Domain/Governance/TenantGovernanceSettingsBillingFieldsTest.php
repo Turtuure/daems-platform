@@ -5,7 +5,6 @@ namespace Daems\Tests\Unit\Domain\Governance;
 
 use Daems\Domain\Governance\TenantGovernanceSettings;
 use Daems\Domain\Tenant\TenantId;
-use DateTimeImmutable;
 use PHPUnit\Framework\TestCase;
 
 final class TenantGovernanceSettingsBillingFieldsTest extends TestCase
