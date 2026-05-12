@@ -929,6 +929,17 @@ final class KernelHarness
             ),
         );
 
+        // LapseInactiveMember use case (Wave F § 4)
+        $container->bind(
+            \Daems\Application\Membership\Billing\LapseInactiveMember\LapseInactiveMember::class,
+            static fn(Container $c) => new \Daems\Application\Membership\Billing\LapseInactiveMember\LapseInactiveMember(
+                $c->make(\Daems\Domain\User\UserRepositoryInterface::class),
+                $c->make(\Daems\Domain\Membership\MemberStatusAuditRepositoryInterface::class),
+                $c->make(\Daems\Domain\Shared\IdGeneratorInterface::class),
+                $c->make(Clock::class),
+            ),
+        );
+
         // Delegate variants (3)
         $container->bind(
             \Daems\Application\Governance\Delegate\ApproveBasicAsDelegate::class,

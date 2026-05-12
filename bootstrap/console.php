@@ -41,4 +41,14 @@ $registry->register(new \Daems\Application\Membership\Billing\Cron\MarkOverdueIn
     logger:      new CronLogger(__DIR__ . '/../var/log/cron', 'membership:mark-overdue-invoices', $now),
 ));
 
+// Membership Billing — lapse cron (0.7 Wave F § 4)
+$registry->register(new \Daems\Application\Membership\Billing\Cron\LapseInactiveMembersCommand(
+    pdo:         $container->make(\Daems\Infrastructure\Framework\Database\Connection::class)->pdo(),
+    invoices:    $container->make(\Daems\Domain\Membership\Billing\MemberFeeInvoiceRepositoryInterface::class),
+    settings:    $container->make(\Daems\Domain\Governance\TenantGovernanceSettingsRepositoryInterface::class),
+    useCase:     $container->make(\Daems\Application\Membership\Billing\LapseInactiveMember\LapseInactiveMember::class),
+    lockManager: new LockManager(__DIR__ . '/../var/run'),
+    logger:      new CronLogger(__DIR__ . '/../var/log/cron', 'membership:lapse-inactive-members', $now),
+));
+
 return new ConsoleKernel($registry);
