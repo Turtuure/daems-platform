@@ -32,6 +32,8 @@ interface UserRepositoryInterface
 
     public function updatePassword(string $id, string $newHash): void;
 
+    public function updateMembershipStatus(string $id, string $newStatus): void;
+
     public function updatePublicAvatarVisible(string $id, bool $visible): void;
 
     /** $format must be '12', '24', or null (clear → inherit tenant default). */

@@ -126,6 +126,11 @@ final class SqlUserRepository implements UserRepositoryInterface
         $this->db->execute('UPDATE users SET password_hash = ? WHERE id = ?', [$newHash, $id]);
     }
 
+    public function updateMembershipStatus(string $id, string $newStatus): void
+    {
+        $this->db->execute('UPDATE users SET membership_status = ? WHERE id = ?', [$newStatus, $id]);
+    }
+
     public function updatePublicAvatarVisible(string $id, bool $visible): void
     {
         $this->db->execute('UPDATE users SET public_avatar_visible = ? WHERE id = ?', [$visible ? 1 : 0, $id]);
