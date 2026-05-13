@@ -37,6 +37,9 @@ ob_start();
         <a class="btn btn--ghost btn--sm" href="/backstage/governance/billing/overrides">
             <?= I18n::e('backstage.governance.billing.overrides.link') ?> &rarr;
         </a>
+        <a class="btn btn--ghost btn--sm" href="/backstage/governance/billing/import">
+            CSV-tuonti &rarr;
+        </a>
     </form>
 </div>
 

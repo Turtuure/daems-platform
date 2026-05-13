@@ -9,6 +9,10 @@ use Daems\Application\Membership\Billing\RecordManualPayment\RecordManualPayment
 use Daems\Application\Membership\Billing\RecordManualPayment\RecordManualPaymentInput;
 use Daems\Application\Membership\Billing\ReduceMemberFeeInvoice\ReduceMemberFeeInvoice;
 use Daems\Application\Membership\Billing\ReduceMemberFeeInvoice\ReduceMemberFeeInvoiceInput;
+use Daems\Application\Membership\Billing\ImportPaymentsCsv\ConfirmImportPayments;
+use Daems\Application\Membership\Billing\ImportPaymentsCsv\ConfirmImportPaymentsInput;
+use Daems\Application\Membership\Billing\ImportPaymentsCsv\PreviewImportPayments;
+use Daems\Application\Membership\Billing\ImportPaymentsCsv\PreviewImportPaymentsInput;
 use Daems\Application\Membership\Billing\ReverseLapse\ReverseLapse;
 use Daems\Application\Membership\Billing\ReverseLapse\ReverseLapseInput;
 use Daems\Application\Membership\Billing\RevokeUserFeeOverride\RevokeUserFeeOverride;
@@ -47,6 +51,8 @@ final class BackstageBillingController
         private readonly MemberFeeInvoiceRepositoryInterface  $invoices,
         private readonly FeeInvoiceAuditRepositoryInterface   $audit,
         private readonly ReverseLapse                         $reverseLapse,
+        private readonly PreviewImportPayments                $previewImport,
+        private readonly ConfirmImportPayments                $confirmImport,
     ) {}
 
     public function listFeeSchedules(Request $req): Response
@@ -397,6 +403,88 @@ final class BackstageBillingController
             return Response::json(['error' => $e->getMessage()], 404);
         }
         return Response::json(['reversed' => true]);
+    }
+
+    public function previewImportCsv(Request $req): Response
+    {
+        $actor = $req->requireActingUser();
+        if (!$actor->isAdminIn($actor->activeTenant) && !$actor->isPlatformAdmin) {
+            return Response::json(['error' => 'admin_required'], 403);
+        }
+
+        $upload = $_FILES['csv'] ?? null;
+        if (!is_array($upload) || ($upload['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_OK) {
+            return Response::json(['error' => 'csv file required (multipart field "csv")'], 400);
+        }
+        $tmpPath = is_string($upload['tmp_name'] ?? null) ? $upload['tmp_name'] : '';
+        $content = $tmpPath !== '' ? (string) @file_get_contents($tmpPath) : '';
+
+        try {
+            $output = $this->previewImport->handle(new PreviewImportPaymentsInput(
+                actor:      $actor,
+                tenantId:   $actor->activeTenant,
+                csvContent: $content,
+            ));
+        } catch (ForbiddenException $e) {
+            return Response::json(['error' => $e->getMessage()], 403);
+        } catch (InvalidArgumentException $e) {
+            return Response::json(['error' => $e->getMessage()], 400);
+        }
+
+        return Response::json([
+            'high_confidence_count' => $output->highConfidenceCount(),
+            'results' => array_map(static fn($r) => [
+                'row_number'            => $r->parsed->rowNumber,
+                'reference'             => $r->parsed->reference,
+                'amount_cents'          => $r->parsed->amountCents,
+                'value_date'            => $r->parsed->valueDate->format('Y-m-d'),
+                'payer_name'            => $r->parsed->payerName,
+                'matched_invoice_id'    => $r->matchedInvoiceId?->value(),
+                'matched_amount_cents'  => $r->matchedAmountCents,
+                'confidence'            => $r->confidence,
+                'low_confidence_reason' => $r->reasonForLowConfidence,
+            ], $output->results),
+        ]);
+    }
+
+    public function confirmImportCsv(Request $req): Response
+    {
+        $actor = $req->requireActingUser();
+        $matchesRaw = $req->all()['matches'] ?? [];
+        if (!is_array($matchesRaw)) {
+            return Response::json(['error' => 'matches must be an array'], 400);
+        }
+
+        $matches = [];
+        foreach ($matchesRaw as $m) {
+            if (!is_array($m)) {
+                continue;
+            }
+            $invoiceId = is_string($m['invoice_id'] ?? null) ? $m['invoice_id'] : null;
+            $amount    = is_int($m['amount_cents'] ?? null) || (is_string($m['amount_cents'] ?? null) && ctype_digit((string) $m['amount_cents']))
+                ? (int) $m['amount_cents']
+                : null;
+            $paidAt    = is_string($m['paid_at'] ?? null) ? $m['paid_at'] : null;
+            $reference = is_string($m['reference'] ?? null) ? $m['reference'] : '';
+            if ($invoiceId === null || $amount === null || $paidAt === null) {
+                continue;
+            }
+            $matches[] = ['invoice_id' => $invoiceId, 'amount_cents' => $amount, 'paid_at' => $paidAt, 'reference' => $reference];
+        }
+
+        try {
+            $output = $this->confirmImport->handle(new ConfirmImportPaymentsInput(
+                actor:    $actor,
+                tenantId: $actor->activeTenant,
+                matches:  $matches,
+            ));
+        } catch (ForbiddenException $e) {
+            return Response::json(['error' => $e->getMessage()], 403);
+        }
+        return Response::json([
+            'applied' => $output->applied,
+            'errors'  => $output->errors,
+        ]);
     }
 
     /**

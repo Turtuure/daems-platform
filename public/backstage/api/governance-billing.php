@@ -29,6 +29,47 @@ if ($method === 'POST' && str_contains($uri, '/governance/billing/fee-schedules'
     exit;
 }
 
+// CSV import (Wave G — Nordea bank statement)
+if ($method === 'POST' && str_contains($uri, '/governance/billing/payments/import-csv/confirm')) {
+    $body = json_decode((string) file_get_contents('php://input'), true);
+    $r = ApiClient::post('/backstage/governance/billing/payments/import-csv/confirm', is_array($body) ? $body : []);
+    http_response_code((int) ($r['status'] ?? 500));
+    echo json_encode($r['body'] ?? []);
+    exit;
+}
+
+if ($method === 'POST' && str_contains($uri, '/governance/billing/payments/import-csv')) {
+    // Multipart upload: forward $_FILES['csv'] via cURL to the platform API.
+    if (!isset($_FILES['csv']['tmp_name']) || !is_string($_FILES['csv']['tmp_name'])) {
+        http_response_code(400);
+        echo json_encode(['error' => 'csv file required']);
+        exit;
+    }
+    $cookieHeader = '';
+    foreach ($_COOKIE as $k => $v) {
+        $cookieHeader .= urlencode($k) . '=' . urlencode((string) $v) . '; ';
+    }
+    $tenantHost = (string) ($_SERVER['HTTP_HOST'] ?? 'daems-platform.local');
+    $ch = curl_init('http://daems-platform.local/api/v1/backstage/governance/billing/payments/import-csv');
+    curl_setopt_array($ch, [
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_POST           => true,
+        CURLOPT_POSTFIELDS     => [
+            'csv' => new CURLFile($_FILES['csv']['tmp_name'], 'text/csv', (string) ($_FILES['csv']['name'] ?? 'upload.csv')),
+        ],
+        CURLOPT_HTTPHEADER     => [
+            'Cookie: ' . rtrim($cookieHeader, '; '),
+            'X-Daems-Forwarded-Host: ' . $tenantHost,
+        ],
+    ]);
+    $body = (string) curl_exec($ch);
+    $status = (int) curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    curl_close($ch);
+    http_response_code($status);
+    echo $body;
+    exit;
+}
+
 // Per-user fee overrides (Wave D)
 if ($method === 'POST' && preg_match('#/governance/billing/overrides/([0-9a-f-]+)/revoke#', $uri, $m) === 1) {
     $r = ApiClient::post('/backstage/governance/billing/overrides/' . $m[1] . '/revoke', []);

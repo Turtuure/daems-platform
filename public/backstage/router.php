@@ -74,6 +74,7 @@ $map = [
     '/governance/billing'            => __DIR__ . '/pages/governance/billing.php',
     '/governance/billing/overrides'  => __DIR__ . '/pages/governance/billing-overrides.php',
     '/governance/billing/invoices'   => __DIR__ . '/pages/governance/billing-invoices.php',
+    '/governance/billing/import'     => __DIR__ . '/pages/governance/billing-import.php',
     '/governance/decisions'          => __DIR__ . '/pages/governance/decisions-list.php',
     '/governance/decisions/new'      => __DIR__ . '/pages/governance/decisions-new.php',
     '/governance/decisions/detail'   => __DIR__ . '/pages/governance/decisions-detail.php',
