@@ -27,6 +27,8 @@ final class Tenant
         private readonly string $defaultLocale = 'en_GB',
         private readonly ?DateTimeImmutable $suspendedAt = null,
         private readonly ?string $suspendedReason = null,
+        /** ISO-4217 3-letter code (EUR, TZS, ...). Default suits 99% of tenants. */
+        private readonly string $currency = 'EUR',
     ) {}
 
     /**
@@ -114,5 +116,10 @@ final class Tenant
     public function suspendedReason(): ?string
     {
         return $this->suspendedReason;
+    }
+
+    public function currency(): string
+    {
+        return $this->currency;
     }
 }

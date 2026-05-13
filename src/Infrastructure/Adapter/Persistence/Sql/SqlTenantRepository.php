@@ -18,7 +18,7 @@ final class SqlTenantRepository implements TenantRepositoryInterface
 
     private const SELECT_COLUMNS = 'id, slug, name, created_at, member_number_prefix, default_time_format,
             display_name_i18n, public_description_i18n, supported_locales, default_locale,
-            suspended_at, suspended_reason';
+            suspended_at, suspended_reason, currency';
 
     public function findById(TenantId $id): ?Tenant
     {
@@ -41,7 +41,7 @@ final class SqlTenantRepository implements TenantRepositoryInterface
         $stmt = $this->pdo->prepare(
             'SELECT t.id, t.slug, t.name, t.created_at, t.member_number_prefix, t.default_time_format,
                     t.display_name_i18n, t.public_description_i18n, t.supported_locales, t.default_locale,
-                    t.suspended_at, t.suspended_reason
+                    t.suspended_at, t.suspended_reason, t.currency
              FROM tenants t
              JOIN tenant_domains td ON td.tenant_id = t.id
              WHERE td.domain = ? LIMIT 1'
@@ -100,6 +100,10 @@ final class SqlTenantRepository implements TenantRepositoryInterface
             $suspendedReason = $row['suspended_reason'];
         }
 
+        $currency = isset($row['currency']) && is_string($row['currency']) && $row['currency'] !== ''
+            ? $row['currency']
+            : 'EUR';
+
         return new Tenant(
             id: TenantId::fromString($id),
             slug: TenantSlug::fromString($slug),
@@ -113,6 +117,7 @@ final class SqlTenantRepository implements TenantRepositoryInterface
             defaultLocale: $defaultLocale,
             suspendedAt: $suspendedAt,
             suspendedReason: $suspendedReason,
+            currency: $currency,
         );
     }
 
@@ -165,8 +170,8 @@ final class SqlTenantRepository implements TenantRepositoryInterface
             'INSERT INTO tenants
                 (id, slug, name, created_at, member_number_prefix, default_time_format,
                  display_name_i18n, public_description_i18n, supported_locales, default_locale,
-                 suspended_at, suspended_reason)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
+                 suspended_at, suspended_reason, currency)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
         );
         $stmt->execute([
             $tenant->id->value(),
@@ -181,6 +186,7 @@ final class SqlTenantRepository implements TenantRepositoryInterface
             $tenant->defaultLocale(),
             $tenant->suspendedAt()?->format('Y-m-d H:i:s'),
             $tenant->suspendedReason(),
+            $tenant->currency(),
         ]);
     }
 

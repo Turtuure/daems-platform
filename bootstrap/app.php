@@ -1005,6 +1005,7 @@ $container->bind(
         $c->make(\Daems\Domain\Governance\BoardDecisionRepositoryInterface::class),
         $c->make(\Daems\Domain\Governance\TenantGovernanceSettingsRepositoryInterface::class),
         $c->make(\Daems\Domain\Governance\BoardRepositoryInterface::class),
+        $c->make(\Daems\Domain\Tenant\TenantRepositoryInterface::class),
         $c->make(Clock::class),
     ),
 );

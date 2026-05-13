@@ -24,6 +24,7 @@ use Daems\Tests\Support\Fake\InMemoryAnnualFeeScheduleRepository;
 use Daems\Tests\Support\Fake\InMemoryBoardDecisionRepository;
 use Daems\Tests\Support\Fake\InMemoryBoardRepository;
 use Daems\Tests\Support\Fake\InMemoryTenantGovernanceSettingsRepository;
+use Daems\Tests\Support\Fake\InMemoryTenantRepository;
 use DateTimeImmutable;
 use PHPUnit\Framework\TestCase;
 
@@ -104,6 +105,7 @@ final class DraftAnnualFeeScheduleTest extends TestCase
             $deciRepo,
             $settingsRepo,
             $boardRepo,
+            new InMemoryTenantRepository(),
             FrozenClock::at('2026-11-01T00:00:00'),
         );
 
@@ -144,6 +146,7 @@ final class DraftAnnualFeeScheduleTest extends TestCase
             $deciRepo,
             $settingsRepo,
             $boardRepo,
+            new InMemoryTenantRepository(),
             FrozenClock::at('2026-11-01T00:00:00'),
         );
 
@@ -258,6 +261,7 @@ final class DraftAnnualFeeScheduleTest extends TestCase
             $deciRepo,
             $settingsRepo,
             $boardRepo,
+            new InMemoryTenantRepository(),
             FrozenClock::at('2026-11-01T00:00:00'),
         );
 

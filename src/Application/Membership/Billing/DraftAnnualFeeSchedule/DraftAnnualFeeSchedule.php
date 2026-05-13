@@ -20,6 +20,7 @@ use Daems\Domain\Membership\Billing\AnnualFeeScheduleRepositoryInterface;
 use Daems\Domain\Membership\Billing\AnnualFeeScheduleStatus;
 use Daems\Domain\Membership\MembershipType;
 use Daems\Domain\Shared\Clock;
+use Daems\Domain\Tenant\TenantRepositoryInterface;
 use DomainException;
 use InvalidArgumentException;
 
@@ -37,6 +38,7 @@ final class DraftAnnualFeeSchedule
         private readonly BoardDecisionRepositoryInterface             $decisions,
         private readonly TenantGovernanceSettingsRepositoryInterface  $settings,
         private readonly BoardRepositoryInterface                     $boards,
+        private readonly TenantRepositoryInterface                    $tenants,
         private readonly Clock                                        $clock,
     ) {}
 
@@ -102,6 +104,9 @@ final class DraftAnnualFeeSchedule
             }
         }
 
+        $tenant = $this->tenants->findById($in->tenantId);
+        $currency = $tenant?->currency() ?? 'EUR';
+
         $scheduleIds = [];
         foreach ($in->fees as $typeValue => $amountCents) {
             $schedule = new AnnualFeeSchedule(
@@ -110,7 +115,7 @@ final class DraftAnnualFeeSchedule
                 year:         $in->year,
                 feeType:      MembershipType::from($typeValue),
                 amountCents:  $amountCents,
-                currency:     'EUR',
+                currency:     $currency,
                 status:       $status,
                 decisionId:   $decisionId,
                 activatedAt:  $status === AnnualFeeScheduleStatus::Active ? $now : null,
