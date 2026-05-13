@@ -131,6 +131,22 @@ Dev DB: `daems_db` on `127.0.0.1:3306`, user `root`, password `salasana`. Test D
 
 Test suites use `tests/Integration/MigrationTestCase` (resets DB + runs migrations fresh per test — slow but deterministic). Add new isolation tests under `tests/Isolation/` — `IsolationTestCase` base class runs migrations up to the current highest (currently 72) and seeds `daems` + `sahegroup` tenants.
 
+### Markdown files — zero lint errors
+
+Every `.md` file written by Claude (memory, docs, PR bodies, READMEs, planning notes, spec drafts) MUST produce zero `markdownlint` warnings/errors. Fix the writing, don't ignore warnings.
+
+Specific rules:
+
+- **MD041 (first line must be H1):** every file starts with `# Title`. For memory files with YAML frontmatter, the order is `---\nfrontmatter\n---\n\n# Title\n\nBody`. One blank line between frontmatter close and the H1.
+- **MD022 (blank lines around headings):** one blank line before AND after every heading.
+- **MD032 (blank lines around lists):** one blank line before the first list item AND after the last. Never let a list touch a paragraph or another block element.
+- **MD031 (blank lines around fenced code):** one blank line before the opening fence and after the closing fence.
+- **MD040 (fenced code language):** always specify a language on the opening fence (`php`, `bash`, `sql`, `text` for plain). Never leave a fence with no language tag.
+- **MD033 (no inline HTML):** never write angle-bracket placeholders or tags in flowing prose — wrap them in backticks or escape. Real HTML elements (`<details>` for collapsibles) only when they add reader value.
+- **MD038 (no space inside code spans):** never leave a leading/trailing space directly inside a code span. To show triple-backticks literally, prefer an indented code block over inline backtick acrobatics.
+
+Before finalising any `.md` write, mentally scan: first line is a heading, every list and code block has blank lines around it, no angle-bracket placeholders in flowing text, every fenced block has a language tag, no leading/trailing spaces inside code spans.
+
 ### Role & identity
 
 After PR 2 (ADR-014):
