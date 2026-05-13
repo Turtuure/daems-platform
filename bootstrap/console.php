@@ -51,4 +51,11 @@ $registry->register(new \Daems\Application\Membership\Billing\Cron\LapseInactive
     logger:      new CronLogger(__DIR__ . '/../var/log/cron', 'membership:lapse-inactive-members', $now),
 ));
 
+// Communications — mail outbox drain cron (0.8 Wave C § 7.4)
+$registry->register(new \DaemsModule\Communications\Infrastructure\Console\MailDrainCommand(
+    useCase:     $container->make(\DaemsModule\Communications\Application\DrainMailOutbox\DrainMailOutbox::class),
+    lockManager: new LockManager(__DIR__ . '/../var/run'),
+    logger:      new CronLogger(__DIR__ . '/../var/log/cron', 'mail-drain', $now),
+));
+
 return new ConsoleKernel($registry);
