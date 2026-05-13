@@ -4,7 +4,9 @@
   "type": "project",
   "license": "MIT",
   "require": {
-    "php": ">=8.1"
+    "php": ">=8.1",
+    "symfony/mailer": "^6.4",
+    "league/commonmark": "^2.5"
   },
   "autoload": {
     "psr-4": {
