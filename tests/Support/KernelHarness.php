@@ -1416,6 +1416,7 @@ final class KernelHarness
             'commsSettings'      => $this->container->make(\DaemsModule\Communications\Domain\Settings\TenantCommunicationSettingsRepositoryInterface::class),
             'commsPreferences'   => $this->container->make(\DaemsModule\Communications\Domain\Preference\UserCommunicationPreferenceRepositoryInterface::class),
             'commsOutbox'        => $this->container->make(\DaemsModule\Communications\Domain\Mail\MailOutboxRepositoryInterface::class),
+            'commsMailer'        => $this->container->make(\DaemsModule\Communications\Domain\Mail\MailerInterface::class),
             default           => throw new \LogicException("Undefined property: KernelHarness::\${$name}"),
         };
     }

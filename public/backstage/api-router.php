@@ -96,6 +96,12 @@ if (str_starts_with($uri, '/api/backstage/communications/outbox')) {
     exit;
 }
 
+// Communications settings — show / update / smtp-test (Wave C8).
+if (str_starts_with($uri, '/api/backstage/communications/settings')) {
+    require __DIR__ . '/api/communications-settings.php';
+    exit;
+}
+
 http_response_code(404);
 header('Content-Type: application/json');
 echo json_encode(['error' => 'unknown_proxy', 'uri' => $uri]);

@@ -4,8 +4,16 @@ declare(strict_types=1);
 
 namespace Daems\Tests\Isolation;
 
+use Daems\Domain\Locale\SupportedLocale;
+use Daems\Domain\Tenant\TenantId;
+use Daems\Domain\User\UserId;
 use Daems\Infrastructure\Framework\Database\Connection;
+use DaemsModule\Communications\Domain\Mail\MailKind;
+use DaemsModule\Communications\Domain\Mail\MailOutbox;
+use DaemsModule\Communications\Domain\Mail\MailOutboxId;
+use DaemsModule\Communications\Domain\Mail\MailOutboxStatus;
 use DaemsModule\Communications\Domain\Settings\TenantCommunicationSettings;
+use DaemsModule\Communications\Infrastructure\Persistence\SqlMailOutboxRepository;
 use DaemsModule\Communications\Infrastructure\Persistence\SqlTenantCommunicationSettingsRepository;
 
 /**
@@ -28,6 +36,7 @@ final class CommunicationsTenantIsolationTest extends IsolationTestCase
 {
     private Connection $connection;
     private SqlTenantCommunicationSettingsRepository $settingsRepo;
+    private SqlMailOutboxRepository $outboxRepo;
 
     protected function setUp(): void
     {
@@ -48,6 +57,48 @@ final class CommunicationsTenantIsolationTest extends IsolationTestCase
             'password' => getenv('TEST_DB_PASS') ?: 'salasana',
         ]);
         $this->settingsRepo = new SqlTenantCommunicationSettingsRepository($this->connection);
+        $this->outboxRepo   = new SqlMailOutboxRepository($this->connection);
+    }
+
+    /** Insert a user row directly (FK requirement for mail_outbox.queued_by). */
+    private function ensureUser(string $userId): UserId
+    {
+        $sel = $this->pdo()->prepare('SELECT 1 FROM users WHERE id = ?');
+        $sel->execute([$userId]);
+        if ($sel->fetchColumn() === false) {
+            $ins = $this->pdo()->prepare(
+                'INSERT INTO users (id, name, email, password_hash, date_of_birth, is_platform_admin)
+                 VALUES (?, ?, ?, ?, ?, ?)'
+            );
+            $ins->execute([$userId, 'Queuer', "queuer-{$userId}@test", 'x', '1990-01-01', 0]);
+        }
+        return UserId::fromString($userId);
+    }
+
+    private function makeOutboxRow(TenantId $tenantId, UserId $queuedBy, string $recipient): MailOutbox
+    {
+        return new MailOutbox(
+            id:                  MailOutboxId::generate(),
+            tenantId:            $tenantId,
+            kind:                MailKind::GroupMessage,
+            category:            MailKind::GroupMessage->category(),
+            recipientEmail:      $recipient,
+            recipientUserId:     null,
+            locale:              SupportedLocale::fromString('fi_FI'),
+            subject:             'Isolation row',
+            bodyHtml:            '<p>Hi</p>',
+            bodyText:            'Hi',
+            payloadVars:         [],
+            payloadMeetingId:    null,
+            payloadInvoiceId:    null,
+            payloadNewsletterId: null,
+            status:              MailOutboxStatus::Queued,
+            attemptCount:        0,
+            lastError:           null,
+            queuedAt:            new \DateTimeImmutable('now'),
+            sentAt:              null,
+            queuedBy:            $queuedBy,
+        );
     }
 
     public function test_settings_isolation(): void
@@ -92,7 +143,35 @@ final class CommunicationsTenantIsolationTest extends IsolationTestCase
 
     public function test_outbox_isolation(): void
     {
-        $this->markTestSkipped('Wave C — mail outbox table + repo land later.');
+        $daems = $this->tenantId('daems');
+        $sahe  = $this->tenantId('sahegroup');
+
+        // Each tenant queues one outbox row from a tenant-local user.
+        $daemsUser = $this->ensureUser('01958000-0000-7000-8000-0000000000d1');
+        $saheUser  = $this->ensureUser('01958000-0000-7000-8000-0000000000d2');
+
+        $daemsRow = $this->makeOutboxRow($daems, $daemsUser, 'daems-recipient@example.com');
+        $saheRow  = $this->makeOutboxRow($sahe,  $saheUser,  'sahe-recipient@example.com');
+
+        $this->outboxRepo->save($daemsRow);
+        $this->outboxRepo->save($saheRow);
+
+        // daems → only the daems row.
+        $daemsList = $this->outboxRepo->listForTenant($daems, [], 1, 50);
+        self::assertCount(1, $daemsList);
+        self::assertSame($daemsRow->id->value(), $daemsList[0]->id->value());
+        self::assertSame('daems-recipient@example.com', $daemsList[0]->recipientEmail);
+
+        // sahegroup → only the sahegroup row. The core isolation guarantee:
+        // sahegroup MUST NOT see the daems outbox row.
+        $saheList = $this->outboxRepo->listForTenant($sahe, [], 1, 50);
+        self::assertCount(1, $saheList);
+        self::assertSame($saheRow->id->value(), $saheList[0]->id->value());
+        self::assertSame('sahe-recipient@example.com', $saheList[0]->recipientEmail);
+
+        // Count helper must respect the same scoping.
+        self::assertSame(1, $this->outboxRepo->countForTenant($daems, []));
+        self::assertSame(1, $this->outboxRepo->countForTenant($sahe,  []));
     }
 
     public function test_meeting_isolation(): void
