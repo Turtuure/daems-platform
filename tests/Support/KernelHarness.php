@@ -1413,6 +1413,8 @@ final class KernelHarness
             'memberCounters'     => $this->container->make(\Daems\Domain\Tenant\TenantMemberCounterRepositoryInterface::class),
             'supporterCounters'  => $this->container->make(\Daems\Domain\Tenant\TenantSupporterCounterRepositoryInterface::class),
             'memberStatusAudit'  => $this->container->make(\Daems\Domain\Membership\MemberStatusAuditRepositoryInterface::class),
+            'commsSettings'      => $this->container->make(\DaemsModule\Communications\Domain\Settings\TenantCommunicationSettingsRepositoryInterface::class),
+            'commsPreferences'   => $this->container->make(\DaemsModule\Communications\Domain\Preference\UserCommunicationPreferenceRepositoryInterface::class),
             default           => throw new \LogicException("Undefined property: KernelHarness::\${$name}"),
         };
     }
