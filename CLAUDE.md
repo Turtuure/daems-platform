@@ -61,9 +61,9 @@ Lives at `public/sites/_default/` in this repo — fallback for tenants without 
 3. If `c:/laragon/www/sites/<slug>/public/index.php` exists → delegate to it.
 4. Else → render from `public/sites/_default/` (home, join, login, suspended).
 
-## Current state (updated 2026-05-07)
+## Current state (updated 2026-05-13)
 
-Branch: `dev` (pushed to origin). All work lands here; never push without explicit ask.
+Branch: `membership-billing-v1` (pushed up to G end; H1-H4 pending). All work lands on this branch; never push without explicit ask.
 
 Completed milestones (see `docs/superpowers/plans/` for plans, `docs/superpowers/specs/` for specs):
 - **PR 1** — PHPStan level 9 baseline (`2026-04-19-phpstan-level9-baseline.md`)
@@ -72,7 +72,8 @@ Completed milestones (see `docs/superpowers/plans/` for plans, `docs/superpowers
 - **PR 4** — Backstage Applications + Members API (`2026-04-20-backstage-applications-and-members-api.md`): migrations 034–035
 - **2026-04-20** — Approve-flow + global toasts; Events admin; Projects admin; Forum moderation (migrations 036–050)
 - **PR 5** — Content i18n for events + projects + EventProposal (`2026-04-21-content-i18n-events-projects-design.md`): migrations 051–056; `Daems\Domain\Locale\*` value objects; locales `fi_FI|en_GB|sw_TZ`; per-field fallback via `EntityTranslationView`; admin locale-cards pattern; EventProposal mirrors ProjectProposal + `source_locale`
-- **A11 follow-up** (2026-04-23, branch `i18n-a11-cleanup`): migration 054 drops legacy `events.title/location/description` + `projects.title/summary/description`; `*_i18n` tables are sole source of truth; SqlEventRepository / SqlProjectRepository derive convenience scalars via firstAvailable() over translation map; UpdateEvent + AdminUpdateProject split chrome vs translation field updates; 7 fixture files split raw INSERTs into base + companion i18n inserts. Tests: 779 green, PHPStan lvl 9 = 0 errors.
+- **A11 follow-up** (2026-04-23, branch `i18n-a11-cleanup`): migration 054 drops legacy `events.title/location/description` + `projects.title/summary/description`; `*_i18n` tables are sole source of truth; SqlEventRepository / SqlProjectRepository derive convenience scalars via firstAvailable() over translation map; UpdateEvent + AdminUpdateProject split chrome vs translation field updates; 7 fixture files split raw INSERTs into base + companion i18n inserts.
+- **2026-05-13 — MembershipBilling v1 (0.7)** (`docs/superpowers/plans/2026-05-12-membership-billing-v1.md`): annual fees by board decision, anniversary-based invoice cron, waive/reduce/manual-payment, CSV-import (Nordea), § 4 deemed-resignation (2y unpaid → lapse) cron, GSA reverse-lapse override, honorary auto-waive (use case wired; UI integration deferred until ChangeMembershipType flow lands). Migrations 089-096 (096 = nullable `member_status_audit.performed_by` for cron-driven flips). New `Daems\Domain\Membership\Billing\*` namespace + `Daems\Domain\Audit\GsaOverrideAction::ReverseLapse` enum case. `bin/console membership:{generate-anniversary-invoices,mark-overdue-invoices,lapse-inactive-members}` CLI commands. Backstage UI: `/backstage/governance/billing` + sub-pages (invoices, overrides, import) with KPI strip. Stripe → 0.7.1, Visma → 0.7.2 as separate milestones. PHPStan level 9 = 0, ~80 new unit/integration/E2E tests.
 
 Active roadmap (`docs/planning/roadmap.md`, section 1 Admin Panel):
 1. ✅ Dashboard overview
