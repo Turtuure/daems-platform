@@ -111,6 +111,27 @@ final class InMemoryMemberFeeInvoiceRepository implements MemberFeeInvoiceReposi
         return array_values(array_slice($matched, $offset, $limit));
     }
 
+    public function findByReference(TenantId $tenantId, string $reference): ?MemberFeeInvoice
+    {
+        $found = null;
+        foreach ($this->byId as $inv) {
+            if (!$inv->tenantId()->equals($tenantId)) {
+                continue;
+            }
+            if (!$inv->status()->isOpen()) {
+                continue;
+            }
+            if (!str_starts_with($inv->id()->value(), $reference)) {
+                continue;
+            }
+            if ($found !== null) {
+                return null;
+            }
+            $found = $inv;
+        }
+        return $found;
+    }
+
     public function listOpenForUser(TenantId $tenantId, UserId $userId): array
     {
         $out = [];

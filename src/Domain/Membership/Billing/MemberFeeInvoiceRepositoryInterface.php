@@ -47,4 +47,11 @@ interface MemberFeeInvoiceRepositoryInterface
      * @return list<MemberFeeInvoice>
      */
     public function listOpenForUser(TenantId $tenantId, UserId $userId): array;
+
+    /**
+     * Looks up an open (PENDING|OVERDUE|REDUCED) invoice by bank reference.
+     * Reference format: `<member_number>-<year>` OR invoice id prefix.
+     * Returns null when no unambiguous match exists.
+     */
+    public function findByReference(TenantId $tenantId, string $reference): ?MemberFeeInvoice;
 }

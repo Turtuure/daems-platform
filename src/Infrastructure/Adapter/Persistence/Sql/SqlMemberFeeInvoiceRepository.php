@@ -206,6 +206,37 @@ final class SqlMemberFeeInvoiceRepository implements MemberFeeInvoiceRepositoryI
         return $out;
     }
 
+    public function findByReference(TenantId $tenantId, string $reference): ?MemberFeeInvoice
+    {
+        // First try: <member_number>-<year> reference scheme.
+        if (preg_match('/^(\d+)-(\d{4})$/', $reference, $m) === 1) {
+            $stmt = $this->pdo->prepare(
+                "SELECT mfi.* FROM member_fee_invoices mfi
+                 INNER JOIN users u ON u.id = mfi.user_id
+                 WHERE mfi.tenant_id = ? AND u.member_number = ? AND mfi.year = ?
+                   AND mfi.status IN ('PENDING','OVERDUE','REDUCED')
+                 LIMIT 2"
+            );
+            $stmt->execute([$tenantId->value(), $m[1], (int) $m[2]]);
+            $rows = $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
+            if (count($rows) === 1 && is_array($rows[0])) {
+                return $this->hydrate($rows[0]);
+            }
+        }
+        // Fallback: id-prefix match.
+        $stmt = $this->pdo->prepare(
+            "SELECT * FROM member_fee_invoices
+             WHERE tenant_id = ? AND id LIKE ? AND status IN ('PENDING','OVERDUE','REDUCED')
+             LIMIT 2"
+        );
+        $stmt->execute([$tenantId->value(), $reference . '%']);
+        $rows = $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
+        if (count($rows) === 1 && is_array($rows[0])) {
+            return $this->hydrate($rows[0]);
+        }
+        return null;
+    }
+
     public function listOpenForUser(TenantId $tenantId, UserId $userId): array
     {
         $stmt = $this->pdo->prepare(
