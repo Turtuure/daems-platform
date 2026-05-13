@@ -1097,6 +1097,7 @@ final class KernelHarness
                 $c->make(\Daems\Application\Membership\Billing\RecordManualPayment\RecordManualPayment::class),
                 $c->make(\Daems\Domain\Membership\Billing\MemberFeeInvoiceRepositoryInterface::class),
                 $c->make(\Daems\Domain\Membership\Billing\FeeInvoiceAuditRepositoryInterface::class),
+                $c->make(\Daems\Application\Membership\Billing\ReverseLapse\ReverseLapse::class),
             ),
         );
 

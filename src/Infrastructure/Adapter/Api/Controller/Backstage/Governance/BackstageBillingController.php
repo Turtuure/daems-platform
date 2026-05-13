@@ -9,6 +9,8 @@ use Daems\Application\Membership\Billing\RecordManualPayment\RecordManualPayment
 use Daems\Application\Membership\Billing\RecordManualPayment\RecordManualPaymentInput;
 use Daems\Application\Membership\Billing\ReduceMemberFeeInvoice\ReduceMemberFeeInvoice;
 use Daems\Application\Membership\Billing\ReduceMemberFeeInvoice\ReduceMemberFeeInvoiceInput;
+use Daems\Application\Membership\Billing\ReverseLapse\ReverseLapse;
+use Daems\Application\Membership\Billing\ReverseLapse\ReverseLapseInput;
 use Daems\Application\Membership\Billing\RevokeUserFeeOverride\RevokeUserFeeOverride;
 use Daems\Application\Membership\Billing\RevokeUserFeeOverride\RevokeUserFeeOverrideInput;
 use Daems\Application\Membership\Billing\SetUserFeeOverride\SetUserFeeOverride;
@@ -22,6 +24,7 @@ use Daems\Domain\Membership\Billing\FeeInvoiceAuditRepositoryInterface;
 use Daems\Domain\Membership\Billing\MemberFeeInvoice;
 use Daems\Domain\Membership\Billing\MemberFeeInvoiceId;
 use Daems\Domain\Membership\Billing\MemberFeeInvoiceRepositoryInterface;
+use Daems\Domain\Governance\Exception\GsaOverrideRequiresReason;
 use Daems\Domain\Membership\Billing\UserFeeOverrideId;
 use Daems\Domain\Membership\Billing\UserFeeOverrideRepositoryInterface;
 use Daems\Domain\User\UserId;
@@ -43,6 +46,7 @@ final class BackstageBillingController
         private readonly RecordManualPayment                  $markPaid,
         private readonly MemberFeeInvoiceRepositoryInterface  $invoices,
         private readonly FeeInvoiceAuditRepositoryInterface   $audit,
+        private readonly ReverseLapse                         $reverseLapse,
     ) {}
 
     public function listFeeSchedules(Request $req): Response
@@ -365,6 +369,34 @@ final class BackstageBillingController
                 'payload'      => $r->payloadJson !== null ? json_decode($r->payloadJson, true) : null,
             ], $rows),
         ]);
+    }
+
+    /**
+     * @param array<string,string> $params
+     */
+    public function reverseLapse(Request $req, array $params): Response
+    {
+        $actor = $req->requireActingUser();
+        $idRaw = $params['id'] ?? '';
+        $justificationRaw = $req->all()['justification'] ?? '';
+
+        try {
+            $this->reverseLapse->handle(new ReverseLapseInput(
+                actor:         $actor,
+                tenantId:      $actor->activeTenant,
+                userId:        UserId::fromString($idRaw),
+                justification: is_string($justificationRaw) ? $justificationRaw : '',
+            ));
+        } catch (ForbiddenException $e) {
+            return Response::json(['error' => $e->getMessage()], 403);
+        } catch (GsaOverrideRequiresReason $e) {
+            return Response::json(['error' => $e->getMessage()], 400);
+        } catch (InvalidArgumentException $e) {
+            return Response::json(['error' => $e->getMessage()], 400);
+        } catch (\DomainException $e) {
+            return Response::json(['error' => $e->getMessage()], 404);
+        }
+        return Response::json(['reversed' => true]);
     }
 
     /**
