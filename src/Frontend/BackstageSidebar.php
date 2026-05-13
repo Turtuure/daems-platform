@@ -95,6 +95,13 @@ final class BackstageSidebar
             'icon'      => 'sliders',
             'order'     => 50,
         ];
+        $items[] = [
+            'group'     => 'governance',
+            'label_key' => 'shell.governance.billing',
+            'href'      => '/backstage/governance/billing',
+            'icon'      => 'credit-card',
+            'order'     => 60,
+        ];
 
         // 3. System group — admin/configuration items grouped at the bottom.
         //    Notifications (everyone), Settings (everyone), Tenants (GSA only).
