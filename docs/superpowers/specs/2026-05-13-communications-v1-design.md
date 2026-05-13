@@ -756,7 +756,7 @@ Kontekstista esitäyttävät syvälinkit: `?meeting=42`, `?invoice=99`, `?kind=g
 
 ### 8.2 API-reitit
 
-20 uutta reittiä (`/api/v1/backstage/communications/*` + `/api/v1/users/{}/communication-preferences` + `/api/v1/meetings/from-composer`). Yksityiskohdat brainstorming-keskustelussa § 6.2 — taulukko tiivistettynä:
+20 uutta reittiä (`/api/v1/backstage/communications/*` + `/api/v1/backstage/communications/preferences/{userId}/...` + `/api/v1/meetings/from-composer`). Yksityiskohdat brainstorming-keskustelussa § 6.2 — taulukko tiivistettynä:
 
 | Method | Reitti | Use case |
 | --- | --- | --- |
@@ -770,7 +770,7 @@ Kontekstista esitäyttävät syvälinkit: `?meeting=42`, `?invoice=99`, `?kind=g
 | GET,PUT | `/settings` | Settings-CRUD |
 | POST | `/settings/smtp-test` | `SendSmtpTestEmail` |
 | GET,POST,DELETE | `/suppressions` | Suppression-management |
-| GET,PUT | `/users/{userId}/communication-preferences` | Preference-CRUD |
+| GET,PUT | `/preferences/{userId}/{category}` | Preference-CRUD (mounted under `/api/v1/backstage/communications`) |
 | POST | `/meetings/from-composer` | `CreateMeetingFromComposer` (sisäinen) |
 
 **`config/modules.php`-rivi:**
@@ -787,10 +787,15 @@ Kontekstista esitäyttävät syvälinkit: `?meeting=42`, `?invoice=99`, `?kind=g
         backstage: ['/backstage/communications', '/backstage/settings/communications'],
         api: [
             '/api/v1/backstage/communications',
-            '/api/v1/users/{}/communication-preferences',
             '/api/v1/meetings/from-composer',
         ],
     ),
+    // NOTE: preference-CRUD endpoints sit under
+    //   /api/v1/backstage/communications/preferences/{userId}/{category}
+    // (NOT under /api/v1/users/...) because ModuleRegistry::findOwnerOfPath
+    // does literal prefix matching with no `{}` placeholder support — a bare
+    // /api/v1/users claim would silently 404 every core user endpoint
+    // (profile, password, GDPR) for any tenant who disables communications.
     'depends_on'        => ['members'],
 ],
 ```

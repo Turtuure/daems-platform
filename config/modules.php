@@ -168,7 +168,6 @@ return [
             ],
             api: [
                 '/api/v1/backstage/communications',
-                '/api/v1/users',
                 '/api/v1/meetings/from-composer',
             ],
         ),

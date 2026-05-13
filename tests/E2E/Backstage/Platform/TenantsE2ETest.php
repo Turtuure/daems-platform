@@ -63,6 +63,23 @@ final class TenantsE2ETest extends TestCase
         return ['id' => (string) $body['data']['id'], 'body' => $body];
     }
 
+    /**
+     * Derive the expected number of auto-seeded tenant_modules rows from the
+     * live ModuleRegistry (default_available && !is_core), so adding another
+     * module to config/modules.php doesn't break this assertion.
+     */
+    private function expectedAutoSeededCount(): int
+    {
+        $registry = $this->h->container->make(\Daems\Infrastructure\Module\ModuleRegistry::class);
+        $count = 0;
+        foreach ($registry->all() as $manifest) {
+            if ($manifest->defaultAvailable() && !$manifest->isCore()) {
+                $count++;
+            }
+        }
+        return $count;
+    }
+
     public function test_create_seeds_tenant_modules_for_default_available_manifests(): void
     {
         $created = $this->createTenant('acme');
@@ -75,9 +92,11 @@ final class TenantsE2ETest extends TestCase
 
         // Every default-available, non-core manifest got a tenant_modules row
         // with availableAt set, but enabledAt NULL (admin must flip enable).
-        // The platform catalog (config/modules.php) currently has 6 such modules.
+        // Expected count is derived from the registry so we don't have to bump
+        // a literal on every new default_available module.
+        $expected = $this->expectedAutoSeededCount();
         $rows = $this->h->tenantModules->findByTenant($tenant->id);
-        self::assertCount(6, $rows, 'expected 6 auto-seeded tenant_modules rows');
+        self::assertCount($expected, $rows, "expected {$expected} auto-seeded tenant_modules rows");
         foreach ($rows as $row) {
             self::assertNotNull($row->availableAt(), "{$row->moduleSlug()} should be available");
             self::assertNull($row->enabledAt(), "{$row->moduleSlug()} should not be enabled yet");
@@ -121,8 +140,10 @@ final class TenantsE2ETest extends TestCase
         self::assertSame('acme-get', $detail['slug']);
         self::assertSame('active', $detail['status']);
         self::assertNull($detail['suspendedAt']);
-        // 6 default-available rows seeded → modulesAvailable=6, modulesEnabled=0.
-        self::assertSame(6, $detail['modulesAvailable']);
+        // Count derives from the registry (default_available && !is_core) so a
+        // new module catalog entry doesn't require touching this assertion.
+        $expectedAvailable = $this->expectedAutoSeededCount();
+        self::assertSame($expectedAvailable, $detail['modulesAvailable']);
         self::assertSame(0, $detail['modulesEnabled']);
         self::assertSame(['en_GB'], $detail['supportedLocales']);
         self::assertSame(['en_GB' => 'Acme Tenant'], $detail['displayNameI18n']);

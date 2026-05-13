@@ -308,7 +308,6 @@ Add immediately before the closing `];`:
         backstage: ['/backstage/communications', '/backstage/settings/communications'],
         api: [
             '/api/v1/backstage/communications',
-            '/api/v1/users',
             '/api/v1/meetings/from-composer',
         ],
     ),
@@ -317,6 +316,8 @@ Add immediately before the closing `];`:
 ```
 
 Note: `sidebar=null` because the module's 4 backstage sub-items are added in `BackstageSidebar.php` directly (see Task A5).
+
+**Post-implementation correction (2026-05-13):** an earlier draft of this block also listed `'/api/v1/users'` to cover the per-user preferences endpoints. That was wrong — `ModuleRegistry::findOwnerOfPath()` does literal prefix matching with no `{}` placeholder support, so a bare `/api/v1/users` claim would silently route every core user endpoint (profile, password, GDPR) through the `ModuleRouteGuard` and return 404 for any tenant who disabled communications. The preference-CRUD endpoints have been redesigned under the already-claimed `/api/v1/backstage/communications/preferences/{userId}/{category}` prefix (see Task B9). The bare `/api/v1/users` claim is removed entirely.
 
 - [ ] **Step 2: Run module-registry validation test**
 
@@ -1567,6 +1568,8 @@ public function test_updating_transactional_throws(): void
 - [ ] **Step 2: Implement use cases**
 
 The update use case checks: (a) acting is the user himself OR is tenant admin, (b) category is mutable. If both → call repo->setFor().
+
+**Route note (URL redesign):** these use cases are exposed in Wave D as `GET/PUT /api/v1/backstage/communications/preferences/{userId}/{category}` — NOT under `/api/v1/users/...`. The bare `/api/v1/users` prefix cannot be safely claimed by the communications module because `ModuleRegistry::findOwnerOfPath()` does literal prefix matching with no `{}` placeholder support; claiming it would silently 404 platform core user endpoints (profile, password, GDPR) for any tenant who disabled communications. Place the controller under `Backstage\CommunicationPreferencesController` and authorize the same way (acting === target OR tenant admin).
 
 - [ ] **Step 3: Run — expect PASS**
 
