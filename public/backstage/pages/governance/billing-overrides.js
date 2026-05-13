@@ -25,7 +25,70 @@
             url.searchParams.set('active_only', toggle.checked ? '1' : '0');
             window.location.href = url.toString();
         });
+
+        document.querySelectorAll('.member-picker').forEach(bindMemberPicker);
     });
+
+    function bindMemberPicker(picker) {
+        const search = picker.querySelector('.member-picker__search');
+        const list = picker.querySelector('.member-picker__suggestions');
+        const hidden = picker.querySelector('input[type="hidden"]');
+        const selected = picker.querySelector('.member-picker__selected');
+        let debounceTimer = 0;
+
+        search.addEventListener('input', () => {
+            window.clearTimeout(debounceTimer);
+            const q = search.value.trim();
+            if (q.length < 2) {
+                list.innerHTML = '';
+                list.hidden = true;
+                hidden.value = '';
+                return;
+            }
+            debounceTimer = window.setTimeout(() => fetchMembers(q, list, hidden, search, selected), 200);
+        });
+
+        search.addEventListener('focus', () => {
+            if (list.children.length > 0) list.hidden = false;
+        });
+        document.addEventListener('click', (e) => {
+            if (!picker.contains(e.target)) list.hidden = true;
+        });
+    }
+
+    async function fetchMembers(q, list, hidden, search, selected) {
+        const resp = await fetch(`/api/backstage/members.php?op=search&q=${encodeURIComponent(q)}`, {
+            headers: { 'Accept': 'application/json' },
+            credentials: 'same-origin',
+        });
+        if (!resp.ok) {
+            list.innerHTML = `<li class="member-picker__error">HTTP ${resp.status}</li>`;
+            list.hidden = false;
+            return;
+        }
+        const payload = await resp.json();
+        const rows = payload?.data?.entries ?? [];
+        if (rows.length === 0) {
+            list.innerHTML = '<li class="member-picker__empty">Ei tuloksia</li>';
+            list.hidden = false;
+            return;
+        }
+        list.innerHTML = rows.map(r => {
+            const label = escapeHtml(`${r.name ?? '(nimetön)'} — ${r.email ?? ''}`);
+            const meta = r.member_number ? `#${escapeHtml(String(r.member_number))} · ` : '';
+            return `<li class="member-picker__option" data-id="${escapeHtml(r.id)}" data-label="${label}">${meta}${label}</li>`;
+        }).join('');
+        list.hidden = false;
+        list.querySelectorAll('.member-picker__option').forEach(el => {
+            el.addEventListener('click', () => {
+                hidden.value = el.dataset.id;
+                search.value = '';
+                selected.textContent = el.dataset.label;
+                selected.hidden = false;
+                list.hidden = true;
+            });
+        });
+    }
 
     async function loadOverrides(table) {
         const activeOnly = table.dataset.activeOnly === '1';

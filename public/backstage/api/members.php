@@ -6,6 +6,8 @@ if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 
+require_once __DIR__ . '/_proxy.php';
+
 use Daems\Frontend\ApiClient;
 
 header('Content-Type: application/json');
@@ -31,6 +33,16 @@ try {
         case 'stats':
             $r = ApiClient::get('/backstage/members/stats');
             echo json_encode(['data' => $r ?? []]);
+            return;
+
+        case 'search':
+            // Typeahead picker for backstage forms (billing override, future
+            // member-id inputs). Forwards `?q=<text>` to the backend list endpoint
+            // and returns a slim {id, name, email, member_number, membership_type}
+            // shape suitable for dropdown rendering.
+            $q = (string) ($_GET['q'] ?? '');
+            $qs = $q !== '' ? '?q=' . urlencode($q) . '&per_page=25' : '?per_page=25';
+            proxy_backend_get('/backstage/members' . $qs);
             return;
 
         default:

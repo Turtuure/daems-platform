@@ -57,7 +57,12 @@ ob_start();
     <form id="new-override-form">
         <h3><?= I18n::e('backstage.governance.billing.overrides.dialog.title') ?></h3>
         <label><?= I18n::e('backstage.governance.billing.overrides.dialog.user_id') ?>
-            <input type="text" name="user_id" required pattern="[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}">
+            <div class="member-picker" data-target="user_id">
+                <input type="text" class="member-picker__search" placeholder="Hae nimellä tai sähköpostilla&hellip;" autocomplete="off" required>
+                <ul class="member-picker__suggestions" hidden></ul>
+                <input type="hidden" name="user_id" required>
+                <p class="member-picker__selected" hidden></p>
+            </div>
         </label>
         <label><?= I18n::e('backstage.governance.billing.overrides.dialog.fee_type') ?>
             <select name="fee_type" required>
