@@ -961,6 +961,25 @@ final class KernelHarness
             ),
         );
 
+        // CSV import — Preview + Confirm use cases (Wave G G5-G7)
+        $container->singleton(
+            \Daems\Application\Membership\Billing\ImportPaymentsCsv\NordeaPaymentCsvParser::class,
+            static fn() => new \Daems\Application\Membership\Billing\ImportPaymentsCsv\NordeaPaymentCsvParser(),
+        );
+        $container->bind(
+            \Daems\Application\Membership\Billing\ImportPaymentsCsv\PreviewImportPayments::class,
+            static fn(Container $c) => new \Daems\Application\Membership\Billing\ImportPaymentsCsv\PreviewImportPayments(
+                $c->make(\Daems\Application\Membership\Billing\ImportPaymentsCsv\NordeaPaymentCsvParser::class),
+                $c->make(\Daems\Domain\Membership\Billing\MemberFeeInvoiceRepositoryInterface::class),
+            ),
+        );
+        $container->bind(
+            \Daems\Application\Membership\Billing\ImportPaymentsCsv\ConfirmImportPayments::class,
+            static fn(Container $c) => new \Daems\Application\Membership\Billing\ImportPaymentsCsv\ConfirmImportPayments(
+                $c->make(\Daems\Application\Membership\Billing\RecordManualPayment\RecordManualPayment::class),
+            ),
+        );
+
         // Delegate variants (3)
         $container->bind(
             \Daems\Application\Governance\Delegate\ApproveBasicAsDelegate::class,
