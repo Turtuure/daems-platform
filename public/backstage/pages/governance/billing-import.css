@@ -4,9 +4,9 @@
     align-items: end;
     padding: 1rem;
     margin-bottom: 1.5rem;
-    border: 1px solid var(--border-subtle, #e2e2e2);
+    border: 1px solid var(--surface-border);
     border-radius: 6px;
-    background: var(--surface-card, #fff);
+    background: var(--surface-dark);
 }
 
 .billing-import__form label {
@@ -26,23 +26,26 @@
 .billing-import__preview td {
     padding: 0.6rem 0.75rem;
     text-align: left;
-    border-bottom: 1px solid var(--border-subtle, #e2e2e2);
+    border-bottom: 1px solid var(--surface-border);
     vertical-align: middle;
 }
 
+/* CSV-import match-confidence badges. Route through backstage status tokens
+ * so dark mode and brand changes propagate (same pattern as .status-PENDING
+ * et al. in billing-invoices.css). */
 .confidence {
     display: inline-block;
     padding: 0.15rem 0.55rem;
     border-radius: 999px;
     font-size: 0.85em;
-    color: #fff;
+    line-height: 1.4;
 }
-.confidence-high            { background: #3aa856; }
-.confidence-amount_mismatch { background: #d39e2c; }
-.confidence-no_match        { background: #888; }
+.confidence-high            { background: var(--status-success-subtle); color: var(--status-success); }
+.confidence-amount_mismatch { background: var(--status-warning-subtle); color: var(--status-warning); }
+.confidence-no_match        { background: rgba(148, 163, 184, 0.15);    color: var(--text-secondary); }
 
 .billing-import__preview small.muted {
-    color: var(--text-muted, #777);
+    color: var(--text-muted);
     margin-left: 0.4rem;
 }
 
@@ -51,7 +54,7 @@
 }
 
 #results-details {
-    background: var(--surface-muted, #f7f7f7);
+    background: var(--surface-light);
     padding: 0.5rem;
     border-radius: 4px;
     font-size: 0.85em;
