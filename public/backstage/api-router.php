@@ -88,6 +88,14 @@ if (str_starts_with($uri, '/api/backstage/governance/expulsions/')) {
     exit;
 }
 
+// Communications outbox — list / show / retry. The list endpoint takes a
+// query string, the others embed an id segment, so handle all forms with
+// one starts_with check that the proxy file then disambiguates internally.
+if (str_starts_with($uri, '/api/backstage/communications/outbox')) {
+    require __DIR__ . '/api/communications-outbox.php';
+    exit;
+}
+
 http_response_code(404);
 header('Content-Type: application/json');
 echo json_encode(['error' => 'unknown_proxy', 'uri' => $uri]);
