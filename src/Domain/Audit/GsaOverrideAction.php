@@ -6,4 +6,5 @@ namespace Daems\Domain\Audit;
 enum GsaOverrideAction: string
 {
     case ForceApproveBasic = 'force_approve_basic';
+    case ReverseLapse      = 'reverse_lapse';
 }

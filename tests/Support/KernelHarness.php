@@ -940,6 +940,18 @@ final class KernelHarness
             ),
         );
 
+        // ReverseLapse use case (Wave G — GSA-only override)
+        $container->bind(
+            \Daems\Application\Membership\Billing\ReverseLapse\ReverseLapse::class,
+            static fn(Container $c) => new \Daems\Application\Membership\Billing\ReverseLapse\ReverseLapse(
+                $c->make(\Daems\Domain\User\UserRepositoryInterface::class),
+                $c->make(\Daems\Domain\Membership\MemberStatusAuditRepositoryInterface::class),
+                $c->make(\Daems\Domain\Audit\GsaOverrideRepositoryInterface::class),
+                $c->make(\Daems\Domain\Shared\IdGeneratorInterface::class),
+                $c->make(Clock::class),
+            ),
+        );
+
         // Delegate variants (3)
         $container->bind(
             \Daems\Application\Governance\Delegate\ApproveBasicAsDelegate::class,
