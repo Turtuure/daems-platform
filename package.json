@@ -1,0 +1,13 @@
+{
+  "name": "daems-platform-e2e",
+  "version": "0.0.1",
+  "private": true,
+  "description": "End-to-end smoke tests for daems-platform backstage. Not used in production.",
+  "scripts": {
+    "smoke": "playwright test --headed --workers=1",
+    "smoke:billing": "playwright test tests/playwright/billing-smoke.spec.ts --headed --workers=1"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.49.0"
+  }
+}

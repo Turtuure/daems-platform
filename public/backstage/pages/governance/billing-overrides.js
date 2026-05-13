@@ -67,7 +67,8 @@
             return;
         }
         const payload = await resp.json();
-        const rows = payload?.data?.entries ?? [];
+        // Backend wraps the ListMembersOutput::toArray() in {data: {items, total, page, per_page}}.
+        const rows = payload?.data?.items ?? [];
         if (rows.length === 0) {
             list.innerHTML = '<li class="member-picker__empty">Ei tuloksia</li>';
             list.hidden = false;
