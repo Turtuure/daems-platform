@@ -1,4 +1,13 @@
 (() => {
+    const script = document.currentScript;
+    const I18N = {
+        high:           script?.dataset.confidenceHigh           ?? 'Sure',
+        amountMismatch: script?.dataset.confidenceAmountMismatch ?? 'Amount differs',
+        noMatch:        script?.dataset.confidenceNoMatch        ?? 'No match',
+        alertSelect:    script?.dataset.alertSelect              ?? 'Select at least one match.',
+        alertPreview:   script?.dataset.alertPreview             ?? 'Preview failed',
+        alertConfirm:   script?.dataset.alertConfirm             ?? 'Confirmation failed',
+    };
     let previewData = null;
 
     document.addEventListener('DOMContentLoaded', () => {
@@ -22,7 +31,7 @@
         });
         if (!resp.ok) {
             const err = await resp.json().catch(() => ({}));
-            alert(`Esikatselu epäonnistui: ${err.error ?? resp.status}`);
+            alert(`${I18N.alertPreview}: ${err.error ?? resp.status}`);
             return;
         }
         previewData = await resp.json();
@@ -58,7 +67,7 @@
     }
 
     function labelConfidence(c) {
-        return ({ high: 'Varma', amount_mismatch: 'Summa eroaa', no_match: 'Ei täsmäystä' })[c] ?? c;
+        return ({ high: I18N.high, amount_mismatch: I18N.amountMismatch, no_match: I18N.noMatch })[c] ?? c;
     }
 
     function onSelectAll(e) {
@@ -82,7 +91,7 @@
         }).filter(m => m.invoice_id);
 
         if (matches.length === 0) {
-            alert('Valitse ainakin yksi täsmäys.');
+            alert(I18N.alertSelect);
             return;
         }
         const resp = await fetch('/api/backstage/governance/billing/payments/import-csv/confirm', {
@@ -93,7 +102,7 @@
         });
         if (!resp.ok) {
             const err = await resp.json().catch(() => ({}));
-            alert(`Vahvistus epäonnistui: ${err.error ?? resp.status}`);
+            alert(`${I18N.alertConfirm}: ${err.error ?? resp.status}`);
             return;
         }
         const data = await resp.json();
