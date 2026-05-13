@@ -592,6 +592,103 @@ return [
     'shell.communications.newsletters' => 'Uutiskirjeet',
     'shell.communications.templates'   => 'Pohjat',
 
+    // ── Communications: backstage page titles ─────────────────────
+    'backstage.title.communications.compose'      => 'Lähetä viesti',
+    'backstage.title.communications.outbox'       => 'Lähetetyt + jonossa',
+    'backstage.title.communications.newsletters'  => 'Uutiskirjeet',
+    'backstage.title.communications.templates'    => 'Viestipohjat',
+    'backstage.title.communications.settings'     => 'Viestintä-asetukset',
+
+    // ── Communications: message kinds ─────────────────────────────
+    'communications.kind.meeting_invitation'   => 'Kokouskutsu',
+    'communications.kind.payment_reminder'     => 'Maksumuistutus',
+    'communications.kind.membership_approved'  => 'Jäsenhakemus hyväksytty',
+    'communications.kind.group_message'        => 'Ryhmäviesti',
+    'communications.kind.newsletter'           => 'Uutiskirje',
+
+    // ── Communications: categories ────────────────────────────────
+    'communications.category.transactional'             => 'Transaktiomaalit',
+    'communications.category.transactional.description' => 'Pakolliset viestit kuten maksumuistutukset, kokouskutsut, hyväksyntäilmoitukset. Eivät ole peruutettavissa.',
+    'communications.category.operational'               => 'Toiminnalliset',
+    'communications.category.operational.description'   => 'Toimintaa koskevat viestit kuten projektipäivitykset. Oletuksena päällä, voi peruuttaa.',
+    'communications.category.marketing'                 => 'Markkinointi',
+    'communications.category.marketing.description'     => 'Uutiskirjeet ja kampanjat. Oletuksena pois — vaatii aktiivisen suostumuksen.',
+
+    // ── Communications: composer ──────────────────────────────────
+    'communications.composer.kind_label'         => 'Viestityyppi',
+    'communications.composer.preview'            => 'Esikatselu',
+    'communications.composer.audience_count'     => 'Vastaanottajia: :count',
+    'communications.composer.send'               => 'Lähetä jonoon',
+    'communications.composer.save_draft'         => 'Tallenna luonnoksena',
+    'communications.composer.test_to_self'       => 'Lähetä testi itselle',
+    'communications.composer.no_smtp'            => 'SMTP ei ole konfiguroitu. Aseta SMTP-tunnukset asetus-sivulla ennen lähetystä.',
+    'communications.composer.empty_audience'     => 'Ei vastaanottajia annetuilla suodattimilla.',
+    'communications.composer.missing_field'      => 'Pakollinen kenttä puuttuu: :field',
+
+    // ── Communications: outbox ────────────────────────────────────
+    'communications.outbox.status.queued'      => 'Jonossa',
+    'communications.outbox.status.sending'     => 'Lähetetään',
+    'communications.outbox.status.sent'        => 'Lähetetty',
+    'communications.outbox.status.failed'      => 'Epäonnistui',
+    'communications.outbox.status.bounced'     => 'Palautui',
+    'communications.outbox.status.suppressed'  => 'Suppression-listalla',
+    'communications.outbox.action.retry'       => 'Yritä uudelleen',
+    'communications.outbox.action.resend'      => 'Lähetä uudelleen',
+    'communications.outbox.filter.status'      => 'Tila',
+    'communications.outbox.filter.kind'        => 'Tyyppi',
+    'communications.outbox.filter.date_range'  => 'Aikaväli',
+    'communications.outbox.filter.recipient'   => 'Vastaanottaja',
+    'communications.outbox.empty'              => 'Ei viestejä.',
+    'communications.outbox.detail'             => 'Viestin tiedot',
+
+    // ── Communications: newsletters + blocks ──────────────────────
+    'communications.newsletter.new'              => 'Uusi uutiskirje',
+    'communications.newsletter.draft'            => 'Luonnos',
+    'communications.newsletter.sent'             => 'Lähetetty',
+    'communications.newsletter.block.heading'    => 'Otsikko',
+    'communications.newsletter.block.paragraph'  => 'Kappale',
+    'communications.newsletter.block.image'      => 'Kuva',
+    'communications.newsletter.block.button'     => 'Nappi',
+    'communications.newsletter.block.divider'    => 'Jakaja',
+    'communications.newsletter.block.two_columns' => '2 palstaa',
+    'communications.newsletter.block.event_card' => 'Tapahtuma-kortti',
+
+    // ── Communications: templates ─────────────────────────────────
+    'communications.template.subject'        => 'Aihe',
+    'communications.template.intro'          => 'Saateteksti',
+    'communications.template.signature'      => 'Allekirjoitus',
+    'communications.template.footer'         => 'Alatunniste',
+    'communications.template.locale_missing' => 'Käännös puuttuu — en_GB toimii oletuksena',
+
+    // ── Communications: settings ──────────────────────────────────
+    'communications.settings.smtp.dsn'          => 'SMTP-DSN',
+    'communications.settings.smtp.from'         => 'Lähettäjä-osoite',
+    'communications.settings.smtp.display_name' => 'Lähettäjä-nimi',
+    'communications.settings.smtp.reply_to'     => 'Vastausosoite',
+    'communications.settings.smtp.test'         => 'Lähetä testi',
+    'communications.settings.smtp.test_success' => 'SMTP-testi onnistui :time',
+    'communications.settings.cron.pre_due'      => 'Maksumuistutus ennen eräpäivää (vrk)',
+    'communications.settings.cron.post_due'     => 'Maksumuistutus eräpäivän jälkeen (vrk-lista)',
+    'communications.settings.cron.lapse'        => 'Lapse-varoitus ennen § 4 -lapsea (vrk)',
+    'communications.settings.brand.logo'        => 'Logo-URL',
+    'communications.settings.brand.color'       => 'Pääväri (hex)',
+    'communications.settings.brand.footer'      => 'Alatunniste-osoite',
+
+    // ── Communications: suppression list ──────────────────────────
+    'communications.suppression.reason.hard_bounce'  => 'Hard-bounce',
+    'communications.suppression.reason.complaint'    => 'Valitus',
+    'communications.suppression.reason.manual_block' => 'Manuaalinen esto',
+    'communications.suppression.remove'              => 'Poista listalta',
+    'communications.suppression.add'                 => 'Lisää käsin',
+    'communications.suppression.empty'               => 'Suppression-lista on tyhjä.',
+
+    // ── Communications: unsubscribe (public) ──────────────────────
+    'communications.unsubscribe.title'      => 'Poistu listalta',
+    'communications.unsubscribe.confirm'    => 'Vahvista poisto',
+    'communications.unsubscribe.success'    => 'Olet poistettu listalta. Voit aktivoida tilauksen uudelleen jäsenprofiilistasi.',
+    'communications.unsubscribe.expired'    => 'Linkki on vanhentunut. Kirjaudu sisään muokataksesi asetuksia.',
+    'communications.unsubscribe.invalid'    => 'Linkki ei kelpaa.',
+
     // ── Governance / Billing page ─────────────────────────────────
     'backstage.title.governance.billing'              => 'Laskutus',
     'backstage.governance.billing.year_label'         => 'Vuosi',

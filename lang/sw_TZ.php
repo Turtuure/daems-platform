@@ -596,6 +596,103 @@ return [
     'shell.communications.newsletters' => 'Vipeperushi',
     'shell.communications.templates'   => 'Violezo',
 
+    // ── Communications: backstage page titles ─────────────────────
+    'backstage.title.communications.compose'      => 'Tunga ujumbe',
+    'backstage.title.communications.outbox'       => 'Iliyotumwa + foleni',
+    'backstage.title.communications.newsletters'  => 'Vipeperushi',
+    'backstage.title.communications.templates'    => 'Violezo vya ujumbe',
+    'backstage.title.communications.settings'     => 'Mipangilio ya mawasiliano',
+
+    // ── Communications: message kinds ─────────────────────────────
+    'communications.kind.meeting_invitation'   => 'Mwaliko wa mkutano',
+    'communications.kind.payment_reminder'     => 'Ukumbusho wa malipo',
+    'communications.kind.membership_approved'  => 'Ombi la uanachama limeidhinishwa',
+    'communications.kind.group_message'        => 'Ujumbe wa kikundi',
+    'communications.kind.newsletter'           => 'Kipeperushi',
+
+    // ── Communications: categories ────────────────────────────────
+    'communications.category.transactional'             => 'Miamala',
+    'communications.category.transactional.description' => 'Ujumbe wa lazima kama vikumbusho vya malipo, mialiko ya mikutano, taarifa za uthibitisho. Hauwezi kujiondoa.',
+    'communications.category.operational'               => 'Uendeshaji',
+    'communications.category.operational.description'   => 'Ujumbe wa kiutendaji kama vile masasisho ya miradi. Umewashwa kwa chaguo-msingi, unaweza kujiondoa.',
+    'communications.category.marketing'                 => 'Masoko',
+    'communications.category.marketing.description'     => 'Vipeperushi na kampeni. Imezimwa kwa chaguo-msingi — inahitaji idhini ya wazi.',
+
+    // ── Communications: composer ──────────────────────────────────
+    'communications.composer.kind_label'         => 'Aina ya ujumbe',
+    'communications.composer.preview'            => 'Hakiki',
+    'communications.composer.audience_count'     => 'Wapokeaji: :count',
+    'communications.composer.send'               => 'Tuma kwenye foleni',
+    'communications.composer.save_draft'         => 'Hifadhi kama rasimu',
+    'communications.composer.test_to_self'       => 'Tuma jaribio kwako',
+    'communications.composer.no_smtp'            => 'SMTP haijasanidiwa. Weka stakabadhi za SMTP kwenye ukurasa wa mipangilio kabla ya kutuma.',
+    'communications.composer.empty_audience'     => 'Hakuna wapokeaji wanaolingana na vichungi vilivyotolewa.',
+    'communications.composer.missing_field'      => 'Sehemu ya lazima inakosekana: :field',
+
+    // ── Communications: outbox ────────────────────────────────────
+    'communications.outbox.status.queued'      => 'Foleni',
+    'communications.outbox.status.sending'     => 'Inatumwa',
+    'communications.outbox.status.sent'        => 'Imetumwa',
+    'communications.outbox.status.failed'      => 'Imeshindwa',
+    'communications.outbox.status.bounced'     => 'Imerudi',
+    'communications.outbox.status.suppressed'  => 'Kwenye orodha ya kuzuiwa',
+    'communications.outbox.action.retry'       => 'Jaribu tena',
+    'communications.outbox.action.resend'      => 'Tuma tena',
+    'communications.outbox.filter.status'      => 'Hali',
+    'communications.outbox.filter.kind'        => 'Aina',
+    'communications.outbox.filter.date_range'  => 'Kipindi cha tarehe',
+    'communications.outbox.filter.recipient'   => 'Mpokeaji',
+    'communications.outbox.empty'              => 'Hakuna ujumbe.',
+    'communications.outbox.detail'             => 'Maelezo ya ujumbe',
+
+    // ── Communications: newsletters + blocks ──────────────────────
+    'communications.newsletter.new'              => 'Kipeperushi kipya',
+    'communications.newsletter.draft'            => 'Rasimu',
+    'communications.newsletter.sent'             => 'Imetumwa',
+    'communications.newsletter.block.heading'    => 'Kichwa',
+    'communications.newsletter.block.paragraph'  => 'Aya',
+    'communications.newsletter.block.image'      => 'Picha',
+    'communications.newsletter.block.button'     => 'Kitufe',
+    'communications.newsletter.block.divider'    => 'Mgawanyiko',
+    'communications.newsletter.block.two_columns' => 'Safu 2',
+    'communications.newsletter.block.event_card' => 'Kadi ya tukio',
+
+    // ── Communications: templates ─────────────────────────────────
+    'communications.template.subject'        => 'Mada',
+    'communications.template.intro'          => 'Maandishi ya utangulizi',
+    'communications.template.signature'      => 'Sahihi',
+    'communications.template.footer'         => 'Mwisho',
+    'communications.template.locale_missing' => 'Tafsiri haipo — en_GB inatumika kama mbadala',
+
+    // ── Communications: settings ──────────────────────────────────
+    'communications.settings.smtp.dsn'          => 'SMTP DSN',
+    'communications.settings.smtp.from'         => 'Anwani ya mtumaji',
+    'communications.settings.smtp.display_name' => 'Jina la mtumaji',
+    'communications.settings.smtp.reply_to'     => 'Anwani ya kujibu',
+    'communications.settings.smtp.test'         => 'Tuma jaribio',
+    'communications.settings.smtp.test_success' => 'Jaribio la SMTP limefanikiwa :time',
+    'communications.settings.cron.pre_due'      => 'Ukumbusho wa malipo kabla ya tarehe ya mwisho (siku)',
+    'communications.settings.cron.post_due'     => 'Ukumbusho wa malipo baada ya tarehe ya mwisho (orodha ya siku)',
+    'communications.settings.cron.lapse'        => 'Onyo la kupita ada kabla ya § 4 lapse (siku)',
+    'communications.settings.brand.logo'        => 'URL ya nembo',
+    'communications.settings.brand.color'       => 'Rangi kuu (hex)',
+    'communications.settings.brand.footer'      => 'Anwani ya mwisho',
+
+    // ── Communications: suppression list ──────────────────────────
+    'communications.suppression.reason.hard_bounce'  => 'Hard bounce',
+    'communications.suppression.reason.complaint'    => 'Malalamiko',
+    'communications.suppression.reason.manual_block' => 'Kuzuia kwa mkono',
+    'communications.suppression.remove'              => 'Ondoa kutoka orodhani',
+    'communications.suppression.add'                 => 'Ongeza kwa mkono',
+    'communications.suppression.empty'               => 'Orodha ya kuzuia haina chochote.',
+
+    // ── Communications: unsubscribe (public) ──────────────────────
+    'communications.unsubscribe.title'      => 'Jiondoe',
+    'communications.unsubscribe.confirm'    => 'Thibitisha kujiondoa',
+    'communications.unsubscribe.success'    => 'Umeondolewa kwenye orodha. Unaweza kuwasha tena usajili kutoka kwenye wasifu wako wa uanachama.',
+    'communications.unsubscribe.expired'    => 'Kiungo kimeisha muda wake. Ingia ili kubadilisha mipangilio.',
+    'communications.unsubscribe.invalid'    => 'Kiungo hakikubaliki.',
+
     // ── Governance / Billing page ─────────────────────────────────
     'backstage.title.governance.billing'              => 'Bili',
     'backstage.governance.billing.year_label'         => 'Mwaka',

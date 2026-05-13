@@ -592,6 +592,103 @@ return [
     'shell.communications.newsletters' => 'Newsletters',
     'shell.communications.templates'   => 'Templates',
 
+    // ── Communications: backstage page titles ─────────────────────
+    'backstage.title.communications.compose'      => 'Compose message',
+    'backstage.title.communications.outbox'       => 'Sent + queued',
+    'backstage.title.communications.newsletters'  => 'Newsletters',
+    'backstage.title.communications.templates'    => 'Message templates',
+    'backstage.title.communications.settings'     => 'Communication settings',
+
+    // ── Communications: message kinds ─────────────────────────────
+    'communications.kind.meeting_invitation'   => 'Meeting invitation',
+    'communications.kind.payment_reminder'     => 'Payment reminder',
+    'communications.kind.membership_approved'  => 'Membership application approved',
+    'communications.kind.group_message'        => 'Group message',
+    'communications.kind.newsletter'           => 'Newsletter',
+
+    // ── Communications: categories ────────────────────────────────
+    'communications.category.transactional'             => 'Transactional',
+    'communications.category.transactional.description' => 'Mandatory messages such as payment reminders, meeting invitations, approval notices. Cannot be unsubscribed from.',
+    'communications.category.operational'               => 'Operational',
+    'communications.category.operational.description'   => 'Operational messages such as project updates. On by default, can be unsubscribed.',
+    'communications.category.marketing'                 => 'Marketing',
+    'communications.category.marketing.description'     => 'Newsletters and campaigns. Off by default — requires active consent.',
+
+    // ── Communications: composer ──────────────────────────────────
+    'communications.composer.kind_label'         => 'Message type',
+    'communications.composer.preview'            => 'Preview',
+    'communications.composer.audience_count'     => 'Recipients: :count',
+    'communications.composer.send'               => 'Send to queue',
+    'communications.composer.save_draft'         => 'Save as draft',
+    'communications.composer.test_to_self'       => 'Send test to self',
+    'communications.composer.no_smtp'            => 'SMTP is not configured. Set SMTP credentials on the settings page before sending.',
+    'communications.composer.empty_audience'     => 'No recipients match the given filters.',
+    'communications.composer.missing_field'      => 'Required field missing: :field',
+
+    // ── Communications: outbox ────────────────────────────────────
+    'communications.outbox.status.queued'      => 'Queued',
+    'communications.outbox.status.sending'     => 'Sending',
+    'communications.outbox.status.sent'        => 'Sent',
+    'communications.outbox.status.failed'      => 'Failed',
+    'communications.outbox.status.bounced'     => 'Bounced',
+    'communications.outbox.status.suppressed'  => 'On suppression list',
+    'communications.outbox.action.retry'       => 'Retry',
+    'communications.outbox.action.resend'      => 'Resend',
+    'communications.outbox.filter.status'      => 'Status',
+    'communications.outbox.filter.kind'        => 'Type',
+    'communications.outbox.filter.date_range'  => 'Date range',
+    'communications.outbox.filter.recipient'   => 'Recipient',
+    'communications.outbox.empty'              => 'No messages.',
+    'communications.outbox.detail'             => 'Message details',
+
+    // ── Communications: newsletters + blocks ──────────────────────
+    'communications.newsletter.new'              => 'New newsletter',
+    'communications.newsletter.draft'            => 'Draft',
+    'communications.newsletter.sent'             => 'Sent',
+    'communications.newsletter.block.heading'    => 'Heading',
+    'communications.newsletter.block.paragraph'  => 'Paragraph',
+    'communications.newsletter.block.image'      => 'Image',
+    'communications.newsletter.block.button'     => 'Button',
+    'communications.newsletter.block.divider'    => 'Divider',
+    'communications.newsletter.block.two_columns' => '2 columns',
+    'communications.newsletter.block.event_card' => 'Event card',
+
+    // ── Communications: templates ─────────────────────────────────
+    'communications.template.subject'        => 'Subject',
+    'communications.template.intro'          => 'Intro text',
+    'communications.template.signature'      => 'Signature',
+    'communications.template.footer'         => 'Footer',
+    'communications.template.locale_missing' => 'Translation missing — en_GB used as fallback',
+
+    // ── Communications: settings ──────────────────────────────────
+    'communications.settings.smtp.dsn'          => 'SMTP DSN',
+    'communications.settings.smtp.from'         => 'Sender address',
+    'communications.settings.smtp.display_name' => 'Sender name',
+    'communications.settings.smtp.reply_to'     => 'Reply-to address',
+    'communications.settings.smtp.test'         => 'Send test',
+    'communications.settings.smtp.test_success' => 'SMTP test succeeded :time',
+    'communications.settings.cron.pre_due'      => 'Payment reminder before due date (days)',
+    'communications.settings.cron.post_due'     => 'Payment reminder after due date (day list)',
+    'communications.settings.cron.lapse'        => 'Lapse warning before § 4 lapse (days)',
+    'communications.settings.brand.logo'        => 'Logo URL',
+    'communications.settings.brand.color'       => 'Primary colour (hex)',
+    'communications.settings.brand.footer'      => 'Footer address',
+
+    // ── Communications: suppression list ──────────────────────────
+    'communications.suppression.reason.hard_bounce'  => 'Hard bounce',
+    'communications.suppression.reason.complaint'    => 'Complaint',
+    'communications.suppression.reason.manual_block' => 'Manual block',
+    'communications.suppression.remove'              => 'Remove from list',
+    'communications.suppression.add'                 => 'Add manually',
+    'communications.suppression.empty'               => 'Suppression list is empty.',
+
+    // ── Communications: unsubscribe (public) ──────────────────────
+    'communications.unsubscribe.title'      => 'Unsubscribe',
+    'communications.unsubscribe.confirm'    => 'Confirm unsubscribe',
+    'communications.unsubscribe.success'    => 'You have been unsubscribed. You can re-enable the subscription from your member profile.',
+    'communications.unsubscribe.expired'    => 'The link has expired. Sign in to change your settings.',
+    'communications.unsubscribe.invalid'    => 'The link is not valid.',
+
     // ── Governance / Billing page ─────────────────────────────────
     'backstage.title.governance.billing'              => 'Billing',
     'backstage.governance.billing.year_label'         => 'Year',
