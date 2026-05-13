@@ -102,6 +102,22 @@ if (str_starts_with($uri, '/api/backstage/communications/settings')) {
     exit;
 }
 
+// Communications composer — preview + send (Wave D7).
+if ($uri === '/api/backstage/communications/preview') {
+    require __DIR__ . '/api/communications-preview.php';
+    exit;
+}
+if ($uri === '/api/backstage/communications/send') {
+    require __DIR__ . '/api/communications-send.php';
+    exit;
+}
+
+// Communications templates — show / update per (kind, locale) (Wave D8).
+if (str_starts_with($uri, '/api/backstage/communications/templates/')) {
+    require __DIR__ . '/api/communications-templates.php';
+    exit;
+}
+
 http_response_code(404);
 header('Content-Type: application/json');
 echo json_encode(['error' => 'unknown_proxy', 'uri' => $uri]);

@@ -12,31 +12,37 @@ use DaemsModule\Communications\Domain\Mail\MailKind;
 use DaemsModule\Communications\Domain\Mail\MailOutbox;
 use DaemsModule\Communications\Domain\Mail\MailOutboxId;
 use DaemsModule\Communications\Domain\Mail\MailOutboxStatus;
+use DaemsModule\Communications\Domain\Meeting\Meeting;
+use DaemsModule\Communications\Domain\Meeting\MeetingId;
+use DaemsModule\Communications\Domain\Meeting\MeetingStatus;
+use DaemsModule\Communications\Domain\Meeting\MeetingType;
 use DaemsModule\Communications\Domain\Settings\TenantCommunicationSettings;
 use DaemsModule\Communications\Infrastructure\Persistence\SqlMailOutboxRepository;
+use DaemsModule\Communications\Infrastructure\Persistence\SqlMeetingRepository;
 use DaemsModule\Communications\Infrastructure\Persistence\SqlTenantCommunicationSettingsRepository;
 
 /**
  * Communications module tenant-isolation suite.
  *
- * Wave B (this commit) wires the settings-table check ONLY. The four other
- * domain isolation tests (outbox, meeting, newsletter, suppression) are
- * stubbed with markTestSkipped() and will be populated as their respective
- * waves land:
- *   - Wave C → outbox + suppression (mailer + drain + bounce handling)
- *   - Wave D → meeting (kokouskutsut + reminder cron)
- *   - Wave E → newsletter (newsletter draft + send flow)
+ * Wave-by-wave activation:
+ *   - Wave B → settings (active)
+ *   - Wave C → outbox (active); suppression still pending
+ *   - Wave D → meeting (active as of D9); newsletter still pending
+ *   - Wave E → newsletter (TBD)
+ *   - Wave G → suppression (TBD)
  *
- * Active test verifies that a SMTP DSN saved by `daems` tenant is not
- * visible (via findForTenant) to the `sahegroup` tenant. This is the core
- * cross-tenant guarantee for the most sensitive piece of communications
- * state (encrypted credentials).
+ * The settings-isolation case verifies that a SMTP DSN saved by `daems`
+ * tenant is not visible (via findForTenant) to the `sahegroup` tenant — the
+ * core cross-tenant guarantee for the most sensitive piece of communications
+ * state (encrypted credentials). The outbox + meeting cases extend the same
+ * scoping guarantee to the row-level repositories.
  */
 final class CommunicationsTenantIsolationTest extends IsolationTestCase
 {
     private Connection $connection;
     private SqlTenantCommunicationSettingsRepository $settingsRepo;
     private SqlMailOutboxRepository $outboxRepo;
+    private SqlMeetingRepository $meetingRepo;
 
     protected function setUp(): void
     {
@@ -58,6 +64,7 @@ final class CommunicationsTenantIsolationTest extends IsolationTestCase
         ]);
         $this->settingsRepo = new SqlTenantCommunicationSettingsRepository($this->connection);
         $this->outboxRepo   = new SqlMailOutboxRepository($this->connection);
+        $this->meetingRepo  = new SqlMeetingRepository($this->connection);
     }
 
     /** Insert a user row directly (FK requirement for mail_outbox.queued_by). */
@@ -176,7 +183,76 @@ final class CommunicationsTenantIsolationTest extends IsolationTestCase
 
     public function test_meeting_isolation(): void
     {
-        $this->markTestSkipped('Wave D — meetings flow lands later.');
+        $daems = $this->tenantId('daems');
+        $sahe  = $this->tenantId('sahegroup');
+
+        // Each tenant creates one Meeting from a tenant-local user. Re-use the
+        // ensureUser helper (also used by the outbox test) so the FK on
+        // meetings.created_by is satisfied without re-seeding the tenant
+        // membership row.
+        $daemsUser = $this->ensureUser('01958000-0000-7000-8000-0000000000e1');
+        $saheUser  = $this->ensureUser('01958000-0000-7000-8000-0000000000e2');
+
+        $daemsMeeting = new Meeting(
+            id:                  MeetingId::generate(),
+            tenantId:            $daems,
+            type:                MeetingType::AnnualMeeting,
+            titleByLocale:       ['fi_FI' => 'Vuosikokous 2026'],
+            startsAt:            new \DateTimeImmutable('2026-06-01T18:00:00Z'),
+            location:            'Helsinki',
+            remoteUrl:           null,
+            agendaItemsByLocale: ['fi_FI' => ['Avaus', 'Tilinpäätös']],
+            documentUrls:        [],
+            status:              MeetingStatus::Scheduled,
+            createdAt:           new \DateTimeImmutable('2026-05-10T08:00:00Z'),
+            createdBy:           $daemsUser,
+        );
+        $saheMeeting = new Meeting(
+            id:                  MeetingId::generate(),
+            tenantId:            $sahe,
+            type:                MeetingType::BoardMeeting,
+            titleByLocale:       ['en_GB' => 'Board meeting Q2'],
+            startsAt:            new \DateTimeImmutable('2026-06-15T10:00:00Z'),
+            location:            null,
+            remoteUrl:           'https://meet.example.com/sahe-q2',
+            agendaItemsByLocale: ['en_GB' => ['Welcome', 'Strategy']],
+            documentUrls:        [],
+            status:              MeetingStatus::Scheduled,
+            createdAt:           new \DateTimeImmutable('2026-05-10T08:00:00Z'),
+            createdBy:           $saheUser,
+        );
+
+        $this->meetingRepo->save($daemsMeeting);
+        $this->meetingRepo->save($saheMeeting);
+
+        // daems sees only the daems meeting (with no date filter).
+        $daemsList = $this->meetingRepo->listForTenant($daems);
+        self::assertCount(1, $daemsList);
+        self::assertSame($daemsMeeting->id->value(), $daemsList[0]->id->value());
+        self::assertSame('Helsinki', $daemsList[0]->location);
+
+        // Core isolation guarantee: sahegroup MUST NOT see the daems meeting.
+        $saheList = $this->meetingRepo->listForTenant($sahe);
+        self::assertCount(1, $saheList);
+        self::assertSame($saheMeeting->id->value(), $saheList[0]->id->value());
+        self::assertSame('https://meet.example.com/sahe-q2', $saheList[0]->remoteUrl);
+
+        // Reverse direction — date-bounded query stays scoped too.
+        $daemsBounded = $this->meetingRepo->listForTenant(
+            $daems,
+            new \DateTimeImmutable('2026-05-01T00:00:00Z'),
+            new \DateTimeImmutable('2026-12-31T23:59:59Z'),
+        );
+        self::assertCount(1, $daemsBounded);
+        self::assertSame($daemsMeeting->id->value(), $daemsBounded[0]->id->value());
+
+        $saheBounded = $this->meetingRepo->listForTenant(
+            $sahe,
+            new \DateTimeImmutable('2026-05-01T00:00:00Z'),
+            new \DateTimeImmutable('2026-12-31T23:59:59Z'),
+        );
+        self::assertCount(1, $saheBounded);
+        self::assertSame($saheMeeting->id->value(), $saheBounded[0]->id->value());
     }
 
     public function test_newsletter_isolation(): void
