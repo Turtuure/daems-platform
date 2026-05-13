@@ -25,7 +25,9 @@
       "DaemsModule\\Projects\\": "../modules/projects/backend/src/",
       "DaemsModule\\Projects\\Tests\\": "../modules/projects/backend/tests/",
       "DaemsModule\\Events\\": "../modules/events/backend/src/",
-      "DaemsModule\\Events\\Tests\\": "../modules/events/backend/tests/"
+      "DaemsModule\\Events\\Tests\\": "../modules/events/backend/tests/",
+      "DaemsModule\\Communications\\": "../modules/communications/backend/src/",
+      "DaemsModule\\Communications\\Tests\\": "../modules/communications/backend/tests/"
     }
   },
   "require-dev": {
