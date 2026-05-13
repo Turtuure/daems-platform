@@ -16,9 +16,14 @@ use DaemsModule\Communications\Domain\Meeting\Meeting;
 use DaemsModule\Communications\Domain\Meeting\MeetingId;
 use DaemsModule\Communications\Domain\Meeting\MeetingStatus;
 use DaemsModule\Communications\Domain\Meeting\MeetingType;
+use DaemsModule\Communications\Domain\Audience\AudienceFilter;
+use DaemsModule\Communications\Domain\Mail\NewsletterId;
 use DaemsModule\Communications\Domain\Settings\TenantCommunicationSettings;
+use DaemsModule\Communications\Domain\Template\NewsletterDraft;
+use DaemsModule\Communications\Domain\Template\NewsletterStatus;
 use DaemsModule\Communications\Infrastructure\Persistence\SqlMailOutboxRepository;
 use DaemsModule\Communications\Infrastructure\Persistence\SqlMeetingRepository;
+use DaemsModule\Communications\Infrastructure\Persistence\SqlNewsletterDraftRepository;
 use DaemsModule\Communications\Infrastructure\Persistence\SqlTenantCommunicationSettingsRepository;
 
 /**
@@ -43,6 +48,7 @@ final class CommunicationsTenantIsolationTest extends IsolationTestCase
     private SqlTenantCommunicationSettingsRepository $settingsRepo;
     private SqlMailOutboxRepository $outboxRepo;
     private SqlMeetingRepository $meetingRepo;
+    private SqlNewsletterDraftRepository $newsletterRepo;
 
     protected function setUp(): void
     {
@@ -62,9 +68,10 @@ final class CommunicationsTenantIsolationTest extends IsolationTestCase
             'username' => getenv('TEST_DB_USER') ?: 'root',
             'password' => getenv('TEST_DB_PASS') ?: 'salasana',
         ]);
-        $this->settingsRepo = new SqlTenantCommunicationSettingsRepository($this->connection);
-        $this->outboxRepo   = new SqlMailOutboxRepository($this->connection);
-        $this->meetingRepo  = new SqlMeetingRepository($this->connection);
+        $this->settingsRepo   = new SqlTenantCommunicationSettingsRepository($this->connection);
+        $this->outboxRepo     = new SqlMailOutboxRepository($this->connection);
+        $this->meetingRepo    = new SqlMeetingRepository($this->connection);
+        $this->newsletterRepo = new SqlNewsletterDraftRepository($this->connection);
     }
 
     /** Insert a user row directly (FK requirement for mail_outbox.queued_by). */
@@ -257,7 +264,54 @@ final class CommunicationsTenantIsolationTest extends IsolationTestCase
 
     public function test_newsletter_isolation(): void
     {
-        $this->markTestSkipped('Wave E — newsletter draft flow lands later.');
+        $daems = $this->tenantId('daems');
+        $sahe  = $this->tenantId('sahegroup');
+
+        // Each tenant creates one NewsletterDraft from a tenant-local user.
+        // newsletter_drafts.created_by FKs into users (per the migration), so
+        // re-use the same ensureUser helper as the outbox/meeting tests.
+        $daemsUser = $this->ensureUser('01958000-0000-7000-8000-0000000000f1');
+        $saheUser  = $this->ensureUser('01958000-0000-7000-8000-0000000000f2');
+
+        $daemsDraft = new NewsletterDraft(
+            id:               NewsletterId::generate(),
+            tenantId:         $daems,
+            internalName:     'Daems spring newsletter',
+            subjectByLocale:  ['fi_FI' => 'Kevätviesti'],
+            blocksByLocale:   ['fi_FI' => []],
+            audience:         new AudienceFilter([], [], null, []),
+            status:           NewsletterStatus::Draft,
+            sentAt:           null,
+            createdAt:        new \DateTimeImmutable('2026-05-10T08:00:00Z'),
+            createdBy:        $daemsUser,
+        );
+        $saheDraft = new NewsletterDraft(
+            id:               NewsletterId::generate(),
+            tenantId:         $sahe,
+            internalName:     'Sahegroup Q2 update',
+            subjectByLocale:  ['en_GB' => 'Q2 update'],
+            blocksByLocale:   ['en_GB' => []],
+            audience:         new AudienceFilter([], [], null, []),
+            status:           NewsletterStatus::Draft,
+            sentAt:           null,
+            createdAt:        new \DateTimeImmutable('2026-05-10T08:00:00Z'),
+            createdBy:        $saheUser,
+        );
+
+        $this->newsletterRepo->save($daemsDraft);
+        $this->newsletterRepo->save($saheDraft);
+
+        // daems sees only its own draft.
+        $daemsList = $this->newsletterRepo->listForTenant($daems);
+        self::assertCount(1, $daemsList);
+        self::assertSame($daemsDraft->id->value(), $daemsList[0]->id->value());
+        self::assertSame('Daems spring newsletter', $daemsList[0]->internalName);
+
+        // Core isolation guarantee: sahegroup MUST NOT see the daems draft.
+        $saheList = $this->newsletterRepo->listForTenant($sahe);
+        self::assertCount(1, $saheList);
+        self::assertSame($saheDraft->id->value(), $saheList[0]->id->value());
+        self::assertSame('Sahegroup Q2 update', $saheList[0]->internalName);
     }
 
     public function test_suppression_isolation(): void

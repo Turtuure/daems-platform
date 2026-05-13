@@ -118,6 +118,12 @@ if (str_starts_with($uri, '/api/backstage/communications/templates/')) {
     exit;
 }
 
+// Communications newsletters — list/create/update/delete/send (Wave E4).
+if (str_starts_with($uri, '/api/backstage/communications/newsletters')) {
+    require __DIR__ . '/api/communications-newsletters.php';
+    exit;
+}
+
 http_response_code(404);
 header('Content-Type: application/json');
 echo json_encode(['error' => 'unknown_proxy', 'uri' => $uri]);
