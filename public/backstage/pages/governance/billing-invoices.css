@@ -10,7 +10,7 @@
     flex-direction: column;
     gap: 0.2rem;
     font-size: 0.85rem;
-    color: var(--text-muted, #666);
+    color: var(--text-muted);
 }
 
 .billing-invoices__list {
@@ -23,34 +23,39 @@
 .billing-invoices__list td {
     padding: 0.6rem 0.75rem;
     text-align: left;
-    border-bottom: 1px solid var(--border-subtle, #e2e2e2);
+    border-bottom: 1px solid var(--surface-border);
     vertical-align: middle;
 }
 
 .billing-invoices__list td small {
-    color: var(--text-muted, #777);
+    color: var(--text-muted);
     margin-left: 0.4rem;
 }
 
+/* Invoice status badges — route through the backstage pill tokens so dark
+ * mode and brand changes propagate. Background is the subtle variant; the
+ * text colour is the saturated one (matches .pill--published etc.). */
 .status-badge {
     display: inline-block;
     padding: 0.15rem 0.55rem;
     border-radius: 999px;
     font-size: 0.85em;
-    color: #fff;
-    background: var(--surface-muted, #888);
+    line-height: 1.4;
+    background: var(--surface-light);
+    color: var(--text-secondary);
+    border: 1px solid var(--surface-border);
 }
 
-.status-PENDING { background: #5b9bd5; }
-.status-PAID    { background: #3aa856; }
-.status-OVERDUE { background: #c0392b; }
-.status-WAIVED  { background: #888; }
-.status-REDUCED { background: #d39e2c; }
+.status-PENDING { background: var(--brand-primary-subtle);  color: var(--brand-primary);  border-color: transparent; }
+.status-PAID    { background: var(--status-success-subtle); color: var(--status-success); border-color: transparent; }
+.status-OVERDUE { background: var(--status-error-subtle);   color: var(--status-error);   border-color: transparent; }
+.status-WAIVED  { background: rgba(148, 163, 184, 0.15);    color: var(--text-secondary); border-color: transparent; }
+.status-REDUCED { background: var(--status-warning-subtle); color: var(--status-warning); border-color: transparent; }
 
 .billing-invoices__dialog {
     width: min(540px, 92vw);
     padding: 1.25rem 1.5rem;
-    border: 1px solid var(--border-strong, #999);
+    border: 1px solid var(--surface-border);
     border-radius: 8px;
 }
 
@@ -72,7 +77,7 @@
 .billing-invoices__dialog textarea {
     font: inherit;
     padding: 0.4rem 0.55rem;
-    border: 1px solid var(--border-subtle, #d4d4d4);
+    border: 1px solid var(--surface-border);
     border-radius: 4px;
 }
 
@@ -94,11 +99,11 @@
 
 .billing-invoices__dialog li {
     padding: 0.5rem 0;
-    border-bottom: 1px solid var(--border-subtle, #e2e2e2);
+    border-bottom: 1px solid var(--surface-border);
 }
 
 .billing-invoices__dialog pre {
-    background: var(--surface-muted, #f7f7f7);
+    background: var(--surface-light);
     padding: 0.4rem 0.5rem;
     border-radius: 4px;
     font-size: 0.85em;
