@@ -14,6 +14,7 @@ enum BoardDecisionType: string
     case RemoveBoardMember  = 'remove_board_member';
     case DelegateAuthority  = 'delegate_authority';
     case RevokeDelegation   = 'revoke_delegation';
+    case AnnualFeeSchedule  = 'annual_fee_schedule';
 
     /** Whitelist of types that may be delegated to the admin role. */
     public function isDelegatable(): bool

@@ -1,0 +1,45 @@
+<?php
+declare(strict_types=1);
+
+namespace Daems\Domain\Membership\Billing;
+
+use Daems\Domain\Membership\MembershipType;
+use Daems\Domain\Tenant\TenantId;
+
+interface AnnualFeeScheduleRepositoryInterface
+{
+    public function save(AnnualFeeSchedule $schedule): void;
+
+    public function findById(AnnualFeeScheduleId $id): ?AnnualFeeSchedule;
+
+    /**
+     * Lookup the currently-active row for (tenant, year, fee_type).
+     * Returns null if no active schedule exists yet for that combination.
+     */
+    public function findActiveFor(TenantId $tenantId, int $year, MembershipType $feeType): ?AnnualFeeSchedule;
+
+    /**
+     * All proposed-status rows for a year (admin UI listing or pre-decision audit).
+     * For decision-passed activation, prefer `findProposedByDecision()` — it does not
+     * require the year to be known up front.
+     *
+     * @return list<AnnualFeeSchedule>
+     */
+    public function findProposedFor(TenantId $tenantId, int $year, ?string $decisionId = null): array;
+
+    /**
+     * Lookup all proposed rows tied to a specific board_decisions row id.
+     * Used by AnnualFeeScheduleExecutor when the formal-decision-flow decision
+     * resolves to Passed.
+     *
+     * @return list<AnnualFeeSchedule>
+     */
+    public function findProposedByDecision(string $decisionId): array;
+
+    /**
+     * All rows for a year (admin UI listing).
+     *
+     * @return list<AnnualFeeSchedule>
+     */
+    public function listForTenantYear(TenantId $tenantId, int $year): array;
+}

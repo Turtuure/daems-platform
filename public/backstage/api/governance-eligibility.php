@@ -1,7 +1,7 @@
 <?php
 declare(strict_types=1);
 
-use Daems\Frontend\ApiClient;
+require_once __DIR__ . '/_proxy.php';
 
 header('Content-Type: application/json');
 $u = $_SESSION['user'] ?? null;
@@ -11,6 +11,4 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') !== 'GET') {
     echo json_encode(['error' => 'method_not_allowed']);
     exit;
 }
-$r = ApiClient::get('/backstage/governance/eligibility/full-membership');
-http_response_code((int) ($r['status'] ?? 500));
-echo json_encode($r['body'] ?? []);
+proxy_backend_get('/backstage/governance/eligibility/full-membership');

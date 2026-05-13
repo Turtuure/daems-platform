@@ -661,6 +661,12 @@ final class KernelHarness
                 $c->make(\Daems\Domain\Governance\BoardDelegationRepositoryInterface::class),
             ),
         );
+        $container->bind(
+            \Daems\Application\Governance\Executor\AnnualFeeScheduleExecutor::class,
+            static fn(Container $c) => new \Daems\Application\Governance\Executor\AnnualFeeScheduleExecutor(
+                $c->make(\Daems\Application\Membership\Billing\ActivateAnnualFeeSchedule\ActivateAnnualFeeSchedule::class),
+            ),
+        );
 
         // Executor registry (singleton)
         $container->singleton(
@@ -676,6 +682,7 @@ final class KernelHarness
                 $reg->register($c->make(\Daems\Application\Governance\Executor\RemoveBoardMemberExecutor::class));
                 $reg->register($c->make(\Daems\Application\Governance\Executor\DelegateAuthorityExecutor::class));
                 $reg->register($c->make(\Daems\Application\Governance\Executor\RevokeDelegationExecutor::class));
+                $reg->register($c->make(\Daems\Application\Governance\Executor\AnnualFeeScheduleExecutor::class));
                 return $reg;
             },
         );
@@ -821,6 +828,159 @@ final class KernelHarness
             ),
         );
 
+        // Membership Billing — fee schedules (0.7) — InMemory fakes
+        $container->singleton(
+            \Daems\Domain\Membership\Billing\AnnualFeeScheduleRepositoryInterface::class,
+            static fn() => new \Daems\Tests\Support\Fake\InMemoryAnnualFeeScheduleRepository(),
+        );
+        $container->bind(
+            \Daems\Application\Membership\Billing\DraftAnnualFeeSchedule\DraftAnnualFeeSchedule::class,
+            static fn(Container $c) => new \Daems\Application\Membership\Billing\DraftAnnualFeeSchedule\DraftAnnualFeeSchedule(
+                $c->make(\Daems\Domain\Membership\Billing\AnnualFeeScheduleRepositoryInterface::class),
+                $c->make(\Daems\Domain\Governance\BoardDecisionRepositoryInterface::class),
+                $c->make(\Daems\Domain\Governance\TenantGovernanceSettingsRepositoryInterface::class),
+                $c->make(\Daems\Domain\Governance\BoardRepositoryInterface::class),
+                $c->make(\Daems\Domain\Tenant\TenantRepositoryInterface::class),
+                $c->make(Clock::class),
+            ),
+        );
+        $container->bind(
+            \Daems\Application\Membership\Billing\ActivateAnnualFeeSchedule\ActivateAnnualFeeSchedule::class,
+            static fn(Container $c) => new \Daems\Application\Membership\Billing\ActivateAnnualFeeSchedule\ActivateAnnualFeeSchedule(
+                $c->make(\Daems\Domain\Membership\Billing\AnnualFeeScheduleRepositoryInterface::class),
+                $c->make(Clock::class),
+            ),
+        );
+
+        // Membership Billing — member fee invoices + anniversary use case (0.7 Wave C) — InMemory fakes
+        $container->singleton(
+            \Daems\Domain\Membership\Billing\MemberFeeInvoiceRepositoryInterface::class,
+            static fn() => new \Daems\Tests\Support\Fake\InMemoryMemberFeeInvoiceRepository(),
+        );
+        $container->singleton(
+            \Daems\Domain\Membership\Billing\UserFeeOverrideRepositoryInterface::class,
+            static fn() => new \Daems\Tests\Support\Fake\InMemoryUserFeeOverrideRepository(),
+        );
+        $container->bind(
+            \Daems\Application\Membership\Billing\GenerateAnniversaryInvoice\GenerateAnniversaryInvoice::class,
+            static fn(Container $c) => new \Daems\Application\Membership\Billing\GenerateAnniversaryInvoice\GenerateAnniversaryInvoice(
+                $c->make(\Daems\Domain\User\UserRepositoryInterface::class),
+                $c->make(\Daems\Domain\Membership\Billing\AnnualFeeScheduleRepositoryInterface::class),
+                $c->make(\Daems\Domain\Membership\Billing\UserFeeOverrideRepositoryInterface::class),
+                $c->make(\Daems\Domain\Membership\Billing\MemberFeeInvoiceRepositoryInterface::class),
+                $c->make(\Daems\Domain\Governance\TenantGovernanceSettingsRepositoryInterface::class),
+                $c->make(Clock::class),
+            ),
+        );
+
+        // User fee override use cases (Wave D)
+        $container->bind(
+            \Daems\Application\Membership\Billing\SetUserFeeOverride\SetUserFeeOverride::class,
+            static fn(Container $c) => new \Daems\Application\Membership\Billing\SetUserFeeOverride\SetUserFeeOverride(
+                $c->make(\Daems\Domain\Membership\Billing\UserFeeOverrideRepositoryInterface::class),
+                $c->make(Clock::class),
+            ),
+        );
+        $container->bind(
+            \Daems\Application\Membership\Billing\RevokeUserFeeOverride\RevokeUserFeeOverride::class,
+            static fn(Container $c) => new \Daems\Application\Membership\Billing\RevokeUserFeeOverride\RevokeUserFeeOverride(
+                $c->make(\Daems\Domain\Membership\Billing\UserFeeOverrideRepositoryInterface::class),
+                $c->make(Clock::class),
+            ),
+        );
+
+        // Invoice audit + state-change use cases (Wave E)
+        $container->singleton(
+            \Daems\Domain\Membership\Billing\FeeInvoiceAuditRepositoryInterface::class,
+            static fn() => new \Daems\Tests\Support\Fake\InMemoryFeeInvoiceAuditRepository(),
+        );
+        $container->bind(
+            \Daems\Application\Membership\Billing\WaiveMemberFeeInvoice\WaiveMemberFeeInvoice::class,
+            static fn(Container $c) => new \Daems\Application\Membership\Billing\WaiveMemberFeeInvoice\WaiveMemberFeeInvoice(
+                $c->make(\Daems\Domain\Membership\Billing\MemberFeeInvoiceRepositoryInterface::class),
+                $c->make(\Daems\Domain\Membership\Billing\FeeInvoiceAuditRepositoryInterface::class),
+                $c->make(Clock::class),
+            ),
+        );
+        $container->bind(
+            \Daems\Application\Membership\Billing\ReduceMemberFeeInvoice\ReduceMemberFeeInvoice::class,
+            static fn(Container $c) => new \Daems\Application\Membership\Billing\ReduceMemberFeeInvoice\ReduceMemberFeeInvoice(
+                $c->make(\Daems\Domain\Membership\Billing\MemberFeeInvoiceRepositoryInterface::class),
+                $c->make(\Daems\Domain\Membership\Billing\FeeInvoiceAuditRepositoryInterface::class),
+                $c->make(Clock::class),
+            ),
+        );
+        $container->bind(
+            \Daems\Application\Membership\Billing\RecordManualPayment\RecordManualPayment::class,
+            static fn(Container $c) => new \Daems\Application\Membership\Billing\RecordManualPayment\RecordManualPayment(
+                $c->make(\Daems\Domain\Membership\Billing\MemberFeeInvoiceRepositoryInterface::class),
+                $c->make(\Daems\Domain\Membership\Billing\FeeInvoiceAuditRepositoryInterface::class),
+                $c->make(Clock::class),
+            ),
+        );
+
+        // MarkOverdueInvoices cron (Wave F)
+        $container->bind(
+            \Daems\Application\Membership\Billing\MarkOverdueInvoices\MarkOverdueInvoices::class,
+            static fn(Container $c) => new \Daems\Application\Membership\Billing\MarkOverdueInvoices\MarkOverdueInvoices(
+                $c->make(\Daems\Domain\Membership\Billing\MemberFeeInvoiceRepositoryInterface::class),
+                $c->make(\Daems\Domain\Membership\Billing\FeeInvoiceAuditRepositoryInterface::class),
+                $c->make(\Daems\Domain\Governance\TenantGovernanceSettingsRepositoryInterface::class),
+                $c->make(Clock::class),
+            ),
+        );
+
+        // LapseInactiveMember use case (Wave F § 4)
+        $container->bind(
+            \Daems\Application\Membership\Billing\LapseInactiveMember\LapseInactiveMember::class,
+            static fn(Container $c) => new \Daems\Application\Membership\Billing\LapseInactiveMember\LapseInactiveMember(
+                $c->make(\Daems\Domain\User\UserRepositoryInterface::class),
+                $c->make(\Daems\Domain\Membership\MemberStatusAuditRepositoryInterface::class),
+                $c->make(\Daems\Domain\Shared\IdGeneratorInterface::class),
+                $c->make(Clock::class),
+            ),
+        );
+
+        // ReverseLapse use case (Wave G — GSA-only override)
+        $container->bind(
+            \Daems\Application\Membership\Billing\ReverseLapse\ReverseLapse::class,
+            static fn(Container $c) => new \Daems\Application\Membership\Billing\ReverseLapse\ReverseLapse(
+                $c->make(\Daems\Domain\User\UserRepositoryInterface::class),
+                $c->make(\Daems\Domain\Membership\MemberStatusAuditRepositoryInterface::class),
+                $c->make(\Daems\Domain\Audit\GsaOverrideRepositoryInterface::class),
+                $c->make(\Daems\Domain\Shared\IdGeneratorInterface::class),
+                $c->make(Clock::class),
+            ),
+        );
+
+        // WaiveOpenInvoicesOnHonoraryChange use case (Wave G § 3)
+        $container->bind(
+            \Daems\Application\Membership\Billing\WaiveOpenInvoicesOnHonoraryChange\WaiveOpenInvoicesOnHonoraryChange::class,
+            static fn(Container $c) => new \Daems\Application\Membership\Billing\WaiveOpenInvoicesOnHonoraryChange\WaiveOpenInvoicesOnHonoraryChange(
+                $c->make(\Daems\Domain\Membership\Billing\MemberFeeInvoiceRepositoryInterface::class),
+                $c->make(\Daems\Application\Membership\Billing\WaiveMemberFeeInvoice\WaiveMemberFeeInvoice::class),
+            ),
+        );
+
+        // CSV import — Preview + Confirm use cases (Wave G G5-G7)
+        $container->singleton(
+            \Daems\Application\Membership\Billing\ImportPaymentsCsv\NordeaPaymentCsvParser::class,
+            static fn() => new \Daems\Application\Membership\Billing\ImportPaymentsCsv\NordeaPaymentCsvParser(),
+        );
+        $container->bind(
+            \Daems\Application\Membership\Billing\ImportPaymentsCsv\PreviewImportPayments::class,
+            static fn(Container $c) => new \Daems\Application\Membership\Billing\ImportPaymentsCsv\PreviewImportPayments(
+                $c->make(\Daems\Application\Membership\Billing\ImportPaymentsCsv\NordeaPaymentCsvParser::class),
+                $c->make(\Daems\Domain\Membership\Billing\MemberFeeInvoiceRepositoryInterface::class),
+            ),
+        );
+        $container->bind(
+            \Daems\Application\Membership\Billing\ImportPaymentsCsv\ConfirmImportPayments::class,
+            static fn(Container $c) => new \Daems\Application\Membership\Billing\ImportPaymentsCsv\ConfirmImportPayments(
+                $c->make(\Daems\Application\Membership\Billing\RecordManualPayment\RecordManualPayment::class),
+            ),
+        );
+
         // Delegate variants (3)
         $container->bind(
             \Daems\Application\Governance\Delegate\ApproveBasicAsDelegate::class,
@@ -951,6 +1111,24 @@ final class KernelHarness
             \Daems\Infrastructure\Adapter\Api\Controller\Backstage\Governance\GsaOverrideController::class,
             static fn(Container $c) => new \Daems\Infrastructure\Adapter\Api\Controller\Backstage\Governance\GsaOverrideController(
                 $c->make(\Daems\Application\Audit\GsaForceApproveBasic::class),
+            ),
+        );
+        $container->bind(
+            \Daems\Infrastructure\Adapter\Api\Controller\Backstage\Governance\BackstageBillingController::class,
+            static fn(Container $c) => new \Daems\Infrastructure\Adapter\Api\Controller\Backstage\Governance\BackstageBillingController(
+                $c->make(\Daems\Application\Membership\Billing\DraftAnnualFeeSchedule\DraftAnnualFeeSchedule::class),
+                $c->make(\Daems\Domain\Membership\Billing\AnnualFeeScheduleRepositoryInterface::class),
+                $c->make(\Daems\Application\Membership\Billing\SetUserFeeOverride\SetUserFeeOverride::class),
+                $c->make(\Daems\Application\Membership\Billing\RevokeUserFeeOverride\RevokeUserFeeOverride::class),
+                $c->make(\Daems\Domain\Membership\Billing\UserFeeOverrideRepositoryInterface::class),
+                $c->make(\Daems\Application\Membership\Billing\WaiveMemberFeeInvoice\WaiveMemberFeeInvoice::class),
+                $c->make(\Daems\Application\Membership\Billing\ReduceMemberFeeInvoice\ReduceMemberFeeInvoice::class),
+                $c->make(\Daems\Application\Membership\Billing\RecordManualPayment\RecordManualPayment::class),
+                $c->make(\Daems\Domain\Membership\Billing\MemberFeeInvoiceRepositoryInterface::class),
+                $c->make(\Daems\Domain\Membership\Billing\FeeInvoiceAuditRepositoryInterface::class),
+                $c->make(\Daems\Application\Membership\Billing\ReverseLapse\ReverseLapse::class),
+                $c->make(\Daems\Application\Membership\Billing\ImportPaymentsCsv\PreviewImportPayments::class),
+                $c->make(\Daems\Application\Membership\Billing\ImportPaymentsCsv\ConfirmImportPayments::class),
             ),
         );
 
@@ -1130,6 +1308,12 @@ final class KernelHarness
         });
 
         $this->kernel = new Kernel($container, $logger, $debug);
+    }
+
+    /** Returns the TenantId for the seeded test tenant (slug: daems). */
+    public function daemsTenantId(): TenantId
+    {
+        return $this->testTenantId;
     }
 
     /**

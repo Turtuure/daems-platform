@@ -61,9 +61,9 @@ Lives at `public/sites/_default/` in this repo — fallback for tenants without 
 3. If `c:/laragon/www/sites/<slug>/public/index.php` exists → delegate to it.
 4. Else → render from `public/sites/_default/` (home, join, login, suspended).
 
-## Current state (updated 2026-05-07)
+## Current state (updated 2026-05-13)
 
-Branch: `dev` (pushed to origin). All work lands here; never push without explicit ask.
+Branch: `membership-billing-v1` (pushed up to G end; H1-H4 pending). All work lands on this branch; never push without explicit ask.
 
 Completed milestones (see `docs/superpowers/plans/` for plans, `docs/superpowers/specs/` for specs):
 - **PR 1** — PHPStan level 9 baseline (`2026-04-19-phpstan-level9-baseline.md`)
@@ -72,7 +72,8 @@ Completed milestones (see `docs/superpowers/plans/` for plans, `docs/superpowers
 - **PR 4** — Backstage Applications + Members API (`2026-04-20-backstage-applications-and-members-api.md`): migrations 034–035
 - **2026-04-20** — Approve-flow + global toasts; Events admin; Projects admin; Forum moderation (migrations 036–050)
 - **PR 5** — Content i18n for events + projects + EventProposal (`2026-04-21-content-i18n-events-projects-design.md`): migrations 051–056; `Daems\Domain\Locale\*` value objects; locales `fi_FI|en_GB|sw_TZ`; per-field fallback via `EntityTranslationView`; admin locale-cards pattern; EventProposal mirrors ProjectProposal + `source_locale`
-- **A11 follow-up** (2026-04-23, branch `i18n-a11-cleanup`): migration 054 drops legacy `events.title/location/description` + `projects.title/summary/description`; `*_i18n` tables are sole source of truth; SqlEventRepository / SqlProjectRepository derive convenience scalars via firstAvailable() over translation map; UpdateEvent + AdminUpdateProject split chrome vs translation field updates; 7 fixture files split raw INSERTs into base + companion i18n inserts. Tests: 779 green, PHPStan lvl 9 = 0 errors.
+- **A11 follow-up** (2026-04-23, branch `i18n-a11-cleanup`): migration 054 drops legacy `events.title/location/description` + `projects.title/summary/description`; `*_i18n` tables are sole source of truth; SqlEventRepository / SqlProjectRepository derive convenience scalars via firstAvailable() over translation map; UpdateEvent + AdminUpdateProject split chrome vs translation field updates; 7 fixture files split raw INSERTs into base + companion i18n inserts.
+- **2026-05-13 — MembershipBilling v1 (0.7)** (`docs/superpowers/plans/2026-05-12-membership-billing-v1.md`): annual fees by board decision, anniversary-based invoice cron, waive/reduce/manual-payment, CSV-import (Nordea), § 4 deemed-resignation (2y unpaid → lapse) cron, GSA reverse-lapse override, honorary auto-waive (use case wired; UI integration deferred until ChangeMembershipType flow lands). Migrations 089-096 (096 = nullable `member_status_audit.performed_by` for cron-driven flips). New `Daems\Domain\Membership\Billing\*` namespace + `Daems\Domain\Audit\GsaOverrideAction::ReverseLapse` enum case. `bin/console membership:{generate-anniversary-invoices,mark-overdue-invoices,lapse-inactive-members}` CLI commands. Backstage UI: `/backstage/governance/billing` + sub-pages (invoices, overrides, import) with KPI strip. Stripe → 0.7.1, Visma → 0.7.2 as separate milestones. PHPStan level 9 = 0, ~80 new unit/integration/E2E tests.
 
 Active roadmap (`docs/planning/roadmap.md`, section 1 Admin Panel):
 1. ✅ Dashboard overview
@@ -129,6 +130,22 @@ composer test:all     # Everything
 Dev DB: `daems_db` on `127.0.0.1:3306`, user `root`, password `salasana`. Test DB: `daems_db_test`. MySQL binary: `C:/laragon/bin/mysql/mysql-8.4.3-winx64/bin/mysql.exe`.
 
 Test suites use `tests/Integration/MigrationTestCase` (resets DB + runs migrations fresh per test — slow but deterministic). Add new isolation tests under `tests/Isolation/` — `IsolationTestCase` base class runs migrations up to the current highest (currently 72) and seeds `daems` + `sahegroup` tenants.
+
+### Markdown files — zero lint errors
+
+Every `.md` file written by Claude (memory, docs, PR bodies, READMEs, planning notes, spec drafts) MUST produce zero `markdownlint` warnings/errors. Fix the writing, don't ignore warnings.
+
+Specific rules:
+
+- **MD041 (first line must be H1):** every file starts with `# Title`. For memory files with YAML frontmatter, the order is `---\nfrontmatter\n---\n\n# Title\n\nBody`. One blank line between frontmatter close and the H1.
+- **MD022 (blank lines around headings):** one blank line before AND after every heading.
+- **MD032 (blank lines around lists):** one blank line before the first list item AND after the last. Never let a list touch a paragraph or another block element.
+- **MD031 (blank lines around fenced code):** one blank line before the opening fence and after the closing fence.
+- **MD040 (fenced code language):** always specify a language on the opening fence (`php`, `bash`, `sql`, `text` for plain). Never leave a fence with no language tag.
+- **MD033 (no inline HTML):** never write angle-bracket placeholders or tags in flowing prose — wrap them in backticks or escape. Real HTML elements (`<details>` for collapsibles) only when they add reader value.
+- **MD038 (no space inside code spans):** never leave a leading/trailing space directly inside a code span. To show triple-backticks literally, prefer an indented code block over inline backtick acrobatics.
+
+Before finalising any `.md` write, mentally scan: first line is a heading, every list and code block has blank lines around it, no angle-bracket placeholders in flowing text, every fenced block has a language tag, no leading/trailing spaces inside code spans.
 
 ### Role & identity
 

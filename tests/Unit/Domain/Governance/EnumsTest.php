@@ -35,6 +35,7 @@ final class EnumsTest extends TestCase
         $expected = [
             'approve_basic','invite_full','expel','award_subtier','revoke_subtier',
             'subtier_crud','remove_board_member','delegate_authority','revoke_delegation',
+            'annual_fee_schedule',
         ];
         $actual = array_map(fn(BoardDecisionType $c) => $c->value, BoardDecisionType::cases());
         $this->assertSame($expected, $actual);
@@ -51,6 +52,7 @@ final class EnumsTest extends TestCase
         $this->assertFalse(BoardDecisionType::RemoveBoardMember->isDelegatable());
         $this->assertFalse(BoardDecisionType::DelegateAuthority->isDelegatable());
         $this->assertFalse(BoardDecisionType::RevokeDelegation->isDelegatable());
+        $this->assertFalse(BoardDecisionType::AnnualFeeSchedule->isDelegatable());
     }
 
     public function test_threshold_mode_status_visibility(): void

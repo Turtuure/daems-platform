@@ -18,6 +18,11 @@ Thumbs.db
 # Playwright E2E sweep output
 /.e2e-sweep/
 
+# Playwright run artifacts (test-results screenshots/traces, html report)
+/test-results/
+/playwright-report/
+/package-lock.json
+
 # Coverage outputs
 /coverage/
 clover.xml

@@ -173,7 +173,8 @@ $__hrefToActive = [
     '/backstage/forum'             => 'forum',
     '/backstage/insights'          => 'insights',
     '/backstage/platform/tenants'  => 'platform-tenants',
-    '/backstage/governance/board'  => 'governance-board',
+    '/backstage/governance/board'    => 'governance-board',
+    '/backstage/governance/billing'  => 'governance-billing',
 ];
 
 /** Group items by `group` while preserving the BackstageSidebar order. */
@@ -382,6 +383,16 @@ $__renderIcon = static function (string $name) use ($__sidebarIcons): string {
                             <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
                         </svg>
                         <span class="sidebar__label"><?= I18n::e('shell.governance.board') ?></span>
+                    </a>
+                </li>
+                <li>
+                    <a href="/backstage/governance/billing" class="sidebar__item <?= $__isActive('governance-billing') ?>"
+                       <?= $__activePage === 'governance-billing' ? 'aria-current="page"' : '' ?>>
+                        <svg class="sidebar__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
+                            <path d="M3 6h18M3 12h18M3 18h18"/>
+                            <path d="M7 6v12M17 6v12"/>
+                        </svg>
+                        <span class="sidebar__label"><?= I18n::e('shell.governance.billing') ?></span>
                     </a>
                 </li>
             </ul>

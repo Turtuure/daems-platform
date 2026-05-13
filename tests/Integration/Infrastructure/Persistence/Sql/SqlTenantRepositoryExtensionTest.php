@@ -24,7 +24,9 @@ final class SqlTenantRepositoryExtensionTest extends MigrationTestCase
     protected function setUp(): void
     {
         parent::setUp();
-        $this->runMigrationsUpTo(72);
+        // SqlTenantRepository SELECTs `currency` (added in migration 097)
+        // alongside the 071 i18n columns. Bump HWM accordingly.
+        $this->runMigrationsUpTo(97);
 
         $this->repo = new SqlTenantRepository($this->pdo());
 

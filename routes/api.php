@@ -309,6 +309,65 @@ return static function (Router $router, Container $container): void {
         return $container->make(\Daems\Infrastructure\Adapter\Api\Controller\Backstage\Governance\GsaOverrideController::class)->forceApproveBasic($req);
     }, [TenantContextMiddleware::class, AuthMiddleware::class]);
 
+    // Governance — billing fee schedules
+    $router->get('/api/v1/backstage/governance/billing/fee-schedules', static function (Request $req) use ($container): Response {
+        return $container->make(\Daems\Infrastructure\Adapter\Api\Controller\Backstage\Governance\BackstageBillingController::class)->listFeeSchedules($req);
+    }, [TenantContextMiddleware::class, AuthMiddleware::class]);
+
+    $router->post('/api/v1/backstage/governance/billing/fee-schedules', static function (Request $req) use ($container): Response {
+        return $container->make(\Daems\Infrastructure\Adapter\Api\Controller\Backstage\Governance\BackstageBillingController::class)->createFeeSchedule($req);
+    }, [TenantContextMiddleware::class, AuthMiddleware::class]);
+
+    // Governance — per-user fee overrides (Wave D)
+    $router->get('/api/v1/backstage/governance/billing/overrides', static function (Request $req) use ($container): Response {
+        return $container->make(\Daems\Infrastructure\Adapter\Api\Controller\Backstage\Governance\BackstageBillingController::class)->listOverrides($req);
+    }, [TenantContextMiddleware::class, AuthMiddleware::class]);
+
+    $router->post('/api/v1/backstage/governance/billing/overrides', static function (Request $req) use ($container): Response {
+        return $container->make(\Daems\Infrastructure\Adapter\Api\Controller\Backstage\Governance\BackstageBillingController::class)->createOverride($req);
+    }, [TenantContextMiddleware::class, AuthMiddleware::class]);
+
+    $router->post('/api/v1/backstage/governance/billing/overrides/{id}/revoke', static function (Request $req, array $params) use ($container): Response {
+        return $container->make(\Daems\Infrastructure\Adapter\Api\Controller\Backstage\Governance\BackstageBillingController::class)->revokeOverride($req, $params);
+    }, [TenantContextMiddleware::class, AuthMiddleware::class]);
+
+    // Governance — invoice list + state actions + audit (Wave E)
+    $router->get('/api/v1/backstage/governance/billing/invoices', static function (Request $req) use ($container): Response {
+        return $container->make(\Daems\Infrastructure\Adapter\Api\Controller\Backstage\Governance\BackstageBillingController::class)->listInvoices($req);
+    }, [TenantContextMiddleware::class, AuthMiddleware::class]);
+
+    $router->post('/api/v1/backstage/governance/billing/invoices/{id}/mark-paid', static function (Request $req, array $params) use ($container): Response {
+        return $container->make(\Daems\Infrastructure\Adapter\Api\Controller\Backstage\Governance\BackstageBillingController::class)->markInvoicePaid($req, $params);
+    }, [TenantContextMiddleware::class, AuthMiddleware::class]);
+
+    $router->post('/api/v1/backstage/governance/billing/invoices/{id}/waive', static function (Request $req, array $params) use ($container): Response {
+        return $container->make(\Daems\Infrastructure\Adapter\Api\Controller\Backstage\Governance\BackstageBillingController::class)->waiveInvoice($req, $params);
+    }, [TenantContextMiddleware::class, AuthMiddleware::class]);
+
+    $router->post('/api/v1/backstage/governance/billing/invoices/{id}/reduce', static function (Request $req, array $params) use ($container): Response {
+        return $container->make(\Daems\Infrastructure\Adapter\Api\Controller\Backstage\Governance\BackstageBillingController::class)->reduceInvoice($req, $params);
+    }, [TenantContextMiddleware::class, AuthMiddleware::class]);
+
+    $router->get('/api/v1/backstage/governance/billing/invoices/{id}/audit', static function (Request $req, array $params) use ($container): Response {
+        return $container->make(\Daems\Infrastructure\Adapter\Api\Controller\Backstage\Governance\BackstageBillingController::class)->invoiceAudit($req, $params);
+    }, [TenantContextMiddleware::class, AuthMiddleware::class]);
+
+    $router->get('/api/v1/backstage/governance/billing/kpi', static function (Request $req) use ($container): Response {
+        return $container->make(\Daems\Infrastructure\Adapter\Api\Controller\Backstage\Governance\BackstageBillingController::class)->billingKpi($req);
+    }, [TenantContextMiddleware::class, AuthMiddleware::class]);
+
+    $router->post('/api/v1/backstage/governance/billing/users/{id}/reverse-lapse', static function (Request $req, array $params) use ($container): Response {
+        return $container->make(\Daems\Infrastructure\Adapter\Api\Controller\Backstage\Governance\BackstageBillingController::class)->reverseLapse($req, $params);
+    }, [TenantContextMiddleware::class, AuthMiddleware::class]);
+
+    $router->post('/api/v1/backstage/governance/billing/payments/import-csv', static function (Request $req) use ($container): Response {
+        return $container->make(\Daems\Infrastructure\Adapter\Api\Controller\Backstage\Governance\BackstageBillingController::class)->previewImportCsv($req);
+    }, [TenantContextMiddleware::class, AuthMiddleware::class]);
+
+    $router->post('/api/v1/backstage/governance/billing/payments/import-csv/confirm', static function (Request $req) use ($container): Response {
+        return $container->make(\Daems\Infrastructure\Adapter\Api\Controller\Backstage\Governance\BackstageBillingController::class)->confirmImportCsv($req);
+    }, [TenantContextMiddleware::class, AuthMiddleware::class]);
+
     // Module routes — invoke each discovered module's routes.php.
     $moduleRegistry = $container->make(\Daems\Infrastructure\Module\ModuleRegistry::class);
     $moduleRegistry->registerRoutes($router, $container);

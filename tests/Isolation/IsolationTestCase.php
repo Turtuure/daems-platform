@@ -15,7 +15,7 @@ abstract class IsolationTestCase extends MigrationTestCase
     protected function setUp(): void
     {
         parent::setUp();
-        $this->runMigrationsUpTo(88);
+        $this->runMigrationsUpTo(96);
         $this->seedTenants();
     }
 

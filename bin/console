@@ -1,0 +1,29 @@
+#!/usr/bin/env php
+<?php
+declare(strict_types=1);
+
+/**
+ * bin/console — CLI entry for cron-runners and ops commands.
+ *
+ * Usage:
+ *   php bin/console <command> [--option=value] [--flag]
+ *
+ * Commands are registered in bootstrap/console.php (which is loaded here).
+ * The kernel parses argv, looks up the command, and dispatches.
+ *
+ * Exit codes:
+ *   0 — success (command ran, or already-held lock so we exited cleanly)
+ *   1 — usage error (no command name given)
+ *   2 — unknown command name
+ *   3+ — command-specific failure (logged to stderr)
+ */
+
+require __DIR__ . '/../vendor/autoload.php';
+
+/** @var \Daems\Infrastructure\Console\ConsoleKernel $kernel */
+$kernel = require __DIR__ . '/../bootstrap/console.php';
+
+$argv = $_SERVER['argv'] ?? [];
+array_shift($argv); // drop the script name
+
+exit($kernel->handle($argv));

@@ -13,7 +13,7 @@ final class MemberStatusAudit
         public readonly ?string $previousStatus,
         public readonly string $newStatus,
         public readonly string $reason,
-        public readonly string $performedByAdminId,
+        public readonly ?string $performedByAdminId,
         public readonly \DateTimeImmutable $createdAt,
     ) {}
 }

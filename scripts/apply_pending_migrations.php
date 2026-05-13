@@ -45,7 +45,32 @@ foreach ($registry->migrationPaths() as $modPath) {
     }
 }
 
-// Glob .sql and .php files in each dir, then sort the combined list alphabetically by basename.
+// Glob .sql and .php files in each dir, then sort by their "logical slot" so
+// module migrations interleave back into the position they held before the
+// extraction. A naive basename sort puts 'members_009_*' AFTER '045_*', but
+// 045 ALTERs a table that members_009 creates. The slot map is built from the
+// data-fix migrations (database/migrations/*_rename_*_in_schema_migrations_table.sql)
+// that recorded each move, e.g.
+//   SET filename='members_009_create_admin_application_dismissals.sql'
+//   WHERE filename='038_create_admin_application_dismissals.sql'
+$slotMap = [];
+foreach ((array) glob(__DIR__ . '/../database/migrations/*_rename_*_in_schema_migrations_table.sql') as $renameFile) {
+    if (!is_string($renameFile)) {
+        continue;
+    }
+    $sql = (string) file_get_contents($renameFile);
+    if (preg_match_all(
+        "/SET\\s+(?:filename|migration)\\s*=\\s*'{1,2}([^']+)'{1,2}\\s+WHERE\\s+(?:filename|migration)\\s*=\\s*'{1,2}(\\d{3})_/i",
+        $sql,
+        $matches,
+        PREG_SET_ORDER
+    ) > 0) {
+        foreach ($matches as $m) {
+            $slotMap[$m[1]] = (float) (int) $m[2];
+        }
+    }
+}
+
 $files = [];
 foreach ($dirs as $dir) {
     foreach ((array) glob($dir . '/*.{sql,php}', GLOB_BRACE) as $f) {
@@ -54,7 +79,28 @@ foreach ($dirs as $dir) {
         }
     }
 }
-usort($files, static fn(string $a, string $b): int => basename($a) <=> basename($b));
+
+$slotOf = static function (string $file) use ($slotMap): float {
+    $b = basename($file);
+    // Core <NNN>_*: slot = NNN
+    if (preg_match('/^(\d{3})_/', $b, $m) === 1) {
+        return (float) (int) $m[1];
+    }
+    // Module file with explicit slot record (replaces a deleted core file).
+    if (isset($slotMap[$b])) {
+        return $slotMap[$b] + 0.5; // 0.5 keeps siblings deterministic
+    }
+    // Post-extraction module addition: <mod>_<NNN>_*. Run after all known
+    // core slots (1000+).
+    if (preg_match('/_(\d{3})_/', $b, $m) === 1) {
+        return 1000.0 + (int) $m[1];
+    }
+    return 9999.0;
+};
+
+usort($files, static function (string $a, string $b) use ($slotOf): int {
+    return $slotOf($a) <=> $slotOf($b) ?: basename($a) <=> basename($b);
+});
 
 $runSql = static function (PDO $pdo, string $file): void {
     $sql = (string) file_get_contents($file);

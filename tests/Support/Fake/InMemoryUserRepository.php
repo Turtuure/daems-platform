@@ -117,6 +117,34 @@ final class InMemoryUserRepository implements UserRepositoryInterface
         );
     }
 
+    public function updateMembershipStatus(string $id, string $newStatus): void
+    {
+        $u = $this->byId[$id] ?? null;
+        if ($u === null) {
+            return;
+        }
+        $this->byId[$id] = new User(
+            id:                  $u->id(),
+            name:                $u->name(),
+            email:               $u->email(),
+            passwordHash:        $u->passwordHash(),
+            dateOfBirth:         $u->dateOfBirth(),
+            country:             $u->country(),
+            addressStreet:       $u->addressStreet(),
+            addressZip:          $u->addressZip(),
+            addressCity:         $u->addressCity(),
+            addressCountry:      $u->addressCountry(),
+            membershipType:      $u->membershipType(),
+            membershipStatus:    $newStatus,
+            memberNumber:        $u->memberNumber(),
+            createdAt:           $u->createdAt(),
+            isPlatformAdmin:     $u->isPlatformAdmin(),
+            deletedAt:           $u->deletedAt(),
+            publicAvatarVisible: $u->publicAvatarVisible(),
+            timeFormatOverride:  $u->timeFormatOverride(),
+        );
+    }
+
     public function updatePublicAvatarVisible(string $id, bool $visible): void
     {
         $u = $this->byId[$id] ?? null;

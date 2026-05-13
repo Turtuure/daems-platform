@@ -214,6 +214,7 @@ final class BackstageSidebarTest extends TestCase
         //               /backstage/governance/expulsions     (rank 4, order 30)
         //               /backstage/governance/delegations    (rank 4, order 40)
         //               /backstage/governance/settings       (rank 4, order 50)
+        //               /backstage/governance/billing        (rank 4, order 60)
         //   system:     /backstage/notifications             (rank 5, order 10)
         //               /backstage/settings                  (rank 5, order 20)
         //
@@ -230,6 +231,7 @@ final class BackstageSidebarTest extends TestCase
             '/backstage/governance/expulsions',
             '/backstage/governance/delegations',
             '/backstage/governance/settings',
+            '/backstage/governance/billing',
             '/backstage/notifications',
             '/backstage/settings',
         ], $hrefs);
@@ -275,12 +277,12 @@ final class BackstageSidebarTest extends TestCase
         $items = $sidebar->buildFor($this->makeTenant(), $this->makeUser(false));
         $hrefs = array_map(static fn(array $i) => $i['href'], $items);
         $this->assertNotContains('/backstage/webhook', $hrefs);
-        // 8 baseline items remain when no modules render to the sidebar:
+        // 9 baseline items remain when no modules render to the sidebar:
         //   - 1 shell: Dashboard
-        //   - 5 governance (hardcoded in BackstageSidebar, always rendered):
-        //     board, decisions, expulsions, delegations, settings
+        //   - 6 governance (hardcoded in BackstageSidebar, always rendered):
+        //     board, decisions, expulsions, delegations, settings, billing
         //   - 2 system: Notifications, Settings (Tenants only for GSA)
-        $this->assertCount(8, $items);
+        $this->assertCount(9, $items);
     }
 
     public function testModuleNameKeyFallsBackToConventionalKey(): void

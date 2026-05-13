@@ -38,14 +38,16 @@ final class F006_ErrorSanitisationTest extends TestCase
     public function testKernelReturnsGenericInternalError(): void
     {
         $h = new KernelHarness(FrozenClock::at('2026-04-19T12:00:00Z'), debug: false);
-        // Force a 500 by passing bad UUID to an endpoint that does UUID parsing
+        // Passing a bad UUID is a client-side error (400 Bad Request) — the
+        // Kernel maps InvalidArgumentException to 400, with a generic message
+        // in production so we don't echo attacker payloads back.
         $u = $h->seedUser('u@x.com');
         $token = $h->tokenFor($u);
 
         $resp = $h->authedRequest('POST', '/api/v1/users/not-a-uuid/anonymise', $token);
-        $this->assertSame(500, $resp->status());
+        $this->assertSame(400, $resp->status());
         $body = $resp->body();
-        $this->assertStringContainsString('Internal server error', $body);
+        $this->assertStringContainsString('Invalid request', $body);
         $this->assertStringNotContainsString('Invalid UUID', $body);
     }
 
@@ -56,7 +58,7 @@ final class F006_ErrorSanitisationTest extends TestCase
         $token = $h->tokenFor($u);
 
         $resp = $h->authedRequest('POST', '/api/v1/users/not-a-uuid/anonymise', $token);
-        $this->assertSame(500, $resp->status());
+        $this->assertSame(400, $resp->status());
         $this->assertStringContainsString('Invalid UUID', $resp->body());
     }
 }

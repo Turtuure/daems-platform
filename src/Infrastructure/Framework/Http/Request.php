@@ -47,7 +47,15 @@ final class Request
         array $headers = [],
         array $server = [],
     ): self {
-        return new self($method, $uri, $query, $body, $headers, $server);
+        // Strip query string from URI (mirrors fromGlobals behaviour) and merge
+        // any query-string key=value pairs into the $query array.
+        $path = strtok($uri, '?') ?: '/';
+        $qs   = (string) (parse_url($uri, PHP_URL_QUERY) ?? '');
+        if ($qs !== '') {
+            parse_str($qs, $parsed);
+            $query = array_merge($parsed, $query);
+        }
+        return new self($method, $path, $query, $body, $headers, $server);
     }
 
     public function method(): string

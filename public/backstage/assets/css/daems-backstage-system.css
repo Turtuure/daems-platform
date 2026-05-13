@@ -281,6 +281,7 @@
 .pill--draft     { background: rgba(148,163,184,.15);        color: var(--text-secondary); }
 .pill--archived  { background: var(--status-warning-subtle); color: var(--status-warning); }
 .pill--pending   { background: var(--status-warning-subtle); color: var(--status-warning); }
+.pill--lapsed    { background: var(--status-danger-subtle, rgba(192,57,43,.18)); color: var(--status-danger, #c0392b); }
 .pill--featured  { background: var(--accent-subtle);         color: var(--accent); }
 /* Founding-member pill — metallic gold with diagonal shine. The 3-stop
  * gradient places a brighter highlight in the middle so the pill catches
