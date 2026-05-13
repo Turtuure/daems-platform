@@ -43,7 +43,7 @@ Daem Society ry:n säännöt ja yleinen Suomen yhdistys-kontekstin tarpeisto ede
 | Q3 | Per-tenant lähettäjä-identiteetti | **C** — BYO SMTP (per-tenant kryptattu DSN); "Konfiguroi SMTP" -CTA jos puuttuu |
 | Q4 | Synkroninen vs jonossa | **B** — outbox-taulu + `bin/console mail:drain` -cron 1 min välein, 3× retry exponential backoff |
 | Q5 | Opt-out / tilausmalli (GDPR) | **B** — 3 kategoriaa: `transactional` (pakollinen), `operational` (default-on), `marketing` (default-off, opt-in); kokouskutsut käsitellään transactional-tasolla |
-| Q6 | Template-formaatti / authoring | **F-hybrid** — 4 strikt-tyyppiä (devin tekemät MJML-layoutit + admin-stringit per locale) + uutiskirje vapaalla blokki-kokoonpanijalla (7 blokki-tyyppiä); sisäinen renderöinti pure-PHP MJML-portti, body-fieldeissä CommonMark-Markdown |
+| Q6 | Template-formaatti / authoring | **F-hybrid** — 4 strikt-tyyppiä (devin tekemät email-safe HTML-layoutit + admin-stringit per locale) + uutiskirje vapaalla blokki-kokoonpanijalla (7 blokki-tyyppiä); sisäinen renderöinti placeholder-substituutiolla, body-fieldeissä CommonMark-Markdown. Substituutio 2026-05-13: MJML-pohja vaihdettu käsin-kirjoitettuihin email-safe HTML-templateihin (ks. § 7.2). |
 | Q7 | Audience-suodatus (ryhmäviesti + uutiskirje) | **B** — `membership_type[]` + `locale[]` + `joined_within` + `application_status[]`; tallennettavat segmentit + query-builder → 1.x |
 | Q8 | Meeting-entiteetti | **Thin payload-taulu** (Q8 alkuperäinen B): `meetings` tabulla `type`/`starts_at`/`location`/`title_i18n`/`agenda_items_i18n`/`document_urls`/`status`. Ei `/backstage/meetings`-sivua 0.8:ssa — luonti vain composer-sivutuotteena. Täysi Meeting-domain → 0.9. |
 | Q9 | Cron-triggerit | **B** — 3 triggeriä: maksumuistutus pre-due, post-due (lista), lapse-varoitus 30 vrk ennen § 4 -triggeriä; **kaikki ajat per-tenant -muokattavia** (`tenant_communication_settings`-taulun sarakkeet) |
@@ -97,7 +97,7 @@ Daem Society ry:n säännöt ja yleinen Suomen yhdistys-kontekstin tarpeisto ede
 ┌──────────────────────────────▼──────────────────────────────────────────┐
 │  Infrastructure/Communications/                                         │
 │  Mailer/      ── SymfonyMailerAdapter, InMemoryMailer                   │
-│  Renderer/    ── MjmlRenderer, MarkdownRenderer, VarSubstituter         │
+│  Renderer/    ── EmailHtmlRenderer, MarkdownRenderer, VarSubstituter         │
 │  Persistence/ ── Sql*Repository:t                                       │
 │  Console/     ── MailDrainCommand, EnqueuePaymentReminders,             │
 │                  EnqueueLapseWarnings                                   │
@@ -665,18 +665,18 @@ Testit: `InMemoryMailer` säilyttää lähetetyt viestit listalla, KernelHarness
 
 ### 7.2 Renderöinti-pipeline
 
+**Substituutio 2026-05-13:** Alkuperäinen spec ehdotti MJML-pohjaisia templateja (`tijsverkoyen/mjml-php` pure-PHP-portti). Tuo paketti EI ole Packagistilla — pure-PHP MJML-renderiä ei ole olemassa tuotantotasolla, kaikki vaihtoehdot vaativat joko Node-binary-wrapperin, ulkoisen API:n tai keskeneräisen v0.x-paketin. Vaihtoehdot esiteltiin käyttäjälle (A: Node + MJML, B: käsin-kirjoitetut email-safe HTML-templatet, C: ulkoinen MJML.io API) ja **käyttäjä valitsi B**. Perustelut: 0.8:n 6 templatea on yksinkertaisia (single-column + 1 × 2-palsta-blokki uutiskirjeessä); Outlook 2007-19 -markkina-osuus v. 2026 ~0%; ei Node-riippuvuutta platform-asennukseen; käsin-templatet on snapshot-testattavissa.
+
 ```text
 MailKind + payloadVars + locale + stringOverrides
   ↓
-MailTemplateRegistry → MJML-template + dev-stringit
+MailTemplateRegistry → HTML-template (.html-tiedosto, email-safe table-based + inline CSS)
   ↓
 Apply stringOverrides → korvaa subject/intro/signature/footer
   ↓
-Apply Markdown rendering body-fieldeissä (CommonMark safe mode)
+Apply Markdown rendering body-fieldeissä (CommonMark safe mode → HTML-snippet)
   ↓
 Apply {{var}} substitution (whitelist per kind, HTML-escapaus)
-  ↓
-Compile MJML → HTML (tijsverkoyen/mjml-php)
   ↓
 Extract plain-text from HTML (oma Html2Text-helper)
   ↓
@@ -685,11 +685,12 @@ MailOutbox.bodyHtml + MailOutbox.bodyText
 
 **Vendor-paketit:**
 
-- `symfony/mailer:^7.0`
+- `symfony/mailer:^6.4` (LTS — yhteensopiva PHP 8.1+ -platform-pinin kanssa; tuettu vuoteen 2027 asti)
 - `league/commonmark:^2.5`
-- `tijsverkoyen/mjml-php` (pure-PHP MJML-portti; jos jäljessä, fallback Node-CLI:hen Wave A:n proof-of-concept-vaiheessa)
 
-**Var-substituutio:** Whitelist-pohjainen. Jokainen `MailKind` listaa sallitut muuttujat (`MeetingInvitation::ALLOWED_VARS = ['first_name', 'meeting_title', ...]`). Tuntematon muuttuja → `UnknownTemplateVarException`. Substituutio HTML-escapaa kaikki arvot ennen MJML-kompilaatiota (XSS-suojaus).
+**Var-substituutio:** Whitelist-pohjainen. Jokainen `MailKind` listaa sallitut muuttujat (`MeetingInvitation::ALLOWED_VARS = ['first_name', 'meeting_title', ...]`). Tuntematon muuttuja → `UnknownTemplateVarException`. Substituutio HTML-escapaa kaikki arvot ennen HTML-templateen insertointia (XSS-suojaus). Markdown-renderöidyt body-fieldit lisätään templateen sellaisenaan (CommonMark safe-mode estää raaka-HTML-injektion).
+
+**Email-safe HTML -konventio:** Kaikki dev-templatet kirjoitetaan `<table>`-pohjaisina, inline-CSS-tyyleillä, ilman `<style>`-blokkeja (paitsi `@media`-query mobiili-fallback), ei `position:absolute`/flex/grid. Konventio dokumentoitu `docs/email-template-style-guide.md`-tiedostossa.
 
 ### 7.3 DSN-kryptaus (libsodium)
 
@@ -823,21 +824,31 @@ if (preg_match('#^/unsubscribe/?$#', $path)) {
 3. Jos GET → näytä vahvistus-painike
 4. Jos POST → kutsu `UpdateUserCommunicationPreference($user_id, $tenant_id, $category, opted_in: false)` SystemUser-kontekstissa → "Poistettu listalta" -vahvistus
 
-### 8.4 Sähköposti-templatet (devin tekemät MJML-tiedostot)
+### 8.4 Sähköposti-templatet (devin tekemät email-safe HTML-tiedostot)
 
 Repo-sijainti: `modules/communications/backend/src/Infrastructure/Renderer/templates/`
 
 ```text
 templates/
-├── meeting_invitation.mjml
-├── payment_reminder.mjml
-├── membership_approved.mjml
-├── group_message.mjml
-├── lapse_warning.mjml           # (cron-spesifinen alavariantti maksumuistutuksesta)
-└── newsletter-wrapper.mjml      # blokki-renderöinnin runko
+├── meeting_invitation.html
+├── payment_reminder.html
+├── membership_approved.html
+├── group_message.html
+├── lapse_warning.html           # cron-spesifinen alavariantti maksumuistutuksesta
+└── newsletter_wrapper.html      # blokki-renderöinnin runko
 ```
 
-Kaikki templatet käyttävät `{{brand_primary_color}}`, `{{brand_logo_url}}`, `{{brand_footer_address}}` -muuttujia jotka resolvoidaan render-vaiheessa tenantin `TenantCommunicationSettings`-rivistä.
+Kaikki templatet ovat `<table>`-pohjaista, inline-CSS:llä, email-safe HTML:ää. Käyttävät `{{brand_primary_color}}`, `{{brand_logo_url}}`, `{{brand_footer_address}}` -muuttujia jotka resolvoidaan render-vaiheessa tenantin `TenantCommunicationSettings`-rivistä. Authoring-konventio:
+
+- ULOIMPI `<table role="presentation" width="100%">` content-wrapperina
+- Sisemmät `<table>` 600px-leveille sisältö-bloki­lle
+- Inline-CSS (Outlook-vanhojen versioiden vuoksi)
+- `<style>`-tagi vain `@media (max-width:600px)` -mobile-fallbackeille
+- Ei flex, grid, `position:absolute`
+- Kuvat `<img width="..." style="display:block">` (Outlookin spacing-bug)
+- 2-palsta-blokit `<table>` ja kaksi `<td width="50%">`-soluna; mobiilissa `display:block` ja `width:100%` media-querylla
+
+Compatibility-vahvistus: snapshot-testit (Task D2 + Task E2) tallentavat rendatun HTML:n vertailureferenssinä; manuaalinen smoke test Gmail + Apple Mail + Outlook 365 -clienteissä Wave H:n yhteydessä.
 
 ### 8.5 CSS + JS-assetit
 
@@ -878,7 +889,7 @@ Arvio: ~120-140 uutta testiä. Kaikki 4 tasoa (CLAUDE.md cross-cutting concerns)
 
 ### 9.1 Unit (~60 testiä, `tests/Unit/Communications/`)
 
-Domain-objektit, value-objektit, exceptionit, mailer-adapterit (SMTP-koodi-parsija), kryptaus (round-trip + virhetilat), renderöijät (VarSubstituter / MarkdownRenderer / MjmlRenderer / Html2Text), use-casien logiikka InMemory-repoilla, audience-resolver.
+Domain-objektit, value-objektit, exceptionit, mailer-adapterit (SMTP-koodi-parsija), kryptaus (round-trip + virhetilat), renderöijät (VarSubstituter / MarkdownRenderer / EmailHtmlRenderer / Html2Text), use-casien logiikka InMemory-repoilla, audience-resolver.
 
 ### 9.2 Integration (~30 testiä, `tests/Integration/Communications/`, MySQL)
 
@@ -910,12 +921,12 @@ Per-reitti minimi-pari: moderator → 403 sopivasti, member → 403 sopivasti, a
 
 | # | Aalto | Riippuu | Sisältö | Arvio |
 | --- | --- | --- | --- | --- |
-| **A** | Infra-foundation | — | Vendor-paketit, `DsnEncryptor` + libsodium, `APP_ENCRYPTION_KEY` .env, `module.json` + `config/modules.php`, sidebar-ryhmä, migraatio 098, i18n-avaimet, MJML-portin proof-of-concept | 1 päivä |
+| **A** | Infra-foundation | — | Vendor-paketit (`symfony/mailer:^6.4` + `league/commonmark:^2.5`), `DsnEncryptor` + libsodium, `APP_ENCRYPTION_KEY` .env, `module.json` + `config/modules.php`, sidebar-ryhmä, migraatio 098, i18n-avaimet | 1 päivä |
 | **B** | Domain + repositoryt + settings | A | Kaikki domain-entiteetit, 8 repository-interfacea, SQL-toteutukset, settings + preferences -CRUD, audience-resolver, isolation-test-pohja | 2 päivää |
 | **C** | Mailer + outbox + drain-cron | A+B | `MailerInterface` + adapterit, `DrainMailOutbox` + `mail:drain` cron, outbox-CRUD, outbox-UI-sivu, settings-sivu + SMTP-test | 2 päivää |
-| **D** | Composer + 4 strikt-tyyppiä + Meeting MVP | A+B+C | 4 MJML-templatea, renderöijät, composer use-caset + UI, Meeting-thin + `CreateMeetingFromComposer`, template-override-UI | 3 päivää |
+| **D** | Composer + 4 strikt-tyyppiä + Meeting MVP | A+B+C | 4 email-safe HTML-templatea, renderöijät, composer use-caset + UI, Meeting-thin + `CreateMeetingFromComposer`, template-override-UI | 3 päivää |
 | **E** | Newsletter-blokit | A+B+C+D | `NewsletterBlock`-hierarkia (7 tyyppiä), JSON-serialisointi, newsletter-CRUD-use-caset, blokki-kokoonpanija-UI, audience-suodatus marketing-kategorialla | 2-3 päivää |
-| **F** | Cron-triggerit + 0.7-integraatio | A+B+C+D (rinnakkain E:n kanssa) | `EnqueuePaymentReminders` + cron, `EnqueueLapseWarnings` + cron + § 4 -ennustus, idempotenssi, `crontab.example`, PaymentReminder + LapseWarning -MJML-templatet | 2 päivää |
+| **F** | Cron-triggerit + 0.7-integraatio | A+B+C+D (rinnakkain E:n kanssa) | `EnqueuePaymentReminders` + cron, `EnqueueLapseWarnings` + cron + § 4 -ennustus, idempotenssi, `crontab.example`, PaymentReminder + LapseWarning -HTML-templatet | 2 päivää |
 | **G** | Suppression + GDPR + bounce-handling | A+B+C+D+E+F | Auto-suppression hard-bouncen jälkeen (UI ja manual-flow), suppression-CRUD-UI, public `/unsubscribe` + HMAC, frontend-route-lisäykset, marketing-templaten alapalkin unsubscribe-linkki | 1-2 päivää |
 | **H** | Polish + test-sweep + smoke | A-G | Browser-smoke 5 sivua × 3 tenanttia, 4 testitasoa vihreänä, PHPStan 0, i18n-parity, BOTH-containers DI, migraatio-smoke | 1 päivä |
 
@@ -948,10 +959,10 @@ Per-reitti minimi-pari: moderator → 403 sopivasti, member → 403 sopivasti, a
 
 | Riski | Vaikutus | Mitigaatio |
 | --- | --- | --- |
-| `tijsverkoyen/mjml-php` pure-PHP-portti jäljessä MJML 4.x:ää | Brand-templatet eivät renderöidy | Wave A:n PoC-vaihe: jos vajaa → fallback Node-pohjaiseen `mjmlio/mjml-php`:hen Laragon-Node-asennuksella |
+| Käsin-kirjoitetut email-safe HTML-templatet voivat regressoitua silmäilemättä | Mobiili-/Outlook-renderöinti rikki | Snapshot-testit jokaisesta templatesta (Tasks D2/E2); manuaalinen smoke Wave H:ssa Gmail/Apple Mail/Outlook 365; `docs/email-template-style-guide.md` dokumentoi rakenne-konvention |
 | BYO SMTP-konfigurointi vaikea debug-aata admin-puolelta | Yhdistys ei saa lähetyksiä toimimaan | SMTP-test-painike asetus-sivulla (synkroninen) + dashboard-toast "N lähettämätöntä viestiä — konfiguroi SMTP" |
 | Bounce-koodien parsiminen Symfony-virheviestistä hauras | Hard-bounce voi mennä ohi → suppression jää lisäämättä | Unit-test ~20 todellista SMTP-virheviestiä (Postmark, Gmail, Mailgun, Outlook 365) + whitelist regex |
-| MJML pure-PHP-portin mahdolliset XSS-ongelmat | Markdown-syöte voi vuotaa raakaa HTML:ää | `VarSubstituter` HTML-escapaa kaikki muuttujat **ennen** MJML-kompilaatiota; CommonMark safe-modessa |
+| Käsin-kirjoitettuun HTML-templateen XSS-injektio | Markdown-syöte voi vuotaa raakaa HTML:ää | `VarSubstituter` HTML-escapaa kaikki muuttujat **ennen** templateen insertointia; CommonMark safe-modessa; ulkoiset `<style>`-blokit kielletty templateissa |
 | 500-vastaanottajan newsletter blokkaa drain-cronin minuutiksi | Muut viestit jonossa | Drainer poimii 50 riviä per ajo; 500 viestiä jakautuu 10 minuutille |
 | GDPR retention 24kk -cron unohtuu | Henkilötietoja kertyy ikuisesti | Placeholder-cron-komento `mail:retention-cleanup` repoon Wave G:ssä; merkitään 0.8.x follow-upiksi jos aikaa ei jää H-aaltoon |
 

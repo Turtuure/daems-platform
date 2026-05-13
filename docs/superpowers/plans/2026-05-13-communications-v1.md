@@ -2,11 +2,11 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Ship Milestone 0.8 Communications — a universal multi-tenant mail-infra (per-tenant SMTP, outbox queue, MJML rendering, 5 message kinds, 3-category opt-in, multilingual templates fi_FI/en_GB/sw_TZ) with backstage composer, outbox, newsletter blocks, template overrides, settings, public unsubscribe, and 3 cron-triggered transactional sends (payment reminders + lapse warnings).
+**Goal:** Ship Milestone 0.8 Communications — a universal multi-tenant mail-infra (per-tenant SMTP, outbox queue, email-safe HTML rendering, 5 message kinds, 3-category opt-in, multilingual templates fi_FI/en_GB/sw_TZ) with backstage composer, outbox, newsletter blocks, template overrides, settings, public unsubscribe, and 3 cron-triggered transactional sends (payment reminders + lapse warnings).
 
-**Architecture:** Module-extracted under `c:/laragon/www/modules/communications/` following the Wave A-D extraction pattern (events/forum/projects). Clean Architecture: Domain (entities, value objects, repository interfaces) → Application (25 use cases) → Infrastructure (Symfony Mailer adapter, MJML renderer, libsodium DSN encryption, SQL repositories, CLI cron commands). Outbox table is single source of truth for both queue and audit. Templates are dev-authored MJML files for 4 strict kinds; newsletter is a free block composer (7 block types) stored as JSON.
+**Architecture:** Module-extracted under `c:/laragon/www/modules/communications/` following the Wave A-D extraction pattern (events/forum/projects). Clean Architecture: Domain (entities, value objects, repository interfaces) → Application (25 use cases) → Infrastructure (Symfony Mailer adapter, EmailHtmlRenderer with placeholder substitution, libsodium DSN encryption, SQL repositories, CLI cron commands). Outbox table is single source of truth for both queue and audit. Templates are dev-authored email-safe HTML files (table-based, inline CSS) for 4 strict kinds; newsletter is a free block composer (7 block types) stored as JSON. **2026-05-13 substitution:** original spec assumed `tijsverkoyen/mjml-php`; that package does not exist, so MJML toolchain dropped in favour of hand-authored email-safe HTML — see Task A1 substitution note.
 
-**Tech Stack:** PHP 8.1+, MySQL 8.4, Symfony Mailer 7.x (DSN-based transport abstraction), league/commonmark 2.5 (Markdown), tijsverkoyen/mjml-php (pure-PHP MJML compile; Node fallback at Wave A PoC if behind), libsodium (DSN encryption), PHPStan level 9, PHPUnit 10. Branch `communications-v1` off `dev` @ `86a0980`.
+**Tech Stack:** PHP 8.1+, MySQL 8.4, Symfony Mailer 6.4 LTS (DSN-based transport abstraction), league/commonmark 2.5 (Markdown body rendering), libsodium (DSN encryption), PHPStan level 9, PHPUnit 10. Branch `communications-v1` off `dev` @ `86a0980`.
 
 **Spec:** [`docs/superpowers/specs/2026-05-13-communications-v1-design.md`](../specs/2026-05-13-communications-v1-design.md). Migration 098. ~120-140 new tests. Estimated 14 days = 8 waves.
 
@@ -34,8 +34,8 @@
 | `backend/src/Domain/Exception/*.php` | All domain exceptions |
 | `backend/src/Application/<UseCase>/{UseCase,Input,Output}.php` | 25 use cases, one folder each |
 | `backend/src/Infrastructure/Mailer/{MailerInterface,SymfonyMailerAdapter,InMemoryMailer}.php` | Mailer port + adapters |
-| `backend/src/Infrastructure/Renderer/{MjmlRenderer,MarkdownRenderer,VarSubstituter,Html2Text,MailTemplateRegistry}.php` | Render pipeline |
-| `backend/src/Infrastructure/Renderer/templates/*.mjml` | Dev-authored MJML templates (6 files) |
+| `backend/src/Infrastructure/Renderer/{EmailHtmlRenderer,MarkdownRenderer,VarSubstituter,Html2Text,MailTemplateRegistry}.php` | Render pipeline |
+| `backend/src/Infrastructure/Renderer/templates/*.html` | Dev-authored email-safe HTML templates (6 files) |
 | `backend/src/Infrastructure/Persistence/Sql*Repository.php` | SQL repository implementations (8 classes) |
 | `backend/src/Infrastructure/Console/{MailDrainCommand,EnqueuePaymentRemindersCommand,EnqueueLapseWarningsCommand}.php` | CLI cron commands |
 | `backend/src/Infrastructure/Crypto/DsnEncryptor.php` | libsodium DSN encryption |
@@ -74,26 +74,27 @@ Goal: vendor packages, encryption foundation, module skeleton, migration 098, i1
 
 ### Task A1: Add vendor packages to platform `composer.json`
 
+**Substitution note (2026-05-13):** Original task assumed `tijsverkoyen/mjml-php` pure-PHP MJML renderer. That package does not exist on Packagist. After user-confirmed substitution (option B): drop MJML entirely, hand-author email-safe HTML templates with `{{var}}` placeholders + inline CSS, render via `EmailHtmlRenderer` (CommonMark for body Markdown, VarSubstituter for placeholders, no compile step). Also: downgrade Symfony Mailer to 6.4 LTS so the existing PHP 8.1 platform pin holds.
+
 **Files:**
 
 - Modify: `c:/laragon/www/daems-platform/composer.json`
 
-- [ ] **Step 1: Add three new dependencies under `require`**
+- [ ] **Step 1: Add two new dependencies under `require`**
 
 ```json
-"symfony/mailer": "^7.1",
-"league/commonmark": "^2.5",
-"tijsverkoyen/mjml-php": "^1.4"
+"symfony/mailer": "^6.4",
+"league/commonmark": "^2.5"
 ```
 
 - [ ] **Step 2: Run install**
 
 ```bash
 cd c:/laragon/www/daems-platform
-composer require symfony/mailer:^7.1 league/commonmark:^2.5 tijsverkoyen/mjml-php:^1.4
+composer require symfony/mailer:^6.4 league/commonmark:^2.5
 ```
 
-Expected: composer.lock updates, three new packages and their deps appear.
+Expected: composer.lock updates, two new packages and their deps appear. `symfony/mailer` 6.4.x must stay compatible with the existing `config.platform.php = "8.1.99"` pin (6.4 LTS requires PHP ≥ 8.1, supported until 2027).
 
 - [ ] **Step 3: Run PHPStan baseline check (no behavior yet, must still be 0)**
 
@@ -103,40 +104,24 @@ composer analyse
 
 Expected: `0 errors`.
 
-- [ ] **Step 4: MJML proof-of-concept render**
-
-Create a one-off PHP script `c:/laragon/www/daems-platform/scratch/mjml-poc.php`:
-
-```php
-<?php
-require __DIR__ . '/../vendor/autoload.php';
-use TijsVerkoyen\Mjml\Mjml;
-
-$mjml = new Mjml();
-$source = '<mjml><mj-body><mj-section><mj-column><mj-text>Hello {{first_name}}</mj-text></mj-column></mj-section></mj-body></mjml>';
-$html = $mjml->render($source);
-file_put_contents(__DIR__ . '/mjml-poc.html', $html);
-echo "OK\n";
-```
-
-Run: `php scratch/mjml-poc.php`
-Expected: `OK` printed, `scratch/mjml-poc.html` contains `<table>` based HTML.
-
-If render fails or output looks wrong → fall back to `mjmlio/mjml-php` (Node.js CLI wrapper) and document the choice in the spec.
-
-- [ ] **Step 5: Delete the PoC artifacts**
+- [ ] **Step 4: Smoke test the installed Mailer + CommonMark**
 
 ```bash
-rm -rf c:/laragon/www/daems-platform/scratch/
+cd c:/laragon/www/daems-platform
+php -r 'require "vendor/autoload.php"; echo class_exists("Symfony\\\\Component\\\\Mailer\\\\Mailer") ? "Mailer OK\n" : "FAIL\n";'
+php -r 'require "vendor/autoload.php"; echo class_exists("League\\\\CommonMark\\\\CommonMarkConverter") ? "CommonMark OK\n" : "FAIL\n";'
 ```
 
-- [ ] **Step 6: Commit**
+Expected: both print "OK".
+
+- [ ] **Step 5: Commit**
 
 ```bash
+cd c:/laragon/www/daems-platform
 git -c user.name="Dev Team" -c user.email="dev@daems.fi" \
   add composer.json composer.lock
 git -c user.name="Dev Team" -c user.email="dev@daems.fi" \
-  commit -m "Add(0.8/communications): vendor symfony/mailer + league/commonmark + tijsverkoyen/mjml-php"
+  commit -m "Add(0.8/communications): vendor symfony/mailer 6.4 LTS + league/commonmark 2.5"
 ```
 
 ### Task A2: Create `APP_ENCRYPTION_KEY` env scaffolding
@@ -198,7 +183,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.fi" \
 {
   "name": "communications",
   "version": "1.0.0",
-  "description": "Multi-tenant mail infrastructure — per-tenant SMTP, outbox queue, MJML rendering, 5 message kinds, 3-category opt-in, multilingual templates fi_FI/en_GB/sw_TZ",
+  "description": "Multi-tenant mail infrastructure — per-tenant SMTP, outbox queue, email-safe HTML rendering, 5 message kinds, 3-category opt-in, multilingual templates fi_FI/en_GB/sw_TZ",
   "namespace": "DaemsModule\\Communications\\",
   "src_path": "backend/src/",
   "bindings": "backend/bindings.php",
@@ -240,7 +225,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.fi" \
 
 0.8 milestone module — see `docs/superpowers/specs/2026-05-13-communications-v1-design.md` in the platform repo for full design.
 
-Manages: per-tenant SMTP, outbox queue, MJML templates, newsletter block composer, 3-category opt-in, public unsubscribe, payment-reminder + lapse-warning crons.
+Manages: per-tenant SMTP, outbox queue, email-safe HTML templates, newsletter block composer, 3-category opt-in, public unsubscribe, payment-reminder + lapse-warning crons.
 ```
 
 - [ ] **Step 4: Write `phpunit.xml.dist`**
@@ -2125,7 +2110,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.fi" \
 
 ## Wave D — Composer + 4 strict template kinds + Meeting MVP (3 days)
 
-Goal: Admin can open `/backstage/communications`, pick a kind, fill in payload, see preview, send. MJML templates render with brand vars. Meeting entity persists when MeetingInvitation is sent. Template overrides editable.
+Goal: Admin can open `/backstage/communications`, pick a kind, fill in payload, see preview, send. email-safe HTML templates render with brand vars. Meeting entity persists when MeetingInvitation is sent. Template overrides editable.
 
 ### Task D1: `MarkdownRenderer` + `VarSubstituter` + `Html2Text`
 
@@ -2156,121 +2141,323 @@ git -c user.name="Dev Team" -c user.email="dev@daems.fi" \
   commit -m "Add(0.8/communications): MarkdownRenderer + VarSubstituter + Html2Text + tests"
 ```
 
-### Task D2: MJML templates for 4 strict kinds + lapse warning + newsletter wrapper
+### Task D2: email-safe HTML templates for 4 strict kinds + lapse warning + newsletter wrapper
 
 **Files:**
 
-- Create: `backend/src/Infrastructure/Renderer/templates/meeting_invitation.mjml`
-- Create: `backend/src/Infrastructure/Renderer/templates/payment_reminder.mjml`
-- Create: `backend/src/Infrastructure/Renderer/templates/membership_approved.mjml`
-- Create: `backend/src/Infrastructure/Renderer/templates/group_message.mjml`
-- Create: `backend/src/Infrastructure/Renderer/templates/lapse_warning.mjml`
-- Create: `backend/src/Infrastructure/Renderer/templates/newsletter_wrapper.mjml`
+- Create: `backend/src/Infrastructure/Renderer/templates/meeting_invitation.html`
+- Create: `backend/src/Infrastructure/Renderer/templates/payment_reminder.html`
+- Create: `backend/src/Infrastructure/Renderer/templates/membership_approved.html`
+- Create: `backend/src/Infrastructure/Renderer/templates/group_message.html`
+- Create: `backend/src/Infrastructure/Renderer/templates/lapse_warning.html`
+- Create: `backend/src/Infrastructure/Renderer/templates/newsletter_wrapper.html`
+- Create: `docs/email-template-style-guide.md`
 
-- [ ] **Step 1: Author `meeting_invitation.mjml`**
+- [ ] **Step 1: Write `docs/email-template-style-guide.md`**
 
-```xml
-<mjml>
-  <mj-head>
-    <mj-title>{{subject}}</mj-title>
-    <mj-attributes>
-      <mj-all font-family="Helvetica, Arial, sans-serif" />
-    </mj-attributes>
-    <mj-style>
-      .meta { background: #f4f7fa; padding: 12px 16px; border-radius: 4px; font-size: 13px; }
-      .agenda { background: #f4f7fa; border-left: 3px solid {{brand_primary_color}}; padding: 10px 14px; }
-    </mj-style>
-  </mj-head>
-  <mj-body background-color="#f4f4f4">
-    <mj-section background-color="{{brand_primary_color}}">
-      <mj-column>
-        <mj-image src="{{brand_logo_url}}" alt="Logo" width="160px" align="left" />
-      </mj-column>
-    </mj-section>
-    <mj-section background-color="#ffffff">
-      <mj-column>
-        <mj-text font-size="20px" color="{{brand_primary_color}}">{{subject}}</mj-text>
-        <mj-text>Hei {{first_name}},</mj-text>
-        <mj-text>{{intro_text}}</mj-text>
-        <mj-text css-class="meta">
-          <strong>Päivä:</strong> {{meeting_date}}<br/>
-          <strong>Paikka:</strong> {{meeting_location}}<br/>
-          <strong>Etänä:</strong> {{meeting_remote_url}}
-        </mj-text>
-        <mj-text css-class="agenda">{{agenda_html}}</mj-text>
-        <mj-text>{{documents_list}}</mj-text>
-        <mj-button background-color="{{brand_primary_color}}" href="{{rsvp_url}}">Vahvista osallistuminen</mj-button>
-        <mj-text>{{signature}}</mj-text>
-      </mj-column>
-    </mj-section>
-    <mj-section background-color="#f8f8f8">
-      <mj-column>
-        <mj-text font-size="11px" color="#666666" align="center">{{brand_footer_address}}</mj-text>
-      </mj-column>
-    </mj-section>
-  </mj-body>
-</mjml>
+Author a brief style guide documenting:
+
+- Use `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">` for layout
+- 600 px content width; mobile fallback via `@media (max-width:600px)` only
+- Inline CSS only — no `<style>` blocks except media queries
+- Images: `<img width="..." style="display:block;border:0;outline:none">` (Outlook spacing-bug fix)
+- Buttons: `<table>` of one row with inline-styled `<td>` (Mailto-compatible)
+- No flex, grid, `position:absolute`, JavaScript, or background images
+- 2-column blocks: `<table>` + two `<td width="50%">`; mobile rule sets `display:block; width:100%`
+- Placeholder syntax: `{{snake_case_var}}` — VarSubstituter handles escaping
+
+- [ ] **Step 2: Author `meeting_invitation.html`**
+
+```html
+<!DOCTYPE html>
+<html lang="{{locale}}">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>{{subject}}</title>
+  <style>
+    @media (max-width:600px) {
+      .container { width:100% !important; }
+      .col { display:block !important; width:100% !important; }
+    }
+  </style>
+</head>
+<body style="margin:0;padding:0;background:#f4f4f4;font-family:Helvetica,Arial,sans-serif;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#f4f4f4;">
+    <tr><td align="center" style="padding:20px 12px;">
+      <table role="presentation" class="container" width="600" cellpadding="0" cellspacing="0" border="0" style="background:#ffffff;border-radius:6px;overflow:hidden;">
+        <tr><td style="background:{{brand_primary_color}};padding:18px 22px;">
+          <img src="{{brand_logo_url}}" alt="" width="160" style="display:block;border:0;outline:none;">
+        </td></tr>
+        <tr><td style="padding:22px 26px;">
+          <h1 style="margin:0 0 14px 0;font-size:20px;color:{{brand_primary_color}};">{{subject}}</h1>
+          <p style="margin:0 0 12px 0;font-size:14px;color:#333;">Hei {{first_name}},</p>
+          <div style="margin:0 0 14px 0;font-size:14px;color:#333;line-height:1.55;">{{intro_text_html}}</div>
+          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#f4f7fa;border-radius:4px;margin:12px 0;">
+            <tr><td style="padding:12px 16px;font-size:13px;color:#444;line-height:1.6;">
+              <strong>Päivä:</strong> {{meeting_date}}<br>
+              <strong>Paikka:</strong> {{meeting_location}}<br>
+              <strong>Etänä:</strong> <a href="{{meeting_remote_url}}" style="color:{{brand_primary_color}};">{{meeting_remote_url}}</a>
+            </td></tr>
+          </table>
+          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#f4f7fa;border-left:3px solid {{brand_primary_color}};margin:12px 0;">
+            <tr><td style="padding:10px 14px;font-size:13px;color:#333;">
+              <strong>Asialista:</strong>
+              {{agenda_html}}
+            </td></tr>
+          </table>
+          <p style="margin:0 0 14px 0;font-size:12px;color:#555;">{{documents_list}}</p>
+          <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:18px auto;">
+            <tr><td style="background:{{brand_primary_color}};border-radius:4px;">
+              <a href="{{rsvp_url}}" style="display:inline-block;padding:10px 22px;color:#ffffff;text-decoration:none;font-size:13px;font-weight:600;">Vahvista osallistuminen</a>
+            </td></tr>
+          </table>
+          <p style="margin:18px 0 0 0;font-size:13px;color:#444;">{{signature}}</p>
+        </td></tr>
+        <tr><td style="background:#f8f8f8;padding:14px 22px;text-align:center;font-size:11px;color:#888;">
+          {{brand_footer_address}}
+        </td></tr>
+      </table>
+    </td></tr>
+  </table>
+</body>
+</html>
 ```
 
-- [ ] **Step 2: Author the other 5 MJML files**
+- [ ] **Step 3: Author the other 5 HTML files**
 
 Use the same skeleton, swap content per kind:
 
-- `payment_reminder.mjml` — invoice amount + due_date + payment_link CTA
-- `membership_approved.mjml` — welcome paragraph + login link
-- `group_message.mjml` — admin-authored Markdown body
-- `lapse_warning.mjml` — warning about § 4 lapse + payment_link CTA
-- `newsletter_wrapper.mjml` — has `{{block_body}}` placeholder + mandatory unsubscribe footer with `{{unsubscribe_url}}`
+- `payment_reminder.html` — invoice amount + due_date + payment_link CTA; placeholders `{{invoice_year}}`, `{{amount}}`, `{{due_date}}`, `{{payment_link}}`
+- `membership_approved.html` — welcome paragraph + login link; placeholders `{{first_name}}`, `{{tenant_name}}`, `{{login_link}}`
+- `group_message.html` — admin-authored Markdown body; placeholders `{{first_name}}`, `{{body_html}}`, `{{signature}}`
+- `lapse_warning.html` — warning about § 4 lapse + payment_link CTA; placeholders `{{first_name}}`, `{{predicted_lapse_date}}`, `{{payment_link}}`, `{{outstanding_total}}`
+- `newsletter_wrapper.html` — has `{{block_body}}` placeholder for rendered blocks + mandatory unsubscribe footer with `{{unsubscribe_url}}`; placeholders `{{subject}}`, `{{first_name}}`, `{{block_body}}`, `{{unsubscribe_url}}`
 
-- [ ] **Step 3: Commit**
+Keep each file ≤ 80 lines. Same `<table>` skeleton + inline CSS + `@media` query for mobile.
 
-```bash
-git add backend/src/Infrastructure/Renderer/templates/
-git -c user.name="Dev Team" -c user.email="dev@daems.fi" \
-  commit -m "Add(0.8/communications): 6 MJML templates (4 strict + lapse + newsletter wrapper)"
+- [ ] **Step 4: Write snapshot test for meeting_invitation render**
+
+Create `tests/Unit/Renderer/EmailHtmlSnapshotTest.php`:
+
+```php
+public function test_meeting_invitation_renders_to_table_based_html(): void
+{
+    $registry = new MailTemplateRegistry();
+    $renderer = new EmailHtmlRenderer($registry, new VarSubstituter(), new MarkdownRenderer(), new Html2Text());
+    [$html, $text] = $renderer->render(
+        MailKind::MeetingInvitation,
+        [
+            'first_name' => 'Anna',
+            'subject' => 'Vuosikokous 2026',
+            'intro_text_html' => '<p>Tervetuloa!</p>',
+            'meeting_date' => '15.6.2026 klo 18:00',
+            'meeting_location' => 'Kulttuuritalo',
+            'meeting_remote_url' => 'https://meet.example.com/x',
+            'agenda_html' => '<ol><li>Avaus</li><li>Päätös</li></ol>',
+            'documents_list' => '📎 toimintakertomus.pdf',
+            'rsvp_url' => 'https://daems.fi/rsvp/abc',
+            'signature' => 'Hallitus',
+            'brand_primary_color' => '#2e5c8a',
+            'brand_logo_url' => 'https://cdn/logo.png',
+            'brand_footer_address' => 'Daem Society ry',
+            'locale' => 'fi_FI',
+        ],
+        SupportedLocale::FiFi,
+        stringOverrides: []
+    );
+
+    $this->assertStringContainsString('<table', $html);
+    $this->assertStringContainsString('role="presentation"', $html);
+    $this->assertStringContainsString('Anna', $html);
+    $this->assertStringContainsString('Vuosikokous 2026', $html);
+    $this->assertStringContainsString('https://daems.fi/rsvp/abc', $html);
+    $this->assertStringNotContainsString('<script', $html);
+    $this->assertStringNotContainsString('position:absolute', $html);
+
+    // Plain-text fallback should include meaningful content
+    $this->assertStringContainsString('Anna', $text);
+    $this->assertStringContainsString('15.6.2026', $text);
+}
 ```
 
-### Task D3: `MailTemplateRegistry` + `MjmlRenderer`
+Repeat snapshot tests for each of the 5 other templates with their own placeholder sets.
+
+- [ ] **Step 5: Run snapshot tests — expect PASS**
+
+```bash
+cd c:/laragon/www/daems-platform
+composer test -- --filter=EmailHtmlSnapshotTest
+```
+
+- [ ] **Step 6: Commit**
+
+```bash
+git add backend/src/Infrastructure/Renderer/templates/ docs/email-template-style-guide.md tests/Unit/Renderer/EmailHtmlSnapshotTest.php
+git -c user.name="Dev Team" -c user.email="dev@daems.fi" \
+  commit -m "Add(0.8/communications): 6 email-safe HTML templates + style guide + snapshot tests"
+```
+
+### Task D3: `MailTemplateRegistry` + `EmailHtmlRenderer`
 
 **Files:**
 
 - Create: `backend/src/Infrastructure/Renderer/MailTemplateRegistry.php`
-- Create: `backend/src/Infrastructure/Renderer/MjmlRenderer.php`
+- Create: `backend/src/Infrastructure/Renderer/EmailHtmlRenderer.php`
 - Tests: 2 unit-test files
 
 - [ ] **Step 1: Implement `MailTemplateRegistry`**
 
 ```php
-final class MailTemplateRegistry {
-    public function loadMjmlSource(MailKind $kind): string {
-        $file = __DIR__ . "/templates/{$kind->value}.mjml";
+<?php
+declare(strict_types=1);
+namespace DaemsModule\Communications\Infrastructure\Renderer;
+
+use DaemsModule\Communications\Domain\Mail\MailKind;
+use Daems\Domain\Locale\SupportedLocale;
+
+final class MailTemplateRegistry
+{
+    public function loadHtmlSource(MailKind $kind): string
+    {
+        $file = __DIR__ . "/templates/{$kind->value}.html";
         if (!file_exists($file)) {
-            throw new \RuntimeException("Template not found: {$kind->value}");
+            throw new \RuntimeException("Template not found: {$kind->value}.html");
         }
         return file_get_contents($file);
     }
 
-    public function defaultStrings(MailKind $kind, SupportedLocale $locale): array {
-        // Reads `lang/{locale}.php` and returns the `communications.template.defaults.{kind}.*` subtree
-        // Fallback to en_GB if locale-specific defaults missing
+    /**
+     * @return array<string,string> e.g. ['subject' => '...', 'intro' => '...', 'signature' => '...', 'footer' => '...']
+     */
+    public function defaultStrings(MailKind $kind, SupportedLocale $locale): array
+    {
+        $key = "communications.template.defaults.{$kind->value}";
+        $langFile = __DIR__ . "/../../../../../daems-platform/lang/{$locale->value}.php";
+        $strings = file_exists($langFile) ? require $langFile : [];
+        $defaults = [];
+        foreach ($strings as $k => $v) {
+            if (str_starts_with($k, $key . '.')) {
+                $defaults[substr($k, strlen($key) + 1)] = $v;
+            }
+        }
+        if (empty($defaults) && $locale !== SupportedLocale::EnGb) {
+            return $this->defaultStrings($kind, SupportedLocale::EnGb);
+        }
+        return $defaults;
     }
 }
 ```
 
-- [ ] **Step 2: Implement `MjmlRenderer`**
+- [ ] **Step 2: Implement `EmailHtmlRenderer`**
 
-Pipeline: load MJML source → apply overrides into placeholders → apply MD render to body fields → apply var substitution → compile MJML → HTML → run Html2Text → return tuple `(html, text)`.
+```php
+<?php
+declare(strict_types=1);
+namespace DaemsModule\Communications\Infrastructure\Renderer;
+
+use DaemsModule\Communications\Domain\Mail\MailKind;
+use Daems\Domain\Locale\SupportedLocale;
+
+final class EmailHtmlRenderer
+{
+    public function __construct(
+        private readonly MailTemplateRegistry $registry,
+        private readonly VarSubstituter $varSub,
+        private readonly MarkdownRenderer $md,
+        private readonly Html2Text $h2t,
+    ) {}
+
+    /**
+     * @param array<string,mixed> $vars        Variable values (already context-merged with brand_*, locale, etc.)
+     * @param array<string,string> $stringOverrides Admin-edited overrides (subject/intro/signature/footer)
+     * @return array{0:string,1:string}  [html, plainText]
+     */
+    public function render(MailKind $kind, array $vars, SupportedLocale $locale, array $stringOverrides): array
+    {
+        // 1. Apply dev-default strings (locale-aware), then admin overrides win
+        $defaults = $this->registry->defaultStrings($kind, $locale);
+        $strings  = array_replace($defaults, $stringOverrides);
+
+        // 2. Pre-render Markdown for any body-field of admin authoring (intro_text, body, signature)
+        foreach (['intro_text', 'body', 'signature'] as $mdField) {
+            if (isset($strings[$mdField])) {
+                $vars[$mdField . '_html'] = $this->md->renderSafe($strings[$mdField]);
+            }
+        }
+        // Merge subject + any other string overrides into vars (already HTML-escape-safe — VarSubstituter will escape on insert)
+        foreach (['subject', 'signature', 'footer'] as $passThrough) {
+            if (isset($strings[$passThrough])) {
+                $vars[$passThrough] = $strings[$passThrough];
+            }
+        }
+
+        // 3. Load template HTML source
+        $template = $this->registry->loadHtmlSource($kind);
+
+        // 4. Apply var substitution against the HTML (whitelist per kind, HTML-escaping for raw values)
+        $html = $this->varSub->substitute($template, $vars, $kind);
+
+        // 5. Extract plain-text fallback
+        $text = $this->h2t->convert($html);
+
+        return [$html, $text];
+    }
+}
+```
 
 - [ ] **Step 3: Test full render pipeline**
 
-Build a fake payload, render meeting_invitation, assert output contains expected `<table>` structure, agenda items, and recipient first name.
+```php
+public function test_full_pipeline_produces_html_and_text(): void
+{
+    $renderer = new EmailHtmlRenderer(
+        new MailTemplateRegistry(),
+        new VarSubstituter(),
+        new MarkdownRenderer(),
+        new Html2Text(),
+    );
 
-- [ ] **Step 4: Commit**
+    [$html, $text] = $renderer->render(
+        MailKind::MeetingInvitation,
+        [
+            'first_name' => 'Anna',
+            'subject' => 'Vuosikokous 2026',
+            'meeting_date' => '15.6.2026',
+            'meeting_location' => 'Kulttuuritalo',
+            'meeting_remote_url' => 'https://meet/x',
+            'agenda_html' => '<ol><li>Avaus</li></ol>',
+            'documents_list' => '',
+            'rsvp_url' => 'https://daems.fi/rsvp/x',
+            'signature' => 'Hallitus',
+            'brand_primary_color' => '#2e5c8a',
+            'brand_logo_url' => 'https://cdn/x.png',
+            'brand_footer_address' => 'Daem Society',
+            'locale' => 'fi_FI',
+        ],
+        SupportedLocale::FiFi,
+        stringOverrides: ['intro_text' => 'Hyvä jäsen, **tervetuloa**.'],
+    );
+
+    $this->assertStringContainsString('<table', $html);
+    $this->assertStringContainsString('Anna', $html);
+    $this->assertStringContainsString('<strong>tervetuloa</strong>', $html);  // Markdown rendered
+    $this->assertStringContainsString('Anna', $text);
+}
+```
+
+- [ ] **Step 4: Run — expect PASS**
 
 ```bash
-git add backend/src/Infrastructure/Renderer/MjmlRenderer.php backend/src/Infrastructure/Renderer/MailTemplateRegistry.php tests/Unit/Renderer/
+composer test -- --filter=EmailHtmlRendererTest
+```
+
+- [ ] **Step 5: Commit**
+
+```bash
+git add backend/src/Infrastructure/Renderer/EmailHtmlRenderer.php backend/src/Infrastructure/Renderer/MailTemplateRegistry.php tests/Unit/Renderer/
 git -c user.name="Dev Team" -c user.email="dev@daems.fi" \
-  commit -m "Add(0.8/communications): MjmlRenderer + MailTemplateRegistry + full-pipeline tests"
+  commit -m "Add(0.8/communications): EmailHtmlRenderer + MailTemplateRegistry + full-pipeline tests"
 ```
 
 ### Task D4: `ComposeAndPreviewMessage` use case
@@ -2305,7 +2492,7 @@ Steps inside `execute`:
 3. For preview, load _first_ resolved recipient's locale (or input.locale fallback)
 4. Build payload vars: merge admin-input + DB-pulled context (e.g., `meeting_id` → load `Meeting` → extract title, datetime, agenda)
 5. Load template overrides via `MailTemplateRepository::findOverrides`
-6. Call `MjmlRenderer::render(kind, payloadVars, locale, overrides)`
+6. Call `EmailHtmlRenderer::render(kind, payloadVars, locale, overrides)`
 7. Return `Output(htmlPreview, textPreview, audienceCount, audienceSampleNames: first 3 names + " +N muuta")`
 
 - [ ] **Step 3: Run — expect PASS**
@@ -2531,7 +2718,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.fi" \
   commit -m "Add(0.8/communications): NewsletterBlock JSON serializer + round-trip test"
 ```
 
-### Task E2: Block-to-MJML rendering
+### Task E2: Block-to-email-safe HTML rendering
 
 **Files:**
 
@@ -2540,15 +2727,131 @@ git -c user.name="Dev Team" -c user.email="dev@daems.fi" \
 
 - [ ] **Step 1: Implement renderer**
 
-Each block → MJML snippet. Heading → `<mj-text font-size="...">`. Paragraph → `<mj-text>` containing CommonMark-rendered HTML. Image → `<mj-image>`. Button → `<mj-button>`. Divider → `<mj-divider>`. TwoColumns → `<mj-section><mj-column>left blocks</mj-column><mj-column>right blocks</mj-column></mj-section>`. EventCard → fetch event from events module, render summary card. (For Wave E, may stub EventCard as a placeholder if events-module cross-call isn't trivial; mark as Wave G follow-up.)
+Each block → email-safe HTML snippet (inline CSS, table-based where structural). Implementation:
 
-- [ ] **Step 2: Test each block type renders to expected MJML**
+```php
+<?php
+declare(strict_types=1);
+namespace DaemsModule\Communications\Infrastructure\Renderer;
 
-- [ ] **Step 3: Commit**
+use DaemsModule\Communications\Domain\Template\Block\{
+    NewsletterBlock, HeadingBlock, ParagraphBlock, ImageBlock,
+    ButtonBlock, DividerBlock, TwoColumnsBlock, EventCardBlock
+};
+
+final class NewsletterBlockRenderer
+{
+    public function __construct(
+        private readonly MarkdownRenderer $md,
+        private readonly string $brandPrimaryColor,  // injected per-render from TenantCommunicationSettings
+    ) {}
+
+    /** @param list<NewsletterBlock> $blocks */
+    public function renderAll(array $blocks): string
+    {
+        return implode("\n", array_map($this->renderOne(...), $blocks));
+    }
+
+    private function renderOne(NewsletterBlock $b): string
+    {
+        return match (true) {
+            $b instanceof HeadingBlock     => $this->heading($b),
+            $b instanceof ParagraphBlock   => $this->paragraph($b),
+            $b instanceof ImageBlock       => $this->image($b),
+            $b instanceof ButtonBlock      => $this->button($b),
+            $b instanceof DividerBlock     => $this->divider(),
+            $b instanceof TwoColumnsBlock  => $this->twoColumns($b),
+            $b instanceof EventCardBlock   => $this->eventCard($b),
+            default => throw new \RuntimeException('Unknown block: ' . $b::class),
+        };
+    }
+
+    private function heading(HeadingBlock $b): string
+    {
+        $size = match ($b->level) { 1 => '22px', 2 => '18px', default => '15px' };
+        $weight = $b->level <= 2 ? '700' : '600';
+        $escaped = htmlspecialchars($b->text, ENT_QUOTES | ENT_HTML5);
+        return "<table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" border=\"0\"><tr><td style=\"padding:14px 0 8px 0;font-size:{$size};font-weight:{$weight};color:{$this->brandPrimaryColor};font-family:Helvetica,Arial,sans-serif;\">{$escaped}</td></tr></table>";
+    }
+
+    private function paragraph(ParagraphBlock $b): string
+    {
+        $html = $this->md->renderSafe($b->markdown);
+        return "<table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" border=\"0\"><tr><td style=\"padding:6px 0;font-size:14px;color:#333;line-height:1.55;font-family:Helvetica,Arial,sans-serif;\">{$html}</td></tr></table>";
+    }
+
+    private function image(ImageBlock $b): string
+    {
+        $url = htmlspecialchars($b->url, ENT_QUOTES | ENT_HTML5);
+        $alt = htmlspecialchars($b->alt, ENT_QUOTES | ENT_HTML5);
+        $cap = $b->caption !== null
+            ? "<div style=\"padding:4px 0;font-size:11px;color:#888;text-align:center;\">" . htmlspecialchars($b->caption, ENT_QUOTES | ENT_HTML5) . "</div>"
+            : '';
+        return "<table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" border=\"0\"><tr><td align=\"center\" style=\"padding:10px 0;\"><img src=\"{$url}\" alt=\"{$alt}\" style=\"display:block;border:0;outline:none;max-width:100%;height:auto;\">{$cap}</td></tr></table>";
+    }
+
+    private function button(ButtonBlock $b): string
+    {
+        $url = htmlspecialchars($b->url, ENT_QUOTES | ENT_HTML5);
+        $txt = htmlspecialchars($b->text, ENT_QUOTES | ENT_HTML5);
+        return "<table role=\"presentation\" cellpadding=\"0\" cellspacing=\"0\" border=\"0\" align=\"center\" style=\"margin:14px auto;\"><tr><td style=\"background:{$this->brandPrimaryColor};border-radius:4px;\"><a href=\"{$url}\" style=\"display:inline-block;padding:10px 22px;color:#ffffff;text-decoration:none;font-size:13px;font-weight:600;font-family:Helvetica,Arial,sans-serif;\">{$txt}</a></td></tr></table>";
+    }
+
+    private function divider(): string
+    {
+        return "<table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" border=\"0\"><tr><td style=\"padding:14px 0;\"><div style=\"border-top:1px solid #d8d8d8;height:1px;line-height:1px;font-size:1px;\">&nbsp;</div></td></tr></table>";
+    }
+
+    private function twoColumns(TwoColumnsBlock $b): string
+    {
+        $left  = $this->renderAll($b->left);
+        $right = $this->renderAll($b->right);
+        // Outlook desktop renders as side-by-side; mobile (max-width:600) flips to stacked via CSS class .col in newsletter_wrapper
+        return "<table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" border=\"0\"><tr><td class=\"col\" width=\"50%\" valign=\"top\" style=\"padding:6px 10px 6px 0;\">{$left}</td><td class=\"col\" width=\"50%\" valign=\"top\" style=\"padding:6px 0 6px 10px;\">{$right}</td></tr></table>";
+    }
+
+    private function eventCard(EventCardBlock $b): string
+    {
+        // 0.8 stub — resolve event title from events module if cross-call available, otherwise show event_id placeholder.
+        // Full event-fetching cross-module call wired in a Wave G follow-up if needed; for now render a passive card.
+        $title = $b->title ?? '(Tapahtuma)';
+        $when  = $b->whenLabel ?? '';
+        return "<table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" border=\"0\" style=\"background:#f4f7fa;border-left:3px solid {$this->brandPrimaryColor};margin:8px 0;\"><tr><td style=\"padding:10px 14px;font-size:13px;color:#333;\"><strong>" . htmlspecialchars($title) . "</strong><br>" . htmlspecialchars($when) . "</td></tr></table>";
+    }
+}
+```
+
+`EventCardBlock` constructor takes `(string $eventId, ?string $title = null, ?string $whenLabel = null)`. The composer surface enriches title + whenLabel by looking up the events module before save (so renderer doesn't need cross-module call at send time). Spec § 11.1 mentions EventCardBlock cross-call may become a Wave G follow-up — that's the integration; the renderer itself is straightforward.
+
+- [ ] **Step 2: Snapshot test for each block type**
+
+Create `tests/Unit/Renderer/NewsletterBlockRendererTest.php` with 7 tests, one per block type. Each asserts the output contains expected `<table>` markers + escapes HTML in user input + inline CSS only.
+
+```php
+public function test_heading_renders_with_brand_color(): void
+{
+    $r = new NewsletterBlockRenderer(new MarkdownRenderer(), '#2e5c8a');
+    $html = $r->renderAll([new HeadingBlock(1, 'Hei <script>')]);
+    $this->assertStringContainsString('Hei &lt;script&gt;', $html);
+    $this->assertStringContainsString('color:#2e5c8a', $html);
+    $this->assertStringContainsString('font-size:22px', $html);
+    $this->assertStringContainsString('<table', $html);
+}
+```
+
+(Six more covering Paragraph/Image/Button/Divider/TwoColumns/EventCard.)
+
+- [ ] **Step 3: Run — expect PASS**
+
+```bash
+composer test -- --filter=NewsletterBlockRendererTest
+```
+
+- [ ] **Step 4: Commit**
 
 ```bash
 git -c user.name="Dev Team" -c user.email="dev@daems.fi" \
-  commit -m "Add(0.8/communications): NewsletterBlockRenderer (7 block types → MJML) + tests"
+  commit -m "Add(0.8/communications): NewsletterBlockRenderer (7 block types → email-safe HTML) + snapshot tests"
 ```
 
 ### Task E3: Newsletter CRUD use cases
@@ -2563,7 +2866,7 @@ Standard CRUD patterns mirroring existing modules. `Delete` blocks if status ===
 
 - [ ] **Step 2: Implement `SendNewsletter`**
 
-Validates: (a) admin auth, (b) all 3 locales have ≥1 block (or fallback to en_GB rule), (c) subject non-empty per locale, (d) audience > 0 after marketing-opt-in filtering. Then for each recipient: render newsletter_wrapper.mjml with `{{block_body}}` filled with renderer output for recipient's locale. Generate unsubscribe URL via HMAC. Enqueue outbox rows.
+Validates: (a) admin auth, (b) all 3 locales have ≥1 block (or fallback to en_GB rule), (c) subject non-empty per locale, (d) audience > 0 after marketing-opt-in filtering. Then for each recipient: render newsletter_wrapper.html with `{{block_body}}` filled with renderer output for recipient's locale. Generate unsubscribe URL via HMAC. Enqueue outbox rows.
 
 - [ ] **Step 3: Tests for each**
 
@@ -2849,25 +3152,22 @@ git -c user.name="Dev Team" -c user.email="dev@daems.fi" \
   commit -m "Add(0.8/communications): public /unsubscribe handler + HMAC token signer + E2E"
 ```
 
-### Task G4: Marketing template footer (newsletter_wrapper.mjml)
+### Task G4: Marketing template footer (newsletter_wrapper.html)
 
 **Files:**
 
-- Modify: `backend/src/Infrastructure/Renderer/templates/newsletter_wrapper.mjml`
+- Modify: `backend/src/Infrastructure/Renderer/templates/newsletter_wrapper.html`
 
 - [ ] **Step 1: Verify unsubscribe link present in footer**
 
-If not, add:
+If not, append before the closing wrapper `<table>`:
 
-```xml
-<mj-section background-color="#f8f8f8">
-  <mj-column>
-    <mj-text font-size="11px" color="#666666" align="center">
-      Et halua enää uutiskirjeitä? <a href="{{unsubscribe_url}}" style="color:#666666">Poistu listalta</a>
-    </mj-text>
-    <mj-text font-size="11px" color="#888888" align="center">{{brand_footer_address}}</mj-text>
-  </mj-column>
-</mj-section>
+```html
+<tr><td style="background:#f8f8f8;padding:14px 22px;text-align:center;font-size:11px;color:#888;font-family:Helvetica,Arial,sans-serif;">
+  Et halua enää uutiskirjeitä?
+  <a href="{{unsubscribe_url}}" style="color:#666666;text-decoration:underline;">Poistu listalta</a><br><br>
+  <span style="color:#888888;">{{brand_footer_address}}</span>
+</td></tr>
 ```
 
 - [ ] **Step 2: Verify `SendNewsletter` use case generates `unsubscribe_url` via signer for each recipient**
@@ -2953,7 +3253,7 @@ Wait for user "pushaa" before pushing.
 
 ## Self-Review
 
-**1. Spec coverage:** ✓ All 12 spec sections have at least one task. Migration, vendor packages, encryption, MailerInterface + adapter, MJML + Markdown + var-sub, outbox, drain cron, composer, 4 strict templates, newsletter blocks, payment-reminder + lapse-warning crons, suppression, unsubscribe, settings UI, i18n parity, isolation tests, BOTH-containers check, browser smoke. Test counts (~120-140) reached through Unit (60) + Integration (30) + Isolation (5) + E2E (25) + auth (10) + i18n parity (1) = 131.
+**1. Spec coverage:** ✓ All 12 spec sections have at least one task. Migration, vendor packages, encryption, MailerInterface + adapter, EmailHtmlRenderer + Markdown + var-sub + email-safe HTML templates, outbox, drain cron, composer, 4 strict templates, newsletter blocks, payment-reminder + lapse-warning crons, suppression, unsubscribe, settings UI, i18n parity, isolation tests, BOTH-containers check, browser smoke. Test counts (~120-140) reached through Unit (60) + Integration (30) + Isolation (5) + E2E (25) + auth (10) + i18n parity (1) = 131.
 
 **2. Placeholder scan:** No "TBD" / "implement later" / "similar to Task N" used. Every code block contains executable code. The exceptions: Task A6 step 1 says "copy SQL from spec § 6" — this is acceptable because the spec is checked in alongside this plan and never paraphrased; otherwise the SQL would duplicate 80+ lines unnecessarily. Task B6 step 1 references existing repos as templates — acceptable for engineering implementation.
 
