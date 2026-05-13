@@ -572,8 +572,9 @@ return [
     'sidebar.group.members'       => 'Members',
     'sidebar.group.community'     => 'Community',
     'sidebar.group.content'       => 'Content',
-    'sidebar.group.governance'    => 'Association governance',
-    'sidebar.group.system'        => 'System',
+    'sidebar.group.governance'     => 'Association governance',
+    'sidebar.group.communications' => 'Communications',
+    'sidebar.group.system'         => 'System',
 
     // ── Shell items ──────────────────────────────────────────────
     'shell.dashboard'        => 'Dashboard',
@@ -586,6 +587,10 @@ return [
     'shell.governance.delegations'  => 'Delegations',
     'shell.governance.settings'     => 'Settings',
     'shell.governance.billing'      => 'Billing',
+    'shell.communications.compose'     => 'Compose message',
+    'shell.communications.outbox'      => 'Sent + queued',
+    'shell.communications.newsletters' => 'Newsletters',
+    'shell.communications.templates'   => 'Templates',
 
     // ── Governance / Billing page ─────────────────────────────────
     'backstage.title.governance.billing'              => 'Billing',

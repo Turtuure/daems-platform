@@ -71,4 +71,20 @@ return [
 
     'credit-card' => '<rect x="1" y="4" width="22" height="16" rx="2" ry="2"/>'
                    . '<line x1="1" y1="10" x2="23" y2="10"/>',
+
+    // Communications group
+    'mail' => '<path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>'
+            . '<polyline points="22,6 12,13 2,6"/>',
+
+    'inbox' => '<polyline points="22 12 16 12 14 15 10 15 8 12 2 12"/>'
+             . '<path d="M5.45 5.11L2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/>',
+
+    'newspaper' => '<path d="M4 22h16a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2H8a2 2 0 0 0-2 2v16a2 2 0 0 1-2 2zm0 0a2 2 0 0 1-2-2v-9c0-1.1.9-2 2-2h2"/>'
+                 . '<path d="M18 14h-8"/><path d="M15 18h-5"/><path d="M10 6h8v4h-8V6z"/>',
+
+    'file-text' => '<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>'
+                 . '<polyline points="14 2 14 8 20 8"/>'
+                 . '<line x1="16" y1="13" x2="8" y2="13"/>'
+                 . '<line x1="16" y1="17" x2="8" y2="17"/>'
+                 . '<polyline points="10 9 9 9 8 9"/>',
 ];

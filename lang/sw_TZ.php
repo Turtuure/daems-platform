@@ -576,8 +576,9 @@ return [
     'sidebar.group.members'       => 'Wanachama',
     'sidebar.group.community'     => 'Jamii',
     'sidebar.group.content'       => 'Maudhui',
-    'sidebar.group.governance'    => 'Utawala wa chama',
-    'sidebar.group.system'        => 'Mfumo',
+    'sidebar.group.governance'     => 'Utawala wa chama',
+    'sidebar.group.communications' => 'Mawasiliano',
+    'sidebar.group.system'         => 'Mfumo',
 
     // ── Shell items ──────────────────────────────────────────────
     'shell.dashboard'        => 'Dashibodi',
@@ -590,6 +591,10 @@ return [
     'shell.governance.delegations'  => 'Mgawanyo',
     'shell.governance.settings'     => 'Mipangilio',
     'shell.governance.billing'      => 'Bili',
+    'shell.communications.compose'     => 'Tunga ujumbe',
+    'shell.communications.outbox'      => 'Iliyotumwa + foleni',
+    'shell.communications.newsletters' => 'Vipeperushi',
+    'shell.communications.templates'   => 'Violezo',
 
     // ── Governance / Billing page ─────────────────────────────────
     'backstage.title.governance.billing'              => 'Bili',

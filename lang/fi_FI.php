@@ -572,8 +572,9 @@ return [
     'sidebar.group.members'       => 'Jäsenet',
     'sidebar.group.community'     => 'Yhteisö',
     'sidebar.group.content'       => 'Sisältö',
-    'sidebar.group.governance'    => 'Yhdistyksen hallinto',
-    'sidebar.group.system'        => 'Järjestelmä',
+    'sidebar.group.governance'     => 'Yhdistyksen hallinto',
+    'sidebar.group.communications' => 'Viestintä',
+    'sidebar.group.system'         => 'Järjestelmä',
 
     // ── Shell items ──────────────────────────────────────────────
     'shell.dashboard'        => 'Hallintapaneeli',
@@ -586,6 +587,10 @@ return [
     'shell.governance.delegations'  => 'Delegoinnit',
     'shell.governance.settings'     => 'Asetukset',
     'shell.governance.billing'      => 'Laskutus',
+    'shell.communications.compose'     => 'Lähetä viesti',
+    'shell.communications.outbox'      => 'Lähetetyt + jonossa',
+    'shell.communications.newsletters' => 'Uutiskirjeet',
+    'shell.communications.templates'   => 'Pohjat',
 
     // ── Governance / Billing page ─────────────────────────────────
     'backstage.title.governance.billing'              => 'Laskutus',
