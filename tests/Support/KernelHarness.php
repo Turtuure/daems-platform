@@ -952,6 +952,15 @@ final class KernelHarness
             ),
         );
 
+        // WaiveOpenInvoicesOnHonoraryChange use case (Wave G § 3)
+        $container->bind(
+            \Daems\Application\Membership\Billing\WaiveOpenInvoicesOnHonoraryChange\WaiveOpenInvoicesOnHonoraryChange::class,
+            static fn(Container $c) => new \Daems\Application\Membership\Billing\WaiveOpenInvoicesOnHonoraryChange\WaiveOpenInvoicesOnHonoraryChange(
+                $c->make(\Daems\Domain\Membership\Billing\MemberFeeInvoiceRepositoryInterface::class),
+                $c->make(\Daems\Application\Membership\Billing\WaiveMemberFeeInvoice\WaiveMemberFeeInvoice::class),
+            ),
+        );
+
         // Delegate variants (3)
         $container->bind(
             \Daems\Application\Governance\Delegate\ApproveBasicAsDelegate::class,
