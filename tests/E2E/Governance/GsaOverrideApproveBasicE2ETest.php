@@ -80,7 +80,8 @@ final class GsaOverrideApproveBasicE2ETest extends TestCase
             ],
         );
 
-        // GsaOverrideRequiresReason extends DomainException → maps to 500 in the harness
-        self::assertSame(500, $resp->status(), 'Short reason should result in domain error (500)');
+        // GsaOverrideRequiresReason extends DomainException → 409 Conflict
+        // (domain-rule violation), not 500.
+        self::assertSame(409, $resp->status(), 'Short reason should result in 409 Conflict');
     }
 }

@@ -381,6 +381,7 @@ return [
     'backstage.common.generic_error'                   => 'kosa',
     'backstage.common.empty'                           => '—',
     'backstage.common.apply'                           => 'Tumia',
+    'backstage.common.back'                            => 'Rudi',
     'backstage.common.loading'                         => 'Inapakia…',
     'backstage.common.save'                            => 'Hifadhi',
     'backstage.common.cancel'                          => 'Ghairi',

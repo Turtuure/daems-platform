@@ -381,6 +381,7 @@ return [
     'backstage.common.generic_error'                   => 'error',
     'backstage.common.empty'                           => '—',
     'backstage.common.apply'                           => 'Apply',
+    'backstage.common.back'                            => 'Back',
     'backstage.common.loading'                         => 'Loading…',
     'backstage.common.save'                            => 'Save',
     'backstage.common.cancel'                          => 'Cancel',

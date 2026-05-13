@@ -381,6 +381,7 @@ return [
     'backstage.common.generic_error'                   => 'virhe',
     'backstage.common.empty'                           => '—',
     'backstage.common.apply'                           => 'Käytä',
+    'backstage.common.back'                            => 'Takaisin',
     'backstage.common.loading'                         => 'Ladataan…',
     'backstage.common.save'                            => 'Tallenna',
     'backstage.common.cancel'                          => 'Peruuta',

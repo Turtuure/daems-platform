@@ -35,8 +35,21 @@ final class Kernel
             return Response::notFound($e->getMessage());
         } catch (ValidationException $e) {
             return Response::badRequest($e->getMessage());
+        } catch (\InvalidArgumentException $e) {
+            // Value-object constructors (Uuid7, Email, …) throw this on
+            // malformed user input. Map to 400 so fuzzers and bad clients
+            // get a structured error. Hide the message in production so
+            // we don't echo attacker payloads back ("Invalid UUID: <script>").
+            return Response::badRequest($this->debug ? $e->getMessage() : 'Invalid request.');
         } catch (TooManyRequestsException $e) {
             return Response::tooManyRequests($e->getMessage(), $e->retryAfter);
+        } catch (\DomainException $e) {
+            // SPL DomainException + every domain-rule violation that extends
+            // it (BoardNotBootstrapped, InvoiceAlreadyPaid, …) is a client-
+            // facing semantic error, not a server fault. 409 keeps it
+            // distinct from "malformed request" (400) and "auth missing"
+            // (401/403) without leaking internal stack traces.
+            return Response::conflict($e->getMessage());
         } catch (Throwable $e) {
             $this->logger->error('Unhandled exception', ['exception' => $e]);
             $body = $this->debug
