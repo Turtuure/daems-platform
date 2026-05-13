@@ -153,4 +153,25 @@ return [
         ),
         'depends_on'        => [],
     ],
+
+    'communications' => [
+        'category'          => 'communications',
+        'name_key'          => 'modules.communications.name',
+        'description_key'   => 'modules.communications.description',
+        'is_core'           => false,
+        'default_available' => true,
+        'sidebar'           => null,
+        'route_prefixes'    => new RoutePrefixes(
+            backstage: [
+                '/backstage/communications',
+                '/backstage/settings/communications',
+            ],
+            api: [
+                '/api/v1/backstage/communications',
+                '/api/v1/users',
+                '/api/v1/meetings/from-composer',
+            ],
+        ),
+        'depends_on'        => ['members'],
+    ],
 ];

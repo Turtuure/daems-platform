@@ -555,6 +555,8 @@ return [
     'modules.forum.description'   => 'Keskustelufoorumit moderoinnilla.',
     'modules.insights.name'       => 'Blogi',
     'modules.insights.description'=> 'Toimitukselliset blogikirjoitukset ja tiedotteet.',
+    'modules.communications.name'        => 'Viestintä',
+    'modules.communications.description' => 'Sähköposti-viestintä jäsenistölle: kokouskutsut, maksumuistutukset, ryhmäviestit, uutiskirjeet, monikieliset pohjat.',
 
     // ── Module categories ────────────────────────────────────────
     'modules.category.core'       => 'Ydin',

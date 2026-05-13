@@ -555,6 +555,8 @@ return [
     'modules.forum.description'   => 'Discussion forums with moderation.',
     'modules.insights.name'       => 'Insights',
     'modules.insights.description'=> 'Editorial articles and announcements.',
+    'modules.communications.name'        => 'Communications',
+    'modules.communications.description' => 'Email communication for members: meeting invitations, payment reminders, group messages, newsletters, multilingual templates.',
 
     // ── Module categories ────────────────────────────────────────
     'modules.category.core'       => 'Core',

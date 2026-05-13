@@ -75,9 +75,9 @@ final class TenantsE2ETest extends TestCase
 
         // Every default-available, non-core manifest got a tenant_modules row
         // with availableAt set, but enabledAt NULL (admin must flip enable).
-        // The platform catalog (config/modules.php) currently has 5 such modules.
+        // The platform catalog (config/modules.php) currently has 6 such modules.
         $rows = $this->h->tenantModules->findByTenant($tenant->id);
-        self::assertCount(5, $rows, 'expected 5 auto-seeded tenant_modules rows');
+        self::assertCount(6, $rows, 'expected 6 auto-seeded tenant_modules rows');
         foreach ($rows as $row) {
             self::assertNotNull($row->availableAt(), "{$row->moduleSlug()} should be available");
             self::assertNull($row->enabledAt(), "{$row->moduleSlug()} should not be enabled yet");
@@ -121,8 +121,8 @@ final class TenantsE2ETest extends TestCase
         self::assertSame('acme-get', $detail['slug']);
         self::assertSame('active', $detail['status']);
         self::assertNull($detail['suspendedAt']);
-        // 5 default-available rows seeded → modulesAvailable=5, modulesEnabled=0.
-        self::assertSame(5, $detail['modulesAvailable']);
+        // 6 default-available rows seeded → modulesAvailable=6, modulesEnabled=0.
+        self::assertSame(6, $detail['modulesAvailable']);
         self::assertSame(0, $detail['modulesEnabled']);
         self::assertSame(['en_GB'], $detail['supportedLocales']);
         self::assertSame(['en_GB' => 'Acme Tenant'], $detail['displayNameI18n']);

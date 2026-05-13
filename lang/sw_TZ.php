@@ -559,6 +559,8 @@ return [
     'modules.forum.description'   => 'Jukwaa za majadiliano zenye usimamizi.',
     'modules.insights.name'       => 'Blogu',
     'modules.insights.description'=> 'Machapisho ya blogu na matangazo ya uhariri.',
+    'modules.communications.name'        => 'Mawasiliano',
+    'modules.communications.description' => 'Mawasiliano ya barua pepe kwa wanachama: mialiko ya mikutano, vikumbusho vya malipo, ujumbe wa kikundi, vipeperushi, violezo vya lugha nyingi.',
 
     // ── Module categories ────────────────────────────────────────
     'modules.category.core'       => 'Msingi',
