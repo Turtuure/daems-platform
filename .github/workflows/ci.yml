@@ -39,6 +39,20 @@ jobs:
     steps:
       - uses: actions/checkout@v5
 
+      # Modules live in sibling repos. ModuleRegistry::discover() expects them
+      # at $WORKSPACE/../modules/<name>, matching the local laragon layout
+      # (c:/laragon/www/daems-platform + c:/laragon/www/modules/*). Without
+      # them, apply_pending_migrations.php fails on any core ALTER that
+      # references a table created by a module migration.
+      - name: Check out module repos
+        run: |
+          mkdir -p ../modules
+          for m in events forum insights members projects; do
+            git clone --depth 1 --branch dev \
+              "https://github.com/Turtuure/dp-${m}.git" \
+              "../modules/${m}"
+          done
+
       - name: Set up PHP ${{ matrix.php }}
         uses: shivammathur/setup-php@v2
         with:
