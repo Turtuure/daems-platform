@@ -88,6 +88,42 @@ if (str_starts_with($uri, '/api/backstage/governance/expulsions/')) {
     exit;
 }
 
+// Communications outbox — list / show / retry. The list endpoint takes a
+// query string, the others embed an id segment, so handle all forms with
+// one starts_with check that the proxy file then disambiguates internally.
+if (str_starts_with($uri, '/api/backstage/communications/outbox')) {
+    require __DIR__ . '/api/communications-outbox.php';
+    exit;
+}
+
+// Communications settings — show / update / smtp-test (Wave C8).
+if (str_starts_with($uri, '/api/backstage/communications/settings')) {
+    require __DIR__ . '/api/communications-settings.php';
+    exit;
+}
+
+// Communications composer — preview + send (Wave D7).
+if ($uri === '/api/backstage/communications/preview') {
+    require __DIR__ . '/api/communications-preview.php';
+    exit;
+}
+if ($uri === '/api/backstage/communications/send') {
+    require __DIR__ . '/api/communications-send.php';
+    exit;
+}
+
+// Communications templates — show / update per (kind, locale) (Wave D8).
+if (str_starts_with($uri, '/api/backstage/communications/templates/')) {
+    require __DIR__ . '/api/communications-templates.php';
+    exit;
+}
+
+// Communications newsletters — list/create/update/delete/send (Wave E4).
+if (str_starts_with($uri, '/api/backstage/communications/newsletters')) {
+    require __DIR__ . '/api/communications-newsletters.php';
+    exit;
+}
+
 http_response_code(404);
 header('Content-Type: application/json');
 echo json_encode(['error' => 'unknown_proxy', 'uri' => $uri]);

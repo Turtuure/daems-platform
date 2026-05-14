@@ -151,6 +151,13 @@ if (str_starts_with($path, '/sites/_default/assets/')) {
     exit;
 }
 
+// Public /unsubscribe — delegate to communications module's HMAC handler.
+// Anonymous-token access; same handler as the daem-society delegation.
+if (str_starts_with($path, '/unsubscribe')) {
+    require __DIR__ . '/communications/unsubscribe.php';
+    return;
+}
+
 switch ($path) {
     case '/':
     case '':

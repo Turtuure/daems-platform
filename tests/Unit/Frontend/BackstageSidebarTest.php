@@ -285,6 +285,103 @@ final class BackstageSidebarTest extends TestCase
         $this->assertCount(9, $items);
     }
 
+    public function testAddsFourCommunicationsItemsWhenModuleEnabled(): void
+    {
+        // Communications module is registered with sidebar=null (sub-items are
+        // hardcoded in BackstageSidebar, not declared on the manifest).
+        $registry = $this->makeRegistry([
+            [
+                'name' => 'communications', 'isCore' => false,
+                'sidebar' => null,
+            ],
+        ]);
+        $repo = $this->makeRepo();
+        $av = new DateTimeImmutable('2026-05-13T10:00:00+00:00');
+        $en = new DateTimeImmutable('2026-05-13T11:00:00+00:00');
+        $repo->save($this->makeRow('communications', av: $av, en: $en));
+        $sidebar = new BackstageSidebar($registry, $this->makeResolver($registry, $repo));
+
+        $items = $sidebar->buildFor($this->makeTenant(), $this->makeUser(false));
+
+        $comms = array_values(array_filter(
+            $items,
+            static fn(array $i) => $i['group'] === 'communications',
+        ));
+        $this->assertCount(4, $comms);
+
+        // Hardcoded order: compose (10), outbox (20), newsletters (30), templates (40).
+        $hrefs = array_map(static fn(array $i) => $i['href'], $comms);
+        $this->assertSame([
+            '/backstage/communications',
+            '/backstage/communications/outbox',
+            '/backstage/communications/newsletters',
+            '/backstage/communications/templates',
+        ], $hrefs);
+
+        $labels = array_map(static fn(array $i) => $i['label_key'], $comms);
+        $this->assertSame([
+            'shell.communications.compose',
+            'shell.communications.outbox',
+            'shell.communications.newsletters',
+            'shell.communications.templates',
+        ], $labels);
+    }
+
+    public function testHidesCommunicationsItemsWhenModuleDisabled(): void
+    {
+        // Communications is in the registry but tenant has no enabled row →
+        // resolver returns DISABLED → no items render.
+        $registry = $this->makeRegistry([
+            [
+                'name' => 'communications', 'isCore' => false,
+                'sidebar' => null,
+            ],
+        ]);
+        $repo = $this->makeRepo();
+        // No row saved for the tenant → DISABLED.
+        $sidebar = new BackstageSidebar($registry, $this->makeResolver($registry, $repo));
+
+        $items = $sidebar->buildFor($this->makeTenant(), $this->makeUser(false));
+
+        $comms = array_filter($items, static fn(array $i) => $i['group'] === 'communications');
+        $this->assertCount(0, $comms);
+        $hrefs = array_map(static fn(array $i) => $i['href'], $items);
+        $this->assertNotContains('/backstage/communications', $hrefs);
+        $this->assertNotContains('/backstage/communications/outbox', $hrefs);
+        $this->assertNotContains('/backstage/communications/newsletters', $hrefs);
+        $this->assertNotContains('/backstage/communications/templates', $hrefs);
+    }
+
+    public function testCommunicationsRanksBetweenGovernanceAndSystem(): void
+    {
+        // Verify group ordering: governance (rank 4) → communications (rank 5) → system (rank 6).
+        $registry = $this->makeRegistry([
+            [
+                'name' => 'communications', 'isCore' => false,
+                'sidebar' => null,
+            ],
+        ]);
+        $repo = $this->makeRepo();
+        $av = new DateTimeImmutable('2026-05-13T10:00:00+00:00');
+        $en = new DateTimeImmutable('2026-05-13T11:00:00+00:00');
+        $repo->save($this->makeRow('communications', av: $av, en: $en));
+        $sidebar = new BackstageSidebar($registry, $this->makeResolver($registry, $repo));
+
+        $items = $sidebar->buildFor($this->makeTenant(), $this->makeUser(false));
+        $groups = array_values(array_map(static fn(array $i) => $i['group'], $items));
+
+        // First governance item, then first communications item, then first system item.
+        $firstGov   = array_search('governance', $groups, true);
+        $firstComms = array_search('communications', $groups, true);
+        $firstSys   = array_search('system', $groups, true);
+
+        $this->assertIsInt($firstGov);
+        $this->assertIsInt($firstComms);
+        $this->assertIsInt($firstSys);
+        $this->assertLessThan($firstComms, $firstGov, 'governance should come before communications');
+        $this->assertLessThan($firstSys, $firstComms, 'communications should come before system');
+    }
+
     public function testModuleNameKeyFallsBackToConventionalKey(): void
     {
         $registry = $this->makeRegistry([

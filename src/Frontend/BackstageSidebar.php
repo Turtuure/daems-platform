@@ -26,19 +26,21 @@ use Daems\Infrastructure\Module\ModuleRegistry;
  * remains as the typeahead "see all results" landing page.
  *
  * Items are sorted by group rank first, then by intra-group `order`. Group
- * ranks: shell=0, platform=1, members=2, content=3, community=4,
- * governance=5, anything else=99 (group rank is for stable cross-group
- * ordering — the actual group label remains whatever the manifest declared).
+ * ranks: shell=0, members=1, content=2, community=3, governance=4,
+ * communications=5, system=6, anything else=99 (group rank is for stable
+ * cross-group ordering — the actual group label remains whatever the
+ * manifest declared).
  */
 final class BackstageSidebar
 {
     private const GROUP_RANK = [
-        'shell'      => 0,
-        'members'    => 1,
-        'content'    => 2,
-        'community'  => 3,
-        'governance' => 4,
-        'system'     => 5,
+        'shell'          => 0,
+        'members'        => 1,
+        'content'        => 2,
+        'community'      => 3,
+        'governance'     => 4,
+        'communications' => 5,
+        'system'         => 6,
     ];
     private const GROUP_RANK_DEFAULT = 99;
 
@@ -103,7 +105,44 @@ final class BackstageSidebar
             'order'     => 60,
         ];
 
-        // 3. System group — admin/configuration items grouped at the bottom.
+        // 3. Communications group — module sub-items, conditional on tenant
+        //    enablement. The catalog entry (config/modules.php) uses
+        //    sidebar=null because Communications has 4 sub-pages, not one.
+        //    Same hardcoded-items pattern as the governance group; the
+        //    Settings sub-page (/backstage/settings/communications) does
+        //    NOT get its own sidebar item — it's a tab inside Settings.
+        if ($this->resolver->stateFor($tenant->id, 'communications')->isActive()) {
+            $items[] = [
+                'group'     => 'communications',
+                'label_key' => 'shell.communications.compose',
+                'href'      => '/backstage/communications',
+                'icon'      => 'mail',
+                'order'     => 10,
+            ];
+            $items[] = [
+                'group'     => 'communications',
+                'label_key' => 'shell.communications.outbox',
+                'href'      => '/backstage/communications/outbox',
+                'icon'      => 'inbox',
+                'order'     => 20,
+            ];
+            $items[] = [
+                'group'     => 'communications',
+                'label_key' => 'shell.communications.newsletters',
+                'href'      => '/backstage/communications/newsletters',
+                'icon'      => 'newspaper',
+                'order'     => 30,
+            ];
+            $items[] = [
+                'group'     => 'communications',
+                'label_key' => 'shell.communications.templates',
+                'href'      => '/backstage/communications/templates',
+                'icon'      => 'file-text',
+                'order'     => 40,
+            ];
+        }
+
+        // 4. System group — admin/configuration items grouped at the bottom.
         //    Notifications (everyone), Settings (everyone), Tenants (GSA only).
         $items[] = ['group' => 'system', 'label_key' => 'shell.notifications', 'href' => '/backstage/notifications', 'icon' => 'bell',     'order' => 10];
         $items[] = ['group' => 'system', 'label_key' => 'shell.settings',      'href' => '/backstage/settings',      'icon' => 'settings', 'order' => 20];
@@ -117,7 +156,7 @@ final class BackstageSidebar
             ];
         }
 
-        // 4. Module items — only for active modules that declare a sidebar entry.
+        // 5. Module items — only for active modules that declare a sidebar entry.
         foreach ($this->registry->all() as $name => $manifest) {
             $sidebar = $manifest->sidebar();
             if ($sidebar === null) {
@@ -135,7 +174,7 @@ final class BackstageSidebar
             ];
         }
 
-        // 5. Group-aware sort: by group rank, then intra-group order.
+        // 6. Group-aware sort: by group rank, then intra-group order.
         usort(
             $items,
             static function (array $a, array $b): int {

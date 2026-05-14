@@ -8,6 +8,8 @@ use Daems\Tests\Integration\MigrationTestCase;
 
 final class Migration072Test extends MigrationTestCase
 {
+    private const MIGRATION_072_SLUGS = ['events', 'forum', 'insights', 'members', 'projects'];
+
     public function testSeedsFiveModulesPerExistingTenant(): void
     {
         $this->runMigrationsUpTo(71);
@@ -16,7 +18,17 @@ final class Migration072Test extends MigrationTestCase
         $tenantCount = (int) $this->pdo()->query("SELECT COUNT(*) FROM tenants")?->fetchColumn();
         $expected = $tenantCount * 5;
 
-        $count = (int) $this->pdo()->query("SELECT COUNT(*) FROM tenant_modules")?->fetchColumn();
+        // Scope the count to the 5 slugs migration 072 explicitly seeds.
+        // Later modules (e.g. 0.8 communications via migration 099) seed
+        // additional rows; this test asserts migration 072's behaviour, not
+        // the cumulative tenant_modules state.
+        $placeholders = implode(',', array_fill(0, count(self::MIGRATION_072_SLUGS), '?'));
+        $stmt = $this->pdo()->prepare(
+            "SELECT COUNT(*) FROM tenant_modules WHERE module_slug IN ({$placeholders})"
+        );
+        $stmt->execute(self::MIGRATION_072_SLUGS);
+        $count = (int) $stmt->fetchColumn();
+
         $this->assertSame($expected, $count, "expected 5 modules x {$tenantCount} tenants");
     }
 
@@ -25,9 +37,13 @@ final class Migration072Test extends MigrationTestCase
         $this->runMigrationsUpTo(71);
         $this->runMigration('072_seed_tenant_modules.sql');
 
-        $slugs = $this->pdo()->query(
-            "SELECT DISTINCT module_slug FROM tenant_modules ORDER BY module_slug"
-        )?->fetchAll(\PDO::FETCH_COLUMN);
+        // Same scoping rationale as testSeedsFiveModulesPerExistingTenant.
+        $placeholders = implode(',', array_fill(0, count(self::MIGRATION_072_SLUGS), '?'));
+        $stmt = $this->pdo()->prepare(
+            "SELECT DISTINCT module_slug FROM tenant_modules WHERE module_slug IN ({$placeholders}) ORDER BY module_slug"
+        );
+        $stmt->execute(self::MIGRATION_072_SLUGS);
+        $slugs = $stmt->fetchAll(\PDO::FETCH_COLUMN);
 
         $this->assertSame(['events', 'forum', 'insights', 'members', 'projects'], $slugs);
     }

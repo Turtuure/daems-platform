@@ -170,6 +170,30 @@ final class SqlMemberFeeInvoiceRepository implements MemberFeeInvoiceRepositoryI
         return $out;
     }
 
+    public function findInvoicesDueOn(TenantId $tenantId, DateTimeImmutable $dueDate, array $statuses): array
+    {
+        if ($statuses === []) {
+            return [];
+        }
+        $placeholders = implode(',', array_fill(0, count($statuses), '?'));
+        $sql = 'SELECT * FROM member_fee_invoices
+                WHERE tenant_id = ? AND due_date = ? AND status IN (' . $placeholders . ')
+                ORDER BY created_at ASC';
+        $params = [$tenantId->value(), $dueDate->format('Y-m-d')];
+        foreach ($statuses as $st) {
+            $params[] = $st->value;
+        }
+        $stmt = $this->pdo->prepare($sql);
+        $stmt->execute($params);
+        $out = [];
+        foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) ?: [] as $r) {
+            if (is_array($r)) {
+                $out[] = $this->hydrate($r);
+            }
+        }
+        return $out;
+    }
+
     public function listForTenant(TenantId $tenantId, array $filter = [], int $limit = 100, int $offset = 0): array
     {
         $where = ['tenant_id = :tid'];

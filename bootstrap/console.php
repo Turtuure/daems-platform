@@ -51,4 +51,32 @@ $registry->register(new \Daems\Application\Membership\Billing\Cron\LapseInactive
     logger:      new CronLogger(__DIR__ . '/../var/log/cron', 'membership:lapse-inactive-members', $now),
 ));
 
+// Communications — mail outbox drain cron (0.8 Wave C § 7.4)
+$registry->register(new \DaemsModule\Communications\Infrastructure\Console\MailDrainCommand(
+    useCase:     $container->make(\DaemsModule\Communications\Application\DrainMailOutbox\DrainMailOutbox::class),
+    lockManager: new LockManager(__DIR__ . '/../var/run'),
+    logger:      new CronLogger(__DIR__ . '/../var/log/cron', 'mail-drain', $now),
+));
+
+// Communications — payment-reminder cron (0.8 Wave F Task F1, spec § 5.9)
+$registry->register(new \DaemsModule\Communications\Infrastructure\Console\EnqueuePaymentRemindersCommand(
+    useCase:     $container->make(\DaemsModule\Communications\Application\EnqueuePaymentReminders\EnqueuePaymentReminders::class),
+    lockManager: new LockManager(__DIR__ . '/../var/run'),
+    logger:      new CronLogger(__DIR__ . '/../var/log/cron', 'mail-enqueue-payment-reminders', $now),
+));
+
+// Communications — § 4 lapse-warning cron (0.8 Wave F Task F2, spec § 5.9)
+$registry->register(new \DaemsModule\Communications\Infrastructure\Console\EnqueueLapseWarningsCommand(
+    useCase:     $container->make(\DaemsModule\Communications\Application\EnqueueLapseWarnings\EnqueueLapseWarnings::class),
+    lockManager: new LockManager(__DIR__ . '/../var/run'),
+    logger:      new CronLogger(__DIR__ . '/../var/log/cron', 'mail-enqueue-lapse-warnings', $now),
+));
+
+// Communications — 24-month retention pseudonymization (0.8 Wave H follow-up #3)
+$registry->register(new \DaemsModule\Communications\Infrastructure\Console\MailRetentionCleanupCommand(
+    useCase:     $container->make(\DaemsModule\Communications\Application\RetentionCleanup\RetentionCleanup::class),
+    lockManager: new LockManager(__DIR__ . '/../var/run'),
+    logger:      new CronLogger(__DIR__ . '/../var/log/cron', 'mail-retention-cleanup', $now),
+));
+
 return new ConsoleKernel($registry);

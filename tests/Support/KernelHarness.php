@@ -1413,6 +1413,14 @@ final class KernelHarness
             'memberCounters'     => $this->container->make(\Daems\Domain\Tenant\TenantMemberCounterRepositoryInterface::class),
             'supporterCounters'  => $this->container->make(\Daems\Domain\Tenant\TenantSupporterCounterRepositoryInterface::class),
             'memberStatusAudit'  => $this->container->make(\Daems\Domain\Membership\MemberStatusAuditRepositoryInterface::class),
+            'commsSettings'      => $this->container->make(\DaemsModule\Communications\Domain\Settings\TenantCommunicationSettingsRepositoryInterface::class),
+            'commsPreferences'   => $this->container->make(\DaemsModule\Communications\Domain\Preference\UserCommunicationPreferenceRepositoryInterface::class),
+            'commsOutbox'        => $this->container->make(\DaemsModule\Communications\Domain\Mail\MailOutboxRepositoryInterface::class),
+            'commsMailer'        => $this->container->make(\DaemsModule\Communications\Domain\Mail\MailerInterface::class),
+            'commsTemplates'     => $this->container->make(\DaemsModule\Communications\Domain\Template\MailTemplateRepositoryInterface::class),
+            'commsMeetings'      => $this->container->make(\DaemsModule\Communications\Domain\Meeting\MeetingRepositoryInterface::class),
+            'commsNewsletters'   => $this->container->make(\DaemsModule\Communications\Domain\Template\NewsletterDraftRepositoryInterface::class),
+            'commsAudience'      => $this->container->make(\DaemsModule\Communications\Domain\Audience\AudienceResolverInterface::class),
             default           => throw new \LogicException("Undefined property: KernelHarness::\${$name}"),
         };
     }

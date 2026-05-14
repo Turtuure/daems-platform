@@ -34,6 +34,17 @@ interface MemberFeeInvoiceRepositoryInterface
     public function findUsersWithConsecutiveOverdueYears(TenantId $tenantId): array;
 
     /**
+     * Return every invoice whose `due_date` falls exactly on the given date
+     * AND whose status is in $statuses. Used by EnqueuePaymentReminders cron
+     * (0.8 Wave F) to find pre-due (status=PENDING) and post-due
+     * (status=OVERDUE) reminder candidates.
+     *
+     * @param list<MemberFeeInvoiceStatus> $statuses
+     * @return list<MemberFeeInvoice>
+     */
+    public function findInvoicesDueOn(TenantId $tenantId, \DateTimeImmutable $dueDate, array $statuses): array;
+
+    /**
      * Backstage UI list with filters.
      *
      * @param array{year?:int, status?:string, fee_type?:string, user_id?:string} $filter
