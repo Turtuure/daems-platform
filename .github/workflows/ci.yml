@@ -47,7 +47,7 @@ jobs:
       - name: Check out module repos
         run: |
           mkdir -p ../modules
-          for m in events forum insights members projects; do
+          for m in events forum insights members projects communications; do
             git clone --depth 1 --branch dev \
               "https://github.com/Turtuure/dp-${m}.git" \
               "../modules/${m}"
