@@ -72,4 +72,11 @@ $registry->register(new \DaemsModule\Communications\Infrastructure\Console\Enque
     logger:      new CronLogger(__DIR__ . '/../var/log/cron', 'mail-enqueue-lapse-warnings', $now),
 ));
 
+// Communications — 24-month retention pseudonymization (0.8 Wave H follow-up #3)
+$registry->register(new \DaemsModule\Communications\Infrastructure\Console\MailRetentionCleanupCommand(
+    useCase:     $container->make(\DaemsModule\Communications\Application\RetentionCleanup\RetentionCleanup::class),
+    lockManager: new LockManager(__DIR__ . '/../var/run'),
+    logger:      new CronLogger(__DIR__ . '/../var/log/cron', 'mail-retention-cleanup', $now),
+));
+
 return new ConsoleKernel($registry);

@@ -23,6 +23,11 @@
 # Idempotent within 24h.
 0 8 * * *  cd /var/www/daems-platform && php bin/console mail:enqueue-lapse-warnings >> /var/log/daems-mail-cron.log 2>&1
 
+# Weekly retention pseudonymization — Sundays 03:00. Empties body fields,
+# hashes recipient_email, and stamps pseudonymized_at on every mail_outbox
+# row older than 24 months (configurable via --cutoff-months=<int>).
+0 3 * * 0  cd /var/www/daems-platform && php bin/console mail:retention-cleanup >> /var/log/daems-mail-cron.log 2>&1
+
 # ----------------------------------------------------------------------
 # 0.7 MembershipBilling module (already in place from the 0.7 milestone)
 # Do not edit these; they ship with 0.7.
