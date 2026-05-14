@@ -58,4 +58,18 @@ $registry->register(new \DaemsModule\Communications\Infrastructure\Console\MailD
     logger:      new CronLogger(__DIR__ . '/../var/log/cron', 'mail-drain', $now),
 ));
 
+// Communications — payment-reminder cron (0.8 Wave F Task F1, spec § 5.9)
+$registry->register(new \DaemsModule\Communications\Infrastructure\Console\EnqueuePaymentRemindersCommand(
+    useCase:     $container->make(\DaemsModule\Communications\Application\EnqueuePaymentReminders\EnqueuePaymentReminders::class),
+    lockManager: new LockManager(__DIR__ . '/../var/run'),
+    logger:      new CronLogger(__DIR__ . '/../var/log/cron', 'mail-enqueue-payment-reminders', $now),
+));
+
+// Communications — § 4 lapse-warning cron (0.8 Wave F Task F2, spec § 5.9)
+$registry->register(new \DaemsModule\Communications\Infrastructure\Console\EnqueueLapseWarningsCommand(
+    useCase:     $container->make(\DaemsModule\Communications\Application\EnqueueLapseWarnings\EnqueueLapseWarnings::class),
+    lockManager: new LockManager(__DIR__ . '/../var/run'),
+    logger:      new CronLogger(__DIR__ . '/../var/log/cron', 'mail-enqueue-lapse-warnings', $now),
+));
+
 return new ConsoleKernel($registry);

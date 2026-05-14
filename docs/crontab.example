@@ -1,0 +1,38 @@
+# Daems Platform cron — copy to /etc/cron.d/daems or `crontab -e`
+# All cron commands are idempotent; safe to run repeatedly.
+#
+# Adjust paths to your deployment. Logs land in /var/log/; rotate them
+# with logrotate. The platform also writes per-command structured logs
+# under <project>/var/log/cron/ via the in-process CronLogger.
+
+# ----------------------------------------------------------------------
+# 0.8 Communications module
+# ----------------------------------------------------------------------
+
+# Drain the mail outbox — every minute. Picks up to 50 queued rows per tick
+# under FOR UPDATE SKIP LOCKED so overlapping ticks are safe.
+* * * * *  cd /var/www/daems-platform && php bin/console mail:drain >> /var/log/daems-mail-drain.log 2>&1
+
+# Daily pre-due + post-due payment reminders. Honours each tenant's
+# reminder_pre_due_days + reminder_post_due_days settings. Idempotent
+# within 24h via offset_tag check.
+0 7 * * *  cd /var/www/daems-platform && php bin/console mail:enqueue-payment-reminders >> /var/log/daems-mail-cron.log 2>&1
+
+# Daily § 4 lapse warnings — fires `lapse_warning_days_before` days
+# (default 30) before the 0.7 lapse cron would lapse the member.
+# Idempotent within 24h.
+0 8 * * *  cd /var/www/daems-platform && php bin/console mail:enqueue-lapse-warnings >> /var/log/daems-mail-cron.log 2>&1
+
+# ----------------------------------------------------------------------
+# 0.7 MembershipBilling module (already in place from the 0.7 milestone)
+# Do not edit these; they ship with 0.7.
+# ----------------------------------------------------------------------
+
+# Anniversary-based invoice generation — daily at 02:00.
+0 2 * * *  cd /var/www/daems-platform && php bin/console membership:generate-anniversary-invoices >> /var/log/daems-billing.log 2>&1
+
+# Mark past-due invoices OVERDUE — daily at 03:00.
+0 3 * * *  cd /var/www/daems-platform && php bin/console membership:mark-overdue-invoices >> /var/log/daems-billing.log 2>&1
+
+# § 4 lapse 2-years-unpaid members — weekly Monday at 04:00.
+0 4 * * 1  cd /var/www/daems-platform && php bin/console membership:lapse-inactive-members >> /var/log/daems-billing.log 2>&1

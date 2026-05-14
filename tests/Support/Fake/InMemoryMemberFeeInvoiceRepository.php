@@ -132,6 +132,28 @@ final class InMemoryMemberFeeInvoiceRepository implements MemberFeeInvoiceReposi
         return $found;
     }
 
+    public function findInvoicesDueOn(TenantId $tenantId, DateTimeImmutable $dueDate, array $statuses): array
+    {
+        if ($statuses === []) {
+            return [];
+        }
+        $target = $dueDate->format('Y-m-d');
+        $out = [];
+        foreach ($this->byId as $inv) {
+            if (!$inv->tenantId()->equals($tenantId)) {
+                continue;
+            }
+            if ($inv->dueDate()->format('Y-m-d') !== $target) {
+                continue;
+            }
+            if (!in_array($inv->status(), $statuses, true)) {
+                continue;
+            }
+            $out[] = $inv;
+        }
+        return array_values($out);
+    }
+
     public function listOpenForUser(TenantId $tenantId, UserId $userId): array
     {
         $out = [];
