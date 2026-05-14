@@ -316,6 +316,26 @@ final class CommunicationsTenantIsolationTest extends IsolationTestCase
 
     public function test_suppression_isolation(): void
     {
-        $this->markTestSkipped('Wave G — suppression list flow lands later.');
+        $repo = new \DaemsModule\Communications\Infrastructure\Persistence\SqlMailSuppressionRepository($this->connection);
+        $daems = $this->tenantId('daems');
+        $sahe = $this->tenantId('sahegroup');
+        $email = 'bounced@example.com';
+
+        $repo->add(new \DaemsModule\Communications\Domain\Mail\MailSuppression(
+            $daems,
+            $email,
+            \DaemsModule\Communications\Domain\Mail\SuppressionReason::ManualBlock,
+            new \DateTimeImmutable(),
+            null,
+            null,
+        ));
+
+        // daems sees suppression
+        self::assertTrue($repo->isSuppressed($daems, $email));
+        self::assertCount(1, $repo->listForTenant($daems));
+
+        // sahegroup does NOT
+        self::assertFalse($repo->isSuppressed($sahe, $email));
+        self::assertCount(0, $repo->listForTenant($sahe));
     }
 }
