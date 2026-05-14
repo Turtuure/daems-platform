@@ -262,6 +262,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.org" commit \
 ### Task 4: SearchHit VO
 
 **Files:**
+
 - Create `src/Domain/Search/SearchHit.php`
 - Create `tests/Unit/Domain/Search/SearchHitTest.php`
 
@@ -509,6 +510,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.org" commit \
 ### Task 7: Search use case + Input + Output + unit tests
 
 **Files:**
+
 - Create `src/Application/Search/Search/SearchInput.php`
 - Create `src/Application/Search/Search/SearchOutput.php`
 - Create `src/Application/Search/Search/Search.php`
@@ -713,6 +715,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.org" commit \
 ### Task 8: Integration test skeleton + searchEvents SQL
 
 **Files:**
+
 - Create `tests/Integration/Application/SearchIntegrationTest.php`
 - Create `src/Infrastructure/Adapter/Persistence/Sql/SqlSearchRepository.php` (partial)
 
@@ -1158,6 +1161,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.org" commit -am \
 ### Task 13: SearchController (public + backstage methods)
 
 **Files:**
+
 - Create `src/Infrastructure/Adapter/Api/Controller/SearchController.php`
 
 - [ ] **Step 1: Implement**
@@ -1267,6 +1271,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.org" commit \
 ### Task 14: Routes + DI wiring (BOTH containers)
 
 **Files:**
+
 - Modify `routes/api.php`
 - Modify `bootstrap/app.php`
 - Modify `tests/Support/KernelHarness.php`
@@ -1348,6 +1353,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.org" commit \
 ### Task 15: Write-path sync — SqlInsightRepository + SqlForumRepository
 
 **Files:**
+
 - Modify `src/Infrastructure/Adapter/Persistence/Sql/SqlInsightRepository.php`
 - Modify `src/Infrastructure/Adapter/Persistence/Sql/SqlForumRepository.php`
 - Create (or extend) integration tests for both
@@ -1597,6 +1603,7 @@ Work in `C:\laragon\www\sites\daem-society`. Assumes platform routes are live on
 ### Task 17: Branch + routes + proxies
 
 **Files:**
+
 - Create `public/api/search.php`
 - Create `public/api/backstage/search.php`
 - Modify `public/index.php` (add 4 routes)
@@ -1715,6 +1722,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.org" commit \
 ### Task 18: Shared typeahead component (partial + JS + CSS)
 
 **Files:**
+
 - Create `public/partials/search-typeahead.php`
 - Create `public/assets/js/daems-search.js`
 - Create `public/assets/css/daems-search.css`
@@ -1861,6 +1869,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.org" commit \
 ### Task 19: Wire typeahead into top-bars (public + backstage)
 
 **Files:**
+
 - Modify `public/partials/top-nav.php`
 - Locate and modify the backstage top-bar template
 
@@ -1919,6 +1928,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.org" commit \
 ### Task 20: Dedicated search pages (public + backstage)
 
 **Files:**
+
 - Create `public/pages/search/index.php`
 - Create `public/pages/backstage/search/index.php`
 
@@ -2193,6 +2203,7 @@ gh pr merge "$PR_NUM" --merge --delete-branch && \
 - [ ] **Step 6: Final report**
 
 Report both merge SHAs, manual verification TODO list:
+
 - Type a term on `/` → dropdown shows grouped results
 - Click a result → lands on domain page
 - Visit `/search?q=…` → chips filter correctly

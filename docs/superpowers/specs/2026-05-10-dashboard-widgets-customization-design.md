@@ -39,7 +39,7 @@ Replace the static dashboard with a widget system where:
 
 ### Layered components (Clean Architecture)
 
-```
+```text
 Domain/Dashboard/
   Widget.php                              abstract — id, category, default_span,
                                           min_role, module, render(), data()
@@ -206,7 +206,7 @@ Empty table = every user sees the role default. The first save creates the row; 
 
 All endpoints sit under `/api/v1/backstage/dashboard/*` and require the standard backstage auth (admin, moderator, or GSA on the active tenant).
 
-```
+```text
 GET    /dashboard/layout
        → { layout: [...], is_default: bool, role: 'admin'|'moderator'|'gsa' }
 

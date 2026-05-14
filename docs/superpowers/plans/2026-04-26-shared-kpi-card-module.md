@@ -11,6 +11,7 @@
 **Spec:** `docs/superpowers/specs/2026-04-26-shared-kpi-card-module-design.md` (commit `2430f08`)
 
 **Repos affected:**
+
 - `C:\laragon\www\modules\shared\` (new files)
 - `C:\laragon\www\sites\daem-society\` (helper, layout link, 7 consumer migrations, CSS deletion, old partial deletion)
 - `C:\laragon\www\daems-platform\` — none (plan + spec docs only)
@@ -24,12 +25,14 @@
 ## File map
 
 **Created:**
+
 - `C:\laragon\www\modules\shared\components\cards\kpi-card\kpi-card.php` — PHP partial (exact copy of current daem-society version)
 - `C:\laragon\www\modules\shared\components\cards\kpi-card\kpi-card.css` — CSS rules extracted from `daems-backstage-system.css`
 - `C:\laragon\www\modules\shared\components\cards\kpi-card\README.md` — API + tokens + asset-routing + "adding a new card type" playbook
 - `C:\laragon\www\sites\daem-society\public\pages\backstage\_shared.php` — `daems_shared_partial()` helper
 
 **Modified:**
+
 - `C:\laragon\www\sites\daem-society\public\index.php:268` — `require_once` the helper inside the backstage routing block
 - `C:\laragon\www\sites\daem-society\public\pages\backstage\layout.php:115` — add `<link>` for the new CSS
 - `C:\laragon\www\sites\daem-society\public\assets\css\daems-backstage-system.css` — delete `.kpi-card*` rules (lines 287–324 + 441–448)
@@ -42,6 +45,7 @@
 - `C:\laragon\www\sites\daem-society\public\pages\backstage\projects\index.php:104` — replace `include`
 
 **Deleted:**
+
 - `C:\laragon\www\sites\daem-society\public\pages\backstage\shared\kpi-card.php`
 
 ---
@@ -49,6 +53,7 @@
 ## Task 1 — Create the shared module files
 
 **Files:**
+
 - Create: `C:\laragon\www\modules\shared\components\cards\kpi-card\kpi-card.php`
 - Create: `C:\laragon\www\modules\shared\components\cards\kpi-card\kpi-card.css`
 - Create: `C:\laragon\www\modules\shared\components\cards\kpi-card\README.md`
@@ -121,6 +126,7 @@ Expected: no output (files identical).
 - [ ] **Step 1.3 — Create the CSS file**
 
 Contents: the `.kpis-grid` rule + all `.kpi-card*` rules from `daems-backstage-system.css`. Includes:
+
 - `.kpis-grid` (line 288–289 of source)
 - Base + variants from lines 287–324
 - Loading-state shimmer rules from lines 441–448
@@ -281,7 +287,8 @@ type. To extract another card pattern:
 No new architectural decisions are required for the next card extraction.
 The helper, the asset router, the shell auto-include, and this folder shape
 all stay the same.
-```
+
+```text
 
 - [ ] **Step 1.6 — Commit**
 
@@ -303,6 +310,7 @@ If `C:/laragon/www/modules/` is not yet a git repository, ask the user how they 
 ## Task 2 — Add the helper + bootstrap from index.php
 
 **Files:**
+
 - Create: `C:\laragon\www\sites\daem-society\public\pages\backstage\_shared.php`
 - Modify: `C:\laragon\www\sites\daem-society\public\index.php` (around line 268)
 
@@ -383,6 +391,7 @@ without per-page require_once."
 ## Task 3 — Add CSS link to backstage layout
 
 **Files:**
+
 - Modify: `C:\laragon\www\sites\daem-society\public\pages\backstage\layout.php` (around line 115)
 
 - [ ] **Step 3.1 — Insert the new `<link>` tag**
@@ -430,6 +439,7 @@ prepares the ground for the system-CSS deletion in a follow-up commit."
 ## Task 4 — Migrate the 7 consumer pages to the helper
 
 **Files (one step per file):**
+
 - Modify: `C:\laragon\www\sites\daem-society\public\pages\backstage\insights\index.php:40`
 - Modify: `C:\laragon\www\sites\daem-society\public\pages\backstage\applications\index.php:97`
 - Modify: `C:\laragon\www\sites\daem-society\public\pages\backstage\events\index.php:113`
@@ -441,11 +451,13 @@ prepares the ground for the system-CSS deletion in a follow-up commit."
 The standard pattern (used by the first 6 files) is a foreach loop that does `extract($kpi); include`. The replacement removes the `extract` (the helper does it) and swaps `include` for `daems_shared_partial`:
 
 **Before:**
+
 ```php
 <?php foreach ($kpis as $kpi): extract($kpi); include __DIR__ . '/../shared/kpi-card.php'; endforeach; ?>
 ```
 
 **After:**
+
 ```php
 <?php foreach ($kpis as $kpi): daems_shared_partial('components/cards/kpi-card/kpi-card', $kpi); endforeach; ?>
 ```
@@ -607,6 +619,7 @@ unchanged."
 ## Task 5 — Delete old CSS rules + old PHP partial
 
 **Files:**
+
 - Modify: `C:\laragon\www\sites\daem-society\public\assets\css\daems-backstage-system.css` (delete lines 287–324 + 441–448 + the line-5 header reference)
 - Delete: `C:\laragon\www\sites\daem-society\public\pages\backstage\shared\kpi-card.php`
 
@@ -658,6 +671,7 @@ Expected: zero matches in live source. If any match remains, revisit Task 4.
 - [ ] **Step 5.6 — Smoke-check all 7 KPI pages still render**
 
 Open each in a browser and visually confirm the KPI strip looks identical to before:
+
 - `/backstage` (dashboard, if it uses kpi-card — confirm via grep)
 - `/backstage/applications`
 - `/backstage/events`
@@ -713,6 +727,7 @@ Open `http://daem-society.local/shared/components/cards/kpi-card/kpi-card.css` i
 - [ ] **Step 6.4 — Visual smoke-test summary**
 
 Open each of the 7 backstage pages from Step 5.6 and confirm:
+
 - KPI strip visible at top of page.
 - Cards have the same border, padding, hover behavior, sparkline area, and icon/trend coloring as before.
 - Forum strip's compact variant + active-state highlight still work when navigating into sub-pages.

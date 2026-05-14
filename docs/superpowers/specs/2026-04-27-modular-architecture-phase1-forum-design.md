@@ -5,6 +5,7 @@
 **Scope:** Extract the Forum domain from `daems-platform` core into a self-contained module `modules/forum/` (the `dp-forum` git repo), following the manifest convention proven by the Insights pilot. Zero user-visible change — Forum must work exactly as it does today after the move.
 
 **Foundation already shipped (Insights pilot, branch `dev` HEADs `daems-platform@649806c`, `dp-insights@4792e73`):**
+
 - `module.json` schema + `ModuleRegistry` boot-time loader
 - Composer runtime autoloader extension for `DaemsModule\<Name>\` namespaces
 - `daem-society/public/index.php` module-router block (handles `/<module>/...`, `/backstage/<module>/...`, `/modules/<module>/assets/...`)
@@ -186,7 +187,7 @@ Exact route inventory from `daems-platform/routes/api.php` lines 179–208 + 411
 
 Applied to every moved file via mechanical search + replace:
 
-```
+```text
 Daems\Domain\Forum\*                              → DaemsModule\Forum\Domain\*
 Daems\Application\Forum\*                         → DaemsModule\Forum\Application\Forum\*
 Daems\Application\Backstage\Forum\*               → DaemsModule\Forum\Application\Backstage\Forum\*
@@ -238,6 +239,7 @@ Plan task uses `git grep -n "__DIR__\\|/pages/backstage/forum/\\|/pages/forum/"`
 ## 8. Bootstrap + harness wiring rule (CLAUDE.md "BOTH-wiring")
 
 Forum-specific bindings must be removed from BOTH:
+
 - `daems-platform/bootstrap/app.php` (production container)
 - `daems-platform/tests/Support/KernelHarness.php` (test container)
 
@@ -270,7 +272,7 @@ Before final commit-stream "valmis"-claim, all must pass:
 
 | Risk | Mitigation |
 |---|---|
-| Namespace rewrite (~150+ use-statement updates) misses a site → fatal at first request | After rewrite, run PHPStan level 9 + all 3 test suites. Plan task runs `git grep "Daems\\\\\\(Domain\\|Application\\\\Forum\\|Application\\\\Backstage\\\\Forum\\|Infrastructure\\\\Adapter\\\\Persistence\\\\Sql\\\\SqlForum\\)"` over `daems-platform/` and asserts zero hits before delete-step. |
+| Namespace rewrite (~150+ use-statement updates) misses a site → fatal at first request | After rewrite, run PHPStan level 9 + all 3 test suites. Plan task greps `daems-platform/` for any remaining `Daems\Domain\Forum`, `Daems\Application\Forum`, `Daems\Application\Backstage\Forum`, or `Daems\Infrastructure\Adapter\Persistence\Sql\SqlForum` references — must return zero hits before delete-step. |
 | `BackstageController` extraction misses one of 20 methods → 404 in admin UI | Diff lines 680–1232 of original `BackstageController.php` against the union of the two new controllers method-by-method; checklist enumerates all 20 method names. Smoke-test exercises every backstage admin sub-route. |
 | Controller constructor-arg-order bug (Insights lesson #3) | Mandatory plan task: instantiate both new controllers via production container in a one-off CLI script before commit. KernelHarness alone is insufficient. |
 | Migration rename causes runner to re-run already-applied migrations on dev DBs | One-shot core data-fix migration `065_rename_forum_migrations_in_schema_migrations_table.sql` updates `schema_migrations` rows from old filename → new filename. Idempotent. Tested against snapshot of dev DB. |
@@ -278,7 +280,7 @@ Before final commit-stream "valmis"-claim, all must pass:
 | InMemory fakes left in `daems-platform/tests/Support/Fake/` after move → KernelHarness can't find them | Delete-step verifies `git grep "InMemoryForum"` returns only `modules/forum/...` results. |
 | `forum-kpi-strip.php` partial path breaks after move | Grep `forum-kpi-strip.php` includers + verify they reference the new path inside `frontend/backstage/`. |
 | `ForumIdentityDeriver` violates strict-A-isolation by referencing a non-core domain | Grep its imports — must reference only `Daems\Domain\{Tenant,User,Auth}`, `Daems\Domain\Membership` (for role lookups), `Daems\Infrastructure\Framework\*`. Document allowed imports in plan; fail check otherwise. |
-| Migration sequence: forum's old `030_add_tenant_id_to_forum_tables.sql` ran between core migrations 029 and 031 — moving it to `forum_003` changes that ordering | Migration runner runs core + module migration paths as separate ordered streams. No core migration references `forum_*` tables. Verified by grep `forum_categories\\|forum_topics\\|forum_posts` over `database/migrations/*.sql`; if any cross-reference exists, plan must address it. |
+| Migration sequence: forum's old `030_add_tenant_id_to_forum_tables.sql` ran between core migrations 029 and 031 — moving it to `forum_003` changes that ordering | Migration runner runs core + module migration paths as separate ordered streams. No core migration references `forum_*` tables. Verified by grepping `database/migrations/*.sql` for `forum_categories`, `forum_topics`, and `forum_posts`; if any cross-reference exists, plan must address it. |
 | `dp-forum` repo creation timing — `git init` before module's `module.json` is committed leaves an empty-state push | Plan creates the repo skeleton in Task 1 (manifest + README + .gitignore) and commits before any code moves. |
 
 ---

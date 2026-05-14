@@ -76,6 +76,7 @@ This wave builds the `bin/console` -CLI-runner from scratch. No billing-specific
 ## Task A1: ConsoleKernel + CommandInterface
 
 **Files:**
+
 - Create: `src/Infrastructure/Console/CommandInterface.php`
 - Create: `src/Infrastructure/Console/ConsoleKernel.php`
 
@@ -333,6 +334,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.fi" commit -m "Add(console)
 ## Task A2: CommandRegistry tests + behavior
 
 **Files:**
+
 - Modify: `src/Infrastructure/Console/CommandRegistry.php` (already exists from A1)
 - Create: `tests/Unit/Infrastructure/Console/CommandRegistryTest.php`
 
@@ -423,6 +425,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.fi" commit -m "Add(tests/co
 ## Task A3: LockManager (flock-based concurrency guard)
 
 **Files:**
+
 - Create: `src/Infrastructure/Console/LockManager.php`
 - Create: `tests/Unit/Infrastructure/Console/LockManagerTest.php`
 - Create: `var/run/.gitkeep`
@@ -597,6 +600,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.fi" commit -m "Add(console)
 ## Task A4: bin/console entry script
 
 **Files:**
+
 - Create: `bin/console`
 
 - [ ] **Step 1: Verify bin/ exists**
@@ -680,12 +684,14 @@ php bin/console nope:nope
 ```
 
 Expected:
+
 - `Hello, world` (exit 0)
 - `Hello, Dev` (exit 0)
 - Usage message (exit 1)
 - `Unknown command: nope:nope` (exit 2)
 
 Verify exit codes:
+
 ```bash
 php bin/console console:hello; echo $?
 php bin/console; echo $?
@@ -704,6 +710,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.fi" commit -m "Add(bin): bi
 ## Task A5: Logging helper for cron commands
 
 **Files:**
+
 - Create: `src/Infrastructure/Console/CronLogger.php`
 - Create: `tests/Unit/Infrastructure/Console/CronLoggerTest.php`
 - Create: `var/log/cron/.gitignore`
@@ -873,6 +880,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.fi" commit -m "Add(console)
 ## Task A6: docs/operations/cron-setup.md
 
 **Files:**
+
 - Create: `docs/operations/cron-setup.md`
 
 - [ ] **Step 1: Write the doc**
@@ -1015,6 +1023,7 @@ Tämän wave:n jälkeen hallitus voi luoda + aktivoida vuoden hinnaston joko suo
 ## Task B1: Migration 089 — backfill membership_started_at for SUPPORTING
 
 **Files:**
+
 - Create: `database/migrations/089_backfill_membership_started_at_for_supporting.php`
 
 Migration 075 backfilled `membership_started_at` only for BASIC/FULL/HONORARY. SUPPORTING-members got missed — but they're the ones who pay the annual `kannatusmaksu` and need anniversary-cron.
@@ -1092,6 +1101,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.fi" commit -m "Add(db): mig
 ## Task B2: Migration 090 — annual_fee_schedules table
 
 **Files:**
+
 - Create: `database/migrations/090_create_annual_fee_schedules.sql`
 
 - [ ] **Step 1: Write the migration**
@@ -1151,6 +1161,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.fi" commit -m "Add(db): mig
 ## Task B3: Migration 094 — extend tenant_governance_settings for billing
 
 **Files:**
+
 - Create: `database/migrations/094_extend_tenant_governance_settings_for_billing.sql`
 
 Note we use slot 094 ahead of 095 deliberately — these are settings columns the rest of the plan depends on. Slot 091 (member_fee_invoices) comes in Wave C, 092 (user_fee_overrides) in Wave D, 093 (audit) in Wave E. Sequential slot order matches MigrationTestCase ordering.
@@ -1198,6 +1209,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.fi" commit -m "Add(db): mig
 ## Task B4: Migration 095 — extend board_decisions.decision_type
 
 **Files:**
+
 - Read: `database/migrations/080_create_board_decisions.sql` (verify current enum/check shape)
 - Create: `database/migrations/095_extend_board_decisions_decision_type.sql`
 
@@ -1273,6 +1285,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.fi" commit -m "Add(db): mig
 ## Task B5: Update IsolationTestCase watermark 88 → 95
 
 **Files:**
+
 - Modify: `tests/Isolation/IsolationTestCase.php` (single-line change)
 
 The Isolation suite runs migrations up to a hardcoded watermark. After 4 new migrations land, the watermark must move from 88 → 95 so isolation tests see the new schema.
@@ -1311,6 +1324,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.fi" commit -m "Update(tests
 ## Task B6: AnnualFeeScheduleStatus enum + AnnualFeeScheduleId VO
 
 **Files:**
+
 - Create: `src/Domain/Membership/Billing/AnnualFeeScheduleStatus.php`
 - Create: `src/Domain/Membership/Billing/AnnualFeeScheduleId.php`
 - Create: `tests/Unit/Domain/Membership/Billing/AnnualFeeScheduleStatusTest.php`
@@ -1483,6 +1497,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.fi" commit -m "Add(domain):
 ## Task B7: AnnualFeeSchedule entity
 
 **Files:**
+
 - Create: `src/Domain/Membership/Billing/AnnualFeeSchedule.php`
 - Create: `tests/Unit/Domain/Membership/Billing/AnnualFeeScheduleTest.php`
 
@@ -1700,6 +1715,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.fi" commit -m "Add(domain):
 ## Task B8: AnnualFeeScheduleRepositoryInterface + InMemory fake
 
 **Files:**
+
 - Create: `src/Domain/Membership/Billing/AnnualFeeScheduleRepositoryInterface.php`
 - Create: `tests/Support/Fake/InMemoryAnnualFeeScheduleRepository.php`
 
@@ -1837,6 +1853,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.fi" commit -m "Add(domain+t
 ## Task B9: SqlAnnualFeeScheduleRepository
 
 **Files:**
+
 - Create: `src/Infrastructure/Adapter/Persistence/Sql/SqlAnnualFeeScheduleRepository.php`
 - Create: `tests/Integration/Infrastructure/SqlAnnualFeeScheduleRepositoryTest.php`
 
@@ -2085,6 +2102,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.fi" commit -m "Add(infra/sq
 ## Task B10: TenantGovernanceSettingsRepository — add billing-fields accessor
 
 **Files:**
+
 - Modify: `src/Domain/Tenant/TenantGovernanceSettingsRepositoryInterface.php` (extend interface)
 - Modify: `src/Infrastructure/Adapter/Persistence/Sql/SqlTenantGovernanceSettingsRepository.php` (read new columns)
 - Modify: `tests/Support/Fake/InMemoryTenantGovernanceSettingsRepository.php` (matching fake)
@@ -2213,12 +2231,14 @@ git -c user.name="Dev Team" -c user.email="dev@daems.fi" commit -m "Extend(domai
 ## Task B11: DraftAnnualFeeSchedule use case
 
 **Files:**
+
 - Create: `src/Application/Membership/Billing/DraftAnnualFeeSchedule/DraftAnnualFeeSchedule.php`
 - Create: `src/Application/Membership/Billing/DraftAnnualFeeSchedule/DraftAnnualFeeScheduleInput.php`
 - Create: `src/Application/Membership/Billing/DraftAnnualFeeSchedule/DraftAnnualFeeScheduleOutput.php`
 - Create: `tests/Unit/Application/Membership/Billing/DraftAnnualFeeScheduleTest.php`
 
 `DraftAnnualFeeSchedule` routes based on `tenant_governance_settings.requires_formal_decision_for_fees`:
+
 - `false` → create rows with status=`Active` directly (supersede any prior active for same year+type), audit row, return `decision_id=null`
 - `true` → create rows with status=`Proposed`, create a `board_decisions` row of `decision_type='annual_fee_schedule'`, return `decision_id`
 
@@ -2530,6 +2550,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.fi" commit -m "Add(applicat
 ## Task B12: ActivateAnnualFeeSchedule + decision-passed handler
 
 **Files:**
+
 - Create: `src/Application/Membership/Billing/ActivateAnnualFeeSchedule/ActivateAnnualFeeSchedule.php`
 - Create: `src/Application/Membership/Billing/ActivateAnnualFeeSchedule/ActivateAnnualFeeScheduleInput.php`
 - Create: `src/Application/Membership/Billing/AnnualFeeSchedulePassedHandler.php` (listens to 0.6b `DecisionPassedEvent`)
@@ -2537,6 +2558,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.fi" commit -m "Add(applicat
 - Create: `tests/Unit/Application/Membership/Billing/AnnualFeeSchedulePassedHandlerTest.php`
 
 When a `board_decisions` row of type `annual_fee_schedule` reaches `status=passed`, the 4 proposed rows tied to that decision must:
+
 1. Supersede the previously-active rows (same tenant + year + fee_type)
 2. Flip Proposed → Active themselves
 
@@ -2863,6 +2885,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.fi" commit -m "Add(applicat
 ## Task B13: DI wiring — bootstrap/app.php + KernelHarness
 
 **Files:**
+
 - Modify: `bootstrap/app.php`
 - Modify: `tests/Support/KernelHarness.php`
 
@@ -2949,12 +2972,14 @@ git -c user.name="Dev Team" -c user.email="dev@daems.fi" commit -m "Wire(di): bi
 ## Task B14: BackstageBillingController — fee-schedule HTTP endpoints
 
 **Files:**
+
 - Create: `src/Infrastructure/Adapter/Api/Controller/BackstageBillingController.php`
 - Modify: `bootstrap/app.php` (controller binding + route)
 - Modify: `tests/Support/KernelHarness.php` (controller binding for E2E)
 - Create: `tests/E2E/Backstage/BillingFeeSchedulesEndpointTest.php`
 
 The controller exposes the first two endpoints needed to drive the UI in Task B15:
+
 - `GET /api/v1/backstage/governance/billing/fee-schedules?year=2027`
 - `POST /api/v1/backstage/governance/billing/fee-schedules`
 
@@ -3172,6 +3197,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.fi" commit -m "Add(api): Ba
 ## Task B15: Backstage UI — fee-schedule list + editor template
 
 **Files:**
+
 - Create: `public/backstage/governance/billing/index.php`
 - Create: `public/backstage/governance/billing/_fees.php`
 - Create: `public/backstage/governance/billing/_form.php`
@@ -3520,6 +3546,7 @@ This wave builds the invoice domain + the first real cron command. After this wa
 ## Task C1: Migration 091 — member_fee_invoices table
 
 **Files:**
+
 - Create: `database/migrations/091_create_member_fee_invoices.sql`
 
 - [ ] **Step 1: Write the migration**
@@ -3592,6 +3619,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.fi" commit -m "Add(db): mig
 ## Task C2: MemberFeeInvoiceStatus enum + MemberFeeInvoiceId VO
 
 **Files:**
+
 - Create: `src/Domain/Membership/Billing/MemberFeeInvoiceStatus.php`
 - Create: `src/Domain/Membership/Billing/MemberFeeInvoiceId.php`
 - Create: `tests/Unit/Domain/Membership/Billing/MemberFeeInvoiceStatusTest.php`
@@ -3725,6 +3753,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.fi" commit -m "Add(domain):
 ## Task C3: PaymentRecord value object
 
 **Files:**
+
 - Create: `src/Domain/Membership/Billing/PaymentRecord.php`
 - Create: `tests/Unit/Domain/Membership/Billing/PaymentRecordTest.php`
 
@@ -3865,6 +3894,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.fi" commit -m "Add(domain):
 ## Task C4: MemberFeeInvoice entity
 
 **Files:**
+
 - Create: `src/Domain/Membership/Billing/MemberFeeInvoice.php`
 - Create: `src/Domain/Membership/Billing/Exception/InvoiceAlreadyPaidException.php`
 - Create: `tests/Unit/Domain/Membership/Billing/MemberFeeInvoiceTest.php`
@@ -4201,6 +4231,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.fi" commit -m "Add(domain):
 ## Task C5: MemberFeeInvoiceRepositoryInterface + InMemory fake
 
 **Files:**
+
 - Create: `src/Domain/Membership/Billing/MemberFeeInvoiceRepositoryInterface.php`
 - Create: `tests/Support/Fake/InMemoryMemberFeeInvoiceRepository.php`
 
@@ -4392,6 +4423,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.fi" commit -m "Add(domain+f
 ## Task C6: SqlMemberFeeInvoiceRepository
 
 **Files:**
+
 - Create: `src/Infrastructure/Adapter/Persistence/Sql/SqlMemberFeeInvoiceRepository.php`
 - Create: `tests/Integration/Infrastructure/SqlMemberFeeInvoiceRepositoryTest.php`
 
@@ -4767,6 +4799,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.fi" commit -m "Add(infra/sq
 ## Task C7: UserFeeOverrideRepositoryInterface (skeleton) + null fake
 
 **Files:**
+
 - Create: `src/Domain/Membership/Billing/UserFeeOverrideRepositoryInterface.php`
 - Create: `tests/Support/Fake/InMemoryUserFeeOverrideRepository.php` (null-impl: no overrides)
 
@@ -4916,6 +4949,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.fi" commit -m "Add(domain):
 ## Task C8: GenerateAnniversaryInvoice use case
 
 **Files:**
+
 - Create: `src/Application/Membership/Billing/GenerateAnniversaryInvoice/GenerateAnniversaryInvoice.php`
 - Create: `src/Application/Membership/Billing/GenerateAnniversaryInvoice/GenerateAnniversaryInvoiceInput.php`
 - Create: `src/Application/Membership/Billing/GenerateAnniversaryInvoice/GenerateAnniversaryInvoiceOutput.php`
@@ -5265,6 +5299,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.fi" commit -m "Add(applicat
 ## Task C9: GenerateAnniversaryInvoicesCommand cron + bootstrap registration
 
 **Files:**
+
 - Create: `src/Application/Membership/Billing/Cron/GenerateAnniversaryInvoicesCommand.php`
 - Modify: `bootstrap/console.php`
 - Create: `tests/Integration/Cron/GenerateAnniversaryInvoicesCommandTest.php`
@@ -5614,6 +5649,7 @@ php bin/console membership:generate-anniversary-invoices --tenant=daems
 ```
 
 Expected output (or similar):
+
 - exit 0
 - new line in `var/log/cron/membership-generate-anniversary-invoices-YYYY-MM-DD.log`
 - if no users have anniversary today → `created=0, processed=0`
@@ -5630,6 +5666,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.fi" commit -m "Add(cron): G
 ## Task C10: DI wiring — bootstrap/app.php + KernelHarness
 
 **Files:**
+
 - Modify: `bootstrap/app.php`
 - Modify: `tests/Support/KernelHarness.php`
 
@@ -5691,6 +5728,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.fi" commit -m "Wire(di): bi
 ## Task C11: Smoke-test the cron locally with a manufactured anniversary
 
 **Files:**
+
 - (no code changes — manual verification only)
 
 This task is a manual end-to-end smoke test that exercises real DB + real cron command. Not committed — but DO run it before declaring Wave C done.
@@ -5787,6 +5825,7 @@ This wave replaces the Wave C placeholder UserFeeOverride stubs with the real en
 ## Task D1: Migration 092 — user_fee_overrides + FK on member_fee_invoices.override_id
 
 **Files:**
+
 - Create: `database/migrations/092_create_user_fee_overrides.sql`
 
 - [ ] **Step 1: Write the migration**
@@ -5855,6 +5894,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.fi" commit -m "Add(db): mig
 ## Task D2: Replace UserFeeOverrideId placeholder with real VO
 
 **Files:**
+
 - Modify: `src/Domain/Membership/Billing/UserFeeOverrideId.php` (replace Wave C stub)
 - Create: `tests/Unit/Domain/Membership/Billing/UserFeeOverrideIdTest.php`
 
@@ -5957,6 +5997,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.fi" commit -m "Replace(doma
 ## Task D3: Replace UserFeeOverride placeholder with real entity
 
 **Files:**
+
 - Modify: `src/Domain/Membership/Billing/UserFeeOverride.php` (replace Wave C stub)
 - Create: `tests/Unit/Domain/Membership/Billing/UserFeeOverrideTest.php`
 
@@ -6223,6 +6264,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.fi" commit -m "Replace(doma
 ## Task D4: SqlUserFeeOverrideRepository (replaces Wave C InMemory binding)
 
 **Files:**
+
 - Create: `src/Infrastructure/Adapter/Persistence/Sql/SqlUserFeeOverrideRepository.php`
 - Create: `tests/Integration/Infrastructure/SqlUserFeeOverrideRepositoryTest.php`
 - Modify: `tests/Support/Fake/InMemoryUserFeeOverrideRepository.php` (upgrade from null-impl to real in-memory store)
@@ -6562,6 +6604,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.fi" commit -m "Add(infra/sq
 ## Task D5: SetUserFeeOverride + RevokeUserFeeOverride use cases
 
 **Files:**
+
 - Create: `src/Application/Membership/Billing/SetUserFeeOverride/SetUserFeeOverride.php`
 - Create: `src/Application/Membership/Billing/SetUserFeeOverride/SetUserFeeOverrideInput.php`
 - Create: `src/Application/Membership/Billing/RevokeUserFeeOverride/RevokeUserFeeOverride.php`
@@ -6805,6 +6848,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.fi" commit -m "Add(applicat
 ## Task D6: DI rewiring — replace InMemory binding with SQL repo in bootstrap/app.php
 
 **Files:**
+
 - Modify: `bootstrap/app.php`
 - Modify: `tests/Support/KernelHarness.php`
 
@@ -6877,12 +6921,14 @@ git -c user.name="Dev Team" -c user.email="dev@daems.fi" commit -m "Wire(di): re
 ## Task D7: Controller endpoints for overrides + E2E test
 
 **Files:**
+
 - Modify: `src/Infrastructure/Adapter/Api/Controller/BackstageBillingController.php`
 - Modify: `bootstrap/app.php` (extend the controller binding with new use cases)
 - Modify: routing config to add 3 new endpoints
 - Create: `tests/E2E/Backstage/BillingOverridesEndpointTest.php`
 
 Endpoints to add:
+
 - `GET /api/v1/backstage/governance/billing/overrides?user_id=&active_only=`
 - `POST /api/v1/backstage/governance/billing/overrides`
 - `POST /api/v1/backstage/governance/billing/overrides/{id}/revoke`
@@ -7076,6 +7122,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.fi" commit -m "Add(api): ov
 ## Task D8: Override admin UI — _overrides.php
 
 **Files:**
+
 - Modify: `public/backstage/governance/billing/_overrides.php` (replace Wave B stub)
 
 The Wave B stub is just a "Tulossa Wave D:ssä" placeholder. Replace it with a real list + create-form.
@@ -7301,7 +7348,7 @@ Append to `public/backstage/assets/governance/billing.css`:
 
 - [ ] **Step 4: Browser smoke**
 
-```
+```text
 1. http://daems.local/backstage/governance/billing?view=overrides
 2. Click "Uusi alennus" → dialog opens
 3. Fill in fields, submit → row appears in the table
@@ -7352,6 +7399,7 @@ This wave completes the invoice lifecycle from the admin side: the audit-trail t
 ## Task E1: Migration 093 — member_fee_invoice_audit
 
 **Files:**
+
 - Create: `database/migrations/093_create_member_fee_invoice_audit.sql`
 
 - [ ] **Step 1: Write the migration**
@@ -7403,6 +7451,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.fi" commit -m "Add(db): mig
 ## Task E2: FeeInvoiceAudit domain + repository + SQL impl
 
 **Files:**
+
 - Create: `src/Domain/Membership/Billing/FeeInvoiceAudit.php`
 - Create: `src/Domain/Membership/Billing/FeeInvoiceAuditAction.php` (enum)
 - Create: `src/Domain/Membership/Billing/FeeInvoiceAuditRepositoryInterface.php`
@@ -7664,6 +7713,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.fi" commit -m "Add(domain+i
 ## Task E3: WaiveMemberFeeInvoice use case
 
 **Files:**
+
 - Create: `src/Application/Membership/Billing/WaiveMemberFeeInvoice/WaiveMemberFeeInvoice.php`
 - Create: `src/Application/Membership/Billing/WaiveMemberFeeInvoice/WaiveMemberFeeInvoiceInput.php`
 - Create: `tests/Unit/Application/Membership/Billing/WaiveMemberFeeInvoiceTest.php`
@@ -7871,11 +7921,13 @@ git -c user.name="Dev Team" -c user.email="dev@daems.fi" commit -m "Add(applicat
 ## Task E4: ReduceMemberFeeInvoice use case
 
 **Files:**
+
 - Create: `src/Application/Membership/Billing/ReduceMemberFeeInvoice/ReduceMemberFeeInvoice.php`
 - Create: `src/Application/Membership/Billing/ReduceMemberFeeInvoice/ReduceMemberFeeInvoiceInput.php`
 - Create: `tests/Unit/Application/Membership/Billing/ReduceMemberFeeInvoiceTest.php`
 
 Mirror structure of Task E3 (auth check, call entity.reduce(), append audit). Reasonable test cases:
+
 - admin reduces 5000 → 2500 with reason → status REDUCED, original_amount_cents=5000, audit row created
 - non-admin rejected
 - reduction amount must be < current amount (already in entity tests, but verify the use case surfaces InvalidArgumentException as 400)
@@ -7976,6 +8028,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.fi" commit -m "Add(applicat
 ## Task E5: RecordManualPayment use case
 
 **Files:**
+
 - Create: `src/Application/Membership/Billing/RecordManualPayment/RecordManualPayment.php`
 - Create: `src/Application/Membership/Billing/RecordManualPayment/RecordManualPaymentInput.php`
 - Create: `tests/Unit/Application/Membership/Billing/RecordManualPaymentTest.php`
@@ -8071,6 +8124,7 @@ final class RecordManualPayment
 - [ ] **Step 2: Test (mirror E3 structure)**
 
 `tests/Unit/Application/Membership/Billing/RecordManualPaymentTest.php` — 3 tests:
+
 - admin records payment → status=PAID, payment fields populated, audit row created
 - non-admin rejected
 - already-paid invoice → InvoiceAlreadyPaidException bubbles up
@@ -8089,12 +8143,14 @@ git -c user.name="Dev Team" -c user.email="dev@daems.fi" commit -m "Add(applicat
 ## Task E6: Controller endpoints + DI wiring + E2E
 
 **Files:**
+
 - Modify: `src/Infrastructure/Adapter/Api/Controller/BackstageBillingController.php`
 - Modify: `bootstrap/app.php`, `tests/Support/KernelHarness.php`
 - Modify: route table (add 5 endpoints)
 - Create: `tests/E2E/Backstage/BillingInvoiceActionsEndpointTest.php`
 
 New endpoints:
+
 - `GET /api/v1/backstage/governance/billing/invoices?year=&status=&fee_type=&user_id=&page=`
 - `POST /api/v1/backstage/governance/billing/invoices/{id}/mark-paid`
 - `POST /api/v1/backstage/governance/billing/invoices/{id}/waive`
@@ -8406,6 +8462,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.fi" commit -m "Add(api): in
 ## Task E7: Backstage invoice list view — _invoices.php (replaces Wave B stub)
 
 **Files:**
+
 - Modify: `public/backstage/governance/billing/_invoices.php` (replace stub)
 - Create: `public/backstage/assets/governance/billing-invoices.js`
 
@@ -8708,7 +8765,7 @@ Append to `public/backstage/assets/governance/billing.css`:
 
 - [ ] **Step 4: Browser smoke**
 
-```
+```text
 1. http://daems.local/backstage/governance/billing
 2. Filter bar shows year + status + type
 3. List loads invoices from API
@@ -8729,6 +8786,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.fi" commit -m "Add(backstag
 ## Task E8: KPI strip on landing page
 
 **Files:**
+
 - Modify: `public/backstage/governance/billing/index.php` (add KPI strip above tab nav)
 - Modify: `public/backstage/assets/governance/billing-invoices.js` (load KPI counts)
 - Add: GET endpoint `/api/v1/backstage/governance/billing/kpi?year=` returning counts per status
@@ -8847,6 +8905,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.fi" commit -m "Add(backstag
 ## Task E9: Wire migration test watermark update
 
 **Files:**
+
 - Modify: `tests/Isolation/IsolationTestCase.php`
 
 Watermark needs to bump 95 → 95 (no change — 092 and 093 are within 95). But verify: integration tests now need 091+092+093 applied. Should already be the case from Wave B Task B5.
@@ -8902,6 +8961,7 @@ This wave completes the cron pipeline: PENDING invoices flip to OVERDUE after gr
 ## Task F1: MarkOverdueInvoices use case + cron
 
 **Files:**
+
 - Create: `src/Application/Membership/Billing/MarkOverdueInvoices/MarkOverdueInvoices.php`
 - Create: `src/Application/Membership/Billing/MarkOverdueInvoices/MarkOverdueInvoicesInput.php`
 - Create: `src/Application/Membership/Billing/Cron/MarkOverdueInvoicesCommand.php`
@@ -9086,6 +9146,7 @@ Same in `tests/Support/KernelHarness.php`.
 - [ ] **Step 5: Unit test**
 
 `tests/Unit/Application/Membership/Billing/MarkOverdueInvoicesTest.php`: 3 tests
+
 - only PENDING invoices past due_date + grace are flagged → assert OVERDUE
 - already-OVERDUE invoices are not re-flagged (idempotent)
 - invoices within grace period are NOT flagged
@@ -9093,6 +9154,7 @@ Same in `tests/Support/KernelHarness.php`.
 - [ ] **Step 6: Integration test (mirror C9 structure)**
 
 `tests/Integration/Cron/MarkOverdueInvoicesCommandTest.php`:
+
 - seed 3 invoices (1 within grace, 1 past grace, 1 already OVERDUE)
 - run cron
 - assert middle one is now OVERDUE, others unchanged
@@ -9112,6 +9174,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.fi" commit -m "Add(cron): M
 ## Task F2: LapseInactiveMember domain — MemberStatusAudit integration
 
 **Files:**
+
 - Verify: 0.6b's `MemberStatusAudit` entity supports `reason='2v maksamatta'` and actor=NULL
 - Verify: 0.6b's `users.membership_status` enum supports `LAPSED` value
 
@@ -9170,12 +9233,14 @@ git -c user.name="Dev Team" -c user.email="dev@daems.fi" commit -m "Add(db): mig
 ## Task F3: LapseInactiveMember use case
 
 **Files:**
+
 - Create: `src/Application/Membership/Billing/LapseInactiveMember/LapseInactiveMember.php`
 - Create: `src/Application/Membership/Billing/LapseInactiveMember/LapseInactiveMemberInput.php`
 - Create: `src/Application/Membership/Billing/LapseInactiveMember/LapseInactiveMemberOutput.php`
 - Create: `tests/Unit/Application/Membership/Billing/LapseInactiveMemberTest.php`
 
 The use case takes (tenantId, userId, overdueYears) and:
+
 1. Verifies user is in `active` status (no-op if already lapsed/expelled)
 2. Flips `users.membership_status` to `'lapsed'`
 3. Appends `member_status_audit` row with `previous_status`, `new_status='lapsed'`, `reason='2v maksamatta: <year1>, <year2>'`, `performed_by=NULL`
@@ -9290,6 +9355,7 @@ Note: `MemberStatusAudit::create(...)` and `User::setMembershipStatus()` are ass
 - [ ] **Step 3: Test**
 
 `tests/Unit/Application/Membership/Billing/LapseInactiveMemberTest.php`: 3 tests
+
 - active member → flipped to lapsed, audit row created
 - already-lapsed member → no-op, no audit row
 - user not found → DomainException
@@ -9321,6 +9387,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.fi" commit -m "Add(applicat
 ## Task F4: LapseInactiveMembersCommand cron with --dry-run
 
 **Files:**
+
 - Create: `src/Application/Membership/Billing/Cron/LapseInactiveMembersCommand.php`
 - Modify: `bootstrap/console.php`
 - Create: `tests/Integration/Cron/LapseInactiveMembersCommandTest.php`
@@ -9483,6 +9550,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.fi" commit -m "Add(cron): L
 ## Task F5: Lapse cron integration test
 
 **Files:**
+
 - Create: `tests/Integration/Cron/LapseInactiveMembersCommandTest.php`
 
 End-to-end test exercising the full pipeline: seed 2 consecutive OVERDUE invoices for a user, run cron, assert membership_status flipped to lapsed AND member_status_audit row exists.
@@ -9655,6 +9723,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.fi" commit -m "Add(tests/in
 ## Task F6: Members backstage — show LAPSED status
 
 **Files:**
+
 - Modify: `modules/members/frontend/backstage/index.php` (or equivalent — verify path)
 - Modify: members admin JS to render new status badge
 
@@ -9693,7 +9762,7 @@ function statusLabel(s) {
 
 - [ ] **Step 3: Browser smoke**
 
-```
+```text
 1. Run the lapse cron on a test user
 2. Navigate to /backstage/members
 3. Lapsed user shows "Eronnut maksamattomuuden vuoksi" badge
@@ -9715,6 +9784,7 @@ cd c:/laragon/www/daems-platform
 ## Task F7: Cron-runner integration verification
 
 **Files:**
+
 - (manual — no code changes)
 
 After F1-F6 land, the 3 cron commands are fully wired. Run them in production-like order to verify end-to-end:
@@ -9805,6 +9875,7 @@ If anything fails, FIX before starting Wave G.
 # Wave G — GSA override + Honorary + CSV import (Phases 11-13, 10 tasks)
 
 This wave adds 3 distinct features:
+
 1. **GSA override paths** (ReverseLapse, bypass_fee_decision) — leverages 0.6b's `gsa_overrides` table
 2. **Honorary auto-waive** — when admin changes membership_type to HONORARY, prompt to waive open invoices
 3. **CSV bulk import** — upload bank statement, auto-match by reference, confirm matches in bulk
@@ -9812,11 +9883,13 @@ This wave adds 3 distinct features:
 ## Task G1: ReverseLapse use case (GSA only)
 
 **Files:**
+
 - Create: `src/Application/Membership/Billing/ReverseLapse/ReverseLapse.php`
 - Create: `src/Application/Membership/Billing/ReverseLapse/ReverseLapseInput.php`
 - Create: `tests/Unit/Application/Membership/Billing/ReverseLapseTest.php`
 
 Flips a LAPSED user back to `active`. Only GSA (`isPlatformAdmin=true`) can perform this. Creates 2 audit rows:
+
 - `member_status_audit` row (status flip: lapsed → active, reason from input)
 - `gsa_overrides` row (action='reverse_lapse', justification mirrors reason)
 
@@ -9919,6 +9992,7 @@ Note: `GsaOverride::create()` signature is assumed from 0.6b. Adjust if the actu
 - [ ] **Step 2: Test (3 cases)**
 
 `tests/Unit/Application/Membership/Billing/ReverseLapseTest.php`:
+
 - GSA reverses lapsed user → status flipped to active, 2 audit rows
 - Non-GSA admin rejected with ForbiddenException
 - User not lapsed → DomainException
@@ -9949,6 +10023,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.fi" commit -m "Add(applicat
 ## Task G2: ReverseLapse HTTP endpoint + members backstage action
 
 **Files:**
+
 - Modify: `src/Infrastructure/Adapter/Api/Controller/BackstageBillingController.php` (or `BackstageMembersController` — wherever member admin actions live)
 - Modify: route table
 - Modify: members backstage UI to show "Peruuta lapse (GSA)" button on lapsed users
@@ -10026,6 +10101,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.fi" commit -m "Add(api): GS
 ## Task G3: WaiveOpenInvoicesOnHonoraryChange use case
 
 **Files:**
+
 - Create: `src/Application/Membership/Billing/WaiveOpenInvoicesOnHonoraryChange/WaiveOpenInvoicesOnHonoraryChange.php`
 - Create: `src/Application/Membership/Billing/WaiveOpenInvoicesOnHonoraryChange/WaiveOpenInvoicesOnHonoraryChangeInput.php`
 - Create: `tests/Unit/Application/Membership/Billing/WaiveOpenInvoicesOnHonoraryChangeTest.php`
@@ -10102,6 +10178,7 @@ final class WaiveOpenInvoicesOnHonoraryChange
 - [ ] **Step 2: Test (2 cases)**
 
 `tests/Unit/Application/Membership/Billing/WaiveOpenInvoicesOnHonoraryChangeTest.php`:
+
 - admin runs use case with user having 3 open invoices → 3 WAIVED with reason from constant, 3 audit rows
 - non-admin rejected
 
@@ -10127,6 +10204,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.fi" commit -m "Add(applicat
 ## Task G4: Hook honorary-change flow into existing ChangeMemberStatus or membership-type editor
 
 **Files:**
+
 - Modify: existing membership-type/role editor (likely `src/Application/Membership/ChangeMemberStatus.php` or similar from 0.6a/b)
 - Modify: corresponding controller endpoint
 - Add: front-end confirmation dialog "Vapautetaanko N avointa laskua?"
@@ -10150,6 +10228,7 @@ grep -rn "membership-type" public/ src/
 - [ ] **Step 2: Identify the existing use case (or create wrapping ChangeMembershipType use case if missing)**
 
 If `ChangeMembershipType` use case exists in `daems-platform/src/Application/Membership/`:
+
 - Inject `WaiveOpenInvoicesOnHonoraryChange` as a dependency
 - After successful type-flip to HONORARY, call it with the actor + tenant + user
 
@@ -10211,6 +10290,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.fi" commit -m "Wire: honora
 ## Task G5: NordeaPaymentCsvParser
 
 **Files:**
+
 - Create: `src/Application/Membership/Billing/ImportPaymentsCsv/NordeaPaymentCsvParser.php`
 - Create: `src/Application/Membership/Billing/ImportPaymentsCsv/ParsedPaymentRow.php`
 - Create: `tests/Unit/Application/Membership/Billing/NordeaPaymentCsvParserTest.php`
@@ -10427,6 +10507,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.fi" commit -m "Add(applicat
 ## Task G6: ImportPaymentsCsv preview use case
 
 **Files:**
+
 - Create: `src/Application/Membership/Billing/ImportPaymentsCsv/PreviewImportPayments.php`
 - Create: `src/Application/Membership/Billing/ImportPaymentsCsv/PreviewImportPaymentsInput.php`
 - Create: `src/Application/Membership/Billing/ImportPaymentsCsv/PaymentMatchResult.php`
@@ -10436,6 +10517,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.fi" commit -m "Add(applicat
 Two-step pattern: PREVIEW returns proposed matches without modifying state. CONFIRM (Task G7) applies a set of confirmed matches.
 
 Match logic: lookup invoice by reference (need an indexed lookup — add a `findByReference()` method to the invoice repo, or just iterate; for 0.7 keep it simple). For each parsed row:
+
 - AMOUNT match: invoice.amount_cents == parsedRow.amountCents (within tolerance ±2¢)
 - REFERENCE match: invoice.id starts with parsedRow.reference? OR a separate `reference_number` column? — Decision below.
 
@@ -10589,6 +10671,7 @@ final class PreviewImportPayments
 - [ ] **Step 4: Tests**
 
 3 tests:
+
 - 3 CSV rows: 1 high-confidence match, 1 amount mismatch, 1 no-match → output has 3 results with correct labels
 - empty CSV → empty results
 - non-admin rejected
@@ -10607,6 +10690,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.fi" commit -m "Add(applicat
 ## Task G7: ConfirmImportPayments use case
 
 **Files:**
+
 - Create: `src/Application/Membership/Billing/ImportPaymentsCsv/ConfirmImportPayments.php`
 - Create: `src/Application/Membership/Billing/ImportPaymentsCsv/ConfirmImportPaymentsInput.php`
 - Create: `src/Application/Membership/Billing/ImportPaymentsCsv/ConfirmImportPaymentsOutput.php`
@@ -10699,12 +10783,14 @@ git -c user.name="Dev Team" -c user.email="dev@daems.fi" commit -m "Add(applicat
 ## Task G8: CSV import HTTP endpoints + UI
 
 **Files:**
+
 - Modify: `BackstageBillingController.php` (add 2 endpoints)
 - Modify: route table
 - Modify: `public/backstage/governance/billing/_import.php` (replace Wave B stub)
 - Create: `public/backstage/assets/governance/billing-import.js`
 
 Endpoints:
+
 - `POST /api/v1/backstage/governance/billing/payments/import-csv` — multipart upload, returns preview
 - `POST /api/v1/backstage/governance/billing/payments/import-csv/confirm` — apply confirmed matches
 
@@ -10939,7 +11025,7 @@ function escape(s) {
 
 - [ ] **Step 5: Browser smoke**
 
-```
+```text
 1. Generate a sample Nordea CSV (3 rows: 1 matching, 1 amount mismatch, 1 unknown reference)
 2. http://daems.local/backstage/governance/billing?view=import
 3. Upload CSV → preview table appears
@@ -10960,6 +11046,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.fi" commit -m "Add(api+back
 ## Task G9: Wave G E2E smoke test
 
 **Files:**
+
 - Create: `tests/E2E/Backstage/BillingCsvImportEndpointTest.php`
 
 End-to-end happy path through the HTTP layer.
@@ -11056,6 +11143,7 @@ The final wave wires billing into the backstage navigation, adds i18n strings fo
 ## Task H1: BackstageSidebar — add billing item
 
 **Files:**
+
 - Modify: `src/Frontend/BackstageSidebar.php` (add 6th hardcoded governance item)
 - Modify: `tests/Unit/Frontend/BackstageSidebarTest.php` (baseline 8 → 9, ordered 11 → 12 hrefs)
 
@@ -11129,6 +11217,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.fi" commit -m "Add(sidebar)
 ## Task H2: i18n strings — fi_FI, en_GB, sw_TZ
 
 **Files:**
+
 - Modify: `lang/fi_FI.php`
 - Modify: `lang/en_GB.php`
 - Modify: `lang/sw_TZ.php`
@@ -11280,6 +11369,7 @@ In all PHP template files created in Waves B-G, replace literal Finnish strings 
 ```
 
 Files to update:
+
 - `public/backstage/governance/billing/index.php`
 - `public/backstage/governance/billing/_invoices.php`
 - `public/backstage/governance/billing/_fees.php`
@@ -11309,6 +11399,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.fi" commit -m "Add(i18n): M
 ## Task H3: ModuleRouteGuard governance prefix verification
 
 **Files:**
+
 - Verify (read-only): `src/Domain/Tenant/ModuleRouteGuard.php`
 - Verify: `config/modules.php` — `governance` module entry (if any)
 
@@ -11323,6 +11414,7 @@ grep -n "route_prefixes\|/backstage/governance" src/Domain/Tenant/ModuleRouteGua
 - [ ] **Step 2: Decide**
 
 Two valid outcomes:
+
 - **No change needed:** governance routes are not in any module's `route_prefixes`, so they pass through unguarded. Document this in a comment.
 - **Add explicit allow:** if there's a default-deny policy, register `governance` as a pseudo-module in `config/modules.php` with `is_core=true, default_available=true` and `route_prefixes: ['/backstage/governance', '/api/v1/backstage/governance']`.
 
@@ -11342,9 +11434,11 @@ git -c user.name="Dev Team" -c user.email="dev@daems.fi" commit -m "Confirm(rout
 ## Task H4: Integration smoke — end-to-end pipeline
 
 **Files:**
+
 - Create: `tests/Integration/Cron/BillingFullPipelineIntegrationTest.php`
 
 Exercise the full pipeline in one test:
+
 1. Set annual fee schedule for tenant 2026
 2. Create users with anniversaries spanning the year
 3. Run anniversary cron on each user's anniversary date
@@ -11435,6 +11529,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.fi" commit -m "Add(tests/in
 ## Task H5: Update CLAUDE.md with billing state
 
 **Files:**
+
 - Modify: `CLAUDE.md` (project-level instructions)
 
 Add a short section under "Current state" documenting that 0.7 is shipped, and reference the spec/plan.
@@ -11470,7 +11565,7 @@ edellyttävät billing-domainin. Skoppi rajattu Stripe/Visma-integraatioiden ulk
 
 Update MEMORY.md index:
 
-```
+```text
 - [MembershipBilling v1](project_membership_billing.md) — 2026-MM-DD: 0.7 shipped, annual fees + cron + waive + manual/CSV + auto-lapse
 ```
 
@@ -11488,6 +11583,7 @@ Note: memory files live OUTSIDE the repo (in `~/.claude/projects/...`); commit t
 ## Task H6: Browser-smoke checklist (manual user task)
 
 **Files:**
+
 - (no code changes — user verification)
 
 Before declaring 0.7 complete, the user must run through a manual smoke covering all 14 acceptance scenarios from the spec. This is not a coded test — the user works through the UI as a real admin would.
@@ -11570,10 +11666,12 @@ Before declaring this plan complete, run a self-check against the spec.
 | Q7: Configurable per-tenant decision flow | B3 (mig 094 settings column), B11 (DraftAnnualFeeSchedule routing) |
 
 **Placeholder scan** — no remaining "TBD" / "TODO" inside task bodies. Two acceptable TODOs left:
+
 1. Wave G CSS variable names assume the platform's design tokens; executor replaces with actual variable names from `daems-platform/public/backstage/assets/...`.
 2. Wave G6 (PreviewImportPayments) note: more robust reference-matching schemes (Finnish RF) deferred to 0.7.1 Stripe milestone.
 
 **Type consistency check** — class names + method signatures stay stable across tasks:
+
 - `MemberFeeInvoice::amountCents()` (not `amount()`), `originalAmountCents()` ✓
 - `MemberFeeInvoiceStatus::Pending/Paid/Overdue/Waived/Reduced` ✓
 - `AnnualFeeScheduleStatus::Draft/Proposed/Active/Superseded` ✓
@@ -11595,4 +11693,3 @@ Two execution options:
 **2. Inline Execution** — execute tasks in this session using executing-plans skill, batch execution with checkpoints. Better if subagent dispatch is unavailable; slower but easier to debug.
 
 Which approach?
-

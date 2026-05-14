@@ -150,6 +150,7 @@ return [
 ```
 
 Key naming differs from `module.json`:
+
 - `route_prefixes` (not `routes`) — reserved word avoidance; module.json's `routes` field is the path to a PHP routes file, this is a list of URL prefixes.
 - `depends_on` (not `requires`) — module.json's `requires` is version-keyed (`{"core": ">=1.0.0"}`), this is a flat list of module names. Different concepts.
 
@@ -290,6 +291,7 @@ Numbered sequentially after the current platform-side high-water mark (068). Mod
 - `072_seed_tenant_modules.sql` — straight SQL, no PHP. The migration enumerates the five known modules at write time (`members`, `events`, `projects`, `forum`, `insights`) since the runner is `.sql`-only. For each, an `INSERT ... SELECT` adds a `tenant_modules` row per existing tenant with `available_at = NOW(), enabled_at = NOW()`, preserving current behaviour exactly. `created_at`/`updated_at` are set to NOW(); `available_by`/`enabled_by` are NULL because there is no real GSA actor for the system-seeded baseline.
 
 The seed migration hard-codes the five module names because:
+
 - The migration runner is `.sql`-only (verified at plan time before this commit).
 - The set of "modules currently shipping" is a frozen snapshot of the world at migration write time. Future modules are seeded at GSA-create-tenant time, not via additional migrations.
 - A PHP-based seed would need the bootstrap to run before migrations, which inverts the safe migration order.
@@ -331,6 +333,7 @@ Note: although `TenantModuleResolver` lives in `src/Domain/Tenant/`, it depends 
 ### `src/Application/Backstage/Platform/`
 
 Use cases (one class each, single public method `execute(Input $i): Output`):
+
 - `CreateTenant` (Input: slug, names_i18n, descriptions_i18n, supported_locales, default_locale, member_number_prefix; ActingUser=GSA)
 - `UpdateTenantBasics` (same fields except slug)
 - `SuspendTenant`, `ReactivateTenant`
@@ -340,6 +343,7 @@ Use cases (one class each, single public method `execute(Input $i): Output`):
 - `RevokeModuleAvailability` (cascades enable→disable in same transaction, with audit rows for each)
 
 Controllers (thin HTTP wrappers):
+
 - `TenantsController`
 - `TenantDomainsController`
 - `TenantAdminsController`
@@ -348,10 +352,12 @@ Controllers (thin HTTP wrappers):
 ### `src/Application/Backstage/Tenant/`
 
 Use cases:
+
 - `EnableModuleForTenant`, `DisableModuleForTenant` (ActingUser=tenant_admin or platform_admin acting on tenant)
 - `ListTenantModulesForCurrentTenant` (read model for Settings → Modules page)
 
 Controller:
+
 - `TenantModulesController` (tenant-admin enable/disable operations)
 
 ### `src/Infrastructure/Persistence/Mysql/`
@@ -371,6 +377,7 @@ Controller:
 Per CLAUDE.md, every new controller, use case, and repository **must** be bound in **both** `bootstrap/app.php` (production container) and `tests/Support/KernelHarness.php` (test container with InMemory fakes where applicable). Failing to wire the prod container while wiring the test container leaves E2E green and the live server broken — this regression has bitten us before.
 
 InMemory fakes to add:
+
 - `InMemoryTenantModulesRepository`
 - `InMemoryModuleAuditRepository`
 - `InMemoryTenantDomainRepository`
@@ -483,6 +490,7 @@ Row click → `/backstage/platform/tenants/{id}?tab=basics`.
 URL pattern follows the existing Members admin's `?view=` convention (memory: `project_members_admin_merge.md`).
 
 #### Tab 1: Basics (`?tab=basics`)
+
 - `slug` — read-only (immutable post-creation)
 - `display_name_i18n` — locale cards, one per supported locale (existing pattern from events/projects i18n milestone)
 - `public_description_i18n` — same locale-card pattern; multi-line text
@@ -494,33 +502,38 @@ URL pattern follows the existing Members admin's `?view=` convention (memory: `p
 API: `PATCH /api/v1/backstage/platform/tenants/{id}` (body = updateable fields)
 
 #### Tab 2: Domains (`?tab=domains`)
+
 - Table of `tenant_domains`: hostname, primary (badge), created_at, delete button
 - "Add domain" button → modal: hostname (validated), primary checkbox
 - Setting primary on one row demotes any existing primary in the same transaction
 - Cannot delete the last primary; UI disables the button and the API enforces it
 
 API:
+
 - `GET /api/v1/backstage/platform/tenants/{id}/domains`
 - `POST /api/v1/backstage/platform/tenants/{id}/domains` (create)
 - `PATCH /api/v1/backstage/platform/tenants/{id}/domains/{domainId}` (toggle primary, edit hostname)
 - `DELETE /api/v1/backstage/platform/tenants/{id}/domains/{domainId}`
 
 #### Tab 3: Admins (`?tab=admins`)
+
 - Table of `user_tenants` rows where `role='admin'`: full name, email, granted_at, revoke button
 - "Add admin" button → user-search modal (email/name substring against `users` table); selecting a user upserts a row with `role='admin'`
 - Revoke changes `role` to `'member'` (or whatever the prior value was, if persisted; otherwise default to `'member'`)
 
 API:
+
 - `GET /api/v1/backstage/platform/tenants/{id}/admins`
 - `POST /api/v1/backstage/platform/tenants/{id}/admins` (body: `{user_id}`)
 - `DELETE /api/v1/backstage/platform/tenants/{id}/admins/{userId}`
 
 #### Tab 4: Modules (`?tab=modules`)
+
 - Lists every non-core manifest. For each:
   - Slug, translated name, translated description, category badge
   - State chip: Available / Not available (green / grey)
   - Toggle button: "Grant" or "Revoke"
-  - Dependency tag: "Requires: <other-slug>" if applicable; the Grant button is disabled if any dependency is not available
+  - Dependency tag: "Requires: `<other-slug>`" if applicable; the Grant button is disabled if any dependency is not available
 
 - Revoke confirmation dialog displays:
   - Which modules are currently `enabled` and will be force-`disabled` by the cascade
@@ -528,15 +541,18 @@ API:
   - "Revoke" submit + "Cancel" buttons
 
 API:
+
 - `GET /api/v1/backstage/platform/tenants/{id}/modules` — combines manifest data with `tenant_modules` rows
 - `POST /api/v1/backstage/platform/tenants/{id}/modules/{slug}/availability` — body `{action: 'grant'|'revoke', reason?: string}`
 
 #### Tab 5: Danger zone (`?tab=danger`)
+
 - Suspend tenant — confirm dialog with required `reason`. Sets `status='suspended'`, `suspended_at=NOW()`, `suspended_reason=<reason>`. Public domain returns 503; backstage login shows "tenant suspended" page.
 - Reactivate tenant — confirm dialog. Clears suspension fields, restores `status='active'`.
 - Hard-delete is **explicitly out of scope** — the section says so in the UI, with a placeholder "GDPR-compliant deletion: future feature."
 
 API:
+
 - `POST /api/v1/backstage/platform/tenants/{id}/suspend` (body: `{reason}`)
 - `POST /api/v1/backstage/platform/tenants/{id}/reactivate`
 
@@ -545,20 +561,24 @@ API:
 Two lists on one page:
 
 #### List 1: Enabled modules
+
 - Slug, translated name, translated description, "Enabled since" timestamp
 - Disable button. Disabled if any other enabled module declares this as a dependency; UI shows blocking modules in a tooltip and disables the action.
 
 #### List 2: Available, not yet enabled
+
 - Slug, translated name, translated description, "Granted by GSA at" timestamp
 - Activate button. Disabled if any unmet dependency exists; UI lists which dependencies must be enabled first.
 
 API:
+
 - `GET /api/v1/backstage/tenant/modules` — returns all module states for the current tenant resolved from request context
 - `POST /api/v1/backstage/tenant/modules/{slug}/state` — body `{action: 'enable'|'disable'}`
 
 ### Page rendering pattern
 
 Follows the existing backstage convention:
+
 - `public/backstage/pages/_shared.php` — header, sidebar, layout, theme
 - New `public/backstage/pages/platform/` directory for GSA pages: `tenants/index.php`, `tenants/edit.php`
 - Settings page extension: `public/backstage/pages/settings/modules.php`
@@ -579,7 +599,7 @@ Backstage delegation is unaffected. `/backstage/*` always serves from the platfo
 
 ### File layout
 
-```
+```text
 public/sites/_default/
 ├── index.php                # Home — uses Tenant displayName/publicDescription
 ├── join.php                 # Join form
@@ -700,6 +720,7 @@ All keys ship in fi_FI, en_GB, and sw_TZ. en_GB is the canonical source; the oth
 ### Isolation (`tests/Isolation/`)
 
 `IsolationTestCase`'s migration high-water mark is bumped to 072. New `TenantModulesIsolationTest` verifies:
+
 - Tenant A's `tenant_modules` rows do not leak into Tenant B's `GET /api/v1/backstage/tenant/modules` response
 - A GSA user can read every tenant's module list across tenant boundaries
 - Tenant B's admin cannot toggle Tenant A's modules — request returns HTTP 403

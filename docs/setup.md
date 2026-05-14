@@ -121,7 +121,7 @@ PHPStan configuration is in `phpstan.neon`. The default level is set in that fil
 
 ## 8. Project structure reference
 
-```
+```text
 daems-platform/
 ├── bootstrap/
 │   └── app.php           Entry point for DI container + Kernel construction

@@ -17,6 +17,7 @@
 ### Backend (`C:/laragon/www/daems-platform`)
 
 **Create:**
+
 - `src/Application/Backstage/Forum/ListForumStats/ListForumStats.php` — use case
 - `src/Application/Backstage/Forum/ListForumStats/ListForumStatsInput.php`
 - `src/Application/Backstage/Forum/ListForumStats/ListForumStatsOutput.php`
@@ -26,6 +27,7 @@
 - `tests/Isolation/ForumStatsTenantIsolationTest.php` — tenant isolation
 
 **Modify:**
+
 - `src/Domain/Forum/ForumRepositoryInterface.php` — add `countTopicsForTenant(TenantId): int` and `dailyNewTopicsForTenant(TenantId): list<array{date,value}>`
 - `src/Domain/Forum/ForumReportRepositoryInterface.php` — add `countOpenReportsForTenant(TenantId): int` and `dailyNewReportsForTenant(TenantId): list<array{date,value}>`
 - `src/Domain/Forum/ForumModerationAuditRepositoryInterface.php` — add `countActionsLast30dForTenant(TenantId): int`, `dailyActionCountForTenant(TenantId): list<array{date,value}>`, and `recentForTenant(TenantId, int $limit): list<ForumModerationAuditEntry>` if not present
@@ -40,6 +42,7 @@
 ### Frontend (`C:/laragon/www/sites/daem-society`)
 
 **Create:**
+
 - `public/pages/backstage/forum/reports/index.php`
 - `public/pages/backstage/forum/topics/index.php`
 - `public/pages/backstage/forum/categories/index.php`
@@ -53,12 +56,14 @@
 - `public/pages/backstage/forum/empty-state-topics.svg`
 
 **Modify:**
+
 - `public/pages/backstage/forum/index.php` — replace contents with dashboard layout
 - `public/pages/backstage/forum/forum.css` — strip down to forum-specific bits (`.report-reason-chip`, report-card layout); remove tab styles
 - `public/index.php` — add 4 new path matches in `__adminMap`
 - `public/api/backstage/forum.php` — add `op=stats` case + add `session_start()` if missing
 
 **Delete:**
+
 - `public/pages/backstage/forum/forum.js`
 - `public/pages/backstage/forum/forum-modal.js`
 
@@ -82,6 +87,7 @@
 ### Task 1: Add stats methods to forum domain interfaces
 
 **Files:**
+
 - Modify: `C:/laragon/www/daems-platform/src/Domain/Forum/ForumRepositoryInterface.php`
 - Modify: `C:/laragon/www/daems-platform/src/Domain/Forum/ForumReportRepositoryInterface.php`
 - Modify: `C:/laragon/www/daems-platform/src/Domain/Forum/ForumModerationAuditRepositoryInterface.php`
@@ -187,6 +193,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.org" commit -m "Domain(foru
 ### Task 2: Implement SQL stats methods (TDD via integration test)
 
 **Files:**
+
 - Create: `C:/laragon/www/daems-platform/tests/Integration/Persistence/SqlForumStatsTest.php`
 - Modify: `C:/laragon/www/daems-platform/src/Infrastructure/Adapter/Persistence/Sql/SqlForumRepository.php`
 - Modify: `C:/laragon/www/daems-platform/src/Infrastructure/Adapter/Persistence/Sql/SqlForumReportRepository.php`
@@ -515,6 +522,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.org" commit -m "Repo(forum)
 ### Task 3: Update in-memory fakes / anonymous test classes for the new interface methods
 
 **Files:**
+
 - Modify (verify exact paths): `tests/Support/Fake/InMemory*ForumRepository.php` (or wherever the fakes live)
 - Modify any unit-test anonymous classes that implement these interfaces (they will fatal-error otherwise)
 
@@ -585,6 +593,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.org" commit -m "Test(forum)
 ### Task 4: Create `ListForumStats` use case + unit test
 
 **Files:**
+
 - Create: `C:/laragon/www/daems-platform/src/Application/Backstage/Forum/ListForumStats/ListForumStats.php`
 - Create: `C:/laragon/www/daems-platform/src/Application/Backstage/Forum/ListForumStats/ListForumStatsInput.php`
 - Create: `C:/laragon/www/daems-platform/src/Application/Backstage/Forum/ListForumStats/ListForumStatsOutput.php`
@@ -850,6 +859,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.org" commit -m "UseCase(for
 ### Task 5: Add `BackstageController::statsForum()` method
 
 **Files:**
+
 - Modify: `C:/laragon/www/daems-platform/src/Infrastructure/Adapter/Api/Controller/BackstageController.php`
 
 - [ ] **Step 1: Add imports near other forum imports (around line 41-60)**
@@ -926,6 +936,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.org" commit -m "Controller(
 ### Task 6: Wire route `GET /api/v1/backstage/forum/stats`
 
 **Files:**
+
 - Modify: `C:/laragon/www/daems-platform/routes/api.php`
 
 - [ ] **Step 1: Find the existing forum routes**
@@ -957,6 +968,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.org" commit -m "Route: GET 
 ### Task 7: Wire DI in BOTH containers
 
 **Files:**
+
 - Modify: `C:/laragon/www/daems-platform/bootstrap/app.php`
 - Modify: `C:/laragon/www/daems-platform/tests/Support/KernelHarness.php`
 
@@ -1015,6 +1027,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.org" commit -m "Wire(forum)
 ### Task 8: Add E2E HTTP test + isolation test for stats endpoint
 
 **Files:**
+
 - Create: `C:/laragon/www/daems-platform/tests/Integration/Http/BackstageForumStatsTest.php`
 - Create: `C:/laragon/www/daems-platform/tests/Isolation/ForumStatsTenantIsolationTest.php`
 
@@ -1163,6 +1176,7 @@ Expected: all green, PHPStan 0.
 ### Task 10: Add 4 new sub-page routes to the front controller
 
 **Files:**
+
 - Modify: `C:/laragon/www/sites/daem-society/public/index.php`
 
 - [ ] **Step 1: Locate the `__adminMap` block (~line 247)**
@@ -1199,6 +1213,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.org" commit -m "Routing(bac
 ### Task 11: Add `op=stats` + session_start fix to forum proxy
 
 **Files:**
+
 - Modify: `C:/laragon/www/sites/daem-society/public/api/backstage/forum.php`
 
 - [ ] **Step 1: Add `session_start()` if missing**
@@ -1245,6 +1260,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.org" commit -m "Proxy(forum
 ### Task 12: Replace `/backstage/forum/index.php` with dashboard layout
 
 **Files:**
+
 - Modify (replace contents): `C:/laragon/www/sites/daem-society/public/pages/backstage/forum/index.php`
 - Create: `C:/laragon/www/sites/daem-society/public/pages/backstage/forum/forum-dashboard.js`
 
@@ -1387,6 +1403,7 @@ require __DIR__ . '/../layout.php';
 - [ ] **Step 3: Browser smoke test**
 
 Visit `http://daems.local/backstage/forum`. Expected:
+
 - 4 KPI cards render with `—` initially → values populate from API
 - Sparklines render (they may be flat if no data)
 - Recent activity list populates
@@ -1407,6 +1424,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.org" commit -m "Page(forum)
 ### Task 13: Reports sub-page + JS
 
 **Files:**
+
 - Create: `C:/laragon/www/sites/daem-society/public/pages/backstage/forum/reports/index.php`
 - Create: `C:/laragon/www/sites/daem-society/public/pages/backstage/forum/forum-reports-page.js`
 - Create: `C:/laragon/www/sites/daem-society/public/pages/backstage/forum/empty-state-reports.svg`
@@ -1774,6 +1792,7 @@ If you also added proxy ops in step 4, include the proxy file in the commit and 
 ### Task 14: Topics sub-page
 
 **Files:**
+
 - Create: `C:/laragon/www/sites/daem-society/public/pages/backstage/forum/topics/index.php`
 - Create: `C:/laragon/www/sites/daem-society/public/pages/backstage/forum/forum-topics-page.js`
 - Create: `C:/laragon/www/sites/daem-society/public/pages/backstage/forum/empty-state-topics.svg`
@@ -2062,12 +2081,14 @@ git -c user.name="Dev Team" -c user.email="dev@daems.org" commit -m "Page(forum)
 ### Task 15: Categories sub-page
 
 **Files:**
+
 - Create: `C:/laragon/www/sites/daem-society/public/pages/backstage/forum/categories/index.php`
 - Create: `C:/laragon/www/sites/daem-society/public/pages/backstage/forum/forum-categories-page.js`
 
 - [ ] **Step 1: Create `categories/index.php`**
 
 Same structure as `topics/index.php` above but with category-specific:
+
 - Page title "Forum categories", subtitle "Manage forum categories."
 - Breadcrumb to /backstage/forum
 - `+ New category` button in page-header right side (id `fc-add-btn`)
@@ -2318,6 +2339,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.org" commit -m "Page(forum)
 ### Task 16: Audit sub-page
 
 **Files:**
+
 - Create: `C:/laragon/www/sites/daem-society/public/pages/backstage/forum/audit/index.php`
 - Create: `C:/laragon/www/sites/daem-society/public/pages/backstage/forum/forum-audit-page.js`
 
@@ -2533,6 +2555,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.org" commit -m "Page(forum)
 ### Task 17: Add `.report-reason-chip` rule + slim down `forum.css`
 
 **Files:**
+
 - Modify: `C:/laragon/www/sites/daem-society/public/pages/backstage/forum/forum.css`
 
 - [ ] **Step 1: Replace `forum.css` contents**
@@ -2672,6 +2695,7 @@ Report SHAs to the user. **Do not push** — wait for explicit "pushaa".
 After writing this plan, I checked:
 
 **Spec coverage:**
+
 - §3 routing → Tasks 10 (front controller) + 12-16 (each page).
 - §4 dashboard → Task 12 + Task 4 (use case) + Task 6 (route).
 - §5 reports sub-page → Task 13.
@@ -2687,6 +2711,7 @@ After writing this plan, I checked:
 **Placeholder scan:** No "TBD"/"TODO"/"implement later" remains. Adaptation notes (e.g. "if `User::isAdminIn` doesn't exist, use whatever exists") are scoped to specific cases where the codebase is not yet inspected by the writer of this plan; subagents adapt during implementation.
 
 **Type consistency:**
+
 - KPI ids `open_reports`/`topics`/`categories`/`mod_actions` used in: backend output (Task 4 use case), controller (Task 5), proxy (Task 11), dashboard (Task 12), per-page JS for navigation (Task 12 hrefs). All identical.
 - Sparkline shape `[{date, value}, ...30]` consistent across backend, controller, proxy, sparkline init.
 - Method names `countOpenReportsForTenant` / `dailyNewReportsForTenant` / `countActionsLast30dForTenant` / `dailyActionCountForTenant` / `recentForTenant` / `countTopicsForTenant` / `dailyNewTopicsForTenant` / `countCategoriesForTenant` consistent between Tasks 1-3.

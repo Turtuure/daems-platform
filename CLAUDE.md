@@ -14,6 +14,7 @@ This project spans two Laragon web roots that work together:
 Open the **new terminal in `C:\laragon\www\daems-platform`** by default — this is the primary work location. Switch to `sites/daem-society` only when editing public-site pages, CSS, or JS.
 
 **Multi-tenant:** the platform serves multiple tenant frontends (daems, sahegroup, …) AND hosts the same backstage UI code (delegated to each frontend host). Tenant is resolved by `Host` header (`TenantContextMiddleware`). Dev-host fallback lives in `config/tenant-fallback.php`:
+
 - `daems.local` / `daem-society.local` → `daems` tenant (frontend + backstage delegation)
 - `daems-platform.local` → `daems` tenant (direct API + direct-access backstage fallback)
 - `sahegroup.local` → `sahegroup` tenant (frontend; backstage delegation needs Phase-2 X-Daems-Forwarded-Host)
@@ -66,6 +67,7 @@ Lives at `public/sites/_default/` in this repo — fallback for tenants without 
 Branch: `membership-billing-v1` (pushed up to G end; H1-H4 pending). All work lands on this branch; never push without explicit ask.
 
 Completed milestones (see `docs/superpowers/plans/` for plans, `docs/superpowers/specs/` for specs):
+
 - **PR 1** — PHPStan level 9 baseline (`2026-04-19-phpstan-level9-baseline.md`)
 - **PR 2** — Tenant infrastructure (`2026-04-19-tenant-infrastructure.md`)
 - **PR 3** — Tenant data migration (`2026-04-19-tenant-data-migration.md`): migrations 025–033 add `tenant_id` to every per-tenant table; 7 `tests/Isolation/*TenantIsolationTest.php` classes
@@ -76,6 +78,7 @@ Completed milestones (see `docs/superpowers/plans/` for plans, `docs/superpowers
 - **2026-05-13 — MembershipBilling v1 (0.7)** (`docs/superpowers/plans/2026-05-12-membership-billing-v1.md`): annual fees by board decision, anniversary-based invoice cron, waive/reduce/manual-payment, CSV-import (Nordea), § 4 deemed-resignation (2y unpaid → lapse) cron, GSA reverse-lapse override, honorary auto-waive (use case wired; UI integration deferred until ChangeMembershipType flow lands). Migrations 089-096 (096 = nullable `member_status_audit.performed_by` for cron-driven flips). New `Daems\Domain\Membership\Billing\*` namespace + `Daems\Domain\Audit\GsaOverrideAction::ReverseLapse` enum case. `bin/console membership:{generate-anniversary-invoices,mark-overdue-invoices,lapse-inactive-members}` CLI commands. Backstage UI: `/backstage/governance/billing` + sub-pages (invoices, overrides, import) with KPI strip. Stripe → 0.7.1, Visma → 0.7.2 as separate milestones. PHPStan level 9 = 0, ~80 new unit/integration/E2E tests.
 
 Active roadmap (`docs/planning/roadmap.md`, section 1 Admin Panel):
+
 1. ✅ Dashboard overview
 2. ✅ Applications + Members pages
 3. ✅ Approve-flow + global toast notifications
@@ -113,6 +116,7 @@ Active roadmap (`docs/planning/roadmap.md`, section 1 Admin Panel):
 ### DI wiring — **BOTH containers**
 
 When adding a new controller, use case, or SQL repository:
+
 - Bind it in `bootstrap/app.php` (production container)
 - Bind it in `tests/Support/KernelHarness.php` (test container with InMemory fakes)
 
@@ -150,6 +154,7 @@ Before finalising any `.md` write, mentally scan: first line is a heading, every
 ### Role & identity
 
 After PR 2 (ADR-014):
+
 - `users.role` column was DROPPED.
 - Tenant-scoped role lives in `user_tenants.role` (enum: `admin|moderator|member|supporter|registered`).
 - Platform admin is `users.is_platform_admin BOOLEAN`. GSA = "Global System Administrator" = `is_platform_admin = true`.
@@ -159,7 +164,7 @@ After PR 2 (ADR-014):
 
 Use the superpowers skills for new feature work:
 
-```
+```text
 brainstorming → writing-plans → subagent-driven-development → finishing-a-development-branch
 ```
 
@@ -176,6 +181,7 @@ Plans go to `docs/superpowers/plans/YYYY-MM-DD-<feature>.md`. Specs to `docs/sup
 ## Memory store
 
 Persistent memory for this project lives at `C:\Users\Sam\.claude\projects\C--laragon-www-daems-platform\memory\`. Key files:
+
 - `user_language_and_style.md` — Finnish, terse
 - `feedback_commit_signature.md` — Dev Team git identity
 - `feedback_bootstrap_and_harness_must_both_wire.md` — DI wiring gotcha

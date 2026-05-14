@@ -11,11 +11,13 @@
 **Spec:** `docs/superpowers/specs/2026-04-27-modular-architecture-phase1-projects-design.md` (commit `dbfc1de`)
 
 **Repos affected (3 commit streams):**
+
 - `C:\laragon\www\daems-platform\` (branch `dev`) — new `066_*` data-fix migration + autoload-dev/phpstan paths commit + Wave E removals + KernelHarness cleanup
 - `C:\laragon\www\modules\projects\` = `dp-projects` repo (existing local `.git`, origin `Turtuure/dp-projects`, branch `dev`) — manifest + all moved Projects code
 - `C:\laragon\www\sites\daem-society\` (branch `dev`) — frontend deletes only (module-router already in place)
 
 **Verification gates (must pass before final commit on any task touching moved code):**
+
 - `composer analyse` → 0 errors at PHPStan level 9
 - `composer test` (Unit + Integration) → all green
 - `composer test:e2e` → all green
@@ -36,7 +38,7 @@
 
 ## Task waves (dependency order)
 
-```
+```text
 Wave A (parallel-safe)
 ├── Task 1: dp-projects skeleton (manifest + README + .gitignore + phpunit + composer + STUB bindings/routes)
 ├── Task 2: Core data-fix migration 066_*
@@ -86,9 +88,11 @@ Wave G (verification gate)
 ## File map summary
 
 **Created in `daems-platform/`:**
+
 - `database/migrations/066_rename_project_migrations_in_schema_migrations_table.sql`
 
 **Modified in `daems-platform/`:**
+
 - `composer.json` (autoload-dev `DaemsModule\\Projects\\` + `DaemsModule\\Projects\\Tests\\`)
 - `phpstan.neon` (paths += `../modules/projects/backend/src`)
 - `bootstrap/app.php` — remove ~13 import lines + ~30 binding lines for Projects
@@ -100,6 +104,7 @@ Wave G (verification gate)
 - `src/Infrastructure/Adapter/Api/Controller/BackstageController.php` — remove 12 Project methods (lines 416–786 + ~525–565)
 
 **Deleted in `daems-platform/`:**
+
 - `src/Application/Project/` (entire dir, 13 sub-dirs, 38 files)
 - 12 admin sibling dirs under `src/Application/Backstage/`: `AdminUpdateProject`, `ApproveProjectProposal`, `ChangeProjectStatus`, `CreateProjectAsAdmin`, `DeleteProjectCommentAsAdmin`, `GetProjectWithAllTranslations`, `ListProjectCommentsForAdmin`, `ListProjectsForAdmin`, `Projects` (only `ListProjectsStats` inside), `RejectProjectProposal`, `SetProjectFeatured`, `UpdateProjectTranslation` (32 files)
 - `src/Infrastructure/Adapter/Persistence/Sql/SqlProject{,CommentModerationAudit,Proposal}Repository.php` (3 files)
@@ -116,11 +121,13 @@ Wave G (verification gate)
 - `tests/Integration/Migration/{Migration027Test,Migration031Test,Migration044Test,Migration046Test}.php` (4)
 
 **Retained in `daems-platform/` (NOT deleted):**
+
 - `src/Domain/Project/` (14 files) — Forum lesson 1
 - `src/Application/Backstage/{ListPendingApplications,ListProposalsForAdmin,Notifications}/*` — cross-domain consumers
 - Migrations `database/migrations/{053_backfill_events_projects_i18n,054_drop_translated_columns_from_events_projects,059_fulltext_events_projects_i18n}.sql` — mixed scope
 
 **Created in `modules/projects/` (dp-projects):**
+
 - `module.json`, `README.md`, `.gitignore`, `phpunit.xml.dist`, `composer.json`
 - `backend/bindings.php`, `backend/bindings.test.php`, `backend/routes.php`
 - `backend/migrations/project_001..010_*.sql` (10 files)
@@ -144,6 +151,7 @@ Wave G (verification gate)
 **Modified in `daem-society/`:** none (module-router already handles Projects after manifest discovery)
 
 **Deleted in `daem-society/`:**
+
 - `public/pages/projects/` (entire dir)
 - `public/pages/backstage/projects/` (entire dir)
 
@@ -154,6 +162,7 @@ Wave G (verification gate)
 **Repo for commits:** `dp-projects` (the new module). Local `.git` already initialised at `C:\laragon\www\modules\projects\` with `origin = https://github.com/Turtuure/dp-projects.git`, HEAD → `refs/heads/dev`. Working copy is empty.
 
 **Files:**
+
 - Create: `C:/laragon/www/modules/projects/module.json`
 - Create: `C:/laragon/www/modules/projects/README.md`
 - Create: `C:/laragon/www/modules/projects/.gitignore`
@@ -167,11 +176,13 @@ Wave G (verification gate)
 - [ ] **Step 1: Verify GitHub repo exists**
 
 Run:
+
 ```bash
 gh repo view Turtuure/dp-projects 2>&1 | head -3
 ```
 
 If "GraphQL: Could not resolve to a Repository" appears, create:
+
 ```bash
 gh repo create Turtuure/dp-projects --public --description "Projects module for daems-platform — extracted Phase 1" --homepage "https://daems.fi"
 ```
@@ -181,6 +192,7 @@ Otherwise skip.
 - [ ] **Step 2: Create `module.json`**
 
 Path: `C:/laragon/www/modules/projects/module.json`
+
 ```json
 {
   "name": "projects",
@@ -205,6 +217,7 @@ Path: `C:/laragon/www/modules/projects/module.json`
 - [ ] **Step 3: Create `README.md`**
 
 Path: `C:/laragon/www/modules/projects/README.md`
+
 ```markdown
 # dp-projects — Projects module
 
@@ -231,7 +244,8 @@ Extracted from `daems-platform` Phase 1, 2026-04-27. Pattern proven by Insights 
 - [ ] **Step 4: Create `.gitignore`**
 
 Path: `C:/laragon/www/modules/projects/.gitignore`
-```
+
+```text
 /vendor/
 /.phpunit.cache/
 /.phpunit.result.cache
@@ -245,6 +259,7 @@ Thumbs.db
 - [ ] **Step 5: Create `phpunit.xml.dist`**
 
 Path: `C:/laragon/www/modules/projects/phpunit.xml.dist`
+
 ```xml
 <?xml version="1.0" encoding="UTF-8"?>
 <phpunit xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
@@ -266,6 +281,7 @@ Path: `C:/laragon/www/modules/projects/phpunit.xml.dist`
 - [ ] **Step 6: Create `composer.json`**
 
 Path: `C:/laragon/www/modules/projects/composer.json`
+
 ```json
 {
   "name": "daems/dp-projects",
@@ -291,6 +307,7 @@ Path: `C:/laragon/www/modules/projects/composer.json`
 - [ ] **Step 7: Create STUB `backend/bindings.php`**
 
 Path: `C:/laragon/www/modules/projects/backend/bindings.php`
+
 ```php
 <?php
 
@@ -306,6 +323,7 @@ return static function (Container $container): void {
 - [ ] **Step 8: Create STUB `backend/bindings.test.php`**
 
 Path: `C:/laragon/www/modules/projects/backend/bindings.test.php`
+
 ```php
 <?php
 
@@ -321,6 +339,7 @@ return static function (Container $container): void {
 - [ ] **Step 9: Create STUB `backend/routes.php`**
 
 Path: `C:/laragon/www/modules/projects/backend/routes.php`
+
 ```php
 <?php
 
@@ -341,6 +360,7 @@ Path: `C:/laragon/www/modules/projects/backend/migrations/.gitkeep` (empty file)
 - [ ] **Step 11: Run core tests to verify ModuleRegistry boots cleanly with empty stubs**
 
 Run from `C:/laragon/www/daems-platform/`:
+
 ```bash
 vendor/bin/phpunit --testsuite=E2E --filter=ModuleRegistry 2>&1 | tail -20
 ```
@@ -352,6 +372,7 @@ If a test like `ModuleRegistryDiscoveryTest::test_registers_known_modules` alrea
 - [ ] **Step 12: Commit in `dp-projects`**
 
 Run from `C:/laragon/www/modules/projects/`:
+
 ```bash
 git -c user.name="Dev Team" -c user.email="dev@daems.fi" add module.json README.md .gitignore phpunit.xml.dist composer.json backend/
 git -c user.name="Dev Team" -c user.email="dev@daems.fi" commit -m "Skeleton: module manifest + stub bindings/routes + composer/phpunit/README"
@@ -368,11 +389,13 @@ Expected: one commit on local `dev` branch. Do NOT push.
 **Why:** when 10 project migrations move to `modules/projects/backend/migrations/` with new filenames (`project_001..010`), the existing `schema_migrations` table on dev/test DBs still references the OLD filenames (`003_create_projects_table.sql` etc.). Without a rename data-fix, the migration runner re-applies the moved migrations under their new names → duplicate tables / "already exists" errors.
 
 **Files:**
+
 - Create: `database/migrations/066_rename_project_migrations_in_schema_migrations_table.sql`
 
 - [ ] **Step 1: Create `066_*` migration with conditional, idempotent renames**
 
 Path: `database/migrations/066_rename_project_migrations_in_schema_migrations_table.sql`
+
 ```sql
 -- 066_rename_project_migrations_in_schema_migrations_table.sql
 -- Rename schema_migrations rows for project migrations that moved to modules/projects/.
@@ -417,6 +440,7 @@ PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
 - [ ] **Step 2: Verify migration parses**
 
 Run from `C:/laragon/www/daems-platform/`:
+
 ```bash
 C:/laragon/bin/mysql/mysql-8.4.3-winx64/bin/mysql.exe --user=root --password=salasana --host=127.0.0.1 daems_db_test < database/migrations/066_rename_project_migrations_in_schema_migrations_table.sql
 echo "Exit: $?"
@@ -427,6 +451,7 @@ Expected: Exit 0. (Empty test DB has no `schema_migrations` rows yet, so updates
 - [ ] **Step 3: Verify idempotency by running twice**
 
 Run again:
+
 ```bash
 C:/laragon/bin/mysql/mysql-8.4.3-winx64/bin/mysql.exe --user=root --password=salasana --host=127.0.0.1 daems_db_test < database/migrations/066_rename_project_migrations_in_schema_migrations_table.sql
 echo "Exit: $?"
@@ -437,6 +462,7 @@ Expected: Exit 0 (no-op since already-renamed rows don't match the WHERE clause)
 - [ ] **Step 4: Commit**
 
 Run from `C:/laragon/www/daems-platform/`:
+
 ```bash
 git -c user.name="Dev Team" -c user.email="dev@daems.fi" add database/migrations/066_rename_project_migrations_in_schema_migrations_table.sql
 git -c user.name="Dev Team" -c user.email="dev@daems.fi" commit -m "Migration(066): rename project migrations in schema_migrations for module move"
@@ -457,6 +483,7 @@ Expected: one commit on `dev`. Do NOT push.
 - [ ] **Step 1: Verify backend file counts**
 
 Run from `C:/laragon/www/daems-platform/`:
+
 ```bash
 echo "=== Application/Project (expect 13 dirs, 38 files) ==="
 ls -d src/Application/Project/*/ | wc -l
@@ -509,6 +536,7 @@ If ANY count differs, STOP, surface to user, don't continue.
 - [ ] **Step 2: Verify frontend file counts**
 
 Run from `C:/laragon/www/sites/daem-society/`:
+
 ```bash
 echo "=== Public projects/ (expect 7 PHP top + 2 PHP in detail/) ==="
 ls public/pages/projects/*.php | wc -l
@@ -525,6 +553,7 @@ Expected: 7 / 2 / 1 / 1 / 2.
 - [ ] **Step 3: Verify cross-domain core consumers (will need import updates in Wave E)**
 
 Run from `C:/laragon/www/daems-platform/`:
+
 ```bash
 grep -rln "Daems\\\\Tests\\\\Support\\\\Fake\\\\InMemoryProject" src tests | sort -u
 ```
@@ -542,6 +571,7 @@ Inventory step is read-only. Capture counts in session memory; proceed to Task 5
 **Repo for commits:** `dp-projects`
 
 **Files:**
+
 - Move (with namespace rewrite): `daems-platform/src/Infrastructure/Adapter/Persistence/Sql/SqlProjectRepository.php` → `modules/projects/backend/src/Infrastructure/SqlProjectRepository.php`
 - Move: `SqlProjectCommentModerationAuditRepository.php` → `modules/projects/backend/src/Infrastructure/SqlProjectCommentModerationAuditRepository.php`
 - Move: `SqlProjectProposalRepository.php` → `modules/projects/backend/src/Infrastructure/SqlProjectProposalRepository.php`
@@ -549,6 +579,7 @@ Inventory step is read-only. Capture counts in session memory; proceed to Task 5
 - [ ] **Step 1: Copy 3 files into module**
 
 Run from `C:/laragon/www/`:
+
 ```bash
 mkdir -p modules/projects/backend/src/Infrastructure
 cp daems-platform/src/Infrastructure/Adapter/Persistence/Sql/SqlProjectRepository.php modules/projects/backend/src/Infrastructure/SqlProjectRepository.php
@@ -559,11 +590,14 @@ cp daems-platform/src/Infrastructure/Adapter/Persistence/Sql/SqlProjectProposalR
 - [ ] **Step 2: Rewrite `namespace` declaration in each**
 
 For each of the 3 files, replace:
-```
+
+```text
 namespace Daems\Infrastructure\Adapter\Persistence\Sql;
 ```
+
 with:
-```
+
+```text
 namespace DaemsModule\Projects\Infrastructure;
 ```
 
@@ -572,11 +606,13 @@ Use Edit tool per file (single-line replace).
 - [ ] **Step 3: Verify imports**
 
 For each moved file, scan its `use` statements. Allowed imports (must remain `Daems\` core namespace):
+
 - `Daems\Domain\Project\*` (interfaces + entities — Forum lesson 1, Domain stays in core)
 - `Daems\Domain\Tenant\*`, `Daems\Domain\User\*`, `Daems\Domain\Locale\*`
 - `Daems\Infrastructure\Framework\*` (Connection, etc.)
 
 Run:
+
 ```bash
 grep -hE "^use " modules/projects/backend/src/Infrastructure/SqlProject*.php | sort -u
 ```
@@ -586,6 +622,7 @@ Expected: only `Daems\` core imports + `Doctrine\DBAL\*` if the SQL repos use it
 - [ ] **Step 4: PHPStan check on moved files**
 
 PHPStan paths in `daems-platform/phpstan.neon` already include `../modules/*/backend/src/` per the foundation; module's own composer autoload will pick it up after Task 9.5. For now, verify no syntax errors:
+
 ```bash
 php -l modules/projects/backend/src/Infrastructure/SqlProjectRepository.php
 php -l modules/projects/backend/src/Infrastructure/SqlProjectCommentModerationAuditRepository.php
@@ -597,6 +634,7 @@ Expected: each prints "No syntax errors detected".
 - [ ] **Step 5: Commit in dp-projects**
 
 Run from `C:/laragon/www/modules/projects/`:
+
 ```bash
 git -c user.name="Dev Team" -c user.email="dev@daems.fi" add backend/src/Infrastructure/
 git -c user.name="Dev Team" -c user.email="dev@daems.fi" commit -m "Move(infra): 3 SQL repositories with namespace rewrite"
@@ -611,6 +649,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.fi" commit -m "Move(infra):
 **Repo for commits:** `dp-projects`
 
 **Files:**
+
 - Move: `daems-platform/tests/Support/Fake/InMemoryProjectRepository.php` → `modules/projects/backend/tests/Support/InMemoryProjectRepository.php`
 - Move: `InMemoryProjectCommentModerationAuditRepository.php` → same name in module
 - Move: `InMemoryProjectProposalRepository.php` → same name in module
@@ -618,6 +657,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.fi" commit -m "Move(infra):
 - [ ] **Step 1: Copy 3 files**
 
 Run from `C:/laragon/www/`:
+
 ```bash
 mkdir -p modules/projects/backend/tests/Support
 cp daems-platform/tests/Support/Fake/InMemoryProjectRepository.php modules/projects/backend/tests/Support/InMemoryProjectRepository.php
@@ -628,11 +668,14 @@ cp daems-platform/tests/Support/Fake/InMemoryProjectProposalRepository.php modul
 - [ ] **Step 2: Rewrite namespace per file**
 
 In each, replace:
-```
+
+```text
 namespace Daems\Tests\Support\Fake;
 ```
+
 with:
-```
+
+```text
 namespace DaemsModule\Projects\Tests\Support;
 ```
 
@@ -662,12 +705,14 @@ Originals stay in `daems-platform/tests/Support/Fake/` until Task 24.
 **Repo for commits:** `dp-projects`
 
 **Files:**
+
 - Move: 13 sub-directories under `daems-platform/src/Application/Project/` → `modules/projects/backend/src/Application/Project/`
   - `AddProjectComment/` (3) | `AddProjectUpdate/` (3) | `ArchiveProject/` (3) | `CreateProject/` (3) | `GetProject/` (3) | `GetProjectBySlugForLocale/` (3) | `JoinProject/` (3) | `LeaveProject/` (3) | `LikeProjectComment/` (2) | `ListProjects/` (3) | `ListProjectsForLocale/` (3) | `SubmitProjectProposal/` (3) | `UpdateProject/` (3)
 
 - [ ] **Step 1: Copy entire directory tree**
 
 Run from `C:/laragon/www/`:
+
 ```bash
 mkdir -p modules/projects/backend/src/Application
 cp -r daems-platform/src/Application/Project modules/projects/backend/src/Application/Project
@@ -681,24 +726,31 @@ Expected: 38 files copied.
 For every `.php` file under `modules/projects/backend/src/Application/Project/`:
 
 Replace:
-```
+
+```text
 namespace Daems\Application\Project\
 ```
+
 with:
-```
+
+```text
 namespace DaemsModule\Projects\Application\Project\
 ```
 
 Replace within `use` statements:
-```
+
+```text
 use Daems\Application\Project\
 ```
+
 with:
-```
+
+```text
 use DaemsModule\Projects\Application\Project\
 ```
 
 Run via PowerShell (in `C:/laragon/www/modules/projects/backend/src/Application/Project/`):
+
 ```powershell
 Get-ChildItem -Recurse -Filter *.php | ForEach-Object {
     (Get-Content $_.FullName -Raw) `
@@ -713,6 +765,7 @@ Get-ChildItem -Recurse -Filter *.php | ForEach-Object {
 `Daems\Domain\Project\*`, `Daems\Domain\Tenant\*`, `Daems\Domain\User\*`, `Daems\Domain\Locale\*`, `Daems\Domain\Membership\*`, `Daems\Application\Shared\*` are all permitted (Domain stays in core).
 
 Run:
+
 ```bash
 grep -rhE "^use Daems\\\\" modules/projects/backend/src/Application/Project/ | sort -u
 ```
@@ -731,6 +784,7 @@ Expected: 0 errors. (Will work even before Task 9.5 because PHPStan paths in `ph
 - [ ] **Step 5: Commit**
 
 Run from `C:/laragon/www/modules/projects/`:
+
 ```bash
 git -c user.name="Dev Team" -c user.email="dev@daems.fi" add backend/src/Application/Project/
 git -c user.name="Dev Team" -c user.email="dev@daems.fi" commit -m "Move(app): Application/Project — 38 files in 13 use-case dirs"
@@ -745,12 +799,14 @@ Originals remain in `daems-platform/src/Application/Project/` until Task 25.
 **Repo for commits:** `dp-projects`
 
 **Files:**
+
 - Move: 12 dirs under `daems-platform/src/Application/Backstage/` → `modules/projects/backend/src/Application/Backstage/`:
   - `AdminUpdateProject/` (3), `ApproveProjectProposal/` (3), `ChangeProjectStatus/` (2), `CreateProjectAsAdmin/` (3), `DeleteProjectCommentAsAdmin/` (2), `GetProjectWithAllTranslations/` (3), `ListProjectCommentsForAdmin/` (3), `ListProjectsForAdmin/` (3), `Projects/` (only contains `ListProjectsStats/` with 3 files), `RejectProjectProposal/` (2), `SetProjectFeatured/` (2), `UpdateProjectTranslation/` (3)
 
 - [ ] **Step 1: Copy each sibling dir**
 
 Run from `C:/laragon/www/`:
+
 ```bash
 mkdir -p modules/projects/backend/src/Application/Backstage
 for d in AdminUpdateProject ApproveProjectProposal ChangeProjectStatus CreateProjectAsAdmin DeleteProjectCommentAsAdmin GetProjectWithAllTranslations ListProjectCommentsForAdmin ListProjectsForAdmin Projects RejectProjectProposal SetProjectFeatured UpdateProjectTranslation; do
@@ -765,9 +821,10 @@ Expected: 29.
 
 For every `.php` file under `modules/projects/backend/src/Application/Backstage/`:
 
-Replace `namespace Daems\Application\Backstage\<UseCase>\` → `namespace DaemsModule\Projects\Application\Backstage\<UseCase>\` for each of the 12 use case names. Same for `use ` statements.
+Replace `namespace Daems\Application\Backstage\<UseCase>\` → `namespace DaemsModule\Projects\Application\Backstage\<UseCase>\` for each of the 12 use case names. Same for `use` statements.
 
 PowerShell (in `C:/laragon/www/modules/projects/backend/src/Application/Backstage/`):
+
 ```powershell
 $useCases = @('AdminUpdateProject','ApproveProjectProposal','ChangeProjectStatus','CreateProjectAsAdmin','DeleteProjectCommentAsAdmin','GetProjectWithAllTranslations','ListProjectCommentsForAdmin','ListProjectsForAdmin','Projects\\ListProjectsStats','RejectProjectProposal','SetProjectFeatured','UpdateProjectTranslation')
 Get-ChildItem -Recurse -Filter *.php | ForEach-Object {
@@ -813,11 +870,13 @@ git -c user.name="Dev Team" -c user.email="dev@daems.fi" commit -m "Move(app): 1
 **Repo for commits:** `dp-projects`
 
 **Files:**
+
 - Move: `daems-platform/src/Infrastructure/Adapter/Api/Controller/ProjectController.php` → `modules/projects/backend/src/Controller/ProjectController.php`
 
 - [ ] **Step 1: Copy file**
 
 Run from `C:/laragon/www/`:
+
 ```bash
 mkdir -p modules/projects/backend/src/Controller
 cp daems-platform/src/Infrastructure/Adapter/Api/Controller/ProjectController.php modules/projects/backend/src/Controller/ProjectController.php
@@ -826,17 +885,21 @@ cp daems-platform/src/Infrastructure/Adapter/Api/Controller/ProjectController.ph
 - [ ] **Step 2: Rewrite namespace**
 
 Replace:
-```
+
+```text
 namespace Daems\Infrastructure\Adapter\Api\Controller;
 ```
+
 with:
-```
+
+```text
 namespace DaemsModule\Projects\Controller;
 ```
 
 Then update all `use Daems\Application\Project\` imports to `use DaemsModule\Projects\Application\Project\`.
 
 PowerShell:
+
 ```powershell
 $file = 'C:\laragon\www\modules\projects\backend\src\Controller\ProjectController.php'
 $content = Get-Content $file -Raw
@@ -880,6 +943,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.fi" commit -m "Move(control
 **Why (Forum lesson 3):** core's PHPStan + Composer autoloader cannot see the module's namespace until we register it. Without this, Tasks 17–20 (test moves) and Task 13 (production binding) fail because the module's classes are unresolvable.
 
 **Files:**
+
 - Modify: `composer.json` (add module namespaces to `autoload-dev`)
 - Modify: `phpstan.neon` (add module path)
 
@@ -895,12 +959,14 @@ Capture the existing `psr-4` map structure. (Forum already added `DaemsModule\\F
 - [ ] **Step 2: Add Projects entries to `composer.json` autoload-dev**
 
 Edit `C:/laragon/www/daems-platform/composer.json`. Inside `autoload-dev.psr-4`, add (after the Forum entries):
+
 ```json
 "DaemsModule\\Projects\\": "../modules/projects/backend/src/",
 "DaemsModule\\Projects\\Tests\\": "../modules/projects/backend/tests/"
 ```
 
 Verify the JSON parses:
+
 ```bash
 php -r "json_decode(file_get_contents('composer.json'), false, 512, JSON_THROW_ON_ERROR); echo 'OK';"
 ```
@@ -908,6 +974,7 @@ php -r "json_decode(file_get_contents('composer.json'), false, 512, JSON_THROW_O
 - [ ] **Step 3: Add module path to `phpstan.neon`**
 
 Read current paths block:
+
 ```bash
 grep -A 5 "^parameters:" phpstan.neon | head -15
 grep -E "^\s+paths:" phpstan.neon
@@ -917,7 +984,8 @@ grep -A 20 "^\s+paths:" phpstan.neon | head -30
 The Forum extraction added `- ../modules/forum/backend/src/`. Add an equivalent line for Projects.
 
 Edit `C:/laragon/www/daems-platform/phpstan.neon`, in the `paths:` list under `parameters:`, add:
-```
+
+```text
         - ../modules/projects/backend/src/
 ```
 
@@ -966,6 +1034,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.fi" commit -m "Wire(modules
 **Why:** the 10 Project methods + 2 proposal-decision methods (`approveProjectProposal`, `rejectProjectProposal`) currently live as methods on the monolith `BackstageController` in core. Move them into a single new module-owned `ProjectsBackstageController`. F4=A locked.
 
 **Files:**
+
 - Source (read-only this task): `daems-platform/src/Infrastructure/Adapter/Api/Controller/BackstageController.php`
 - Create: `modules/projects/backend/src/Controller/ProjectsBackstageController.php`
 - Create: `modules/projects/backend/tests/Unit/Controller/ProjectsBackstageControllerSignatureTest.php`
@@ -992,6 +1061,7 @@ From `BackstageController.php`:
 - [ ] **Step 1: Read each source method body**
 
 For each of the 12 methods, locate exact line range in `daems-platform/src/Infrastructure/Adapter/Api/Controller/BackstageController.php`:
+
 ```bash
 cd C:/laragon/www/daems-platform
 grep -nE "function (listProjectsAdmin|createProjectAdmin|updateProjectAdmin|changeProjectStatus|setProjectFeatured|listProjectComments|deleteProjectComment|statsProjects|getProjectWithTranslations|updateProjectTranslation|approveProjectProposal|rejectProjectProposal)\(" src/Infrastructure/Adapter/Api/Controller/BackstageController.php
@@ -1004,6 +1074,7 @@ Capture each method's start line. The body extends to the matching closing `}` �
 For each method, note which use case classes it calls. The new `ProjectsBackstageController` needs ALL 12 use case dependencies in its constructor.
 
 Aggregate the unique use case dependencies:
+
 1. `ListProjectsForAdmin`
 2. `CreateProjectAsAdmin`
 3. `AdminUpdateProject`
@@ -1250,6 +1321,7 @@ Expected: 14 tests pass (1 class_exists + 1 constructor + 12 method exists, data
 For each of the 12 methods, replace the placeholder `throw new \LogicException('not implemented yet');` with the actual body from `daems-platform/src/Infrastructure/Adapter/Api/Controller/BackstageController.php`.
 
 For each body, rewrite class references:
+
 - `$this->listProjectsForAdmin` → `$this->listProjects` (match constructor property names defined above)
 - `$this->createProjectAsAdmin` → `$this->createProject`
 - etc. (rename to match shorthand property names; or keep source names and update constructor to match)
@@ -1257,12 +1329,15 @@ For each body, rewrite class references:
 **Decision:** keep source-style property names to minimise body diff. Rename constructor parameters in Step 5 to match exactly what the body references. Re-run signature test to confirm.
 
 For example, if the source `BackstageController::listProjectsAdmin` does:
+
 ```php
 $out = $this->listProjectsForAdmin->execute(new ListProjectsForAdminInput(...));
 ```
+
 then the module controller's constructor parameter must be `private ListProjectsForAdmin $listProjectsForAdmin` (not `$listProjects`). Update both Step 5's constructor AND the test in Step 3 to match.
 
 After this consistency pass, re-run:
+
 ```bash
 vendor/bin/phpunit ../modules/projects/backend/tests/Unit/Controller/ProjectsBackstageControllerSignatureTest.php
 ```
@@ -1306,6 +1381,7 @@ The original 12 methods on core `BackstageController` are NOT yet deleted — th
 **Repo for commits:** `dp-projects`
 
 **Files:**
+
 - Move (with rename) 10 files from `daems-platform/database/migrations/` → `modules/projects/backend/migrations/`:
 
 | Old name | New name |
@@ -1324,6 +1400,7 @@ The original 12 methods on core `BackstageController` are NOT yet deleted — th
 - [ ] **Step 1: Copy each migration with rename**
 
 Run from `C:/laragon/www/`:
+
 ```bash
 cp daems-platform/database/migrations/003_create_projects_table.sql modules/projects/backend/migrations/project_001_create_projects_table.sql
 cp daems-platform/database/migrations/009_create_project_extras.sql modules/projects/backend/migrations/project_002_create_project_extras.sql
@@ -1357,6 +1434,7 @@ If any cross-table ALTER appears, wrap it in the `SET @t := (SELECT COUNT(*) FRO
 Pre-step: ensure `daems_db_test` is at the latest pre-extraction state. (Migrations 053, 054, 055, 059 in core depend on `projects_i18n` table existing from `052`, which we're moving. Our new module migration `project_009_*` creates it; the migration runner that loads modules will see it. Test the ordered chain runs cleanly.)
 
 For now, just SQL-parse each:
+
 ```bash
 for f in modules/projects/backend/migrations/project_*.sql; do
   C:/laragon/bin/mysql/mysql-8.4.3-winx64/bin/mysql.exe --user=root --password=salasana --host=127.0.0.1 daems_db_test -e "$(cat $f)" 2>&1 | tail -3
@@ -1385,6 +1463,7 @@ Originals NOT deleted yet — that's Task 25.
 **Why:** populate the module's `backend/bindings.php` with all production DI bindings: 3 repos + 13 public use cases + 12 admin use cases + 2 controllers = 30 bindings. After this task, `bootstrap/app.php` Kernel can resolve module classes via core's container.
 
 **Files:**
+
 - Modify: `modules/projects/backend/bindings.php` (replace stub with full bindings)
 
 - [ ] **Step 1: Read existing Project bindings in core for reference**
@@ -1399,6 +1478,7 @@ Capture the existing bindings (around lines 23–35 imports + 225–360 bindings
 - [ ] **Step 2: Write full `bindings.php`**
 
 Path: `modules/projects/backend/bindings.php`
+
 ```php
 <?php
 
@@ -1497,6 +1577,7 @@ return static function (Container $container): void {
 The bindings between the two `// ...` comments must be filled in by reading the actual source bootstrap/app.php Project bindings. Do not invent constructor signatures — copy them verbatim from current bootstrap, only swap the namespace prefix.
 
 To extract them mechanically:
+
 ```bash
 cd C:/laragon/www/daems-platform
 sed -n '225,360p' bootstrap/app.php > /tmp/project_bindings.txt
@@ -1517,6 +1598,7 @@ Expected: 0 errors.
 - [ ] **Step 4: Production-container smoke test (Forum lesson 7)**
 
 Create temp script `C:/laragon/www/daems-platform/_tmp_smoke.php` (NOT committed):
+
 ```php
 <?php
 require __DIR__ . '/vendor/autoload.php';
@@ -1546,6 +1628,7 @@ echo "ALL OK\n";
 ```
 
 Run:
+
 ```bash
 cd C:/laragon/www/daems-platform
 php _tmp_smoke.php
@@ -1576,6 +1659,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.fi" commit -m "Bind(product
 **Why:** KernelHarness test container needs InMemory fakes instead of SQL impls. Same use case + controller bindings as production; only the 3 repository bindings differ.
 
 **Files:**
+
 - Modify: `modules/projects/backend/bindings.test.php`
 
 - [ ] **Step 1: Replicate `bindings.php` with InMemory fake substitution**
@@ -1583,6 +1667,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.fi" commit -m "Bind(product
 Path: `modules/projects/backend/bindings.test.php`
 
 Same structure as `bindings.php` but for the 3 repository bindings, swap to InMemory fakes:
+
 ```php
 $container->bind(ProjectRepositoryInterface::class,
     static fn() => new \DaemsModule\Projects\Tests\Support\InMemoryProjectRepository());
@@ -1608,6 +1693,7 @@ Expected: 0 errors.
 - [ ] **Step 3: KernelHarness smoke**
 
 `tests/Support/KernelHarness.php` automatically loads each module's `bindings.test.php`. Run a quick KernelHarness boot smoke:
+
 ```bash
 cd C:/laragon/www/daems-platform
 vendor/bin/phpunit --filter=ModuleRegistry --testsuite=Unit 2>&1 | tail -20
@@ -1631,6 +1717,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.fi" commit -m "Bind(test): 
 **Repo for commits:** `dp-projects`
 
 **Files:**
+
 - Modify: `modules/projects/backend/routes.php`
 
 - [ ] **Step 1: Read source routes**
@@ -1783,6 +1870,7 @@ Expected: 0 errors.
 - [ ] **Step 3: Smoke route count**
 
 Count number of `$router->` calls in module's routes.php:
+
 ```bash
 grep -cE "\\\$router->" modules/projects/backend/routes.php
 ```
@@ -1804,6 +1892,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.fi" commit -m "Routes: 13 p
 **Repo for commits:** `dp-projects`
 
 **Files:**
+
 - Move: `daems-platform/tests/Unit/Application/Project/CreateProjectTest.php` → `modules/projects/backend/tests/Unit/Application/Project/CreateProjectTest.php`
 - Move: `UpdateProjectTest.php` → same name in module
 
@@ -1819,11 +1908,13 @@ cp daems-platform/tests/Unit/Application/Project/UpdateProjectTest.php modules/p
 - [ ] **Step 2: Rewrite namespace + use statements**
 
 In each file:
+
 - `namespace Daems\Tests\Unit\Application\Project;` → `namespace DaemsModule\Projects\Tests\Unit\Application\Project;`
 - `use Daems\Application\Project\` → `use DaemsModule\Projects\Application\Project\`
 - `use Daems\Tests\Support\Fake\InMemoryProject` → `use DaemsModule\Projects\Tests\Support\InMemoryProject`
 
 PowerShell:
+
 ```powershell
 $dir = 'C:\laragon\www\modules\projects\backend\tests\Unit\Application\Project'
 Get-ChildItem -Path $dir -Filter *.php | ForEach-Object {
@@ -1859,6 +1950,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.fi" commit -m "Move(tests):
 **Repo for commits:** `dp-projects`
 
 **Files:** 10 files in `daems-platform/tests/Unit/Application/Backstage/` matching `*Project*Test.php`:
+
 - `AdminUpdateProjectTest`, `ApproveProjectProposalTest`, `ChangeProjectStatusTest`, `CreateProjectAsAdminTest`, `DeleteProjectCommentAsAdminTest`, `ListProjectCommentsForAdminTest`, `ListProjectsForAdminTest`, `ListProjectsStatsTest`, `RejectProjectProposalTest`, `SetProjectFeaturedTest`
 
 Move to `modules/projects/backend/tests/Unit/Application/Backstage/<same names>.php`.
@@ -1879,11 +1971,13 @@ Expected: 10.
 - [ ] **Step 2: Rewrite namespace + imports**
 
 Per file:
+
 - `namespace Daems\Tests\Unit\Application\Backstage;` → `namespace DaemsModule\Projects\Tests\Unit\Application\Backstage;`
 - `use Daems\Application\Backstage\<UseCase>\` → `use DaemsModule\Projects\Application\Backstage\<UseCase>\` (for the 12 use case names)
 - `use Daems\Tests\Support\Fake\InMemoryProject` → `use DaemsModule\Projects\Tests\Support\InMemoryProject`
 
 PowerShell:
+
 ```powershell
 $dir = 'C:\laragon\www\modules\projects\backend\tests\Unit\Application\Backstage'
 $useCases = @('AdminUpdateProject','ApproveProjectProposal','ChangeProjectStatus','CreateProjectAsAdmin','DeleteProjectCommentAsAdmin','GetProjectWithAllTranslations','ListProjectCommentsForAdmin','ListProjectsForAdmin','RejectProjectProposal','SetProjectFeatured','UpdateProjectTranslation')
@@ -1923,6 +2017,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.fi" commit -m "Move(tests):
 **Repo for commits:** `dp-projects`
 
 **Files:**
+
 - Move: `tests/Integration/Application/ProjectCommentModerationIntegrationTest.php` → `modules/projects/backend/tests/Integration/Application/ProjectCommentModerationIntegrationTest.php`
 - Move: `tests/Integration/Application/ProjectsAdminIntegrationTest.php` → same path in module
 - Move: `tests/Integration/Infrastructure/SqlProjectRepositoryI18nTest.php` → `modules/projects/backend/tests/Integration/Infrastructure/SqlProjectRepositoryI18nTest.php`
@@ -1945,6 +2040,7 @@ cp daems-platform/tests/Integration/ProjectStatsTest.php modules/projects/backen
 - [ ] **Step 2: Rewrite namespace + imports**
 
 For each file:
+
 - `namespace Daems\Tests\Integration\Application;` → `namespace DaemsModule\Projects\Tests\Integration\Application;` (and respective `Infrastructure;` / `;` namespaces)
 - `use Daems\Application\Project\` → `use DaemsModule\Projects\Application\Project\`
 - `use Daems\Application\Backstage\<UseCase>\` (for project use cases) → `use DaemsModule\Projects\Application\Backstage\<UseCase>\`
@@ -1979,6 +2075,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.fi" commit -m "Move(tests):
 **Repo for commits:** `dp-projects`
 
 **Files:**
+
 - Move: `tests/Isolation/{ProjectTenantIsolationTest,ProjectsAdminTenantIsolationTest,ProjectsI18nTenantIsolationTest,ProjectsStatsTenantIsolationTest}.php` (4) → `modules/projects/backend/tests/Isolation/`
 - Move: `tests/E2E/F004_UnauthProjectMutationTest.php` → `modules/projects/backend/tests/E2E/`
 - Move: `tests/E2E/ProjectsLocaleE2ETest.php` → same in module
@@ -2028,6 +2125,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.fi" commit -m "Move(tests):
 **Why:** module's `bindings.php` (loaded by `ModuleRegistry`) now provides all 30 Project bindings. Core's bootstrap should not duplicate them.
 
 **Files:**
+
 - Modify: `bootstrap/app.php`
 
 - [ ] **Step 1: Identify exact line ranges**
@@ -2042,7 +2140,8 @@ Expected: imports lines 23–35 (or thereabouts), bindings around 225–360. Cap
 - [ ] **Step 2: Delete imports**
 
 Remove lines:
-```
+
+```text
 use Daems\Application\Project\AddProjectComment\AddProjectComment;
 use Daems\Application\Project\AddProjectUpdate\AddProjectUpdate;
 use Daems\Application\Project\ArchiveProject\ArchiveProject;
@@ -2064,6 +2163,7 @@ use Daems\Infrastructure\Adapter\Persistence\Sql\SqlProjectRepository;
 (Plus `SqlProjectCommentModerationAuditRepository` import if present.)
 
 **Keep** these imports:
+
 - `use Daems\Domain\Project\ProjectProposalRepositoryInterface;` (cross-domain consumers like `ListProposalsForAdmin` still use)
 - `use Daems\Domain\Project\ProjectRepositoryInterface;`
 - `use Daems\Domain\Project\ProjectCommentModerationAuditRepositoryInterface;`
@@ -2071,6 +2171,7 @@ use Daems\Infrastructure\Adapter\Persistence\Sql\SqlProjectRepository;
 - [ ] **Step 3: Delete binding blocks**
 
 Delete every `$container->bind(...)` block where:
+
 - Target is one of the 13 public + 12 admin Project use cases
 - Target is one of the 3 SQL repositories
 - Target is `ProjectController`
@@ -2096,6 +2197,7 @@ Expected: all green. (Module's `bindings.php` registers everything from `ModuleR
 - [ ] **Step 5: Production-container smoke**
 
 Re-run the smoke from Task 13 step 4 (recreate temp script, run, delete):
+
 ```bash
 cd C:/laragon/www/daems-platform
 cat > _tmp_smoke.php <<'EOF'
@@ -2134,6 +2236,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.fi" commit -m "Remove(boots
 **Repo for commits:** `daems-platform`
 
 **Files:**
+
 - Modify: `routes/api.php`
 
 - [ ] **Step 1: Identify exact line ranges**
@@ -2150,6 +2253,7 @@ Capture: 13 ProjectController routes (lines ~63–115) + 12 ProjectsBackstageCon
 Each route is ~3–4 lines (`$router->...; }, [...]);`). Use Edit tool — if any 25-line ranges are contiguous, delete via large multi-line Edit.
 
 The 5 out-of-prefix routes also delete:
+
 - `/api/v1/project-comments/{id}/like`
 - `/api/v1/project-proposals`
 - `/api/v1/backstage/proposals/{id}/approve`
@@ -2191,6 +2295,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.fi" commit -m "Remove(route
 **Repo for commits:** `daems-platform`
 
 **Files:**
+
 - Modify: `src/Infrastructure/Adapter/Api/Controller/BackstageController.php`
 
 - [ ] **Step 1: Identify exact method line ranges**
@@ -2207,6 +2312,7 @@ Capture each method's start line. The body extends to its matching closing `}` �
 Use Edit tool per method — replace each `public function methodName(...): Response { ... }` block with empty (delete entirely).
 
 Also remove from constructor any unused parameters that ONLY supported these 12 methods. Check via grep:
+
 ```bash
 grep -nE "private (ListProjectsForAdmin|CreateProjectAsAdmin|AdminUpdateProject|ChangeProjectStatus|SetProjectFeatured|ListProjectCommentsForAdmin|DeleteProjectCommentAsAdmin|ListProjectsStats|GetProjectWithAllTranslations|UpdateProjectTranslation|ApproveProjectProposal|RejectProjectProposal) " src/Infrastructure/Adapter/Api/Controller/BackstageController.php
 ```
@@ -2250,6 +2356,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.fi" commit -m "Remove(contr
 **Repo for commits:** `daems-platform`
 
 **Files:**
+
 - Modify: `tests/Support/KernelHarness.php`
 - Modify: `tests/Unit/Application/Backstage/ListPendingApplicationsForAdminTest.php`
 - Modify: `tests/Unit/Application/Backstage/ListProposalsForAdminTest.php`
@@ -2268,11 +2375,13 @@ Identify all bindings + InMemory fake registrations for Projects. Delete them. K
 - [ ] **Step 2: Update 5 cross-domain test imports**
 
 For each of the 5 test files:
+
 - Replace `use Daems\Tests\Support\Fake\InMemoryProjectRepository;` → `use DaemsModule\Projects\Tests\Support\InMemoryProjectRepository;`
 - Replace `use Daems\Tests\Support\Fake\InMemoryProjectProposalRepository;` → `use DaemsModule\Projects\Tests\Support\InMemoryProjectProposalRepository;`
 - Replace `use Daems\Tests\Support\Fake\InMemoryProjectCommentModerationAuditRepository;` → `use DaemsModule\Projects\Tests\Support\InMemoryProjectCommentModerationAuditRepository;`
 
 PowerShell:
+
 ```powershell
 $files = @(
     'C:\laragon\www\daems-platform\tests\Support\KernelHarness.php',
@@ -2329,6 +2438,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.fi" commit -m "Remove(harne
 **Repo for commits:** `daems-platform`
 
 **Why:** module's migrations are now active via `ModuleRegistry`. Core's originals are obsolete and confusing. Apply the `066_*` data-fix to dev DB, then delete:
+
 - 10 original Project migrations
 - 38 + 32 + 3 + 1 = 74 backend source files (Domain stays — 14 retained)
 - 2 + 10 = 12 unit tests (Application/Project + Backstage)
@@ -2348,6 +2458,7 @@ C:/laragon/bin/mysql/mysql-8.4.3-winx64/bin/mysql.exe --user=root --password=sal
 ```
 
 Verify rows renamed in `daems_db.schema_migrations`:
+
 ```bash
 C:/laragon/bin/mysql/mysql-8.4.3-winx64/bin/mysql.exe --user=root --password=salasana --host=127.0.0.1 daems_db -e "SELECT migration FROM schema_migrations WHERE migration LIKE '%project%' ORDER BY migration"
 ```
@@ -2370,6 +2481,7 @@ rm database/migrations/055_add_source_locale_to_project_proposals.sql
 ```
 
 Verify migrations 053, 054, 059 retained:
+
 ```bash
 ls database/migrations/053_backfill_events_projects_i18n.sql database/migrations/054_drop_translated_columns_from_events_projects.sql database/migrations/059_fulltext_events_projects_i18n.sql
 ```
@@ -2488,6 +2600,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.fi" commit -m "Remove(core)
 **Repo for commits:** `dp-projects`
 
 **Files:**
+
 - Move: 7 files from `daem-society/public/pages/projects/{cta,detail,edit,grid,hero,index,new}.php` → `modules/projects/frontend/public/`
 - Move: 2 files from `daem-society/public/pages/projects/detail/{content,hero}.php` → `modules/projects/frontend/public/detail/`
 
@@ -2521,6 +2634,7 @@ grep -nE "__DIR__|require_once|include" modules/projects/frontend/public/*.php m
 Replace each `__DIR__ . '/../../X'` with the canonical `DAEMS_SITE_PUBLIC . '/pages/X'` form (matching the path Forum's Wave F task 26 used).
 
 For includes within the same dir (e.g. `index.php` includes `hero.php`), the relative path may still work since both files moved together. Use:
+
 ```php
 require_once __DIR__ . '/hero.php';   // OK — both files in modules/projects/frontend/public/
 ```
@@ -2530,6 +2644,7 @@ For the `errors/404.php` reference — apply Forum's lesson learned: use `DAEMS_
 - [ ] **Step 3: Browser smoke**
 
 In a local browser, navigate to:
+
 - `http://daems.local/projects` (index list)
 - `http://daems.local/projects/<slug>` (detail)
 - `http://daems.local/projects/new` (proposal form, requires login)
@@ -2553,6 +2668,7 @@ Originals NOT yet deleted in daem-society — that's Task 28.
 **Repo for commits:** `dp-projects`
 
 **Files:**
+
 - Move: `daem-society/public/pages/backstage/projects/index.php` → `modules/projects/frontend/backstage/index.php`
 
 - [ ] **Step 1: Copy file**
@@ -2566,13 +2682,15 @@ cp sites/daem-society/public/pages/backstage/projects/index.php modules/projects
 - [ ] **Step 2: Rewrite asset URLs in moved page**
 
 In `modules/projects/frontend/backstage/index.php`, replace:
-```
+
+```text
 /pages/backstage/projects/projects-stats.js  →  /modules/projects/assets/backstage/projects-stats.js
 /pages/backstage/projects/project-modal.css  →  /modules/projects/assets/backstage/project-modal.css
 /pages/backstage/projects/project-modal.js   →  /modules/projects/assets/backstage/project-modal.js
 ```
 
 PowerShell:
+
 ```powershell
 $file = 'C:\laragon\www\modules\projects\frontend\backstage\index.php'
 $c = Get-Content $file -Raw
@@ -2605,6 +2723,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.fi" commit -m "Move(fronten
 **Repo for commits:** `dp-projects` + `daem-society`
 
 **Files:**
+
 - Move: `daem-society/public/pages/backstage/projects/project-modal.css` → `modules/projects/frontend/assets/backstage/project-modal.css`
 - Move: `project-modal.js` → same name in `assets/backstage/`
 - Move: `projects-stats.js` → same name in `assets/backstage/`
@@ -2647,6 +2766,7 @@ rm -rf sites/daem-society/public/pages/backstage/projects
 ```
 
 Verify deletion:
+
 ```bash
 ls sites/daem-society/public/pages/projects 2>&1
 ls sites/daem-society/public/pages/backstage/projects 2>&1
@@ -2657,6 +2777,7 @@ Expected: "No such file or directory" twice.
 - [ ] **Step 5: Browser smoke against new module-router-served URLs**
 
 Navigate to:
+
 - `http://daems.local/projects` — must render via module-router
 - `http://daems.local/backstage/projects` — must render
 - All assets in Network panel: HTTP 200 for `/modules/projects/assets/backstage/*`
@@ -2746,11 +2867,13 @@ Expected: zero hits in `daems-platform`. Cross-module imports (`DaemsModule\Proj
 Navigate the following URLs in `http://daems.local`:
 
 **Public:**
+
 - `/projects` — list renders, project cards display
 - `/projects/<slug>` — detail page renders, comments load, like/join/leave buttons functional
 - `/projects/new` — proposal form (requires login) renders, submit creates a proposal
 
 **Backstage:**
+
 - `/backstage/projects` — admin dashboard renders, project list, stats KPIs display
 - Click any project → modal opens with translations editor (English + Finnish + Swahili tabs)
 - Save translation per-locale → toast confirms success
@@ -2758,16 +2881,19 @@ Navigate the following URLs in `http://daems.local`:
 - Change status (draft/published/archived) → state persists
 
 **Network panel checks:**
+
 - `/modules/projects/assets/backstage/project-modal.css` → 200
 - `/modules/projects/assets/backstage/project-modal.js` → 200
 - `/modules/projects/assets/backstage/projects-stats.js` → 200
 
 **JS console checks:**
+
 - 0 errors
 - 0 `payload is undefined`
 - 0 unresolved import / 404 fetch errors
 
 **Theme parity (CLAUDE.md backlog item I13):**
+
 - Backstage projects page matches dark/light mode of other admin pages
 - No theme-regression patches need adjusting
 
@@ -2780,6 +2906,7 @@ If smoke fails on any URL: report URL + console error / screenshot, fix in modul
 - [ ] **Step 7: No commit needed**
 
 Verification step is read-only. After user "pushaa":
+
 ```bash
 cd C:/laragon/www/daems-platform   && git push origin dev
 cd C:/laragon/www/modules/projects && git push origin dev
@@ -2795,6 +2922,7 @@ cd C:/laragon/www/sites/daem-society && git push origin dev
 This plan was generated by `superpowers:writing-plans` after the brainstorming spec was approved. Self-review checklist:
 
 **1. Spec coverage:** every section in the spec maps to one or more tasks:
+
 - §1 (locked decisions) → encoded into Tasks 1, 10, 13–15
 - §2 (Forum lessons) → encoded as plan-level rules + Task 9.5 + production-smoke at Wave E gates
 - §3 (inventory) → Task 3 verification

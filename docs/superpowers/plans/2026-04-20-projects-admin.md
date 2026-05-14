@@ -13,6 +13,7 @@
 **Commit identity (every commit):** `git -c user.name="Dev Team" -c user.email="dev@daems.org" commit -m "..."`. No `Co-Authored-By`. Never stage `.claude/`. Never auto-push.
 
 **Project conventions (critical):**
+
 - PHPUnit testsuite names CAPITALISED: `Unit` / `Integration` / `E2E`. Lowercased silently returns "No tests executed!" — always verify the count.
 - InMemory fakes at `tests/Support/Fake/` with namespace `Daems\Tests\Support\Fake`.
 - DI bindings must exist in BOTH `bootstrap/app.php` AND `tests/Support/KernelHarness.php`. Missing bootstrap = live 500 while E2E stays green.
@@ -26,15 +27,18 @@
 ### Backend — new
 
 **Migrations:**
+
 - `database/migrations/044_add_featured_to_projects.sql`
 - `database/migrations/045_extend_dismissals_enum_and_comment_audit.sql`
 - `database/migrations/046_add_decision_metadata_to_project_proposals.sql`
 
 **Domain:**
+
 - `src/Domain/Project/ProjectCommentModerationAudit.php`
 - `src/Domain/Project/ProjectCommentModerationAuditRepositoryInterface.php`
 
 **Application (use cases — one directory per, with Input/Output siblings):**
+
 - `src/Application/Backstage/ListProjectsForAdmin/`
 - `src/Application/Backstage/CreateProjectAsAdmin/`
 - `src/Application/Backstage/AdminUpdateProject/`
@@ -47,12 +51,15 @@
 - `src/Application/Backstage/DeleteProjectCommentAsAdmin/`
 
 **Infrastructure:**
+
 - `src/Infrastructure/Adapter/Persistence/Sql/SqlProjectCommentModerationAuditRepository.php`
 
 **Test fakes:**
+
 - `tests/Support/Fake/InMemoryProjectCommentModerationAuditRepository.php`
 
 **Tests:** one unit test file per use case under `tests/Unit/Application/Backstage/`, plus:
+
 - `tests/Integration/Migration/Migration044Test.php`, `Migration045Test.php`, `Migration046Test.php`
 - `tests/Integration/Application/ProjectsAdminIntegrationTest.php`
 - `tests/Integration/Application/ProjectCommentModerationIntegrationTest.php`
@@ -112,6 +119,7 @@
 ### Task 1: Migrations 044, 045, 046 + IsolationTestCase bump
 
 **Files:**
+
 - Create: `database/migrations/044_add_featured_to_projects.sql`
 - Create: `database/migrations/045_extend_dismissals_enum_and_comment_audit.sql`
 - Create: `database/migrations/046_add_decision_metadata_to_project_proposals.sql`
@@ -123,6 +131,7 @@
 - [ ] **Step 1: Write migration 044 + test (TDD)**
 
 `tests/Integration/Migration/Migration044Test.php`:
+
 ```php
 <?php
 declare(strict_types=1);
@@ -157,6 +166,7 @@ final class Migration044Test extends MigrationTestCase
 Run: `vendor/bin/phpunit tests/Integration/Migration/Migration044Test.php` → FAIL (migration file missing).
 
 Create `database/migrations/044_add_featured_to_projects.sql`:
+
 ```sql
 ALTER TABLE projects
     ADD COLUMN featured TINYINT(1) NOT NULL DEFAULT 0
@@ -168,6 +178,7 @@ Run test → PASS.
 - [ ] **Step 2: Write migration 045 + test (TDD)**
 
 `tests/Integration/Migration/Migration045Test.php`:
+
 ```php
 <?php
 declare(strict_types=1);
@@ -217,6 +228,7 @@ final class Migration045Test extends MigrationTestCase
 Run test → FAIL.
 
 Create `database/migrations/045_extend_dismissals_enum_and_comment_audit.sql`:
+
 ```sql
 ALTER TABLE admin_application_dismissals
     MODIFY COLUMN app_type ENUM('member','supporter','project_proposal') NOT NULL;
@@ -242,6 +254,7 @@ Run → PASS.
 - [ ] **Step 3: Write migration 046 + test (TDD)**
 
 `tests/Integration/Migration/Migration046Test.php`:
+
 ```php
 <?php
 declare(strict_types=1);
@@ -267,6 +280,7 @@ final class Migration046Test extends MigrationTestCase
 Run → FAIL.
 
 Create `database/migrations/046_add_decision_metadata_to_project_proposals.sql`:
+
 ```sql
 ALTER TABLE project_proposals
     ADD COLUMN decided_at    DATETIME NULL,
@@ -301,6 +315,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.org" commit -m "Feat(projec
 ### Task 2: Project + ProjectProposal domain extensions + SQL/InMemory repos
 
 **Files:**
+
 - Modify: `src/Domain/Project/Project.php`
 - Modify: `src/Domain/Project/ProjectProposal.php`
 - Modify: `src/Domain/Project/ProjectRepositoryInterface.php`
@@ -313,11 +328,13 @@ git -c user.name="Dev Team" -c user.email="dev@daems.org" commit -m "Feat(projec
 - [ ] **Step 1: Add `featured` to Project entity**
 
 In `src/Domain/Project/Project.php`, add as the last constructor arg:
+
 ```php
 private readonly bool $featured = false,
 ```
 
 Add getter:
+
 ```php
 public function featured(): bool { return $this->featured; }
 ```
@@ -327,6 +344,7 @@ Existing call-sites (ctor without `featured`) remain valid due to default.
 - [ ] **Step 2: Add decision metadata to ProjectProposal entity**
 
 In `src/Domain/Project/ProjectProposal.php`, append three constructor args with null defaults:
+
 ```php
 private readonly ?string $decidedAt = null,
 private readonly ?string $decidedBy = null,
@@ -334,6 +352,7 @@ private readonly ?string $decisionNote = null,
 ```
 
 Add getters:
+
 ```php
 public function decidedAt(): ?string { return $this->decidedAt; }
 public function decidedBy(): ?string { return $this->decidedBy; }
@@ -343,6 +362,7 @@ public function decisionNote(): ?string { return $this->decisionNote; }
 - [ ] **Step 3: Extend ProjectRepositoryInterface**
 
 Replace `src/Domain/Project/ProjectRepositoryInterface.php` with:
+
 ```php
 <?php
 
@@ -412,6 +432,7 @@ interface ProjectRepositoryInterface
 - [ ] **Step 4: Extend ProjectProposalRepositoryInterface**
 
 Replace `src/Domain/Project/ProjectProposalRepositoryInterface.php` with:
+
 ```php
 <?php
 
@@ -659,6 +680,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.org" commit -m "Feat(projec
 ### Task 3: `ProjectCommentModerationAudit` domain + SQL + InMemory
 
 **Files:**
+
 - Create: `src/Domain/Project/ProjectCommentModerationAudit.php`
 - Create: `src/Domain/Project/ProjectCommentModerationAuditRepositoryInterface.php`
 - Create: `src/Infrastructure/Adapter/Persistence/Sql/SqlProjectCommentModerationAuditRepository.php`
@@ -667,6 +689,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.org" commit -m "Feat(projec
 - [ ] **Step 1: Domain entity**
 
 `src/Domain/Project/ProjectCommentModerationAudit.php`:
+
 ```php
 <?php
 declare(strict_types=1);
@@ -692,6 +715,7 @@ final class ProjectCommentModerationAudit
 - [ ] **Step 2: Repo interface**
 
 `src/Domain/Project/ProjectCommentModerationAuditRepositoryInterface.php`:
+
 ```php
 <?php
 declare(strict_types=1);
@@ -711,6 +735,7 @@ interface ProjectCommentModerationAuditRepositoryInterface
 - [ ] **Step 3: SQL repo**
 
 `src/Infrastructure/Adapter/Persistence/Sql/SqlProjectCommentModerationAuditRepository.php`:
+
 ```php
 <?php
 declare(strict_types=1);
@@ -769,6 +794,7 @@ final class SqlProjectCommentModerationAuditRepository implements ProjectComment
 - [ ] **Step 4: InMemory fake**
 
 `tests/Support/Fake/InMemoryProjectCommentModerationAuditRepository.php`:
+
 ```php
 <?php
 declare(strict_types=1);
@@ -810,6 +836,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.org" commit -m "Feat(projec
 ### Task 4: `ListProjectsForAdmin` use case (TDD)
 
 **Files:**
+
 - Create: `src/Application/Backstage/ListProjectsForAdmin/{ListProjectsForAdmin.php, ListProjectsForAdminInput.php, ListProjectsForAdminOutput.php}`
 - Create: `tests/Unit/Application/Backstage/ListProjectsForAdminTest.php`
 
@@ -828,6 +855,7 @@ Test file structure mirrors `ListEventsForAdminTest` (look at that file's test m
 `ListProjectsForAdminOutput.php`: `items` list<array{id, slug, title, category, status, featured, owner_id, participants_count, comments_count, created_at}> + `toArray()`.
 
 `ListProjectsForAdmin.php`:
+
 ```php
 <?php
 declare(strict_types=1);
@@ -888,6 +916,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.org" commit -m "Feat(projec
 ### Task 5: `CreateProjectAsAdmin` + `AdminUpdateProject` use cases (TDD, combined)
 
 **Files:**
+
 - Create: `src/Application/Backstage/CreateProjectAsAdmin/{CreateProjectAsAdmin.php, CreateProjectAsAdminInput.php, CreateProjectAsAdminOutput.php}`
 - Create: `src/Application/Backstage/AdminUpdateProject/{AdminUpdateProject.php, AdminUpdateProjectInput.php, AdminUpdateProjectOutput.php}`
 - Create: `tests/Unit/Application/Backstage/CreateProjectAsAdminTest.php`
@@ -1064,6 +1093,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.org" commit -m "Feat(projec
 ### Task 6: `ChangeProjectStatus` + `SetProjectFeatured` use cases (TDD, combined)
 
 **Files:**
+
 - Create: `src/Application/Backstage/ChangeProjectStatus/{ChangeProjectStatus.php, ChangeProjectStatusInput.php}`
 - Create: `src/Application/Backstage/SetProjectFeatured/{SetProjectFeatured.php, SetProjectFeaturedInput.php}`
 - Create: `tests/Unit/Application/Backstage/ChangeProjectStatusTest.php`
@@ -1155,6 +1185,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.org" commit -m "Feat(projec
 ### Task 7: `ListProposalsForAdmin` use case (TDD)
 
 **Files:**
+
 - Create: `src/Application/Backstage/ListProposalsForAdmin/{ListProposalsForAdmin.php, ListProposalsForAdminInput.php, ListProposalsForAdminOutput.php}`
 - Create: `tests/Unit/Application/Backstage/ListProposalsForAdminTest.php`
 
@@ -1219,6 +1250,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.org" commit -m "Feat(projec
 ### Task 8: `ApproveProjectProposal` + `RejectProjectProposal` use cases (TDD)
 
 **Files:**
+
 - Create: `src/Application/Backstage/ApproveProjectProposal/{ApproveProjectProposal.php, ApproveProjectProposalInput.php, ApproveProjectProposalOutput.php}`
 - Create: `src/Application/Backstage/RejectProjectProposal/{RejectProjectProposal.php, RejectProjectProposalInput.php}`
 - Create: `tests/Unit/Application/Backstage/ApproveProjectProposalTest.php`
@@ -1229,6 +1261,7 @@ Both are transactional. Use the existing `TransactionManagerInterface` (from app
 - [ ] **Step 1: Failing tests**
 
 ApproveProjectProposalTest covers:
+
 1. Admin approves → `projects` row created (status=draft, owner_id = proposal.userId, fields copied), proposal row updated (status=approved, decided_at set, decided_by set, decision_note set from input), any `admin_application_dismissals` rows for this proposal id are cleared.
 2. Non-admin → Forbidden.
 3. Proposal not in tenant → NotFoundException.
@@ -1236,6 +1269,7 @@ ApproveProjectProposalTest covers:
 5. Output carries new project `id` + `slug`.
 
 RejectProjectProposalTest covers:
+
 1. Admin rejects → proposal status=rejected with decision metadata.
 2. No project created.
 3. Dismissals for this proposal id cleared.
@@ -1395,6 +1429,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.org" commit -m "Feat(projec
 ### Task 9: `ListProjectCommentsForAdmin` + `DeleteProjectCommentAsAdmin` (TDD)
 
 **Files:**
+
 - Create: `src/Application/Backstage/ListProjectCommentsForAdmin/{ListProjectCommentsForAdmin.php, ListProjectCommentsForAdminInput.php, ListProjectCommentsForAdminOutput.php}`
 - Create: `src/Application/Backstage/DeleteProjectCommentAsAdmin/{DeleteProjectCommentAsAdmin.php, DeleteProjectCommentAsAdminInput.php}`
 - Create: `tests/Unit/Application/Backstage/ListProjectCommentsForAdminTest.php`
@@ -1499,6 +1534,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.org" commit -m "Feat(projec
 ### Task 10: Extend `ListPendingApplicationsForAdmin` + `DismissApplication` to include proposals
 
 **Files:**
+
 - Modify: `src/Application/Backstage/ListPendingApplications/ListPendingApplicationsForAdmin.php`
 - Modify: `src/Application/Backstage/DismissApplication/DismissApplication.php`
 - Modify existing unit tests for these two use cases.
@@ -1506,6 +1542,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.org" commit -m "Feat(projec
 - [ ] **Step 1: Update `DismissApplication` input validation**
 
 In `DismissApplication::execute`, find the `appType` whitelist and add `'project_proposal'`:
+
 ```php
 if (!in_array($input->appType, ['member', 'supporter', 'project_proposal'], true)) {
     throw new ValidationException(['app_type' => 'invalid_value']);
@@ -1517,6 +1554,7 @@ if (!in_array($input->appType, ['member', 'supporter', 'project_proposal'], true
 Add `ProjectProposalRepositoryInterface $proposals` as a new constructor dependency (append after existing params — don't reorder).
 
 In `execute()`, after the existing loops over member + supporter apps, add a third loop:
+
 ```php
 foreach ($this->proposals->listPendingForTenant($tenantId) as $proposal) {
     if (isset($dismissed[$proposal->id()->value()])) continue;
@@ -1555,11 +1593,13 @@ git -c user.name="Dev Team" -c user.email="dev@daems.org" commit -m "Feat(toast)
 ### Task 11: HTTP — 11 new BackstageController methods
 
 **Files:**
+
 - Modify: `src/Infrastructure/Adapter/Api/Controller/BackstageController.php`
 
 - [ ] **Step 1: Add constructor deps**
 
 Append to the constructor param list (never reorder existing):
+
 - `ListProjectsForAdmin $listProjects`
 - `CreateProjectAsAdmin $createProject`
 - `AdminUpdateProject $updateProject`
@@ -1734,6 +1774,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.org" commit -m "Feat(projec
 ### Task 12: Routes — 11 new entries
 
 **Files:**
+
 - Modify: `routes/api.php`
 
 - [ ] **Step 1: Add routes**
@@ -1795,6 +1836,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.org" commit -m "Feat(projec
 ### Task 13: DI wiring — BOTH containers
 
 **Files:**
+
 - Modify: `bootstrap/app.php`
 - Modify: `tests/Support/KernelHarness.php`
 
@@ -1803,6 +1845,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.org" commit -m "Feat(projec
 - [ ] **Step 1: bootstrap/app.php additions**
 
 Bind audit repo:
+
 ```php
 $container->singleton(\Daems\Domain\Project\ProjectCommentModerationAuditRepositoryInterface::class,
     static fn(Container $c) => new \Daems\Infrastructure\Adapter\Persistence\Sql\SqlProjectCommentModerationAuditRepository(
@@ -1812,6 +1855,7 @@ $container->singleton(\Daems\Domain\Project\ProjectCommentModerationAuditReposit
 ```
 
 Bind each of the 10 new use cases. Example:
+
 ```php
 $container->bind(\Daems\Application\Backstage\ListProjectsForAdmin\ListProjectsForAdmin::class,
     static fn(Container $c) => new \Daems\Application\Backstage\ListProjectsForAdmin\ListProjectsForAdmin(
@@ -1893,16 +1937,19 @@ $container->bind(\Daems\Application\Backstage\DeleteProjectCommentAsAdmin\Delete
 - [ ] **Step 2: KernelHarness.php — mirror bindings with InMemory**
 
 Add new fields:
+
 ```php
 public InMemoryProjectCommentModerationAuditRepository $commentAudit;
 ```
 
 In constructor:
+
 ```php
 $this->commentAudit = new InMemoryProjectCommentModerationAuditRepository();
 ```
 
 In `buildKernel`:
+
 ```php
 $container->singleton(\Daems\Domain\Project\ProjectCommentModerationAuditRepositoryInterface::class, fn() => $this->commentAudit);
 ```
@@ -1918,6 +1965,7 @@ for sym in ListProjectsForAdmin CreateProjectAsAdmin AdminUpdateProject ChangePr
   grep -c "$sym" bootstrap/app.php tests/Support/KernelHarness.php
 done
 ```
+
 Each should report ≥1 in each file.
 
 - [ ] **Step 4: Live smoke**
@@ -1930,6 +1978,7 @@ curl -i http://127.0.0.1:8090/api/v1/backstage/projects -H "Host: daems-platform
 kill %1
 sed -i '/^APP_DEBUG=true$/d' .env
 ```
+
 Expected: HTTP 401. 500 = binding mismatch — fix before committing.
 
 - [ ] **Step 5: Run analyse + all test suites**
@@ -1952,6 +2001,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.org" commit -m "Wire: bind 
 ### Task 14: Integration + Isolation + E2E tests
 
 **Files:**
+
 - Create: `tests/Integration/Application/ProjectsAdminIntegrationTest.php`
 - Create: `tests/Integration/Application/ProjectCommentModerationIntegrationTest.php`
 - Create: `tests/Isolation/ProjectsAdminTenantIsolationTest.php`
@@ -1963,21 +2013,25 @@ git -c user.name="Dev Team" -c user.email="dev@daems.org" commit -m "Wire: bind 
 `ProjectsAdminIntegrationTest` extends `MigrationTestCase`. `setUp` runs migrations to 46, seeds tenant + admin user + user_tenants admin.
 
 Test 1 `test_proposal_approve_creates_project_and_clears_dismissals`:
+
 - Seed a pending proposal in DB.
 - Call real `ApproveProjectProposal` via Sql-backed repos + `PdoTransactionManager`.
 - Assert: `projects` row exists with status=`draft`, `owner_id` = proposal.user_id, fields copied.
 - Assert: proposal row has status=`approved`, `decided_at`/`decided_by`/`decision_note` populated.
 
 Test 2 `test_admin_list_sees_drafts_but_public_list_does_not`:
+
 - Seed one project with each status (draft/active/archived).
 - Call `ListProjectsForAdmin` → all 3 visible.
 - Call public `ListProjects` → draft hidden, archived status depends on repo logic (verify against Task 2 Step 6 where `listForTenant` filters to non-draft; check if archived also hidden from public — spec says `published` only equivalent for projects is "non-draft-non-archived", i.e. `status = 'active'` for public. Confirm with implementation).
 
 Test 3 `test_featured_projects_surface_first_in_public_list`:
+
 - Seed two active projects, mark one featured.
 - Public `ListProjects` output: featured first.
 
 `ProjectCommentModerationIntegrationTest`:
+
 - Seed project + user + comment.
 - Call `DeleteProjectCommentAsAdmin`.
 - Assert: row gone from `project_comments`, audit row present in `project_comment_moderation_audit`.
@@ -1995,6 +2049,7 @@ Test 3 `test_featured_projects_surface_first_in_public_list`:
 `ProjectsAdminEndpointsTest`: mirrors `EventAdminEndpointsTest`. Cover happy paths + error paths for each of the 10 new routes. Total ~12 test methods.
 
 `AdminInboxIncludesProposalsTest`:
+
 - Seed a pending proposal via the harness (`$h->proposals->save(...)`).
 - `GET /backstage/applications/pending-count` → assert `items` contains `{type: 'project_proposal', ...}`.
 - Dismiss it: `POST /backstage/applications/project_proposal/{id}/dismiss` → 204.
@@ -2008,6 +2063,7 @@ vendor/bin/phpunit tests/Integration/Application/ProjectCommentModerationIntegra
 vendor/bin/phpunit tests/Isolation/ProjectsAdminTenantIsolationTest.php
 vendor/bin/phpunit --testsuite E2E
 ```
+
 Each file must report specific pass counts (not "No tests executed!"). E2E total must grow by ~13.
 
 - [ ] **Step 5: Commit (one per file is fine; alternative: single commit)**
@@ -2022,6 +2078,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.org" commit -m "Test(projec
 ### Task 15: Frontend proxies (daem-society)
 
 **Files (`C:\laragon\www\sites\daem-society`):**
+
 - Create: `public/api/backstage/projects.php`
 - Create: `public/api/backstage/proposals.php`
 
@@ -2160,6 +2217,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.org" commit -m "Feat(backst
 ### Task 16: Frontend admin page + modal (daem-society)
 
 **Files:**
+
 - Create: `public/pages/backstage/projects/index.php`
 - Create: `public/pages/backstage/projects/project-modal.js`
 - Create: `public/pages/backstage/projects/project-modal.css`
@@ -2167,6 +2225,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.org" commit -m "Feat(backst
 - [ ] **Step 1: `index.php`**
 
 PHP-side: admin guard (same as other backstage pages). Parse `?tab=proposals|projects|comments` from URL (default `proposals`). Server-side initial fetches:
+
 - Proposals list: `ApiClient::get('/backstage/proposals') ?? ['items' => [], 'total' => 0]`
 - Projects list: `ApiClient::get('/backstage/projects') ?? ['items' => [], 'total' => 0]`
 - Comments list: `ApiClient::get('/backstage/comments/recent') ?? ['items' => [], 'total' => 0]`
@@ -2174,6 +2233,7 @@ PHP-side: admin guard (same as other backstage pages). Parse `?tab=proposals|pro
 Pass all three as `window.DAEMS_PROJECTS_TAB = { proposals: ..., projects: ..., comments: ... }`.
 
 Render:
+
 - Tab nav: three buttons with `data-tab="proposals|projects|comments"`. Active tab gets `is-active` class.
 - Each tab content in its own `<section data-tab-content="...">`, hidden when not active.
 - Proposals section: iteration over items — name, email, title, category, summary, expandable description, Approve/Reject buttons with note textarea.
@@ -2185,10 +2245,12 @@ Include `project-modal.css`, `project-modal.js`.
 - [ ] **Step 2: `project-modal.js`**
 
 Vanilla JS `window.ProjectModal.open(mode, project?)`. Form fields: title, category, icon (text input for Bootstrap Icons class), summary, description. No file upload in MVP (projects don't have images per current schema). Save:
+
 - Create: `fetch('/api/backstage/projects?op=create', { body: JSON })` → reload page.
 - Update: `fetch('/api/backstage/projects?op=update&id={id}', { body: JSON })` → reload.
 
 Also the file handles:
+
 - Tab switching (`data-tab` click).
 - Proposal approve/reject inline (uses `fetch('/api/backstage/proposals?op=approve|reject&id={id}', { body: {note} })`).
 - Status change (row-level dropdown).
@@ -2218,6 +2280,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.org" commit -m "Feat(backst
 ### Task 17: Toast routing + public featured badge
 
 **Files (daem-society):**
+
 - Modify: `public/pages/backstage/toasts.js`
 - Modify: `public/pages/projects/grid.php` (or wherever project cards render)
 - Modify (possibly): `public/assets/css/daems.css`
@@ -2225,6 +2288,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.org" commit -m "Feat(backst
 - [ ] **Step 1: `toasts.js` — route proposal clicks**
 
 Find the click handler that sets `window.location.href`. Replace the single-line href with:
+
 ```js
 if (item.type === 'project_proposal') {
     window.location.href = '/backstage/projects?tab=proposals&highlight=' + encodeURIComponent(item.id);
@@ -2234,6 +2298,7 @@ if (item.type === 'project_proposal') {
 ```
 
 Also update the toast title generator:
+
 ```js
 var title = item.type === 'project_proposal'
     ? 'New Project Proposal'
@@ -2245,6 +2310,7 @@ var title = item.type === 'project_proposal'
 - [ ] **Step 2: Public featured badge**
 
 Find where project cards render (`public/pages/projects/grid.php` most likely). Inside the card markup, just after the title, add:
+
 ```php
 <?php if (!empty($project['featured'])): ?>
     <span class="badge badge--featured">Featured</span>
@@ -2252,6 +2318,7 @@ Find where project cards render (`public/pages/projects/grid.php` most likely). 
 ```
 
 Add CSS (in `daems.css` or a nearby project-specific stylesheet):
+
 ```css
 .badge--featured {
     display: inline-block;

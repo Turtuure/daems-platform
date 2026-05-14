@@ -16,12 +16,14 @@ Add the `/backstage/events` admin page (roadmap §4). Admins can create, edit, p
 ## 2. Scope
 
 **In:**
+
 - Event CRUD from backstage with `draft / published / archived` status.
 - Image upload for hero + gallery (multipart, server-side resize).
 - Registration list + admin-initiated unregister (user can still unregister from archived events).
 - Status filter + type filter on the admin listing.
 
 **Out (YAGNI, explicit):**
+
 - Capacity limits / waitlist.
 - Registration approval workflow (registrations remain auto-approved).
 - Recurring events.
@@ -144,7 +146,7 @@ Same admin check as other backstage endpoints. The upload endpoint binds the URL
 
 ### 6.2 Page structure
 
-```
+```text
 ┌─────────────────────────────────────────────────────────────┐
 │ Events                                         [+ New event] │
 ├─────────────────────────────────────────────────────────────┤
@@ -181,6 +183,7 @@ Single modal, two modes. Fields:
 **Save** button → `POST /backstage/events` (create) or `POST /backstage/events/{id}` (edit) with JSON body of non-file fields. Files are uploaded separately via the upload endpoint; the returned URL is added to `hero_image` or `gallery_json` at save time.
 
 **Submit flow for new event with images:**
+
 1. User fills fields + drops image files.
 2. On "Save draft" or "Save & publish":
    - Client first POSTs `/backstage/events` with the fields (status based on button). Receives `{id}`.
@@ -219,6 +222,7 @@ This two-phase save avoids a giant multipart request. If any image upload fails,
 The daem-society public event-detail page (`public/pages/events/detail/gallery.php`) already has a working lightbox: thumbnails with class `event-gallery-thumb` + modal `#galleryLightbox`, wired in `public/assets/js/daems.js` ("Event gallery lightbox" block). Styles in `public/assets/css/daems.css`.
 
 **No JS or CSS changes needed for the lightbox itself.** The plan must only ensure:
+
 - Event-detail PHP rendering reads `gallery_json` from the API response (or whatever it already uses) and emits one `<a class="event-gallery-thumb" data-src="<full-url>" data-alt="..."><img src="<full-url>"></a>` per image, matching the existing markup pattern already in `gallery.php`.
 - If `gallery_json` is empty or null, the whole `.event-gallery` section is skipped — no empty modal, no "0 photos" header.
 - URLs stored are relative (`/uploads/events/<id>/<uuid>.webp`) — emit them as-is; the daem-society host has its own Apache config but the platform host (daems-platform.local) serves `public/uploads/`, so admins must verify the event-detail page loads images from the correct absolute base URL. If the frontend expects same-origin, prefix with `http://daems-platform.local` or expose the resolver used elsewhere (same pattern as invite URLs).
@@ -287,6 +291,7 @@ Upload is hard to unit-test against GD. Integration-level test: POST a 1×1 PNG 
 ## 10. Files (inventory)
 
 **New (backend):**
+
 - `database/migrations/043_add_status_to_events.sql`
 - `src/Application/Backstage/ListEventsForAdmin/{ListEventsForAdmin, Input, Output}.php`
 - `src/Application/Backstage/CreateEvent/{CreateEvent, Input, Output}.php`
@@ -302,6 +307,7 @@ Upload is hard to unit-test against GD. Integration-level test: POST a 1×1 PNG 
 - Integration/Isolation/E2E tests as listed above.
 
 **Modified (backend):**
+
 - `src/Domain/Event/Event.php` — add status.
 - `src/Domain/Event/EventRepositoryInterface.php` — add `listAllStatusesForTenant`, `updateForTenant`, `setStatus`, `listRegistrationsForEvent`.
 - `src/Infrastructure/Adapter/Persistence/Sql/SqlEventRepository.php` — implement above + tighten public `listForTenant` to `status='published'`.
@@ -312,6 +318,7 @@ Upload is hard to unit-test against GD. Integration-level test: POST a 1×1 PNG 
 - `tests/Isolation/IsolationTestCase.php` — bump to 43.
 
 **New (daem-society):**
+
 - `public/pages/backstage/events/index.php`
 - `public/pages/backstage/events/event-modal.js`
 - `public/pages/backstage/events/event-modal.css`
@@ -321,6 +328,7 @@ Upload is hard to unit-test against GD. Integration-level test: POST a 1×1 PNG 
 - `public/uploads/events/` directory (gitignored or not — see .gitignore check in plan phase)
 
 **Modified (daem-society):**
+
 - `public/pages/backstage/layout.php` — sidebar link already exists; no change needed.
 - Possibly `public/assets/css/daems-backstage.css` — modal + upload widget styles if not inline.
 

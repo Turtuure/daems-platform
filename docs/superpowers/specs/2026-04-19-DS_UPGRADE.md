@@ -11,6 +11,7 @@
 ## 1. Yhteenveto
 
 Daems-platform muuttuu single-tenant järjestelmästä **multi-tenant-alustaksi**:
+
 - Käyttäjät ovat globaaleja identiteettejä, joilla voi olla rooli useissa tenanteissa
 - Jäsenyydet, roolit ja sisältö (projects, events, applications, forum, insights) ovat tenant-rajoitteita
 - Uusi `users.is_platform_admin` -flagi korvaa aiemman `global_system_administrator`-roolin ja on ainoa tapa ylittää tenant-rajat
@@ -29,6 +30,7 @@ Samassa spekissä nostetaan koko koodipohja **PHPStan level 9 -puhtaaksi** (nyky
 ## 3. Ei-tavoitteet (scope-rajat)
 
 Seuraavat asiat **eivät** kuulu tähän spekkiin ja tehdään omina töinä myöhemmin:
+
 - Dashboard-migraatio (`daem-society/public/pages/backstage/` → `daems-platform/public/dashboard/`) — oma spec heti tämän jälkeen
 - Admin UI uusien tenanttien luomiseen — uudet tenantit lisätään SQL:llä nyt
 - Cross-tenant content-jakaminen (esim. projekti omistettuna kahdelle tenantille) — YAGNI
@@ -39,7 +41,7 @@ Seuraavat asiat **eivät** kuulu tähän spekkiin ja tehdään omina töinä my�
 
 ### 4.1 Korkea taso
 
-```
+```text
 ┌─ HTTP ──────────────────────────────────────────────────┐
 │  Request: daems.fi / sahegroup.com / daems.local / ...  │
 │  Authorization: Bearer <token>                          │
@@ -125,6 +127,7 @@ final class HostTenantResolver
 ### 5.1 Uudet taulut
 
 **`tenants`**
+
 ```sql
 CREATE TABLE tenants (
     id         CHAR(36)     NOT NULL,
@@ -138,6 +141,7 @@ CREATE TABLE tenants (
 ```
 
 **`tenant_domains`**
+
 ```sql
 CREATE TABLE tenant_domains (
     domain     VARCHAR(255) NOT NULL,
@@ -152,6 +156,7 @@ CREATE TABLE tenant_domains (
 ```
 
 **`user_tenants`** (pivot)
+
 ```sql
 CREATE TABLE user_tenants (
     user_id    CHAR(36)     NOT NULL,
@@ -170,6 +175,7 @@ CREATE TABLE user_tenants (
 ```
 
 **`platform_admin_audit`**
+
 ```sql
 CREATE TABLE platform_admin_audit (
     id          CHAR(36)     NOT NULL,
@@ -206,18 +212,20 @@ Application-kerros asettaa `@app_actor_user_id`-session-muuttujan ennen UPDATE-k
 ### 5.2 Muutokset olemassa oleviin tauluihin
 
 **`users`**
+
 - Lisää `is_platform_admin BOOLEAN NOT NULL DEFAULT FALSE`
 - Backfill: `UPDATE users SET is_platform_admin = TRUE WHERE role = 'global_system_administrator'`
 - Poista `role`-sarake (migraatio 024, vasta kun `user_tenants` on täytetty ja koodi ei enää tarvitse saraketta)
 
 **Per-tenant-taulut** (migraatiot 025–033) — jokaiseen lisätään `tenant_id CHAR(36)` kolmella vaiheella samassa tiedostossa:
+
 1. `ALTER TABLE ... ADD COLUMN tenant_id CHAR(36) NULL`
 2. `UPDATE <tbl> SET tenant_id = (SELECT id FROM tenants WHERE slug = 'daems')`
 3. `ALTER TABLE ... MODIFY tenant_id CHAR(36) NOT NULL, ADD CONSTRAINT fk_<tbl>_tenant FOREIGN KEY (tenant_id) REFERENCES tenants(id) ON DELETE RESTRICT, ADD INDEX <tbl>_tenant_idx (tenant_id, ...)`
 
 ### 5.3 Migraatioiden järjestys
 
-```
+```text
 019  create_tenants_and_tenant_domains.sql          (+ seed daems, sahegroup, dev-domainit)
 020  add_is_platform_admin_to_users.sql             (+ platform_admin_audit, + trigger)
 021  backfill_is_platform_admin_from_role.sql
@@ -250,6 +258,7 @@ INSERT INTO tenant_domains (domain, tenant_id, is_primary) VALUES
 ```
 
 `config/tenant-fallback.php`:
+
 ```php
 <?php
 return [
@@ -264,7 +273,7 @@ return [
 
 ### 6.1 Uudet Domain-luokat
 
-```
+```text
 src/Domain/Tenant/
     Tenant.php                          // entiteetti
     TenantId.php                        // VO (extends Uuid7Id)
@@ -321,6 +330,7 @@ final readonly class ActingUser
 ### 6.4 Middleware
 
 **`TenantContextMiddleware` (UUSI)** — ajetaan **kaikilla** reiteillä (myös public):
+
 ```php
 final class TenantContextMiddleware implements Middleware
 {
@@ -341,6 +351,7 @@ final class TenantContextMiddleware implements Middleware
 ```
 
 **`AuthMiddleware` (MUUTOS)** — lataa `user_tenants.role`, käsittelee `X-Daems-Tenant`-overriden:
+
 ```php
 final class AuthMiddleware implements Middleware
 {
@@ -381,11 +392,13 @@ final class AuthMiddleware implements Middleware
 ### 6.5 Repository-patterni
 
 Nykyinen:
+
 ```php
 public function list(int $limit, int $offset): array;
 ```
 
 Uusi:
+
 ```php
 public function listForTenant(TenantId $tenantId, int $limit, int $offset): array;
 
@@ -394,6 +407,7 @@ public function listAllTenantsForPlatformAdmin(int $limit, int $offset): array;
 ```
 
 SQL:
+
 ```sql
 -- ennen:
 SELECT * FROM projects WHERE slug = ?;
@@ -419,6 +433,7 @@ public function execute(AddProjectCommentInput $input, ActingUser $actor): AddPr
 ```
 
 Cross-tenant-tapaus:
+
 ```php
 final class GetGlobalPlatformStats
 {
@@ -439,6 +454,7 @@ Dashboard ja muut UI:t validoivat tokenin tällä joka sivulatauksen alussa.
 Request headers: `Authorization: Bearer <token>`, optional `X-Daems-Tenant: <slug>` (GSA-only)
 
 Response 200:
+
 ```json
 {
     "data": {
@@ -464,6 +480,7 @@ Response 404: `{ "error": "unknown_tenant" }`
 ### 6.8 Session-sopimus frontendeille
 
 Frontendit (society ja tulevat) tallentavat loginin jälkeen sessioon:
+
 ```php
 $_SESSION['user']       = [id, name, email, is_platform_admin];  // ilman roolia
 $_SESSION['tenant']     = ['slug' => ..., 'name' => ..., 'role_in_tenant' => ...];
@@ -529,6 +546,7 @@ Devi-ympäristössä siirrytään suoraan lopulliseen tilaan.
 **Vaihe A — Level 7:** Union-tyyppien + array-offset-pääsyjen korjaukset. Arvio: 30–60 virhettä.
 
 **Vaihe B — Level 8:** Null-turva. Suurin työruutu; nykyisessä koodissa paljon `?Entity`-chainauksia. Työkalu-pattern:
+
 - Early-return: `if ($x === null) return ...;`
 - `?? throw new NotFoundException()` -pattern
 - `assert($x !== null)` (PHPStan ymmärtää assertit)
@@ -538,6 +556,7 @@ Arvio: 80–150 virhettä.
 **Vaihe C — Level 9:** `mixed`-tyypin strict-käsittely. Vaatii tyypitettyjä accessor-metodeja superglobaaleille ja Request-objektille.
 
 **Olemassa olevaan `src/Infrastructure/Framework/Http/Request.php` -luokkaan lisätään** tyypitetyt accessorit:
+
 ```php
 public function string(string $key, ?string $default = null): ?string;
 public function int(string $key, ?int $default = null): ?int;
@@ -546,6 +565,7 @@ public function arrayValue(string $key): ?array;
 ```
 
 **Uusi `src/Infrastructure/Framework/Session/Session.php`-luokka** (tuleville frontend-tarpeille ja platformin omalle sessiolle dashboard-spekissä):
+
 ```php
 final class Session
 {
@@ -578,6 +598,7 @@ PR:t mergetään järjestyksessä. Kukin on itsessään vihreä (composer test +
 ### 10.1 Tenant-isolaatio-testit (turvallisuuskriittiset)
 
 Jokainen per-tenant-taulu saa oman `*TenantIsolationTest`-luokan:
+
 - `ProjectTenantIsolationTest`
 - `EventTenantIsolationTest`
 - `MemberApplicationTenantIsolationTest`
@@ -587,6 +608,7 @@ Jokainen per-tenant-taulu saa oman `*TenantIsolationTest`-luokan:
 - `UserTenantIsolationTest`
 
 Kukin testaa vähintään:
+
 1. Admin tenantista A ei näe tenantin B dataa
 2. Repository-metodit joihin puuttuu `tenant_id`-parametri eivät ole olemassa (staattinen takuu)
 3. GSA voi ylittää tenantin `X-Daems-Tenant`-headerilla
@@ -596,12 +618,14 @@ Kukin testaa vähintään:
 ### 10.2 Middleware-testit
 
 **`TenantContextMiddlewareTest`** (uusi):
+
 - Tunnettu DB-domain → tenant requestissa
 - Tuntematon domain → 404 `unknown_tenant`
 - Fallback-config toimii dev-domainille
 - DB ensisijainen configin yli
 
 **`AuthMiddlewareTest`** (päivitys):
+
 - Bearer → user + tenant-rooli ladataan
 - GSA + override → menee läpi, tenant vaihtuu
 - Non-GSA + override → 403
@@ -616,7 +640,7 @@ Kukin testaa vähintään:
 
 ### 10.4 Migraatio-testit
 
-```
+```text
 tests/Migration/
     TenantBackfillTest.php
         test_migration_023_assigns_all_existing_users_to_daems_tenant
@@ -628,6 +652,7 @@ tests/Migration/
 ### 10.5 Audit-trigger-testit
 
 `PlatformAdminAuditTest`:
+
 - Muutos `is_platform_admin = TRUE` → `platform_admin_audit.action = 'granted'`
 - Muutos `is_platform_admin = FALSE` → `action = 'revoked'`
 - Muu UPDATE users-tauluun → ei audit-riviä
@@ -635,7 +660,7 @@ tests/Migration/
 
 ### 10.6 E2E-testit (Playwright)
 
-```
+```text
 tests/E2E/TenantIsolation/
     daems_admin_cannot_see_sahegroup_data.spec.ts
     gsa_can_switch_tenants_via_api_header.spec.ts
@@ -646,6 +671,7 @@ tests/E2E/TenantIsolation/
 ### 10.7 Mutation testing
 
 Infection MSI ≥ 85 % — sama kynnys kuin nykyisin. Tenant-alueen kriittiset luokat:
+
 - `src/Domain/Tenant/*`
 - `src/Infrastructure/Framework/Http/Middleware/TenantContextMiddleware.php`
 - `src/Infrastructure/Adapter/Persistence/Sql/SqlTenantRepository.php`

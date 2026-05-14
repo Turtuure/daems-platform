@@ -9,6 +9,7 @@ Aloita Phase 3-7 — per-section KPI-stripit kaikille jäljellä oleville backst
 KONTEKSTI
 
 Phase 1 (insights pilot, dev) ja Phase 2 (forum redesign + sub-pages, dev) ovat shipattu. Lue molemmat artefaktit jotka kertovat suunnan ja patternit:
+
 - docs/superpowers/specs/2026-04-25-backstage-redesign-design.md (Phase 1 + design system)
 - docs/superpowers/plans/2026-04-25-backstage-redesign-phase1.md
 - docs/superpowers/specs/2026-04-25-forum-redesign-design.md (Phase 2)
@@ -21,6 +22,7 @@ Insights ja Forum ovat valmiit. Dashboard (/backstage) on toiminut Phase 1:n KPI
 GOAL (Phase 3-7, isompi kuin yksi PR)
 
 Lisää per-section KPI-strip seuraaville sivuille (kullekin omat 4 KPI:tä sparklineineen):
+
 - Members (`/backstage/members`)
 - Applications (`/backstage/applications`)
 - Events (`/backstage/events`)
@@ -30,6 +32,7 @@ Lisää per-section KPI-strip seuraaville sivuille (kullekin omat 4 KPI:tä spar
 KPI-strip on dashboard-tasolla (sparklinet päällä, ei compact). Sivut säilyvät muuten sellaisenaan tässä iteraatiossa — kyse ei ole täydestä redesignista, vaan KPI-stripin lisäyksestä yläosaan.
 
 Per osio tarvitaan:
+
 - Backend: ListXStats use case + repository-metodit + controller-metodi + route + DI BOTH-wire (bootstrap/app.php + KernelHarness.php) + Unit + Integration + E2E + Isolation -testit
 - Frontend: KPI-strip-partial + JS-tiedosto stats-fetchille + sivun index.php päivitys
 

@@ -11,11 +11,13 @@
 **Spec:** This plan acts as both spec and execution document — derived directly from the four prior extraction plans (Insights/Forum/Projects/Events) and the recon completed 2026-04-28.
 
 **Repos affected (3 commit streams):**
+
 - `C:\laragon\www\daems-platform\` (branch `dev`) — new `068_*` data-fix migration + autoload-dev/phpstan paths commit + Wave E removals + KernelHarness cleanup + daem-society's `/members/{uuid}` route handler updated to require module path
 - `C:\laragon\www\modules\members\` = `dp-members` repo (existing local `.git`, origin `https://github.com/Turtuure/dp-members.git`, branch `dev`, EMPTY working copy + zero commits) — manifest + all moved Members code
 - `C:\laragon\www\sites\daem-society\` (branch `dev`) — frontend deletes only + one route-handler-path update (module-router already in place from prior extractions)
 
 **Verification gates (must pass before final commit on any task touching moved code):**
+
 - `composer analyse` → 0 errors at PHPStan level 9
 - `composer test` (Unit + Integration) → all green
 - `composer test:e2e` → all green
@@ -38,7 +40,7 @@
 
 ## Task waves (dependency order)
 
-```
+```text
 Wave A (parallel-safe)
 ├── Task 1: dp-members skeleton (manifest + README + .gitignore + phpunit + composer + STUB bindings/routes)
 ├── Task 2: Core data-fix migration 068_*
@@ -88,9 +90,11 @@ Wave G (verification gate)
 ## File map summary
 
 **Created in `daems-platform/`:**
+
 - `database/migrations/068_rename_members_migrations_in_schema_migrations_table.sql`
 
 **Modified in `daems-platform/`:**
+
 - `composer.json` (autoload-dev `DaemsModule\\Members\\` + `DaemsModule\\Members\\Tests\\`)
 - `phpstan.neon` (paths += `../modules/members/backend/src`)
 - `bootstrap/app.php` — remove ~16 import lines + ~30 binding lines for Members
@@ -101,6 +105,7 @@ Wave G (verification gate)
 - `src/Infrastructure/Adapter/Api/Controller/BackstageController.php` — remove 11 Members methods
 
 **Deleted in `daems-platform/`:**
+
 - `src/Application/Membership/` (entire dir, 2 sub-dirs, ~6 files)
 - `src/Application/Member/` (entire dir, 1 sub-dir, ~3 files)
 - 12 admin sibling dirs under `src/Application/Backstage/`: `Applications/` (contains `ListApplicationsStats/`), `DecideApplication/`, `DismissApplication/`, `GetApplicationDetail/`, `ListDecidedApplications/`, `ListPendingApplications/`, `Members/` (contains `ListMembersStats/`), `ListMembers/`, `ChangeMemberStatus/`, `GetMemberAudit/`, `ActivateMember/`, `ActivateSupporter/` (~32 files)
@@ -118,6 +123,7 @@ Wave G (verification gate)
 - `tests/Integration/Migration/{Migration028Test,Migration029Test,Migration033Test,Migration034Test,Migration035Test,Migration038Test,Migration040Test}.php` (7 files dangling after migration moves)
 
 **Retained in `daems-platform/` (NOT deleted):**
+
 - `src/Domain/Membership/` (Forum lesson 1: Domain stays in core because `ListNotificationsStats` consumes the repository interfaces)
 - `src/Domain/Member/` (same reason)
 - `src/Domain/Backstage/{MemberDirectoryEntry,MemberDirectoryRepositoryInterface,MemberStatusAuditEntry}.php` (DTOs/interfaces consumed by core)
@@ -126,6 +132,7 @@ Wave G (verification gate)
 - Migrations `database/migrations/{045_extend_dismissals_enum_and_comment_audit,057_add_member_number_prefix_to_tenants}.sql` — mixed scope / tenant-table scope
 
 **Created in `modules/members/` (dp-members):**
+
 - `module.json`, `README.md`, `.gitignore`, `phpunit.xml.dist`, `composer.json`
 - `backend/bindings.php`, `backend/bindings.test.php`, `backend/routes.php`
 - `backend/migrations/members_001..010_*.sql` (10 files)
@@ -149,9 +156,11 @@ Wave G (verification gate)
 - `frontend/assets/public/public-member-page.css` (1)
 
 **Modified in `daem-society/`:**
+
 - `public/index.php` — update line ~453-458 (UUID route handler) to require `modules/members/frontend/public/profile.php` instead of `pages/members/profile.php`
 
 **Deleted in `daem-society/`:**
+
 - `public/pages/members/` (entire dir, 5 files)
 - `public/pages/backstage/members/` (entire dir, 3 files)
 - `public/pages/backstage/applications/` (entire dir, 1 file)
@@ -164,6 +173,7 @@ Wave G (verification gate)
 **Repo for commits:** `dp-members` (the new module). Local `.git` already initialised at `C:\laragon\www\modules\members\` with `origin = https://github.com/Turtuure/dp-members.git`, HEAD → `refs/heads/dev`. Working copy is empty, zero commits.
 
 **Files:**
+
 - Create: `C:/laragon/www/modules/members/module.json`
 - Create: `C:/laragon/www/modules/members/README.md`
 - Create: `C:/laragon/www/modules/members/.gitignore`
@@ -177,11 +187,13 @@ Wave G (verification gate)
 - [ ] **Step 1: Verify GitHub repo exists**
 
 Run:
+
 ```bash
 gh repo view Turtuure/dp-members 2>&1 | head -3
 ```
 
 If "GraphQL: Could not resolve to a Repository" appears, create:
+
 ```bash
 gh repo create Turtuure/dp-members --public --description "Members module for daems-platform — extracted Phase 1" --homepage "https://daems.fi"
 ```
@@ -191,6 +203,7 @@ Otherwise skip.
 - [ ] **Step 2: Create `module.json`**
 
 Path: `C:/laragon/www/modules/members/module.json`
+
 ```json
 {
   "name": "members",
@@ -215,6 +228,7 @@ Path: `C:/laragon/www/modules/members/module.json`
 - [ ] **Step 3: Create `README.md`**
 
 Path: `C:/laragon/www/modules/members/README.md`
+
 ```markdown
 # dp-members — Members module
 
@@ -260,7 +274,8 @@ Extracted from `daems-platform` Phase 1, 2026-04-28. Pattern proven by Insights 
 - [ ] **Step 4: Create `.gitignore`**
 
 Path: `C:/laragon/www/modules/members/.gitignore`
-```
+
+```text
 /vendor/
 /.phpunit.cache/
 /.phpunit.result.cache
@@ -274,6 +289,7 @@ Thumbs.db
 - [ ] **Step 5: Create `phpunit.xml.dist`**
 
 Path: `C:/laragon/www/modules/members/phpunit.xml.dist`
+
 ```xml
 <?xml version="1.0" encoding="UTF-8"?>
 <phpunit xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
@@ -295,6 +311,7 @@ Path: `C:/laragon/www/modules/members/phpunit.xml.dist`
 - [ ] **Step 6: Create `composer.json`**
 
 Path: `C:/laragon/www/modules/members/composer.json`
+
 ```json
 {
   "name": "daems/dp-members",
@@ -320,6 +337,7 @@ Path: `C:/laragon/www/modules/members/composer.json`
 - [ ] **Step 7: Create STUB `backend/bindings.php`**
 
 Path: `C:/laragon/www/modules/members/backend/bindings.php`
+
 ```php
 <?php
 
@@ -335,6 +353,7 @@ return static function (Container $container): void {
 - [ ] **Step 8: Create STUB `backend/bindings.test.php`**
 
 Path: `C:/laragon/www/modules/members/backend/bindings.test.php`
+
 ```php
 <?php
 
@@ -350,6 +369,7 @@ return static function (Container $container): void {
 - [ ] **Step 9: Create STUB `backend/routes.php`**
 
 Path: `C:/laragon/www/modules/members/backend/routes.php`
+
 ```php
 <?php
 
@@ -370,6 +390,7 @@ Path: `C:/laragon/www/modules/members/backend/migrations/.gitkeep` (empty file)
 - [ ] **Step 11: Run core tests to verify ModuleRegistry boots cleanly with empty stubs**
 
 Run from `C:/laragon/www/daems-platform/`:
+
 ```bash
 vendor/bin/phpunit --testsuite=E2E --filter=ModuleRegistry 2>&1 | tail -20
 ```
@@ -379,6 +400,7 @@ Expected: zero failures (it should detect `module.json` for `members` and load e
 - [ ] **Step 12: Commit in `dp-members`**
 
 Run from `C:/laragon/www/modules/members/`:
+
 ```bash
 git -c user.name="Dev Team" -c user.email="dev@daems.fi" add module.json README.md .gitignore phpunit.xml.dist composer.json backend/
 git -c user.name="Dev Team" -c user.email="dev@daems.fi" commit -m "Skeleton: module manifest + stub bindings/routes + composer/phpunit/README"
@@ -395,11 +417,13 @@ Expected: one commit on local `dev` branch (becomes the first commit since repo 
 **Why:** when 10 members migrations move to `modules/members/backend/migrations/` with new filenames (`members_001..010`), the existing `schema_migrations` table on dev/test DBs still references the OLD filenames (`004_create_member_applications_table.sql` etc.). Without a rename data-fix, the migration runner re-applies the moved migrations under their new names → duplicate tables / "already exists" errors.
 
 **Files:**
+
 - Create: `database/migrations/068_rename_members_migrations_in_schema_migrations_table.sql`
 
 - [ ] **Step 1: Create `068_*` migration with conditional, idempotent renames**
 
 Path: `database/migrations/068_rename_members_migrations_in_schema_migrations_table.sql`
+
 ```sql
 -- 068_rename_members_migrations_in_schema_migrations_table.sql
 -- Rename schema_migrations rows for members migrations that moved to modules/members/.
@@ -443,6 +467,7 @@ PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
 - [ ] **Step 2: Verify migration parses**
 
 Run from `C:/laragon/www/daems-platform/`:
+
 ```bash
 C:/laragon/bin/mysql/mysql-8.4.3-winx64/bin/mysql.exe --user=root --password=salasana --host=127.0.0.1 daems_db_test < database/migrations/068_rename_members_migrations_in_schema_migrations_table.sql
 echo "Exit: $?"
@@ -457,6 +482,7 @@ Run again — same command. Expected: Exit 0 (no-op).
 - [ ] **Step 4: Commit**
 
 Run from `C:/laragon/www/daems-platform/`:
+
 ```bash
 git -c user.name="Dev Team" -c user.email="dev@daems.fi" add database/migrations/068_rename_members_migrations_in_schema_migrations_table.sql
 git -c user.name="Dev Team" -c user.email="dev@daems.fi" commit -m "Migration(068): rename members migrations in schema_migrations for module move"
@@ -477,6 +503,7 @@ Expected: one commit on `dev`. Do NOT push.
 - [ ] **Step 1: Verify backend file counts**
 
 Run from `C:/laragon/www/daems-platform/`:
+
 ```bash
 echo "=== Application/Membership (expect 2 dirs, ~6 files) ==="
 ls -d src/Application/Membership/*/ | wc -l
@@ -533,6 +560,7 @@ If ANY count differs (e.g. recon found extra Backstage admin dirs not on the lis
 - [ ] **Step 2: Verify frontend file counts**
 
 Run from `C:/laragon/www/sites/daem-society/`:
+
 ```bash
 echo "=== Public members/ (expect 5 PHP) ==="
 ls public/pages/members/*.php | wc -l
@@ -556,6 +584,7 @@ Expected: 5 / 1 / 2 / 1 / 1 / 1.
 - [ ] **Step 3: Verify cross-domain core consumers (will need import updates in Wave E)**
 
 Run from `C:/laragon/www/daems-platform/`:
+
 ```bash
 grep -rln "Daems\\\\Tests\\\\Support\\\\Fake\\\\InMemoryMemberApplication\|Daems\\\\Tests\\\\Support\\\\Fake\\\\InMemorySupporterApplication\|Daems\\\\Tests\\\\Support\\\\Fake\\\\InMemoryMemberStatusAudit\|Daems\\\\Tests\\\\Support\\\\Fake\\\\InMemoryAdminApplicationDismissal\|Daems\\\\Tests\\\\Support\\\\Fake\\\\InMemoryMemberDirectory\|Daems\\\\Tests\\\\Support\\\\Fake\\\\InMemoryTenantMemberCounter\|Daems\\\\Tests\\\\Support\\\\Fake\\\\InMemoryTenantSupporterCounter" src tests | sort -u
 ```
@@ -565,6 +594,7 @@ Expected: at minimum `tests/Support/KernelHarness.php` + `tests/Unit/Application
 - [ ] **Step 4: Inspect Backstage method line ranges**
 
 Run from `C:/laragon/www/daems-platform/`:
+
 ```bash
 grep -nE "function (pendingApplications|decidedApplications|applicationDetail|decideApplication|dismissApplication|members|changeMemberStatus|memberAudit|statsMembers|statsApplications|listPendingForAdmin)\(" src/Infrastructure/Adapter/Api/Controller/BackstageController.php
 ```
@@ -582,6 +612,7 @@ Inventory step is read-only. Capture counts in session memory; proceed to Task 5
 **Repo for commits:** `dp-members`
 
 **Files:**
+
 - Move (with namespace rewrite): `daems-platform/src/Infrastructure/Adapter/Persistence/Sql/SqlMemberApplicationRepository.php` → `modules/members/backend/src/Infrastructure/SqlMemberApplicationRepository.php`
 - Move: `SqlSupporterApplicationRepository.php` → same name in module
 - Move: `SqlMemberStatusAuditRepository.php` → same
@@ -594,6 +625,7 @@ Inventory step is read-only. Capture counts in session memory; proceed to Task 5
 - [ ] **Step 1: Copy 8 files into module**
 
 Run from `C:/laragon/www/`:
+
 ```bash
 mkdir -p modules/members/backend/src/Infrastructure
 for f in SqlMemberApplicationRepository SqlSupporterApplicationRepository SqlMemberStatusAuditRepository SqlMemberDirectoryRepository SqlPublicMemberRepository SqlAdminApplicationDismissalRepository SqlTenantMemberCounterRepository SqlTenantSupporterCounterRepository; do
@@ -607,15 +639,19 @@ Expected: 8.
 - [ ] **Step 2: Rewrite `namespace` declaration in each**
 
 For each of the 8 files, replace:
-```
+
+```text
 namespace Daems\Infrastructure\Adapter\Persistence\Sql;
 ```
+
 with:
-```
+
+```text
 namespace DaemsModule\Members\Infrastructure;
 ```
 
 PowerShell (run in `C:\laragon\www\modules\members\backend\src\Infrastructure\`):
+
 ```powershell
 Get-ChildItem -Filter Sql*.php | ForEach-Object {
     $c = Get-Content $_.FullName -Raw
@@ -627,11 +663,13 @@ Get-ChildItem -Filter Sql*.php | ForEach-Object {
 - [ ] **Step 3: Verify imports**
 
 For each moved file, scan its `use` statements. Allowed imports (must remain `Daems\` core namespace):
+
 - `Daems\Domain\Membership\*` (Forum lesson 1, Domain stays in core)
 - `Daems\Domain\Member\*`, `Daems\Domain\Backstage\MemberDirectory*`, `Daems\Domain\Tenant\*`, `Daems\Domain\User\*`, `Daems\Domain\Locale\*`, `Daems\Domain\Shared\*`
 - `Daems\Infrastructure\Framework\*` (Connection, etc.)
 
 Run:
+
 ```bash
 grep -hE "^use " modules/members/backend/src/Infrastructure/Sql*.php | sort -u
 ```
@@ -651,6 +689,7 @@ Expected: each prints "No syntax errors detected".
 - [ ] **Step 5: Commit in dp-members**
 
 Run from `C:/laragon/www/modules/members/`:
+
 ```bash
 git -c user.name="Dev Team" -c user.email="dev@daems.fi" add backend/src/Infrastructure/
 git -c user.name="Dev Team" -c user.email="dev@daems.fi" commit -m "Move(infra): 8 SQL repositories with namespace rewrite"
@@ -665,6 +704,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.fi" commit -m "Move(infra):
 **Repo for commits:** `dp-members`
 
 **Files:**
+
 - Move: `daems-platform/tests/Support/Fake/InMemoryMemberApplicationRepository.php` → `modules/members/backend/tests/Support/InMemoryMemberApplicationRepository.php`
 - Move: `InMemorySupporterApplicationRepository.php` → same name in module
 - Move: `InMemoryMemberStatusAuditRepository.php` → same
@@ -678,6 +718,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.fi" commit -m "Move(infra):
 - [ ] **Step 1: Copy 7 files**
 
 Run from `C:/laragon/www/`:
+
 ```bash
 mkdir -p modules/members/backend/tests/Support
 for f in InMemoryMemberApplicationRepository InMemorySupporterApplicationRepository InMemoryMemberStatusAuditRepository InMemoryMemberDirectoryRepository InMemoryAdminApplicationDismissalRepository InMemoryTenantMemberCounterRepository InMemoryTenantSupporterCounterRepository; do
@@ -691,15 +732,19 @@ Expected: 7.
 - [ ] **Step 2: Rewrite namespace per file**
 
 In each, replace:
-```
+
+```text
 namespace Daems\Tests\Support\Fake;
 ```
+
 with:
-```
+
+```text
 namespace DaemsModule\Members\Tests\Support;
 ```
 
 PowerShell (in `C:\laragon\www\modules\members\backend\tests\Support\`):
+
 ```powershell
 Get-ChildItem -Filter InMemory*.php | ForEach-Object {
     $c = Get-Content $_.FullName -Raw
@@ -735,6 +780,7 @@ Originals stay in `daems-platform/tests/Support/Fake/` until Task 24.
 **Repo for commits:** `dp-members`
 
 **Files (3 use case dirs, ~9 files):**
+
 - Move: `daems-platform/src/Application/Membership/SubmitMemberApplication/` (3 files) → `modules/members/backend/src/Application/Membership/SubmitMemberApplication/`
 - Move: `daems-platform/src/Application/Membership/SubmitSupporterApplication/` (3 files) → same
 - Move: `daems-platform/src/Application/Member/GetPublicMemberProfile/` (3 files) → `modules/members/backend/src/Application/Member/GetPublicMemberProfile/`
@@ -742,6 +788,7 @@ Originals stay in `daems-platform/tests/Support/Fake/` until Task 24.
 - [ ] **Step 1: Copy directory trees**
 
 Run from `C:/laragon/www/`:
+
 ```bash
 mkdir -p modules/members/backend/src/Application
 cp -r daems-platform/src/Application/Membership modules/members/backend/src/Application/Membership
@@ -754,6 +801,7 @@ Expected: 9 files.
 - [ ] **Step 2: Mass namespace rewrite — Membership**
 
 PowerShell (in `C:\laragon\www\modules\members\backend\src\Application\Membership\`):
+
 ```powershell
 Get-ChildItem -Recurse -Filter *.php | ForEach-Object {
     $c = Get-Content $_.FullName -Raw
@@ -766,6 +814,7 @@ Get-ChildItem -Recurse -Filter *.php | ForEach-Object {
 - [ ] **Step 3: Mass namespace rewrite — Member**
 
 PowerShell (in `C:\laragon\www\modules\members\backend\src\Application\Member\`):
+
 ```powershell
 Get-ChildItem -Recurse -Filter *.php | ForEach-Object {
     $c = Get-Content $_.FullName -Raw
@@ -780,6 +829,7 @@ Get-ChildItem -Recurse -Filter *.php | ForEach-Object {
 `Daems\Domain\Membership\*`, `Daems\Domain\Member\*`, `Daems\Domain\Tenant\*`, `Daems\Domain\User\*`, `Daems\Domain\Locale\*`, `Daems\Domain\Shared\*`, `Daems\Application\Shared\*` are all permitted (Domain stays in core).
 
 Run:
+
 ```bash
 grep -rhE "^use Daems\\\\" modules/members/backend/src/Application/Membership modules/members/backend/src/Application/Member | sort -u
 ```
@@ -802,6 +852,7 @@ Expected: 0 errors.
 - [ ] **Step 6: Commit**
 
 Run from `C:/laragon/www/modules/members/`:
+
 ```bash
 git -c user.name="Dev Team" -c user.email="dev@daems.fi" add backend/src/Application/Membership/ backend/src/Application/Member/
 git -c user.name="Dev Team" -c user.email="dev@daems.fi" commit -m "Move(app): public-side Membership + Member use cases (9 files in 3 dirs)"
@@ -816,6 +867,7 @@ Originals remain in `daems-platform/src/Application/{Membership,Member}/` until 
 **Repo for commits:** `dp-members`
 
 **Files (12 dirs, ~32 files total):**
+
 - Move: 12 directories under `daems-platform/src/Application/Backstage/` → `modules/members/backend/src/Application/Backstage/`:
   - `Applications/` (contains `ListApplicationsStats/` with 3 files)
   - `DecideApplication/` (3)
@@ -833,6 +885,7 @@ Originals remain in `daems-platform/src/Application/{Membership,Member}/` until 
 - [ ] **Step 1: Copy each sibling dir**
 
 Run from `C:/laragon/www/`:
+
 ```bash
 mkdir -p modules/members/backend/src/Application/Backstage
 for d in Applications DecideApplication DismissApplication GetApplicationDetail ListDecidedApplications ListPendingApplications Members ListMembers ChangeMemberStatus GetMemberAudit ActivateMember ActivateSupporter; do
@@ -846,6 +899,7 @@ Expected: ~32 files (verify against Task 3 inventory count).
 - [ ] **Step 2: Mass namespace rewrite**
 
 PowerShell (in `C:\laragon\www\modules\members\backend\src\Application\Backstage\`):
+
 ```powershell
 $useCases = @(
     'Applications\ListApplicationsStats',
@@ -879,6 +933,7 @@ grep -rhE "^(namespace|use Daems\\\\)" modules/members/backend/src/Application/B
 ```
 
 Inspect:
+
 - All `namespace` lines start with `DaemsModule\Members\Application\Backstage\`
 - All `use Daems\` imports point to {Domain, Application/Shared, Infrastructure/Framework, Application/Membership (intra-module after Task 7)}
 - NO leftover `use Daems\Application\Backstage\<MovedUseCase>\` — those should now be `DaemsModule\Members\Application\Backstage\<MovedUseCase>\`
@@ -908,12 +963,14 @@ git -c user.name="Dev Team" -c user.email="dev@daems.fi" commit -m "Move(app): 1
 **Repo for commits:** `dp-members`
 
 **Files:**
+
 - Move: `daems-platform/src/Infrastructure/Adapter/Api/Controller/ApplicationController.php` → `modules/members/backend/src/Controller/ApplicationController.php`
 - Move: `daems-platform/src/Infrastructure/Adapter/Api/Controller/MemberController.php` → `modules/members/backend/src/Controller/MemberController.php`
 
 - [ ] **Step 1: Copy files**
 
 Run from `C:/laragon/www/`:
+
 ```bash
 mkdir -p modules/members/backend/src/Controller
 cp daems-platform/src/Infrastructure/Adapter/Api/Controller/ApplicationController.php modules/members/backend/src/Controller/ApplicationController.php
@@ -923,6 +980,7 @@ cp daems-platform/src/Infrastructure/Adapter/Api/Controller/MemberController.php
 - [ ] **Step 2: Rewrite namespace + use statements — ApplicationController**
 
 PowerShell:
+
 ```powershell
 $file = 'C:\laragon\www\modules\members\backend\src\Controller\ApplicationController.php'
 $c = Get-Content $file -Raw
@@ -934,6 +992,7 @@ Set-Content -Path $file -Value $c -Encoding utf8
 - [ ] **Step 3: Rewrite namespace + use statements — MemberController**
 
 PowerShell:
+
 ```powershell
 $file = 'C:\laragon\www\modules\members\backend\src\Controller\MemberController.php'
 $c = Get-Content $file -Raw
@@ -979,6 +1038,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.fi" commit -m "Move(control
 **Why (Forum lesson 3):** core's PHPStan + Composer autoloader cannot see the module's namespace until we register it. Without this, Tasks 17–20 (test moves) and Task 13 (production binding) fail because the module's classes are unresolvable.
 
 **Files:**
+
 - Modify: `composer.json` (add module namespaces to `autoload-dev`)
 - Modify: `phpstan.neon` (add module path)
 
@@ -994,12 +1054,14 @@ Capture the existing `psr-4` map structure. Insights/Forum/Projects/Events entri
 - [ ] **Step 2: Add Members entries to `composer.json` autoload-dev**
 
 Edit `C:/laragon/www/daems-platform/composer.json`. Inside `autoload-dev.psr-4`, add (alphabetical order, after `DaemsModule\\Insights` block, before `DaemsModule\\Projects`):
+
 ```json
 "DaemsModule\\Members\\": "../modules/members/backend/src/",
 "DaemsModule\\Members\\Tests\\": "../modules/members/backend/tests/",
 ```
 
 Verify the JSON parses:
+
 ```bash
 php -r "json_decode(file_get_contents('composer.json'), false, 512, JSON_THROW_ON_ERROR); echo 'OK';"
 ```
@@ -1007,6 +1069,7 @@ php -r "json_decode(file_get_contents('composer.json'), false, 512, JSON_THROW_O
 - [ ] **Step 3: Add module path to `phpstan.neon`**
 
 Read current paths block:
+
 ```bash
 grep -B 1 -A 15 "^\s*paths:" phpstan.neon
 ```
@@ -1014,7 +1077,8 @@ grep -B 1 -A 15 "^\s*paths:" phpstan.neon
 Identify the existing module path entries (Forum, Projects, Events, Insights). Add an equivalent line for Members in alphabetical order.
 
 Edit `C:/laragon/www/daems-platform/phpstan.neon`, in the `paths:` list under `parameters:`, add:
-```
+
+```text
         - ../modules/members/backend/src/
 ```
 
@@ -1061,6 +1125,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.fi" commit -m "Wire(modules
 **Why:** the 11 Members methods currently live as methods on the monolith `BackstageController` in core. Move them into a single new module-owned `MembersBackstageController`. F4=A locked (one consolidated controller, not two).
 
 **Files:**
+
 - Source (read-only this task): `daems-platform/src/Infrastructure/Adapter/Api/Controller/BackstageController.php`
 - Create: `modules/members/backend/src/Controller/MembersBackstageController.php`
 - Create: `modules/members/backend/tests/Unit/Controller/MembersBackstageControllerSignatureTest.php`
@@ -1084,6 +1149,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.fi" commit -m "Wire(modules
 - [ ] **Step 1: Locate source method line ranges**
 
 Run from `C:/laragon/www/daems-platform/`:
+
 ```bash
 grep -nE "function (pendingApplications|decidedApplications|applicationDetail|decideApplication|dismissApplication|members|changeMemberStatus|memberAudit|statsMembers|statsApplications|listPendingForAdmin)\(" src/Infrastructure/Adapter/Api/Controller/BackstageController.php
 ```
@@ -1093,6 +1159,7 @@ Capture line numbers. For each method, identify the closing brace by reading fro
 - [ ] **Step 2: Read each method's body in full**
 
 Use Read tool on `src/Infrastructure/Adapter/Api/Controller/BackstageController.php` for each method's line range. Capture:
+
 - Full method signature (parameters, return type, visibility)
 - Full method body
 - Use cases referenced (these become constructor dependencies)
@@ -1101,6 +1168,7 @@ Use Read tool on `src/Infrastructure/Adapter/Api/Controller/BackstageController.
 - [ ] **Step 3: Write the failing reflection signature test FIRST**
 
 Path: `modules/members/backend/tests/Unit/Controller/MembersBackstageControllerSignatureTest.php`
+
 ```php
 <?php
 
@@ -1167,6 +1235,7 @@ Expected: FAIL with "Class DaemsModule\Members\Controller\MembersBackstageContro
 - [ ] **Step 5: Create skeleton MembersBackstageController**
 
 Path: `modules/members/backend/src/Controller/MembersBackstageController.php`
+
 ```php
 <?php
 
@@ -1282,6 +1351,7 @@ For EACH of the 11 methods, copy the body verbatim from `daems-platform/src/Infr
 (c) Update any `use` imports — every `Daems\Application\Backstage\<MovedUseCase>` use must become `DaemsModule\Members\Application\Backstage\<MovedUseCase>`.
 
 After porting, syntax-check:
+
 ```bash
 php -l modules/members/backend/src/Controller/MembersBackstageController.php
 ```
@@ -1338,6 +1408,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.fi" commit -m "Add(controll
 - [ ] **Step 1: Copy + rename**
 
 Run from `C:/laragon/www/`:
+
 ```bash
 mkdir -p modules/members/backend/migrations
 cp daems-platform/database/migrations/004_create_member_applications_table.sql modules/members/backend/migrations/members_001_create_member_applications_table.sql
@@ -1363,6 +1434,7 @@ Expected: 10.
 - [ ] **Step 3: Verify ModuleRegistry's `migrationPaths()` picks them up**
 
 Run from `C:/laragon/www/daems-platform/`:
+
 ```bash
 php -r "
 require 'vendor/autoload.php';
@@ -1395,6 +1467,7 @@ Originals stay in `daems-platform/database/migrations/{004,005,028,029,033,034,0
 **Why:** wire the moved SQL repositories + use cases + controllers into the platform's DI container so the production Kernel can resolve `MemberApplicationRepositoryInterface` etc. After this task, production endpoints use the module's classes (autoloaded since Task 9.5). The original core bindings still exist in `bootstrap/app.php` but are overridden by the module's later registration (Forum lesson 6 confirmed: module bindings registered AFTER core bindings, last-write-wins).
 
 **Files:**
+
 - Modify: `modules/members/backend/bindings.php`
 
 - [ ] **Step 1: Read existing module bindings.php files for reference**
@@ -1410,6 +1483,7 @@ Identify the convention: `singleton` for repositories, `bind` for use cases + co
 - [ ] **Step 2: Replace stub bindings.php with full bindings**
 
 Path: `modules/members/backend/bindings.php`
+
 ```php
 <?php
 
@@ -1572,6 +1646,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.fi" commit -m "Wire(binding
 **Why:** the test KernelHarness constructs a separate container that swaps SQL repositories for InMemory fakes. The module's `bindings.test.php` must mirror Task 13's bindings but point repositories at the moved fakes (`DaemsModule\Members\Tests\Support\InMemory*`).
 
 **Files:**
+
 - Modify: `modules/members/backend/bindings.test.php`
 
 - [ ] **Step 1: Read existing module bindings.test.php for pattern**
@@ -1583,6 +1658,7 @@ cat C:/laragon/www/modules/projects/backend/bindings.test.php
 - [ ] **Step 2: Write full test bindings**
 
 Path: `modules/members/backend/bindings.test.php`
+
 ```php
 <?php
 
@@ -1707,6 +1783,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.fi" commit -m "Wire(binding
 **Why:** wire the moved controllers into the platform Router. After this task, requests to `/api/v1/applications/member`, `/api/v1/applications/supporter`, `/api/v1/members/{id}`, and the 11 backstage Members endpoints will be served by the module's controllers — overriding the legacy core registrations from `daems-platform/routes/api.php` (last-write-wins). The legacy core routes remain in place until Wave E Task 22.
 
 **Files:**
+
 - Modify: `modules/members/backend/routes.php`
 
 - [ ] **Step 1: Read existing module routes.php files for pattern**
@@ -1729,6 +1806,7 @@ Capture: HTTP verb, exact path with placeholders, middleware list, controller cl
 - [ ] **Step 3: Write the routes.php**
 
 Path: `modules/members/backend/routes.php`
+
 ```php
 <?php
 
@@ -1820,6 +1898,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.fi" commit -m "Wire(routes)
 **Repo for commits:** `dp-members`
 
 **Files:**
+
 - Move: `daems-platform/tests/Unit/Application/Member/GetPublicMemberProfileTest.php` → `modules/members/backend/tests/Unit/Application/Member/GetPublicMemberProfileTest.php`
 
 - [ ] **Step 1: Copy file**
@@ -1832,6 +1911,7 @@ cp daems-platform/tests/Unit/Application/Member/GetPublicMemberProfileTest.php m
 - [ ] **Step 2: Rewrite namespace + imports**
 
 PowerShell:
+
 ```powershell
 $file = 'C:\laragon\www\modules\members\backend\tests\Unit\Application\Member\GetPublicMemberProfileTest.php'
 $c = Get-Content $file -Raw
@@ -1869,6 +1949,7 @@ Original stays in `daems-platform/tests/Unit/Application/Member/` until Task 25.
 **Repo for commits:** `dp-members`
 
 **Files (15 tests under `tests/Unit/Application/Backstage/`):**
+
 - `ChangeMemberStatusTest.php`
 - `DecideApplicationApproveMemberTest.php`
 - `DecideApplicationApproveSupporterTest.php`
@@ -1900,6 +1981,7 @@ Expected: 15.
 - [ ] **Step 2: Mass rewrite — namespace + use statements**
 
 PowerShell (in `C:\laragon\www\modules\members\backend\tests\Unit\Application\Backstage\`):
+
 ```powershell
 $useCases = @(
     'Applications\ListApplicationsStats',
@@ -1981,6 +2063,7 @@ Originals stay in `daems-platform/tests/Unit/Application/Backstage/` until Task 
 **Files (8 tests):**
 
 From `tests/Integration/`:
+
 - `MemberActivationIntegrationTest.php`
 - `AdminApplicationDismissalSliceTest.php`
 - `MemberApplicationStatsTest.php`
@@ -1989,6 +2072,7 @@ From `tests/Integration/`:
 - `PublicMemberProfileIntegrationTest.php`
 
 From `tests/Integration/Persistence/Sql/`:
+
 - `SqlMemberApplicationRepositoryTest.php`
 - `SqlMemberDirectoryRepositoryTest.php`
 
@@ -2007,6 +2091,7 @@ cp daems-platform/tests/Integration/Persistence/Sql/SqlMemberDirectoryRepository
 - [ ] **Step 2: Rewrite namespaces + imports**
 
 PowerShell (in `C:\laragon\www\modules\members\backend\tests\Integration\`):
+
 ```powershell
 $useCases = @(
     'Applications\ListApplicationsStats',
@@ -2081,6 +2166,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.fi" commit -m "Move(tests-i
 **Files (10 tests):**
 
 Isolation (`tests/Isolation/`):
+
 - `ApplicationApprovalTenantIsolationTest.php`
 - `ApplicationsStatsTenantIsolationTest.php`
 - `MemberApplicationTenantIsolationTest.php`
@@ -2088,6 +2174,7 @@ Isolation (`tests/Isolation/`):
 - `SupporterApplicationTenantIsolationTest.php`
 
 E2E (`tests/E2E/`):
+
 - `F011_BackstageApplicationsAccessTest.php`
 - `F012_BackstageDecideApplicationTest.php`
 - `F013_BackstageMembersGsaOnlyStatusTest.php`
@@ -2118,6 +2205,7 @@ cp daems-platform/tests/E2E/Backstage/MembersStatsEndpointTest.php modules/membe
 - [ ] **Step 3: Rewrite namespaces + imports for isolation**
 
 PowerShell (in `C:\laragon\www\modules\members\backend\tests\Isolation\`):
+
 ```powershell
 $useCases = @(
     'Applications\ListApplicationsStats',
@@ -2172,6 +2260,7 @@ Get-ChildItem -Filter *.php | ForEach-Object {
 - [ ] **Step 4: Rewrite namespaces + imports for E2E**
 
 PowerShell (in `C:\laragon\www\modules\members\backend\tests\E2E\`):
+
 ```powershell
 $useCases = @(
     'Applications\ListApplicationsStats',
@@ -2238,6 +2327,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.fi" commit -m "Move(tests):
 **Why:** core's `bootstrap/app.php` still binds the Members repositories + use cases + controllers. After Tasks 13–15, the module re-binds the same interfaces to module classes, taking effect via last-write-wins. But the duplicate bindings are dead code — they reference classes that will be deleted in Task 23/25. Remove them now to make the cleanup atomic.
 
 **Files:**
+
 - Modify: `bootstrap/app.php` — remove ~16 import lines + ~30 binding lines
 
 **Production smoke gate after this task:** `php -r "require 'bootstrap/app.php'; echo 'OK';"` must print `OK`. Any unresolvable class → STOP and revert.
@@ -2245,6 +2335,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.fi" commit -m "Move(tests):
 - [ ] **Step 1: Identify exact lines to delete**
 
 Run from `C:/laragon/www/daems-platform/`:
+
 ```bash
 grep -nE "use Daems\\\\(Application\\\\(Membership|Member|Backstage\\\\(Applications|Members|DecideApplication|DismissApplication|GetApplicationDetail|ListDecidedApplications|ListPendingApplications|ListMembers|ChangeMemberStatus|GetMemberAudit|ActivateMember|ActivateSupporter))|Domain\\\\Membership|Domain\\\\Member|Infrastructure\\\\Adapter\\\\Persistence\\\\Sql\\\\Sql(Member|Supporter|MemberStatusAudit|MemberDirectory|PublicMember|AdminApplicationDismissal|TenantMemberCounter|TenantSupporterCounter)|Infrastructure\\\\Adapter\\\\Api\\\\Controller\\\\(Application|Member)Controller)" bootstrap/app.php
 ```
@@ -2266,6 +2357,7 @@ Capture all matched lines.
 Use Edit tool with `replace_all=false` to delete each binding block one at a time. For each binding, the `old_string` is the full multi-line block (e.g. the `singleton(MemberApplicationRepositoryInterface::class, ...)` chained to its closure). Replace with empty string `""`.
 
 Critical: do NOT delete:
+
 - Bindings for `MemberApplicationRepositoryInterface` etc. that are referenced by `Notifications\ListNotificationsStats` — wait, those ARE in the module now. So we DO delete them; the module will re-bind them (Task 13 already done).
 - The `ListNotificationsStats` binding itself (it's a core use case that consumes module interfaces).
 
@@ -2323,6 +2415,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.fi" commit -m "Remove(core)
 **Why:** core's `routes/api.php` still registers the 14 Members routes against core controllers. The module's `routes.php` overrode these via last-write-wins (Task 15), but the duplicate registrations point to controllers that will be deleted in Task 23. Remove now.
 
 **Files:**
+
 - Modify: `routes/api.php` — remove ~14 route registrations
 
 - [ ] **Step 1: Identify route lines**
@@ -2388,6 +2481,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.fi" commit -m "Remove(core)
 **Why:** the 11 Members methods on `BackstageController` are no longer reachable via routes (Task 22). Delete them. Also delete the now-unused `ApplicationController` and `MemberController` (the module owns the new copies). After this task, core has no Members controller code.
 
 **Files:**
+
 - Modify: `src/Infrastructure/Adapter/Api/Controller/BackstageController.php` — remove 11 methods
 - Delete: `src/Infrastructure/Adapter/Api/Controller/ApplicationController.php`
 - Delete: `src/Infrastructure/Adapter/Api/Controller/MemberController.php`
@@ -2404,6 +2498,7 @@ For each, identify the closing brace line (read the file to find the matching `}
 - [ ] **Step 2: Delete each method via Edit tool**
 
 For each of the 11 methods, use Edit with `replace_all=false`:
+
 - `old_string` = the complete method (signature + body + closing brace), including the blank line before it if present
 - `new_string` = empty `""`
 
@@ -2418,6 +2513,7 @@ grep -E "private readonly.*\\\$" src/Infrastructure/Adapter/Api/Controller/Backs
 ```
 
 Cross-check: does the property name appear anywhere else in the file?
+
 ```bash
 grep -c "this->listPending" src/Infrastructure/Adapter/Api/Controller/BackstageController.php
 # zero hits → safe to remove that property
@@ -2463,6 +2559,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.fi" commit -m "Remove(core)
 **Why:** `tests/Support/KernelHarness.php` (the test container) still binds `MemberApplicationRepositoryInterface` etc. to core's InMemory fakes. The fakes are now in the module (`DaemsModule\Members\Tests\Support\InMemory*`). The cross-domain consumer test `tests/Unit/Application/Backstage/ListNotificationsStatsTest.php` imports the OLD fake namespace — update its imports to the module namespace.
 
 **Files:**
+
 - Modify: `tests/Support/KernelHarness.php` — remove Members bindings
 - Modify: `tests/Unit/Application/Backstage/ListNotificationsStatsTest.php` — update fake imports
 - (any other files surfaced in Task 3 Step 3 — apply same import updates)
@@ -2485,6 +2582,7 @@ grep -E "(memberApps|supporterApps|memberStatusAudit|memberDirectory|dismissals|
 If any KernelHarness public property like `$harness->memberApps` is referenced by tests OUTSIDE of `tests/Unit/Application/Backstage/Notifications`, leave that property AS A PROPERTY but change its type hint to the new module namespace. The property itself must stay accessible to whichever core test still uses it.
 
 For Members-specific tests, the property usages have already been migrated to module tests (Tasks 18–20). Verify no core tests still reference them:
+
 ```bash
 grep -rln "harness->memberApps\|harness->supporterApps\|harness->memberStatusAudit\|harness->memberDirectory\|harness->dismissals\|harness->memberCounters\|harness->supporterCounters" tests
 ```
@@ -2496,19 +2594,23 @@ Expected: only `Notifications/ListNotificationsStatsTest.php` if any.
 Edit `tests/Unit/Application/Backstage/ListNotificationsStatsTest.php`:
 
 Replace:
-```
+
+```text
 use Daems\Tests\Support\Fake\InMemoryMemberApplicationRepository;
 use Daems\Tests\Support\Fake\InMemorySupporterApplicationRepository;
 use Daems\Tests\Support\Fake\InMemoryAdminApplicationDismissalRepository;
 ```
+
 with:
-```
+
+```text
 use DaemsModule\Members\Tests\Support\InMemoryMemberApplicationRepository;
 use DaemsModule\Members\Tests\Support\InMemorySupporterApplicationRepository;
 use DaemsModule\Members\Tests\Support\InMemoryAdminApplicationDismissalRepository;
 ```
 
 PowerShell:
+
 ```powershell
 $file = 'C:\laragon\www\daems-platform\tests\Unit\Application\Backstage\ListNotificationsStatsTest.php'
 $c = Get-Content $file -Raw
@@ -2523,7 +2625,8 @@ Set-Content -Path $file -Value $c -Encoding utf8
 Edit `tests/Support/KernelHarness.php`:
 
 (a) Replace the `use Daems\Tests\Support\Fake\InMemory{...}` imports for the 7 Members fakes with their module-namespace equivalents:
-```
+
+```text
 use DaemsModule\Members\Tests\Support\InMemoryMemberApplicationRepository;
 use DaemsModule\Members\Tests\Support\InMemorySupporterApplicationRepository;
 use DaemsModule\Members\Tests\Support\InMemoryMemberStatusAuditRepository;
@@ -2536,6 +2639,7 @@ use DaemsModule\Members\Tests\Support\InMemoryTenantSupporterCounterRepository;
 (b) Remove the binding closures that registered these repositories with the test container — the module's `bindings.test.php` (Task 14) will register them when ModuleRegistry runs in test mode.
 
 (c) For any `$harness->memberApps` etc. properties that core tests still access, KEEP them but change their property type to the module namespace. Override the assignment to fetch from the container:
+
 ```php
 $this->memberApps = $container->make(MemberApplicationRepositoryInterface::class);
 ```
@@ -2561,7 +2665,7 @@ foreach ([
 "
 ```
 
-Expected: 4 lines, each starting `OK `, with the InMemory fake class names being `DaemsModule\Members\Tests\Support\InMemory*` (NOT `Daems\Tests\Support\Fake\InMemory*`).
+Expected: 4 lines, each starting `OK`, with the InMemory fake class names being `DaemsModule\Members\Tests\Support\InMemory*` (NOT `Daems\Tests\Support\Fake\InMemory*`).
 
 - [ ] **Step 6: Run full test suite**
 
@@ -2587,6 +2691,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.fi" commit -m "Remove(tests
 **Why:** the 10 members migrations now live in `modules/members/backend/migrations/` with new names. The originals in `database/migrations/` are still on disk; the migration runner would re-apply them OR (worse) the moved copies would re-apply because `schema_migrations` rows still hold old filenames. Apply the 068 data-fix to rename `schema_migrations` rows on dev/test DBs; then delete originals + the 7 Migration tests that exercise migrations now living in the module.
 
 **Files:**
+
 - Run: `database/migrations/068_rename_members_migrations_in_schema_migrations_table.sql` against `daems_db` and `daems_db_test`
 - Delete: 10 migration originals
 - Delete: 7 Migration test files
@@ -2734,6 +2839,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.fi" commit -m "Remove(core)
 **Why:** the public-facing members section (5 PHP files: `_layout.php`, `benefits.php`, `board-minutes.php`, `guides.php`, `profile.php`) currently lives under `sites/daem-society/public/pages/members/`. Move into the module's `frontend/public/`. The module-router already maps `/members/*` to `modules/members/frontend/public/*` for non-UUID paths. The special `/members/{uuid}` regex matcher in `daem-society/public/index.php` (currently requires `pages/members/profile.php`) needs its require path updated to the module's location.
 
 **Files:**
+
 - Move (with `__DIR__` rewrite): 5 files from `daem-society/public/pages/members/` to `modules/members/frontend/public/`
 - Modify: `daem-society/public/index.php` — update the `/members/{uuid}` route handler's require path
 
@@ -2751,11 +2857,13 @@ done
 For each of the 5 files, the original used `require_once __DIR__ . '/../../../src/...'` style paths to reach daem-society's helpers. After the move, the new `__DIR__` is `C:/laragon/www/modules/members/frontend/public/`. Original `__DIR__` was `C:/laragon/www/sites/daem-society/public/pages/members/`.
 
 The relative-path delta is:
+
 - From `sites/daem-society/public/pages/members/` to `sites/daem-society/public/` was `../../`.
 - From `modules/members/frontend/public/` to `sites/daem-society/public/` is `../../../sites/daem-society/public/`.
 - So `../../../src/Foo` (which meant `sites/daem-society/src/Foo`) becomes `../../../sites/daem-society/src/Foo`.
 
 Run:
+
 ```bash
 grep -n "__DIR__\|require\|include" C:/laragon/www/modules/members/frontend/public/*.php
 ```
@@ -2769,6 +2877,7 @@ If a helper is referenced only by Members module pages and lives in `daem-societ
 - [ ] **Step 3: Update daem-society's `/members/{uuid}` route handler**
 
 In `C:/laragon/www/sites/daem-society/public/index.php`, find the special UUID matcher (around line 453–458 per recon):
+
 ```php
 if (preg_match('#^/members/([a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12})$#', $uri, $m)) {
     $__memberId = $m[1];
@@ -2778,6 +2887,7 @@ if (preg_match('#^/members/([a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f
 ```
 
 Edit to require the module's profile page:
+
 ```php
 if (preg_match('#^/members/([a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12})$#', $uri, $m)) {
     $__memberId = $m[1];
@@ -2828,6 +2938,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.fi" commit -m "Move(members
 **Repo for commits:** `daem-society` (1 commit) + `dp-members` (1 commit)
 
 **Files:**
+
 - Move: `daem-society/public/pages/backstage/members/index.php` → `modules/members/frontend/backstage/index.php`
 - Move: `daem-society/public/pages/backstage/members/applications-stats.js` → `modules/members/frontend/assets/backstage/applications-stats.js`
 - Move: `daem-society/public/pages/backstage/members/members-stats.js` → `modules/members/frontend/assets/backstage/members-stats.js`
@@ -2854,6 +2965,7 @@ For both `frontend/backstage/index.php` and `frontend/backstage/applications/ind
 (b) `<script>` and `<link>` tags pointing to `applications-stats.js` and `members-stats.js`: change from `/pages/backstage/members/applications-stats.js` to `/modules/members/assets/backstage/applications-stats.js`. Same for members-stats.js.
 
 Run:
+
 ```bash
 grep -nE "applications-stats\\.js|members-stats\\.js|require_once|require_once" C:/laragon/www/modules/members/frontend/backstage/index.php C:/laragon/www/modules/members/frontend/backstage/applications/index.php
 ```
@@ -2874,6 +2986,7 @@ Open `http://daem-society.local/backstage/members` — should render identical t
 Open `http://daem-society.local/backstage/applications` — should render identical applications page.
 
 Open browser DevTools Network tab. Verify:
+
 - `GET /modules/members/assets/backstage/applications-stats.js` → 200
 - `GET /modules/members/assets/backstage/members-stats.js` → 200
 - `GET /api/v1/backstage/applications/stats` → 200 with sparkline data
@@ -2902,6 +3015,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.fi" commit -m "Remove(backs
 **Repo for commits:** `daem-society` (1 commit) + `dp-members` (1 commit)
 
 **Files:**
+
 - Move: `daem-society/public/assets/css/public-member-page.css` → `modules/members/frontend/assets/public/public-member-page.css`
 
 - [ ] **Step 1: Copy CSS file**
@@ -2914,11 +3028,13 @@ cp C:/laragon/www/sites/daem-society/public/assets/css/public-member-page.css C:
 - [ ] **Step 2: Update CSS reference in profile.php**
 
 Open `C:/laragon/www/modules/members/frontend/public/profile.php`. Find:
+
 ```html
 <link rel="stylesheet" href="/assets/css/public-member-page.css">
 ```
 
 Replace with:
+
 ```html
 <link rel="stylesheet" href="/modules/members/assets/public/public-member-page.css">
 ```

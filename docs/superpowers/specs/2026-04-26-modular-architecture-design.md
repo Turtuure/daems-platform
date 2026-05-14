@@ -5,6 +5,7 @@
 **Scope:** Vision for a multi-tenant modular architecture where each domain (insights, members, events, projects, forum, notifications, applications) lives as a self-contained, optional module that GSA can enable/disable per-tenant based on subscription tier. Plus the **detailed design for Phase 1** — the manifest convention + Insights pilot — which is the only part that gets a writing-plans plan from this spec.
 
 **Out of scope of THIS spec (each gets its own future spec):**
+
 - Phase 2: runtime module loader + `tenant_modules` table + 403-middleware
 - Phase 3: GSA UI + service tier presets
 - Phase 4: per-domain migrations of remaining 6 domains
@@ -18,6 +19,7 @@ Each domain lives as its own independent git repo in `C:\laragon\www\modules\<do
 ### Module definition (v1, A-isolation)
 
 A module:
+
 - Owns its backend code (Domain / Application / Infrastructure layers under its own `DaemsModule\<Name>\` PSR-4 namespace).
 - Owns its migrations (under the module's own folder, prefixed with module name to avoid number collisions across modules).
 - Owns its frontend code (PHP page templates, JS, CSS) consumed by `daem-society` (and any other tenant frontend) via the existing `/shared/<path>`-style asset router pattern.
@@ -27,6 +29,7 @@ A module:
 ### Disable behavior (B mode chosen)
 
 When GSA disables a module for a tenant:
+
 - UI hides the module's nav entries / menu items.
 - API routes return HTTP 403 Forbidden.
 - Background jobs (scheduled publishes, queued tasks) **continue to run**. Data is preserved.
@@ -37,6 +40,7 @@ This is the typical SaaS "premium feature locked" pattern — data integrity pre
 ### Future-evolution candidates (parked, not in v1)
 
 These were considered and intentionally deferred during brainstorming:
+
 - **D-disable mode (provision/deprovision)** — disabling triggers a grace period after which module data is deleted; re-enabling re-provisions from empty. Use when GDPR / regulatory data-deletion requirements emerge. Architecture supports the addition: `tenant_modules.status` is an enum from day one (not boolean), so new states `pending_deprovision` / `deprovisioning` / `deprovisioned` slot in non-breakingly. Implementation would need a scheduled job, audit log, and data-deletion queue.
 - **B-isolation (declared cross-module dependencies)** — modules declare `requires: ["forum"]` in `module.json`; loader cascades disablement so dependents auto-disable. Adopt when the first cross-module feature is genuinely needed and the v1 strict-isolation rule starts blocking value. Additive change — does not break existing modules.
 - **C-isolation (soft references with graceful degradation)** — modules check at runtime whether peer modules are enabled and conditionally hide features. Use only if B turns out to be too rigid in practice. Higher complexity (every cross-module call site needs an `if (Modules::enabled('forum'))` guard).
@@ -64,7 +68,7 @@ This spec covers **the vision + Phase 1 detail**. Each subsequent phase gets its
 
 ### 3.1 Filesystem layout
 
-```
+```text
 C:\laragon\www\
 ├── daems-platform\        (own git repo — "core platform")
 ├── sites\
@@ -106,6 +110,7 @@ Example `modules/insights/module.json`:
 ```
 
 Field semantics:
+
 - `name` — kebab-case identifier, used as URL prefix and as `tenant_modules.module_name` value in Phase 2.
 - `version` — semver. Used by `requires` checks across modules in future B-isolation phases. Phase 1 only validates that the field exists.
 - `namespace` — PSR-4 namespace prefix the module declares. Always under `DaemsModule\\<Name>\\` to guarantee no collision with core `Daems\\`.
@@ -220,6 +225,7 @@ if (preg_match('#^/([a-z0-9-]+)(/.*)?$#', $uri, $m) ||
 A small `ModuleManifestReader` helper (in `daem-society/public/pages/_modules.php`) reads `modules/*/module.json` files (cached per request) and tells `index.php` which modules exist + where their frontend dirs are.
 
 Asset routing for module assets:
+
 - `/modules/<name>/assets/<file>` → `modules/<name>/frontend/assets/<file>`
 - Same path-traversal-guarded `realpath` pattern as the existing `/shared/` router.
 
@@ -289,12 +295,14 @@ Better solution: each module ships **two** binding files. `bindings.php` (produc
 ### 3.8 Tooling & verification
 
 Phase 1 must not regress:
+
 - `composer analyse` → PHPStan level 9, 0 errors.
 - `composer test` (Unit + Integration) → all pass.
 - `composer test:e2e` → all pass.
 - All 7 backstage KPI pages render identically (manual smoke-test, since the recent shared KPI-card extraction touched these).
 
 PHPStan needs to know about the new `DaemsModule\<Name>\` namespaces. Two options:
+
 1. Add `modules/*/backend/src/` paths to `phpstan.neon`'s `paths:` config explicitly.
 2. Glob: `paths: [src/, ../modules/*/backend/src/]`.
 
@@ -303,6 +311,7 @@ Option 2 is the default — auto-discovers new modules as they're added. The pla
 ### 3.9 Versioning + GitHub workflow
 
 `dp-insights` (the GitHub repo at `Turtuure/dp-insights`) is currently empty. After Phase 1:
+
 - Branch `dev` becomes the working branch (matches `daems-platform` and `daem-society` conventions).
 - Initial commit contains the moved Insights backend + frontend + manifest + tests.
 - `git tag v1.0.0` after first successful end-to-end test in dev environment.
@@ -314,7 +323,7 @@ Option 2 is the default — auto-discovers new modules as they're added. The pla
 
 ## 4. Migration step list (high-level — actual plan covers this in detail)
 
-```
+```text
 PROVENANCE: Insights file inventory comes from existing daems-platform tree.
             Verify with grep before each move.
 

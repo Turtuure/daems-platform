@@ -5,6 +5,7 @@
 **Scope:** Extract the Projects domain from `daems-platform` core into a self-contained module `modules/projects/` (the `dp-projects` git repo), following the manifest convention proven by the Insights pilot and the Forum extraction (completed 2026-04-27, 943/943 tests green). Zero user-visible change — Projects must work exactly as it does today after the move.
 
 **Foundation already shipped (Insights pilot + Forum extraction, branch `dev`):**
+
 - `module.json` schema + `ModuleRegistry` boot-time loader
 - Composer runtime autoloader extension for `DaemsModule\<Name>\` namespaces
 - `daem-society/public/index.php` module-router block (`/<module>/...`, `/backstage/<module>/...`, `/modules/<module>/assets/...`)
@@ -70,16 +71,19 @@ Forum extraction (commits `001104d…0b9fb98` in daems-platform; `bcda770…5492
 2. **Module skeleton needs `bindings.php` + `bindings.test.php` + `routes.php` STUBS day-1** (return-closure no-op). `ModuleRegistry` reads all three the moment it sees `module.json`; missing files crash with all 172+ tests erroring on harness boot.
 3. **Task 9.5 (NEW infra commit on daems-platform):** add `DaemsModule\Projects\` + `DaemsModule\Projects\Tests\` to `composer.json` `autoload-dev`, add `../modules/projects/backend/src` to `phpstan.neon` `paths`, run `composer dump-autoload`. Single commit on daems-platform `dev`. Without this, PHPStan + autoloader can't see the module.
 4. **Module migration ALTERs on core tables need conditional guards.** Pattern (proven in Forum's `forum_006_extend_dismissals_enum_forum_report.sql`):
+
    ```sql
    SET @t := (SELECT COUNT(*) FROM information_schema.tables
               WHERE table_schema = DATABASE() AND table_name = 'admin_application_dismissals');
    SET @sql := IF(@t > 0, 'ALTER TABLE admin_application_dismissals ...', 'DO 0');
    PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
    ```
+
    Same guard for the `066_*` schema_migrations rename data-fix.
 5. **Migration numbering (data-fix):** new core migration `database/migrations/066_rename_project_migrations_in_schema_migrations_table.sql` — idempotent, conditional, renames 10 existing `*project*` rows in `schema_migrations` table from old → new filenames so dev DBs don't re-run them.
 6. **TDD-controller-extraction (Task 10):** use Reflection-based signature tests as Forum's Task 10/11 did. Verify constructor parameter list, method names, parameter types, return types BEFORE extracting body. Catches constructor-arg-mismatch bugs.
 7. **Production-container smoke** mandatory after Task 13 + every Wave E task (T21–T25). Pattern:
+
    ```php
    $kernel = require 'bootstrap/app.php';
    $ref = new ReflectionProperty($kernel, 'container');
@@ -87,6 +91,7 @@ Forum extraction (commits `001104d…0b9fb98` in daems-platform; `bcda770…5492
    $container = $ref->getValue($kernel);
    $container->make(ProjectsBackstageController::class); // ← must succeed
    ```
+
    Smoke script NOT committed.
 8. **Cross-domain core tests** that use `Daems\Tests\Support\Fake\InMemoryProject*` will need to import `DaemsModule\Projects\Tests\Support\InMemoryProject*` once Wave E moves the fakes. Targets: `tests/Support/KernelHarness.php`, `tests/Unit/Application/Backstage/{ListPendingApplicationsForAdminTest,ListProposalsForAdminTest,ListNotificationsStatsTest}.php`. The cross-module-import pattern is correct strict-A behaviour (Forum commit 6fbeeb7 legitimised it). Do not try to delete these import lines.
 9. **Migration-tests** (`tests/Integration/Migration/Migration0NN_Test.php`) that test moved migrations are dangling after extract. Targets to delete in Task 25: `Migration027Test.php` (add tenant_id), `Migration031Test.php` (add tenant_id to extras), `Migration044Test.php` (featured), `Migration046Test.php` (proposal decision metadata). NOT deleted: tests for migrations 052/053/054/055/059 — those touch shared/i18n scope.
@@ -110,7 +115,7 @@ Counts verified by `Glob` + `find` against `daems-platform` HEAD `0b9fb98` on 20
 
 ### Application/Project public use cases (13 dirs, 38 files)
 
-```
+```text
 AddProjectComment (3) | AddProjectUpdate (3) | ArchiveProject (3) | CreateProject (3) |
 GetProject (3) | GetProjectBySlugForLocale (3) | JoinProject (3) | LeaveProject (3) |
 LikeProjectComment (2) | ListProjects (3) | ListProjectsForLocale (3) |
@@ -119,7 +124,7 @@ SubmitProjectProposal (3) | UpdateProject (3)
 
 ### Application/Backstage admin use cases (12 sibling dirs, 29 files — flat structure preserved)
 
-```
+```text
 AdminUpdateProject (3) | ApproveProjectProposal (3) | ChangeProjectStatus (2) |
 CreateProjectAsAdmin (3) | DeleteProjectCommentAsAdmin (2) |
 GetProjectWithAllTranslations (3) | ListProjectCommentsForAdmin (3) |
@@ -131,7 +136,7 @@ The `Backstage/Projects/ListProjectsStats/` nested directory is the only outlier
 
 ### SQL repositories (3 files)
 
-```
+```text
 SqlProjectRepository.php
 SqlProjectCommentModerationAuditRepository.php
 SqlProjectProposalRepository.php
@@ -176,6 +181,7 @@ None of the 10 moving migrations ALTER a non-project core table, so no per-migra
 All move under `modules/projects/backend/tests/`. Namespace rewrite `Daems\Tests\* → DaemsModule\Projects\Tests\*` applies.
 
 **Cross-domain core tests** that REFERENCE Project types but are NOT Project tests stay in core, with import updates only:
+
 - `tests/Unit/Application/Backstage/ListPendingApplicationsForAdminTest.php`
 - `tests/Unit/Application/Backstage/ListProposalsForAdminTest.php`
 - `tests/Unit/Application/Backstage/ListNotificationsStatsTest.php`
@@ -186,6 +192,7 @@ All move under `modules/projects/backend/tests/`. Namespace rewrite `Daems\Tests
 These get their imports updated in Wave E (Task 24/25).
 
 **Migration tests to delete in Task 25** (per Forum lesson 9):
+
 - `tests/Integration/Migration/Migration027Test.php` (tested 027_add_tenant_id_to_projects)
 - `tests/Integration/Migration/Migration031Test.php` (tested 031_add_tenant_id_to_project_extras)
 - `tests/Integration/Migration/Migration044Test.php` (tested 044_add_featured_to_projects)
@@ -291,6 +298,7 @@ Identical structure. Repositories swap to InMemory fakes from `modules/projects/
 | 25 | `POST /api/v1/backstage/projects/{id}/comments/{comment_id}/delete` | 376 | `deleteProjectComment` |
 
 ⚠ = URL does NOT follow `/projects/` or `/backstage/projects/` prefix. Five out-of-prefix URLs:
+
 - `/api/v1/project-comments/{id}/like` (likeComment)
 - `/api/v1/project-proposals` (propose)
 - `/api/v1/backstage/proposals/{id}/approve` + `/reject` (proposal decisions)
@@ -346,7 +354,7 @@ The dependency chain in core after extraction: `BackstageController::listProposa
 
 Applied to every moved file via mechanical search + replace:
 
-```
+```text
 Daems\Application\Project\*                           → DaemsModule\Projects\Application\Project\*
 Daems\Application\Backstage\AdminUpdateProject\*      → DaemsModule\Projects\Application\Backstage\AdminUpdateProject\*
 Daems\Application\Backstage\ApproveProjectProposal\*  → DaemsModule\Projects\Application\Backstage\ApproveProjectProposal\*
@@ -378,6 +386,7 @@ Daems\Tests\E2E\ProjectsLocaleE2ETest             → DaemsModule\Projects\Tests
 ```
 
 **NOT rewritten (stay in `Daems\`):**
+
 - `Daems\Domain\Project\*` — Domain stays in core
 - All `Daems\Application\Backstage\ListPendingApplications\*`, `ListProposalsForAdmin\*`, `Notifications\*` — cross-domain consumers stay in core; their `use` statements that previously referenced `Daems\Tests\Support\Fake\InMemoryProject*` get updated to `DaemsModule\Projects\Tests\Support\InMemoryProject*` in Wave E
 
@@ -414,6 +423,7 @@ Plan task uses `git grep -n "__DIR__\\|/pages/backstage/projects/\\|/pages/proje
 ## 9. Bootstrap + harness wiring rule (CLAUDE.md "BOTH-wiring")
 
 Projects-specific bindings must be removed from BOTH:
+
 - `daems-platform/bootstrap/app.php` (production container)
 - `daems-platform/tests/Support/KernelHarness.php` (test container)
 

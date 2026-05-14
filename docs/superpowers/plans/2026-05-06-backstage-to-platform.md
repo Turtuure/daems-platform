@@ -26,7 +26,7 @@
 
 ## File structure (target end state)
 
-```
+```text
 daems-platform/
 ├── public/
 │   ├── index.php                          # API kernel — unchanged
@@ -131,6 +131,7 @@ Waves are commit boundaries — each wave ends in a working build (PHPStan 0 err
 ### Task 1: Create branch and inventory
 
 **Files:**
+
 - Modify: `docs/superpowers/plans/2026-05-06-backstage-to-platform.md` (this file — add execution log section at bottom)
 
 - [ ] **Step 1: Create branch off `dev`**
@@ -184,6 +185,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.fi" commit -m "Plan(backsta
 ### Task 2: Add `public/backstage.php` front controller skeleton
 
 **Files:**
+
 - Create: `C:/laragon/www/daems-platform/public/backstage.php`
 - Modify: `C:/laragon/www/daems-platform/public/.htaccess`
 
@@ -326,6 +328,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.fi" commit -m "Add(backstag
 ### Task 3: Move ApiClient + I18n + MemberNumberFormatter into platform
 
 **Files:**
+
 - Create: `C:/laragon/www/daems-platform/src/Frontend/ApiClient.php`
 - Create: `C:/laragon/www/daems-platform/src/Frontend/I18n.php`
 - Create: `C:/laragon/www/daems-platform/src/Frontend/MemberNumberFormatter.php`
@@ -440,6 +443,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.fi" commit -m "Add(backstag
 ### Task 4: Wire backstage role guard + session
 
 **Files:**
+
 - Create: `C:/laragon/www/daems-platform/public/backstage/_guard.php`
 - Modify: `C:/laragon/www/daems-platform/public/backstage/router.php`
 
@@ -512,6 +516,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.fi" commit -m "Add(backstag
 ### Task 5: Move shared partials + layout from society to platform
 
 **Files:**
+
 - Create: `C:/laragon/www/daems-platform/public/backstage/pages/_shared.php`
 - Create: `C:/laragon/www/daems-platform/public/backstage/pages/layout.php`
 - Create: `C:/laragon/www/daems-platform/public/backstage/pages/index.php`
@@ -636,6 +641,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.fi" commit -m "Add(backstag
 ### Task 6: Move backstage CSS/JS assets
 
 **Files:**
+
 - Create: `C:/laragon/www/daems-platform/public/backstage/assets/css/daems-backstage.css` (and 4 siblings)
 - Create: `C:/laragon/www/daems-platform/public/backstage/assets/js/daems-backstage.js` (and 4 siblings)
 - Create: `C:/laragon/www/daems-platform/public/backstage/assets/img/` (subset)
@@ -698,6 +704,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.fi" commit -m "Add(backstag
 ### Task 7: Mount `modules/shared/*` at `/modules-shared/*`
 
 **Files:**
+
 - Modify: `C:/laragon/www/daems-platform/public/backstage.php`
 
 - [ ] **Step 1: Add a shared-modules passthrough in `backstage.php`**
@@ -787,6 +794,7 @@ if (empty($_SESSION['user']) && ($_GET['_dev_admin'] ?? null) === '1') {
 Note: this won't authenticate against the API. Skip steps that require live API data; verify only chrome rendering.
 
 Open `http://daems-platform.local/backstage?_dev_admin=1`. Verify:
+
 - Sidebar renders with all nav items
 - KPI strip placeholder draws (numbers will be 0 since fake token can't fetch)
 - No 404s in Network tab
@@ -811,6 +819,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.fi" commit -m "Remove(backs
 ### Task 9: Wire notifications page
 
 **Files:**
+
 - Modify: `C:/laragon/www/daems-platform/public/backstage/router.php`
 
 The directory `public/backstage/pages/notifications/` already exists from Task 5's recursive copy. Just route it.
@@ -833,6 +842,7 @@ grep -rn "__DIR__\|/assets/\|/shared/\|/pages/backstage/" C:/laragon/www/daems-p
 ```
 
 Adjust hop counts and rewrite asset URLs the same way as Task 5/Step 4. Pay attention to:
+
 - `notifications.css` and `notifications.js` references — they live at `/backstage/pages/notifications/*.css|js` now (relative to web root).
 - `notifications-stats.js` likewise.
 
@@ -853,6 +863,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.fi" commit -m "Add(backstag
 ### Task 10: Wire search page
 
 **Files:**
+
 - Modify: `C:/laragon/www/daems-platform/public/backstage/router.php`
 
 - [ ] **Step 1: Add `/search` to router map**
@@ -886,6 +897,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.fi" commit -m "Add(backstag
 ### Task 11: Wire settings page
 
 **Files:**
+
 - Modify: `C:/laragon/www/daems-platform/public/backstage/router.php`
 
 - [ ] **Step 1: Add `/settings` to router map**
@@ -920,6 +932,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.fi" commit -m "Add(backstag
 ### Task 12: Wire project-proposals page
 
 **Files:**
+
 - Modify: `C:/laragon/www/daems-platform/public/backstage/router.php`
 
 - [ ] **Step 1: Add `/project-proposals` to map**
@@ -957,6 +970,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.fi" commit -m "Add(backstag
 ### Task 13: Add `/backstage/login` form + handler
 
 **Files:**
+
 - Create: `C:/laragon/www/daems-platform/public/backstage/auth/login.php`
 - Create: `C:/laragon/www/daems-platform/public/backstage/auth/login-handler.php`
 - Create: `C:/laragon/www/daems-platform/public/backstage/auth/logout.php`
@@ -1086,6 +1100,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.fi" commit -m "Add(backstag
 ### Task 14: Move JSON proxies — applications, members, notifications, search, dismiss
 
 **Files:**
+
 - Create: `C:/laragon/www/daems-platform/public/backstage/api/applications.php`
 - Create: `C:/laragon/www/daems-platform/public/backstage/api/members.php`
 - Create: `C:/laragon/www/daems-platform/public/backstage/api/notifications.php`
@@ -1181,6 +1196,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.fi" commit -m "Add(backstag
 ### Task 15: Move JSON proxies — events, projects, proposals, event-upload
 
 **Files:**
+
 - Create: `C:/laragon/www/daems-platform/public/backstage/api/events.php`
 - Create: `C:/laragon/www/daems-platform/public/backstage/api/projects.php`
 - Create: `C:/laragon/www/daems-platform/public/backstage/api/proposals.php`
@@ -1234,6 +1250,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.fi" commit -m "Add(backstag
 ### Task 16: Move JSON proxies — forum, insights
 
 **Files:**
+
 - Create: `C:/laragon/www/daems-platform/public/backstage/api/forum.php`
 - Create: `C:/laragon/www/daems-platform/public/backstage/api/insights.php`
 - Modify: `C:/laragon/www/daems-platform/public/backstage/api-router.php`
@@ -1274,6 +1291,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.fi" commit -m "Add(backstag
 ### Task 17: Move tenant-settings proxy + miscellaneous proxies
 
 **Files:**
+
 - Create: `C:/laragon/www/daems-platform/public/backstage/api/tenant-settings.php`
 - Modify: `C:/laragon/www/daems-platform/public/backstage/api-router.php`
 
@@ -1326,6 +1344,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.fi" commit -m "Add(backstag
 ### Task 18: Add module discovery + page router to backstage front controller
 
 **Files:**
+
 - Modify: `C:/laragon/www/daems-platform/public/backstage.php`
 - Modify: `C:/laragon/www/daems-platform/public/backstage/router.php`
 
@@ -1421,6 +1440,7 @@ echo 'Not found';
 - [ ] **Step 3: Verify module pages render**
 
 Open each:
+
 - `http://daems-platform.local/backstage/members`
 - `http://daems-platform.local/backstage/applications` (legacy redirect → members)
 - `http://daems-platform.local/backstage/events`
@@ -1443,6 +1463,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.fi" commit -m "Add(backstag
 ### Task 19: Fix module backstage references that hardcode society paths
 
 **Files:**
+
 - Modify: any module backstage file that references `/assets/*` or hardcodes `daem-society` paths
 
 - [ ] **Step 1: Inventory hardcoded references**
@@ -1452,16 +1473,19 @@ grep -rn "daem-society\|/assets/css/\|/assets/js/\|/assets/img/" C:/laragon/www/
 ```
 
 For each hit, decide:
+
 - `/assets/css/*` references inside module backstage layout-includes → likely already pulled via `layout.php` in platform's backstage chrome (which uses `/backstage/assets/*`). If a module includes its own `<link>` tags, rewrite to `/backstage/assets/*`.
 - `daem-society` literal strings → likely error message text or comment. Update to `daems-platform`.
 - `DAEMS_SITE_PUBLIC . '/pages/backstage/layout.php'` → in platform, `DAEMS_SITE_PUBLIC` resolves to `daems-platform/public/backstage`, so `pages/backstage/layout.php` becomes `pages/layout.php` (note the path collapse). Update those requires:
 
   Old:
+
   ```php
   require DAEMS_SITE_PUBLIC . '/pages/backstage/layout.php';
   ```
 
   New:
+
   ```php
   require DAEMS_SITE_PUBLIC . '/pages/layout.php';
   ```
@@ -1545,11 +1569,13 @@ Wave F deletes the society-side copy. Do not delete until platform-side is fully
 ### Task 21: Strip backstage routing from society's `index.php`
 
 **Files:**
+
 - Modify: `C:/laragon/www/sites/daem-society/public/index.php`
 
 - [ ] **Step 1: Delete the backstage routing block**
 
 In `public/index.php`, delete:
+
 - Lines 252–321 (all `if ($uri === '/api/backstage/...')` proxy blocks AND the inline `/api/backstage/member-growth` block)
 - Lines 378–409 (`if (preg_match('#^/backstage(/.*)?$#', $uri))` block)
 - The `daems_shared_partial` `_shared.php` require near line 20 (`require_once __DIR__ . '/pages/backstage/_shared.php';`)
@@ -1595,6 +1621,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.fi" commit -m "Remove(socie
 ### Task 22: Delete backstage files from society
 
 **Files:**
+
 - Delete: `C:/laragon/www/sites/daem-society/public/pages/backstage/` (whole tree)
 - Delete: `C:/laragon/www/sites/daem-society/public/api/backstage/` (whole tree)
 - Delete: `C:/laragon/www/sites/daem-society/public/assets/css/daems-backstage.css`
@@ -1645,6 +1672,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.fi" commit -m "Remove(socie
 ### Task 23: Drop ApiClient/I18n/lang from society if no public-site references remain
 
 **Files:**
+
 - Verify (do NOT delete yet): `C:/laragon/www/sites/daem-society/src/ApiClient.php`
 - Verify: `C:/laragon/www/sites/daem-society/src/I18n.php`
 - Verify: `C:/laragon/www/sites/daem-society/lang/`
@@ -1671,6 +1699,7 @@ Verification only.
 ### Task 24: Add per-tenant platform hosts to fallback map
 
 **Files:**
+
 - Modify: `C:/laragon/www/daems-platform/config/tenant-fallback.php`
 
 - [ ] **Step 1: Add `<tenant>-platform.local` rows**
@@ -1742,16 +1771,19 @@ Verification only. Halt if PHPStan or platform tests are red.
 - [ ] **Step 1: Two-tenant walkthrough**
 
 For tenant `daems` at `http://daems-platform.local/backstage`:
+
 - Log in
 - Walk every page (use Task 20's table)
 - Create-edit-delete a test event AND a test member status change
 
 For tenant `sahegroup` at `http://sahegroup-platform.local/backstage`:
+
 - Log in with sahegroup admin
 - Walk dashboard + members + events
 - Create + delete a test event scoped to sahegroup
 
 For society public site:
+
 - `http://daem-society.local/` → loads
 - `http://daem-society.local/backstage` → 301 to `http://daems-platform.local/backstage`
 - `http://daem-society.local/projects/<known-slug>` → loads
@@ -1765,6 +1797,7 @@ Log any issues in the execution-log table at the bottom of this plan. If any are
 ### Task 27: Update CLAUDE.md + memory + roadmap
 
 **Files:**
+
 - Modify: `C:/laragon/www/daems-platform/CLAUDE.md`
 - Create: `C:/Users/Sam/.claude/projects/C--laragon-www-daems-platform/memory/project_backstage_in_platform.md`
 - Modify: `C:/Users/Sam/.claude/projects/C--laragon-www-daems-platform/memory/MEMORY.md`
@@ -1780,6 +1813,7 @@ In `daems-platform/CLAUDE.md`, edit the "Two-repo architecture" table to reflect
 | `daem-society` | `C:\laragon\www\sites\daem-society` | **Public site only**. Calls platform API via `ApiClient`. `/backstage*` redirects to `daems-platform.local/backstage*`. |
 
 Add a new "Backstage" section after "Multi-tenant" describing:
+
 - URL: `<tenant-host>/backstage` (currently `daems-platform.local`, `sahegroup-platform.local`)
 - Tenant resolved via `Host` header (Phase 1)
 - Pages live at `daems-platform/public/backstage/pages/*` + `modules/<name>/frontend/backstage/*`

@@ -19,6 +19,7 @@
 ## File Structure
 
 **Created — Database migrations:**
+
 - `database/migrations/025_add_tenant_id_to_events.sql`
 - `database/migrations/026_add_tenant_id_to_insights.sql`
 - `database/migrations/027_add_tenant_id_to_projects.sql`
@@ -30,6 +31,7 @@
 - `database/migrations/033_add_tenant_id_to_member_register_audit.sql`
 
 **Created — Isolation tests:**
+
 - `tests/Isolation/ProjectTenantIsolationTest.php`
 - `tests/Isolation/EventTenantIsolationTest.php`
 - `tests/Isolation/MemberApplicationTenantIsolationTest.php`
@@ -205,6 +207,7 @@ final class ProjectTenantIsolationTest extends IsolationTestCase
 Shared base class for all 7 isolation tests. Seeds 2 tenants, helper to create tenant-scoped data, helper to build an ActingUser.
 
 **Files:**
+
 - Create: `tests/Isolation/IsolationTestCase.php`
 
 - [ ] **Step 1.1: Write IsolationTestCase**
@@ -300,6 +303,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.org" commit -m "Tests: add 
 ## Task 2: Migration 025 — tenant_id for events
 
 **Files:**
+
 - Create: `database/migrations/025_add_tenant_id_to_events.sql`
 - Test: `tests/Integration/Migration/Migration025Test.php`
 
@@ -400,7 +404,8 @@ For each task:
 - [ ] **Step N.5:** Commit
 
 **Example commit message format:**
-```
+
+```text
 Feat(db): migration 030 — add tenant_id to forum_categories, forum_topics, forum_posts
 ```
 
@@ -413,6 +418,7 @@ Once all 9 migrations are committed, the schema is fully tenant-scoped. The code
 Move all non-scoped methods to `*ForTenant` variants. Keep `*AllTenants` variants only where GSA aggregate endpoints truly need them (check each use case).
 
 **Files:**
+
 - Modify: `src/Domain/Project/ProjectRepositoryInterface.php`
 - Modify: `src/Infrastructure/Adapter/Persistence/Sql/SqlProjectRepository.php`
 - Modify: `tests/Integration/Persistence/Sql/SqlProjectRepositoryTest.php` (rename tests, add tenant_id to fixtures)
@@ -427,6 +433,7 @@ Add `TenantId $tenantId` to `src/Domain/Project/Project.php` constructor. Update
 Every method that touches `projects` or `project_*` tables gets a `TenantId` parameter or gets renamed `*AllTenants`/`*CrossTenant` if it legitimately needs cross-tenant reach.
 
 Example:
+
 ```php
 interface ProjectRepositoryInterface
 {
@@ -449,6 +456,7 @@ Seed rows in two tenants, verify `listForTenant(daems)` returns only daems rows.
 - [ ] **Step 11.5: Write ProjectTenantIsolationTest**
 
 Create `tests/Isolation/ProjectTenantIsolationTest.php` using the Isolation Test Pattern above. Minimum 3 tests:
+
 - `test_admin_of_daems_cannot_see_sahegroup_projects`
 - `test_repository_has_no_legacy_non_scoped_methods`
 - `test_gsa_can_query_any_tenant`
@@ -488,7 +496,8 @@ For each task:
 - [ ] **Step N.7:** Commit
 
 **Commit message template:**
-```
+
+```text
 Refactor: Sql<Aggregate>Repository scoped by TenantId + isolation test
 ```
 
@@ -499,6 +508,7 @@ Refactor: Sql<Aggregate>Repository scoped by TenantId + isolation test
 `AdminStats` aggregates across the tenant. Decide per-method whether it's tenant-scoped (most admin stats) or cross-tenant (GSA-only global view).
 
 **Files:**
+
 - Modify: `src/Domain/Admin/AdminStatsRepositoryInterface.php`
 - Modify: `src/Infrastructure/Adapter/Persistence/Sql/SqlAdminRepository.php`
 - Modify: `src/Application/UseCase/Admin/GetAdminStats/GetAdminStats.php`
@@ -560,11 +570,13 @@ git -c user.name="Dev Team" -c user.email="dev@daems.org" commit -m "Refactor: A
 ## Task 19: Update every use case to use ActingUser.activeTenant
 
 There are ~50 use cases across Auth, User, Project, Event, Forum, Insight, Admin, Applications. Each that reads or writes per-tenant data must:
+
 1. Pull `$actor->activeTenant` and pass to repository methods
 2. Validate tenant membership or platform-admin status before mutations
 3. On insert of new aggregate, set `tenantId = $actor->activeTenant` on the entity
 
 **Files:**
+
 - Modify: every file under `src/Application/UseCase/**/*.php` that reads or writes per-tenant tables
 
 - [ ] **Step 19.1: Enumerate use cases**
@@ -578,6 +590,7 @@ Work through each file systematically.
 - [ ] **Step 19.2: For each use case — apply Use Case Pattern from Canonical Patterns section**
 
 Checklist per use case:
+
 - Does it read a per-tenant repo? → change to `*ForTenant($actor->activeTenant)` variant
 - Does it create a new per-tenant entity? → pass `$actor->activeTenant` to entity constructor
 - Does it mutate an entity? → verify the entity's tenantId matches `$actor->activeTenant` (or actor is platform admin)
@@ -586,6 +599,7 @@ Checklist per use case:
 - [ ] **Step 19.3: Commit in batches per aggregate**
 
 Don't commit all 50 at once — batch per aggregate area:
+
 - Project use cases (8+ files) → one commit
 - Event use cases → one commit
 - Forum use cases → one commit
@@ -610,6 +624,7 @@ ls /c/laragon/www/daems-platform/tests/Isolation/
 ```
 
 Expected files:
+
 - `IsolationTestCase.php` (from Task 1)
 - `ProjectTenantIsolationTest.php`
 - `EventTenantIsolationTest.php`
@@ -622,6 +637,7 @@ Expected files:
 - [ ] **Step 20.2: Each must have at least 3 tests**
 
 Minimum assertions:
+
 1. Admin of tenant A cannot see tenant B data
 2. Legacy non-scoped repo methods have been removed (static `method_exists()` check)
 3. GSA with `X-Daems-Tenant` override reaches target tenant data
@@ -639,6 +655,7 @@ Expected: all green.
 ## Task 21: E2E tenant isolation tests
 
 **Files:**
+
 - Create: `tests/E2E/TenantIsolation/daems_admin_cannot_see_sahegroup_data.spec.ts`
 - Create: `tests/E2E/TenantIsolation/gsa_can_switch_tenants_via_api_header.spec.ts`
 - Create: `tests/E2E/TenantIsolation/registered_user_without_membership_gets_403.spec.ts`
@@ -653,6 +670,7 @@ If `tests/E2E/` uses PHPUnit (not Playwright), use PHPUnit HTTP assertions. Insp
 - [ ] **Step 21.2: Implement each of the 4 tests**
 
 For each:
+
 1. Set up data in DB (two tenants, users with roles)
 2. Issue real HTTP call with correct Host header and Bearer token
 3. Assert response code and body shape
@@ -670,6 +688,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.org" commit -m "Tests(e2e):
 ## Task 22: Update docs (database schema, api.md, ADR-014)
 
 **Files:**
+
 - Modify: `docs/database.md`
 - Modify: `docs/api.md`
 
@@ -682,6 +701,7 @@ Add tenant_id column description for every per-tenant table. Add "Multi-tenant i
 Note which endpoints are tenant-scoped (all `/projects`, `/events`, `/forum`, `/insights`, `/applications`, `/backstage/*`), explicitly call out that responses only include data from the tenant resolved from Host or `X-Daems-Tenant` override.
 
 Add new error responses where not yet present:
+
 - `403 not_a_member` — returned when user has no `user_tenants` row for the active tenant
 - `403 tenant_override_forbidden`
 - `404 unknown_tenant` (override slug not found)
@@ -726,6 +746,7 @@ Expected: clean migration, green tests.
 - [ ] **Step 23.3: Manual smoke against dev database**
 
 Ensure existing flows still work:
+
 ```bash
 # Login
 curl -s -X POST http://daem-society.local/api/v1/auth/login -H 'Content-Type: application/json' -d '{"email":"<existing>","password":"<pw>"}'

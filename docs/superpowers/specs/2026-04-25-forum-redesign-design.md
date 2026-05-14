@@ -8,6 +8,7 @@
 ## 1. Background
 
 The current `/backstage/forum` page is 1191 LOC across `index.php` (403), `forum.js` (343), `forum-modal.js` (399), and `forum.css` (46). It uses a custom tab-switcher (`proj-tabs` / `proj-tab-content`) with four tabs:
+
 - **Reports** — moderation queue, card-based list of compound reports
 - **Topics** — moderation table for forum topics (pin / lock / delete)
 - **Categories** — CRUD list of forum categories
@@ -45,7 +46,7 @@ The legacy `/backstage/forum?tab=reports` URL parameter is silently ignored (the
 
 ### Layout
 
-```
+```text
 ┌──────────────────────────────────────────────────────┐
 │ Forum                                                │
 │ Moderate reports, topics, and categories.            │
@@ -106,7 +107,7 @@ Reports are not row-data — they're compound objects: a target (post or topic) 
 
 ### Layout
 
-```
+```text
 [Page header]
 [Toolbar: All / Open / Resolved / Dismissed segments | type select | search]
 [Card list — one card per compound report]
@@ -116,7 +117,7 @@ The toolbar uses `.data-explorer__toolbar` (the segmented switcher classes) but 
 
 ### Per-report card
 
-```
+```text
 ┌─────────────────────────────────────────────────────┐
 │ [Post-pill] 4 reports · open                14 May  │
 │                                                     │
@@ -154,11 +155,13 @@ Backend endpoints already exist for each resolution (`POST /backstage/forum/repo
 Standard `.data-explorer__panel` + table.
 
 ### Toolbar
+
 - Segmented: All / Pinned / Locked / Open
 - Select: Category (dropdown of categories)
 - Search
 
 ### Columns
+
 - Title (with link to public-side topic in new tab)
 - Category
 - Author
@@ -168,11 +171,13 @@ Standard `.data-explorer__panel` + table.
 - Actions (icon buttons, hover-revealed): Pin / Unpin (toggle), Lock / Unlock (toggle), View (external link), Delete
 
 ### Actions
+
 - Pin/Unpin/Lock/Unlock → confirm-dialog ("Pin this topic?" / etc.) → POST → row updates inline (re-fetch single topic)
 - View → opens `https://daem-society.local/forum/{category}/{topic-slug}` in new tab
 - Delete → confirm-dialog (danger, "Topic and all its posts will be deleted") → POST → row removes + KPIs refresh
 
 ### Empty / Error / Loading
+
 Phase 1 patterns: skeleton rows during load, illustrated empty-state when no topics, inline error card with retry on load failure. Empty-state SVG: a generic "discussion" illustration shipped in this PR.
 
 ## 7. Categories sub-page — `/backstage/forum/categories`
@@ -180,10 +185,12 @@ Phase 1 patterns: skeleton rows during load, illustrated empty-state when no top
 `forum_categories` schema: `id, slug, name, icon, description, sort_order`. (No `hidden` field — visibility is controlled by sort/inclusion.)
 
 ### Toolbar
+
 - Search (filter by name/slug)
 - `+ New category` button (right) → opens slide-panel in create mode
 
 ### Columns
+
 - Name (with icon as inline emoji or icon-name)
 - Slug
 - Description (truncated to ~80 chars with ellipsis)
@@ -192,11 +199,13 @@ Phase 1 patterns: skeleton rows during load, illustrated empty-state when no top
 - Actions: Edit (✎) → slide-panel, Delete (trash) → confirm-dialog
 
 ### Slide-panel — Create / Edit
+
 Form fields: `name` (text), `slug` (text, auto-generated from name on create), `icon` (text — user pastes an emoji or icon-name), `description` (textarea), `sort_order` (number).
 
 Save POSTs to `POST /api/v1/backstage/forum/categories` (create) or `POST /api/v1/backstage/forum/categories/{id}` (update). Existing endpoints exist for both.
 
 ### Delete confirm
+
 If category has topics, the dialog body warns: `"This category has {N} topics. Topics will be moved to '{default-category}'."` (or whatever the existing backend behavior is — verify during implementation; if backend rejects deletion of non-empty category, surface that error inline rather than letting the confirm-dialog complete).
 
 ## 8. Audit sub-page — `/backstage/forum/audit`
@@ -204,11 +213,13 @@ If category has topics, the dialog body warns: `"This category has {N} topics. T
 Read-only log. `.data-explorer__panel` + table.
 
 ### Toolbar
+
 - Select: Action type (10 actions from the enum: `deleted`, `locked`, `unlocked`, `pinned`, `unpinned`, `edited`, `category_created`, `category_updated`, `category_deleted`, `warned`)
 - Date-range select: `Last 7 days` / `Last 30 days` / `All time`
 - Search by actor name (client-side filter on loaded rows; pagination is server-side)
 
 ### Columns
+
 - When (`created_at`, formatted as `dd.mm.yyyy HH:mm`)
 - Actor (performed_by → user name; if user deleted, show "(deleted user)")
 - Action (pill: `deleted`/`warned`/etc., color per action category)
@@ -217,6 +228,7 @@ Read-only log. `.data-explorer__panel` + table.
 - Reason (if present)
 
 ### Pagination
+
 50 rows per page. Existing backend endpoint `GET /backstage/forum/audit` supports `?limit=` and `?offset=`. Add a simple "Load more" button at the bottom that increments offset.
 
 No slide-panel (read-only). No confirm-dialog. Empty state: "No moderation actions in this period."
@@ -226,6 +238,7 @@ No slide-panel (read-only). No confirm-dialog. Empty state: "No moderation actio
 ### New use case
 
 `src/Application/Forum/ListForumStats/ListForumStats.php` (+ Input + Output DTOs). Mirrors Phase 1's `ListInsightStats` shape:
+
 - Constructor: `ForumRepositoryInterface` (or split: `ForumReportsRepository`, `ForumTopicsRepository`, `ForumCategoriesRepository`, `ForumAuditRepository` if those exist as separate interfaces — verify during planning)
 - Returns 4 KPI structures + 5-row recent_audit list
 
@@ -318,6 +331,7 @@ PHPStan level 9 must remain at 0 errors.
 ## 13. Acceptance criteria
 
 Phase 2 is done when:
+
 1. The 5 forum URL routes (`forum`, `forum/reports`, `forum/topics`, `forum/categories`, `forum/audit`) all render their respective new layouts.
 2. `GET /api/v1/backstage/forum/stats` returns the documented payload, scoped to the request's tenant.
 3. All 4 dashboard KPI cards click-navigate to the correct sub-pages.

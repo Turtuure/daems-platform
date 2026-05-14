@@ -12,6 +12,7 @@
 Daem Society ry:n säännöt (`daem-society-saannot-2026.pdf`) edellyttävät vuosittaista jäsenmaksujen ja kannatusmaksujen hallintaa. Tämä milestone toteuttaa **MembershipBillingin perustason** — hinta-versioinnin (§ 5), anniversary-pohjaisen laskutuksen, waive/reduce-mekaniikan (§ 5), automaattisen 2 vuoden maksamatta-triggerin (§ 4), manuaalisen ja CSV-pohjaisen maksun kirjauksen sekä hallituksen päätös-integraation (0.6b `board_decisions`).
 
 **Skoppi-rajaus:**
+
 - 0.7 = ydin-billing + manual + CSV. Stripe-integraatio → 0.7.1, Visma → 0.7.2 (omat milestonet).
 - 0.7 ei rakenna SMTP-/email-infraa. Notifikaatiot menevät olemassa olevaan UI-bell-systeemiin. Sähköposti-muistutukset → 0.8 MembershipCommunications, joka rakentaa yleishyödyllisen mail-infran kaikille moduleille.
 - 0.7 rakentaa cron-runnerin (`bin/console`) anniversary-/overdue-/lapse-cronien tarpeeseen — tämä on yleishyödyllinen infra, ei billing-specific.
@@ -44,7 +45,7 @@ Daem Society ry:n säännöt (`daem-society-saannot-2026.pdf`) edellyttävät vu
 
 ## 3. Architecture overview
 
-```
+```text
 ┌─────────────────────────────────────────────────────────────────┐
 │  Backstage UI (PHP templates @ public/backstage/governance/billing/) │
 │  ┌─────────────┬──────┬────────────┬─────────┐                 │
@@ -87,7 +88,7 @@ Daem Society ry:n säännöt (`daem-society-saannot-2026.pdf`) edellyttävät vu
 
 `src/Domain/Membership/Billing/`:
 
-```
+```text
 AnnualFeeSchedule.php              ← per (tenant, year, fee_type) hintarivi; status draft/proposed/active/superseded
 AnnualFeeScheduleId.php
 AnnualFeeScheduleRepositoryInterface.php
@@ -108,6 +109,7 @@ Exception/
 ```
 
 **Invariantit:**
+
 - Lasku ei voi flipata `PAID → PENDING` (vain admin voi tehdä `payment_reversed` -toiminnon joka palauttaa OVERDUE-tilan + auditin).
 - `UserFeeOverride.valid_until > valid_from` jos asetettu.
 - `AnnualFeeSchedule.amount_cents >= 0` (0 sallittu = vapautus). HONORARY-tyyppi ei tarvitse hinnastoa.
@@ -142,7 +144,7 @@ Exception/
 
 Migraatiot 089–095 (käyttävät 089+ slottia; 088 oli viimeinen 0.6b:ssä):
 
-```
+```text
 089_backfill_membership_started_at_for_supporting.php
     Korjaa 075:n aukko. SUPPORTING-jäsenet eivät saaneet membership_started_at:ta,
     ja sitä tarvitaan anniversary-cron-laskuriin.
@@ -196,7 +198,7 @@ Migraatiot 089–095 (käyttävät 089+ slottia; 088 oli viimeinen 0.6b:ssä):
 
 **Sidebar:** lisätään 6. hardcoded-item `governance`-ryhmään (order=60):
 
-```
+```text
 governance: board / decisions / expulsions / delegations / settings / BILLING ← UUSI
 ```
 
@@ -216,7 +218,7 @@ governance: board / decisions / expulsions / delegations / settings / BILLING �
 
 **API-päätepisteet** (`/api/v1/backstage/governance/billing/*`):
 
-```
+```text
 GET    /invoices?year=&status=&fee_type=&user_id=&page=
 POST   /invoices/{id}/mark-paid       {amount_cents, paid_at, method, reference}
 POST   /invoices/{id}/waive            {reason}
@@ -241,13 +243,13 @@ POST   /payments/import-csv/confirm    {matches: [...]}
 
 ## 8. Cron-runner-infra (uusi 0.7:ssä)
 
-```
+```text
 bin/console <command> [--option=value]
 ```
 
 **Runner-rakenne:**
 
-```
+```text
 bin/console                                    ← php entry, parsii argv, dispatchaa
 src/Infrastructure/Console/
 ├── ConsoleKernel.php                          ← bootaa app, resolvaa command-luokat
@@ -278,7 +280,7 @@ src/Infrastructure/Console/
 
 ### Hinnaston formal-decision -flow (`requires_formal_decision_for_fees=true`)
 
-```
+```text
 1. Admin POST /fee-schedules {year:2027, fees:{...}}
    → DraftAnnualFeeSchedule:
        a. INSERT annual_fee_schedules-rivit, status='proposed'
@@ -315,6 +317,7 @@ src/Infrastructure/Console/
 ### GSA-override (0.6b `gsa_overrides`)
 
 GSA voi:
+
 - Pakota suora fee-schedule-aktivointi ohittaen formal decision → `gsa_overrides`-rivi (action='bypass_fee_decision')
 - Peruuttaa lapse:n manuaalisesti → `users.membership_status='active'`, audit-rivi reason='GSA override: lapse reversed'
 

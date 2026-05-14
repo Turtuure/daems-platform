@@ -37,7 +37,7 @@ Ship a full-CRUD admin surface for insights at `/backstage/insights`, completing
 
 New use cases:
 
-```
+```text
 src/Application/Insight/
     CreateInsight/
         CreateInsight.php          # use case (validate → construct Insight VO → repo.save)
@@ -65,13 +65,14 @@ public function listForTenant(TenantId $tenantId, ?string $category, bool $inclu
 ```
 
 `SqlInsightRepository`:
+
 - `delete(InsightId, TenantId)` — `DELETE FROM insights WHERE id = ? AND tenant_id = ?`
 - `listForTenant` SELECT gets conditional `AND published_date <= CURDATE()` when `$includeUnpublished=false`.
 - `save` unchanged (already handles both insert + update + search_text sync from the global-search milestone).
 
 `BackstageController`:
 
-```
+```text
 listInsights(Request)          → GET  /api/v1/backstage/insights
 createInsight(Request)         → POST /api/v1/backstage/insights
 getInsight(Request, params)    → GET  /api/v1/backstage/insights/{id}
@@ -95,7 +96,7 @@ DI bindings in BOTH `bootstrap/app.php` AND `tests/Support/KernelHarness.php` (B
 
 ### Society
 
-```
+```text
 public/pages/backstage/insights/
     index.php             # list view, modelled on public/pages/backstage/events/index.php
     insight-modal.js      # create/edit modal, modelled on event-modal.js (trimmed)
@@ -114,6 +115,7 @@ The proxy uses the `?op=` convention already established by `public/api/backstag
 ### `CreateInsight` use case
 
 Validation sequence:
+
 1. Title present + ≤255 chars — else 422
 2. Slug present (if empty, derive from title via `Str::slug`-like helper) + unique per tenant (query repo) — else 422
 3. Category non-empty
@@ -123,6 +125,7 @@ Validation sequence:
 7. Tags array accepted (can be empty)
 
 Side-effects:
+
 - `reading_time = max(1, ceil(str_word_count(strip_tags($content)) / 200))`
 - Generates UUIDv7 for id via `Uuid7::generate()`
 
@@ -146,6 +149,7 @@ Returns `CreateInsightOutput` with the created Insight's fields as a plain array
 ### BackstageController admin gate
 
 Helper (private):
+
 ```php
 private function requireInsightsAdmin(Request $r, Tenant $t): ActingUser
 {
@@ -161,6 +165,7 @@ Matches decision 13: admin-only. If `ActingUser::isModeratorIn()` is added in a 
 ### Society page — `pages/backstage/insights/index.php`
 
 Copy the structural bits of `public/pages/backstage/events/index.php`:
+
 - Header with page title + "Add insight" button
 - Filter input (client-side, filters visible rows by title)
 - Table columns: Title, Category, Author, Published Date + status pill, Featured badge, Actions (Edit / Delete)
@@ -172,6 +177,7 @@ Fetch list via `/api/backstage/insights?op=list` on page load. Render rows in JS
 ### Society modal — `insight-modal.js`
 
 Structurally a trim of `event-modal.js`:
+
 - Opens with either empty form (create) or pre-filled fields from `GET /api/backstage/insights/{id}`
 - Fields rendered top-to-bottom: Title, Slug (auto-filled on title blur if empty), Category + Category label + datalist, Author, Published date (date input), Featured (checkbox), Excerpt (textarea), Hero image upload widget (existing events widget, image path = `/uploads/insights/`), Tags (comma-separated text), Content (big textarea)
 - Reading-time arvio shown below content textarea, updated on blur
@@ -181,7 +187,7 @@ Structurally a trim of `event-modal.js`:
 
 ## Data flow — Create insight
 
-```
+```text
 admin opens /backstage/insights
   → page fetches GET /api/backstage/insights?op=list
     → society proxy → platform GET /api/v1/backstage/insights
@@ -250,6 +256,7 @@ Update is identical but `?op=update&id=...` and a pre-populated modal.
 ### E2E (Playwright chromium, smoke — same CI as today)
 
 `tests/e2e/backstage-insights.spec.ts`:
+
 - `non_admin_gets_redirected_from_backstage_insights` (if society gate enforces)
 - `admin_sees_list` (seed one insight, open page, expect title visible)
 - `add_insight_modal_opens_on_click`

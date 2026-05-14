@@ -61,7 +61,7 @@ Each sub-package is independently mergeable but they share a single PR per repo 
 
 **Display logic (shared frontend convention):**
 
-```
+```text
 function formatMemberNumber(string $rawNumber, ?string $prefix): string {
   $stripped = ltrim($rawNumber, '0');
   if ($stripped === '') $stripped = '0';
@@ -124,7 +124,7 @@ function formatMemberNumber(string $rawNumber, ?string $prefix): string {
 
 ## Data flow
 
-```
+```text
 Admin sets prefix:
   Settings UI → PATCH /api/v1/backstage/tenant/settings
     → UpdateTenantSettings → SqlTenantRepository → tenants.member_number_prefix updated
@@ -181,6 +181,7 @@ Public scans QR → opens https://<host>/members/123:
   - existing card tests gain assertions: QR canvas exists, QR has `data-url` matching pattern
 
 Manual verification:
+
 - Visit `/profile/overview.php` as a member → card shows QR with proper diagonal-cut shape; scanning with phone opens `/members/{number}` page on daem-society host.
 - Visit `/backstage/settings` as admin → "Membership card" section with prefix input; save persists; refresh; value remains.
 - Visit `/profile/settings` as member → privacy toggle; flip off; visit `/members/{own-number}` from incognito → initials shown instead of photo.

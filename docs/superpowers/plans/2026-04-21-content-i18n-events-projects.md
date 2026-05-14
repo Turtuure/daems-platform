@@ -11,6 +11,7 @@
 **Spec:** `docs/superpowers/specs/2026-04-21-content-i18n-events-projects-design.md`
 
 **Repos:**
+
 - Platform backend: `C:\laragon\www\daems-platform` (branch: `dev`)
 - Frontend (society + backstage): `C:\laragon\www\sites\daem-society`
 
@@ -27,6 +28,7 @@
 ### Workstream A — daems-platform (backend)
 
 **Created — migrations (`database/migrations/`):**
+
 - `051_create_events_i18n.sql`
 - `052_create_projects_i18n.sql`
 - `053_backfill_events_projects_i18n.sql`
@@ -35,6 +37,7 @@
 - `056_create_event_proposals.sql`
 
 **Created — Domain (`src/Domain/`):**
+
 - `Locale/SupportedLocale.php`
 - `Locale/LocaleNegotiator.php`
 - `Locale/TranslationMap.php`
@@ -45,6 +48,7 @@
 - `Event/EventProposalRepositoryInterface.php`
 
 **Modified — Domain:**
+
 - `src/Domain/Event/Event.php` — entity accepts `TranslationMap`, getters return localized view
 - `src/Domain/Event/EventRepositoryInterface.php` — new locale-aware methods
 - `src/Domain/Project/Project.php` — same pattern
@@ -53,6 +57,7 @@
 - `src/Domain/Project/ProjectProposalRepositoryInterface.php` — update if needed for listing
 
 **Created — Application (`src/Application/`):**
+
 - `Event/ListEventsForLocale/{ListEventsForLocale,ListEventsForLocaleInput,ListEventsForLocaleOutput}.php`
 - `Event/GetEventBySlugForLocale/{...}.php`
 - `Backstage/GetEventWithAllTranslations/{...}.php`
@@ -67,15 +72,18 @@
 - `Backstage/ListEventProposalsForAdmin/{...}.php`
 
 **Modified — Application:**
+
 - `src/Application/Project/SubmitProjectProposal/SubmitProjectProposalInput.php` — add optional `sourceLocale`
 - `src/Application/Backstage/ApproveProjectProposal/ApproveProjectProposal.php` — writes project + i18n row for source locale
 - `src/Application/Backstage/ListProposalsForAdmin/ListProposalsForAdminOutput.php` — include source_locale per item
 
 **Created — Infrastructure:**
+
 - `src/Infrastructure/Adapter/Api/Middleware/LocaleMiddleware.php`
 - `src/Infrastructure/Adapter/Persistence/Sql/SqlEventProposalRepository.php`
 
 **Modified — Infrastructure:**
+
 - `src/Infrastructure/Adapter/Persistence/Sql/SqlEventRepository.php` — read/write via `events_i18n` JOIN; new `listForTenantInLocale`, `findBySlugForTenantInLocale`, `findByIdWithAllTranslationsForTenant`, `saveTranslation`
 - `src/Infrastructure/Adapter/Persistence/Sql/SqlProjectRepository.php` — same pattern
 - `src/Infrastructure/Adapter/Persistence/Sql/SqlProjectProposalRepository.php` — plumb `sourceLocale`
@@ -85,6 +93,7 @@
 - `routes/api.php` — new routes + rename project-proposal admin routes
 
 **Modified — bootstrap + test harness:**
+
 - `bootstrap/app.php` — bind new use cases + repo + middleware
 - `tests/Support/KernelHarness.php` — mirror bindings with in-memory fakes
 - `tests/Support/Fake/InMemoryEventRepository.php` — implement new methods
@@ -93,6 +102,7 @@
 - `tests/Support/Fake/InMemoryProjectProposalRepository.php` — plumb source_locale
 
 **Created — tests:**
+
 - `tests/Unit/Domain/Locale/SupportedLocaleTest.php`
 - `tests/Unit/Domain/Locale/LocaleNegotiatorTest.php`
 - `tests/Unit/Domain/Locale/TranslationMapTest.php`
@@ -109,6 +119,7 @@
 ### Workstream B — daem-society (backstage admin UI)
 
 **Created:**
+
 - `public/pages/backstage/shared/locale-cards.php` (partial rendered into event + project modals)
 - `public/pages/backstage/shared/locale-cards.css`
 - `public/pages/backstage/shared/locale-cards.js`
@@ -120,6 +131,7 @@
 - `public/pages/backstage/project-proposals/proposal-modal.js`
 
 **Modified:**
+
 - `public/pages/backstage/events/index.php` — list view coverage badge column
 - `public/pages/backstage/events/event-modal.js` — integrate locale cards, per-locale save
 - `public/pages/backstage/events/event-modal.css` — additions for cards layout
@@ -129,6 +141,7 @@
 - `public/assets/css/daems.css` — add `.coverage-badge` utility classes if not suitable in scoped files
 
 **Created — tests:**
+
 - `tests/e2e/backstage-locale-cards.spec.ts`
 - `tests/e2e/backstage-event-proposals.spec.ts`
 - `tests/e2e/backstage-project-proposals.spec.ts`
@@ -136,11 +149,13 @@
 ### Workstream C — daem-society (public frontend + I18n chrome migration)
 
 **Renamed:**
+
 - `lang/fi.php` → `lang/fi_FI.php`
 - `lang/en.php` → `lang/en_GB.php`
 - `lang/sw.php` → `lang/sw_TZ.php`
 
 **Modified:**
+
 - `src/I18n.php` — full-locale support, legacy cookie/session remap, Accept-Language parser upgrade
 - `src/ApiClient.php` — default `Accept-Language` header
 - `public/pages/events/grid.php` — consume localized API
@@ -155,10 +170,12 @@
 - `public/pages/projects/propose.php` (if that's the name) — hidden `source_locale` field
 
 **Created:**
+
 - `public/pages/events/propose.php`
 - `public/api/event-proposals/submit.php` (proxy endpoint if the daem-society uses API proxy pattern — verify during task C1)
 
 **Modified — tests:**
+
 - `tests/e2e/i18n.spec.ts` — add events + projects locale rendering coverage
 - `tests/e2e/events.spec.ts` — add locale negotiation assertion if present
 
@@ -172,6 +189,7 @@
 ## Task A1: Locale value objects + negotiator (TDD)
 
 **Files:**
+
 - Create: `src/Domain/Locale/SupportedLocale.php`
 - Create: `src/Domain/Locale/InvalidLocaleException.php`
 - Create: `tests/Unit/Domain/Locale/SupportedLocaleTest.php`
@@ -350,6 +368,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.org" commit -m \
 ## Task A2: LocaleNegotiator (TDD)
 
 **Files:**
+
 - Create: `src/Domain/Locale/LocaleNegotiator.php`
 - Create: `tests/Unit/Domain/Locale/LocaleNegotiatorTest.php`
 
@@ -537,6 +556,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.org" commit -m \
 ## Task A3: TranslationMap + EntityTranslationView (TDD — contract-lock)
 
 **Files:**
+
 - Create: `src/Domain/Locale/TranslationMap.php`
 - Create: `src/Domain/Locale/EntityTranslationView.php`
 - Create: `tests/Unit/Domain/Locale/TranslationMapTest.php`
@@ -794,7 +814,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.org" commit -m \
 
 **Contract-lock announcement:** At this point, B and C can begin against the spec. The API response shape is:
 
-```
+```text
 {
   "<field>": "...",
   "<field>_fallback": bool,
@@ -807,6 +827,7 @@ and the admin shape includes `translations: { locale: { fields }|null }` plus `c
 ## Task A4: Migration 051 — create events_i18n + backfill test
 
 **Files:**
+
 - Create: `database/migrations/051_create_events_i18n.sql`
 
 - [ ] **Step 1: Create migration SQL**
@@ -854,6 +875,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.org" commit -m \
 ## Task A5: Migration 052 — create projects_i18n
 
 **Files:**
+
 - Create: `database/migrations/052_create_projects_i18n.sql`
 
 - [ ] **Step 1: Create migration SQL**
@@ -886,6 +908,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.org" commit -m \
 ## Task A6: Migration 053 — backfill fi_FI rows from legacy columns
 
 **Files:**
+
 - Create: `database/migrations/053_backfill_events_projects_i18n.sql`
 
 - [ ] **Step 1: Create migration**
@@ -930,6 +953,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.org" commit -m \
 ## Task A7: Refactor Event entity + EventRepositoryInterface
 
 **Files:**
+
 - Modify: `src/Domain/Event/Event.php`
 - Modify: `src/Domain/Event/EventRepositoryInterface.php`
 
@@ -1044,6 +1068,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.org" commit -m \
 ## Task A8: Refactor Project entity + ProjectRepositoryInterface
 
 **Files:**
+
 - Modify: `src/Domain/Project/Project.php`
 - Modify: `src/Domain/Project/ProjectRepositoryInterface.php`
 
@@ -1154,6 +1179,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.org" commit -m \
 ## Task A9: Update SqlEventRepository for i18n read + write
 
 **Files:**
+
 - Modify: `src/Infrastructure/Adapter/Persistence/Sql/SqlEventRepository.php`
 - Create: `tests/Integration/Infrastructure/SqlEventRepositoryI18nTest.php`
 
@@ -1491,6 +1517,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.org" commit -m \
 ## Task A10: Update SqlProjectRepository for i18n (same pattern as A9)
 
 **Files:**
+
 - Modify: `src/Infrastructure/Adapter/Persistence/Sql/SqlProjectRepository.php`
 - Create: `tests/Integration/Infrastructure/SqlProjectRepositoryI18nTest.php`
 - Modify: `tests/Support/Fake/InMemoryProjectRepository.php`
@@ -1768,6 +1795,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.org" commit -m \
 ## Task A11: Migration 054 — drop legacy translated columns
 
 **Files:**
+
 - Create: `database/migrations/054_drop_translated_columns_from_events_projects.sql`
 
 **Pre-condition:** Repositories (A9, A10) no longer read legacy columns. Verify with grep:
@@ -1819,6 +1847,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.org" commit -m \
 ## Task A12: EventProposal domain + migration 056
 
 **Files:**
+
 - Create: `src/Domain/Event/EventProposal.php`
 - Create: `src/Domain/Event/EventProposalId.php`
 - Create: `src/Domain/Event/EventProposalRepositoryInterface.php`
@@ -1992,6 +2021,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.org" commit -m \
 ## Task A13: SqlEventProposalRepository + integration test
 
 **Files:**
+
 - Create: `src/Infrastructure/Adapter/Persistence/Sql/SqlEventProposalRepository.php`
 - Create: `tests/Integration/Infrastructure/SqlEventProposalRepositoryTest.php`
 - Create: `tests/Support/Fake/InMemoryEventProposalRepository.php`
@@ -2203,6 +2233,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.org" commit -m \
 ## Task A14: Migration 055 — source_locale on project_proposals + update domain
 
 **Files:**
+
 - Create: `database/migrations/055_add_source_locale_to_project_proposals.sql`
 - Modify: `src/Domain/Project/ProjectProposal.php`
 - Modify: `src/Infrastructure/Adapter/Persistence/Sql/SqlProjectProposalRepository.php`
@@ -2285,6 +2316,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.org" commit -m \
 ## Task A15: Application use cases — locale-aware reads (events)
 
 **Files:**
+
 - Create: `src/Application/Event/ListEventsForLocale/ListEventsForLocale.php`
 - Create: `src/Application/Event/ListEventsForLocale/ListEventsForLocaleInput.php`
 - Create: `src/Application/Event/ListEventsForLocale/ListEventsForLocaleOutput.php`
@@ -2422,6 +2454,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.org" commit -m \
 ## Task A16: Application use cases — locale-aware reads (projects)
 
 Mirror A15 for projects. Files:
+
 - `src/Application/Project/ListProjectsForLocale/{Input,Output,UseCase}.php`
 - `src/Application/Project/GetProjectBySlugForLocale/{Input,Output,UseCase}.php`
 
@@ -2434,6 +2467,7 @@ Commit message: `Feat(project): locale-aware list/get use cases with per-field f
 ## Task A17: Application use cases — admin translation write
 
 **Files:**
+
 - Create: `src/Application/Backstage/GetEventWithAllTranslations/` (3 files)
 - Create: `src/Application/Backstage/UpdateEventTranslation/` (3 files)
 - Create: `src/Application/Backstage/GetProjectWithAllTranslations/` (3 files)
@@ -2551,6 +2585,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.org" commit -m \
 ## Task A18: Event-proposal use cases
 
 **Files:**
+
 - Create: `src/Application/Event/SubmitEventProposal/{Input,Output,UseCase}.php`
 - Create: `src/Application/Backstage/ListEventProposalsForAdmin/{Input,Output,UseCase}.php`
 - Create: `src/Application/Backstage/ApproveEventProposal/{Input,Output,UseCase}.php`
@@ -2596,6 +2631,7 @@ Auth admin. Load proposal. Record decision `'rejected'` with note.
 - [ ] **Steps:** write each use case per above; phpstan; commit each logical group, or one commit per use case.
 
 Commit messages e.g.:
+
 - `Feat(event-proposal): SubmitEventProposal use case (single source_locale)`
 - `Feat(backstage): ListEventProposalsForAdmin`
 - `Feat(backstage): ApproveEventProposal creates Event with source_locale translation`
@@ -2604,6 +2640,7 @@ Commit messages e.g.:
 ## Task A19: Update ApproveProjectProposal — create project i18n row from source_locale
 
 **Files:**
+
 - Modify: `src/Application/Backstage/ApproveProjectProposal/ApproveProjectProposal.php`
 
 Existing use case creates a `Project`. Update: build `TranslationMap` with only the proposal's `sourceLocale`:
@@ -2636,6 +2673,7 @@ $this->projects->save($project);
 ## Task A20: LocaleMiddleware
 
 **Files:**
+
 - Create: `src/Infrastructure/Adapter/Api/Middleware/LocaleMiddleware.php`
 
 ```php
@@ -2671,6 +2709,7 @@ If the `Request` object's method names differ, adjust. Read `src/Infrastructure/
 ## Task A21: Controller endpoints — events public + project public
 
 **Files:**
+
 - Modify: `src/Infrastructure/Adapter/Api/Controller/EventController.php`
 - Modify: `src/Infrastructure/Adapter/Api/Controller/ProjectController.php`
 
@@ -2720,9 +2759,11 @@ git -c user.name="Dev Team" -c user.email="dev@daems.org" commit -m \
 ## Task A22: Controller endpoints — backstage translations (events + projects)
 
 **Files:**
+
 - Modify: `src/Infrastructure/Adapter/Api/Controller/BackstageController.php`
 
 Add handlers:
+
 - `handleGetEventWithTranslations(Request, array $params)` — GET /backstage/events/{id}
 - `handleListBackstageEvents(Request)` — GET /backstage/events (summary + coverage)
 - `handleUpdateEventTranslation(Request, array $params)` — PUT /backstage/events/{id}/translations/{locale}
@@ -2762,6 +2803,7 @@ Commit: `Feat(backstage): translation endpoints for events + projects`.
 ## Task A23: Controller endpoints — event-proposals + project-proposals rename
 
 **Files:**
+
 - Modify: `src/Infrastructure/Adapter/Api/Controller/EventController.php` (add `handleSubmitProposal`)
 - Modify: `src/Infrastructure/Adapter/Api/Controller/BackstageController.php` (add `handleListEventProposals`, `handleApproveEventProposal`, `handleRejectEventProposal`; note project-proposal handlers stay — the rename happens in routes)
 - Modify: `src/Infrastructure/Adapter/Api/Controller/ProjectController.php` (existing `handleSubmitProposal` reads `source_locale` from body and defaults to negotiated locale)
@@ -2790,6 +2832,7 @@ Commit: `Feat(api): event-proposal submit + backstage approve/reject; project-pr
 ## Task A24: Routes — add new endpoints + rename backstage project-proposals
 
 **Files:**
+
 - Modify: `routes/api.php`
 
 - [ ] **Step 1: Read current routes to find insertion points**
@@ -2831,6 +2874,7 @@ $router->put('/api/v1/backstage/projects/{id}/translations/{locale}', ...);
 - [ ] **Step 5: Rename backstage project-proposal routes**
 
 Change:
+
 - `/api/v1/backstage/proposals` → `/api/v1/backstage/project-proposals`
 - `/api/v1/backstage/proposals/{id}/approve` → `/api/v1/backstage/project-proposals/{id}/approve`
 - `/api/v1/backstage/proposals/{id}/reject` → `/api/v1/backstage/project-proposals/{id}/reject`
@@ -2856,6 +2900,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.org" commit -m \
 ## Task A25: Bootstrap + KernelHarness wiring — ALL new bindings
 
 **Files:**
+
 - Modify: `bootstrap/app.php`
 - Modify: `tests/Support/KernelHarness.php`
 
@@ -2905,6 +2950,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.org" commit -m \
 ## Task A26: Isolation tests — tenant leak prevention for events_i18n + projects_i18n + event_proposals
 
 **Files:**
+
 - Create: `tests/Isolation/EventsI18nTenantIsolationTest.php`
 - Create: `tests/Isolation/ProjectsI18nTenantIsolationTest.php`
 - Create: `tests/Isolation/EventProposalTenantIsolationTest.php`
@@ -2981,6 +3027,7 @@ Commit: `Test(isolation): events_i18n + projects_i18n + event_proposals tenant i
 ## Task A27: E2E flow tests
 
 **Files:**
+
 - Create: `tests/E2E/EventsLocaleE2ETest.php`
 - Create: `tests/E2E/ProjectsLocaleE2ETest.php`
 - Create: `tests/E2E/EventProposalFlowE2ETest.php`
@@ -2988,6 +3035,7 @@ Commit: `Test(isolation): events_i18n + projects_i18n + event_proposals tenant i
 E2E tests use `KernelHarness` — in-memory container, no DB. Each test sends requests through the router and asserts on the response.
 
 Coverage:
+
 - `EventsLocaleE2ETest::testAcceptLanguageSwitchesContent` — seed event with fi_FI+en_GB; GET /events with `Accept-Language: en-GB` returns English.
 - `...::testQueryParamOverridesAcceptLanguage`
 - `...::testFallbackMarkerWhenRequestedLocaleMissing`
@@ -2996,6 +3044,7 @@ Coverage:
 Same pattern for projects.
 
 `EventProposalFlowE2ETest::testMemberSubmitAndAdminApprove`:
+
 - Member POST /event-proposals with `source_locale: sw_TZ`
 - Admin GET /backstage/event-proposals → sees pending
 - Admin POST /backstage/event-proposals/{id}/approve
@@ -3049,6 +3098,7 @@ At this point, Workstream A has landed. B and C merge next. Their PRs can rebase
 ## Task B1: locale-cards partial + CSS + JS
 
 **Files:**
+
 - Create: `public/pages/backstage/shared/locale-cards.php`
 - Create: `public/pages/backstage/shared/locale-cards.css`
 - Create: `public/pages/backstage/shared/locale-cards.js`
@@ -3252,6 +3302,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.org" commit -m \
 ## Task B2: Integrate locale-cards into event-modal
 
 **Files:**
+
 - Modify: `public/pages/backstage/events/event-modal.js`
 - Modify: `public/pages/backstage/events/event-modal.css`
 - Modify: `public/pages/backstage/events/index.php` (include cards CSS/JS + partial)
@@ -3315,6 +3366,7 @@ Same pattern as B2, applied to `project-modal.js` + `project-modal.css` + `backs
 ## Task B4: List-view coverage badges — events + projects
 
 **Files:**
+
 - Modify: `public/pages/backstage/events/index.php`
 - Modify: `public/pages/backstage/projects/index.php`
 - Modify: `public/assets/css/daems.css` (or scoped CSS file)
@@ -3367,11 +3419,13 @@ git -c user.name="Dev Team" -c user.email="dev@daems.org" commit -m \
 ## Task B5: New backstage/event-proposals page
 
 **Files:**
+
 - Create: `public/pages/backstage/event-proposals/index.php`
 - Create: `public/pages/backstage/event-proposals/proposal-modal.css`
 - Create: `public/pages/backstage/event-proposals/proposal-modal.js`
 
 The page mirrors the pattern of `backstage/projects/index.php`:
+
 1. Admin-only guard at top (session check)
 2. Table listing all event proposals (GET `/api/v1/backstage/event-proposals`)
 3. Columns: Author, Title, Date, Source locale (badge), Status, Submitted, Actions
@@ -3520,6 +3574,7 @@ Same structure as B5 but for project proposals. Table columns: Author, Title, Ca
 ## Task B7: Playwright smoke tests
 
 **Files:**
+
 - Create: `tests/e2e/backstage-locale-cards.spec.ts`
 - Create: `tests/e2e/backstage-event-proposals.spec.ts`
 - Create: `tests/e2e/backstage-project-proposals.spec.ts`
@@ -3527,6 +3582,7 @@ Same structure as B5 but for project proposals. Table columns: Author, Title, Ca
 Tests:
 
 **`backstage-locale-cards.spec.ts`:**
+
 1. Login as admin
 2. Open an event in backstage/events modal
 3. Click the en_GB card; fill title/description; click Save en_GB
@@ -3534,6 +3590,7 @@ Tests:
 5. Close modal; verify list-view badge dot for en_GB changes from red to yellow/green
 
 **`backstage-event-proposals.spec.ts`:**
+
 1. Seed a pending event proposal in DB (use `scripts/seed-e2e-*.php` pattern if one exists; otherwise insert via direct SQL in a fixture)
 2. Login as admin; navigate `/backstage/event-proposals`
 3. Click Review → Approve
@@ -3581,6 +3638,7 @@ No commit this task.
 ## Task C2: Upgrade `src/I18n.php` to full-locale form
 
 **Files:**
+
 - Modify: `src/I18n.php`
 - Rename: `lang/fi.php` → `lang/fi_FI.php`, `lang/en.php` → `lang/en_GB.php`, `lang/sw.php` → `lang/sw_TZ.php`
 
@@ -3730,6 +3788,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.org" commit -m \
 ## Task C3: `ApiClient` sends `Accept-Language`
 
 **Files:**
+
 - Modify: whatever file defines ApiClient (PHP server-side or JS client-side — identified in C1)
 
 - [ ] **Step 1: For server-side PHP ApiClient**
@@ -3763,6 +3822,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.org" commit -m \
 ## Task C4: Refactor public events pages to consume localized API
 
 **Files:**
+
 - Modify: `public/pages/events/grid.php`, `events/detail.php`, `events/detail/content.php`, `events/detail/hero.php`, and anything else referenced
 
 - [ ] **Step 1: Read current grid.php** to understand how events are fetched and rendered.
@@ -3808,6 +3868,7 @@ Same pattern as C4 for `public/pages/projects/grid.php`, `projects/detail.php`, 
 ## Task C6: New `events/propose.php` member page
 
 **Files:**
+
 - Create: `public/pages/events/propose.php`
 
 Structure: mirrors the existing project-proposal form. Only logged-in members can access. The `source_locale` is a hidden input populated from `I18n::locale()`.
@@ -3919,6 +3980,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.org" commit -m \
 ## Task C7: Existing project-proposal form — add source_locale
 
 **Files:**
+
 - Modify: `public/pages/projects/propose.php` (or whatever file exists; check)
 
 - [ ] **Step 1: Find existing form**
@@ -3950,9 +4012,11 @@ git -c user.name="Dev Team" -c user.email="dev@daems.org" commit -m \
 ## Task C8: Playwright — extend i18n.spec.ts
 
 **Files:**
+
 - Modify: `tests/e2e/i18n.spec.ts`
 
 Add tests:
+
 - Visit `/events?lang=en_GB` → event titles rendered in English (assert against a known seed event)
 - Visit `/events?lang=sw_TZ` → Swahili content appears, or fallback-to-English if untranslated (but rendered without UI marker)
 - Visit `/projects?lang=en_GB` → English

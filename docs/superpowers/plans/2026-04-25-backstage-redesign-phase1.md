@@ -17,6 +17,7 @@
 ### Backend (`C:/laragon/www/daems-platform`)
 
 **Create:**
+
 - `src/Application/Insight/ListInsightStats/ListInsightStats.php` — use case
 - `src/Application/Insight/ListInsightStats/ListInsightStatsInput.php`
 - `src/Application/Insight/ListInsightStats/ListInsightStatsOutput.php`
@@ -26,6 +27,7 @@
 - `tests/Isolation/InsightStatsTenantIsolationTest.php`
 
 **Modify:**
+
 - `src/Domain/Insight/InsightRepositoryInterface.php` — add `statsForTenant()`
 - `src/Infrastructure/Adapter/Persistence/Sql/SqlInsightRepository.php` — implement
 - `tests/Support/Fake/InMemoryInsightRepository.php` — implement (for E2E)
@@ -37,6 +39,7 @@
 ### Frontend (`C:/laragon/www/sites/daem-society`)
 
 **Create:**
+
 - `public/assets/css/daems-backstage-system.css` — design system primitives
 - `public/assets/js/daems-backstage-system.js` — Panel, ConfirmDialog, Sparkline helpers
 - `public/pages/backstage/shared/kpi-card.php` — partial
@@ -47,11 +50,13 @@
 - `public/pages/backstage/insights/insight-panel.js` — replaces `insight-modal.js`
 
 **Modify:**
+
 - `public/pages/backstage/layout.php` — load new CSS + JS
 - `public/pages/backstage/insights/index.php` — full redesign using new patterns
 - `public/api/backstage/insights.php` — proxy: add `stats` op
 
 **Delete:**
+
 - `public/pages/backstage/insights/insight-modal.css`
 - `public/pages/backstage/insights/insight-modal.js`
 
@@ -74,6 +79,7 @@
 ### Task 1: Add `statsForTenant()` to `InsightRepositoryInterface`
 
 **Files:**
+
 - Modify: `C:/laragon/www/daems-platform/src/Domain/Insight/InsightRepositoryInterface.php`
 
 - [ ] **Step 1: Add the method signature**
@@ -151,6 +157,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.org" commit -m "Domain(insi
 ### Task 2: Implement `SqlInsightRepository::statsForTenant()` with TDD
 
 **Files:**
+
 - Create: `C:/laragon/www/daems-platform/tests/Integration/Persistence/SqlInsightRepositoryStatsTest.php`
 - Modify: `C:/laragon/www/daems-platform/src/Infrastructure/Adapter/Persistence/Sql/SqlInsightRepository.php`
 
@@ -439,6 +446,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.org" commit -m "Repo(insigh
 ### Task 3: Implement `InMemoryInsightRepository::statsForTenant()`
 
 **Files:**
+
 - Modify: `C:/laragon/www/daems-platform/tests/Support/Fake/InMemoryInsightRepository.php`
 
 - [ ] **Step 1: Read the existing fake repository**
@@ -525,6 +533,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.org" commit -m "Test(insigh
 ### Task 4: Create `ListInsightStats` use case + unit test
 
 **Files:**
+
 - Create: `C:/laragon/www/daems-platform/src/Application/Insight/ListInsightStats/ListInsightStats.php`
 - Create: `C:/laragon/www/daems-platform/src/Application/Insight/ListInsightStats/ListInsightStatsInput.php`
 - Create: `C:/laragon/www/daems-platform/src/Application/Insight/ListInsightStats/ListInsightStatsOutput.php`
@@ -713,6 +722,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.org" commit -m "UseCase(ins
 ### Task 5: Add `BackstageController::statsInsights()` method
 
 **Files:**
+
 - Modify: `C:/laragon/www/daems-platform/src/Infrastructure/Adapter/Api/Controller/BackstageController.php`
 
 - [ ] **Step 1: Add the use-case import + constructor parameter**
@@ -768,6 +778,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.org" commit -m "Controller(
 ### Task 6: Wire route `GET /api/v1/backstage/insights/stats`
 
 **Files:**
+
 - Modify: `C:/laragon/www/daems-platform/routes/api.php`
 
 - [ ] **Step 1: Add the route**
@@ -795,6 +806,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.org" commit -m "Route: GET 
 ### Task 7: Wire DI in BOTH containers
 
 **Files:**
+
 - Modify: `C:/laragon/www/daems-platform/bootstrap/app.php`
 - Modify: `C:/laragon/www/daems-platform/tests/Support/KernelHarness.php`
 
@@ -865,6 +877,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.org" commit -m "Wire(insigh
 ### Task 8: Add E2E HTTP test
 
 **Files:**
+
 - Create: `C:/laragon/www/daems-platform/tests/Integration/Http/BackstageInsightStatsTest.php`
 
 This goes in `Integration/Http/` (not `E2E/`) because the project's HTTP-flow tests live there, hitting the kernel via `KernelHarness` (no live server, no DB — uses InMemory fakes).
@@ -992,6 +1005,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.org" commit -m "Test(insigh
 ### Task 9: Add tenant isolation test
 
 **Files:**
+
 - Create: `C:/laragon/www/daems-platform/tests/Isolation/InsightStatsTenantIsolationTest.php`
 
 - [ ] **Step 1: Use the existing `InsightTenantIsolationTest` as a template**
@@ -1142,6 +1156,7 @@ Expected: ~9 new commits from Tasks 1–9. Report SHAs to the user. Wait for exp
 ### Task 11: Create `daems-backstage-system.css`
 
 **Files:**
+
 - Create: `C:/laragon/www/sites/daem-society/public/assets/css/daems-backstage-system.css`
 
 This file ships ALL primitives (kpi-card, kpis-grid, data-explorer, pill, slide-panel, confirm-dialog, empty-state, skeleton-row, error-state, btn variants). Subsequent Phase 2-9 PRs add only the variants they need (e.g. new pill colors); core primitives are stable.
@@ -1399,6 +1414,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.org" commit -m "CSS(backsta
 ### Task 12: Create `daems-backstage-system.js`
 
 **Files:**
+
 - Create: `C:/laragon/www/sites/daem-society/public/assets/js/daems-backstage-system.js`
 
 This file exposes `window.SlidePanel`, `window.ConfirmDialog`, and `window.Sparkline` for per-page scripts.
@@ -1625,6 +1641,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.org" commit -m "JS(backstag
 ### Task 13: Create shared PHP partials
 
 **Files:**
+
 - Create: `C:/laragon/www/sites/daem-society/public/pages/backstage/shared/kpi-card.php`
 - Create: `C:/laragon/www/sites/daem-society/public/pages/backstage/shared/slide-panel.php`
 - Create: `C:/laragon/www/sites/daem-society/public/pages/backstage/shared/confirm-dialog.php`
@@ -1752,6 +1769,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.org" commit -m "Partials(ba
 ### Task 14: Create insights empty-state SVG
 
 **Files:**
+
 - Create: `C:/laragon/www/sites/daem-society/public/pages/backstage/insights/empty-state.svg`
 
 - [ ] **Step 1: Create the SVG**
@@ -1796,6 +1814,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.org" commit -m "Asset(insig
 ### Task 15: Update `layout.php` to load new CSS + JS
 
 **Files:**
+
 - Modify: `C:/laragon/www/sites/daem-society/public/pages/backstage/layout.php`
 
 - [ ] **Step 1: Add the CSS link**
@@ -1845,6 +1864,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.org" commit -m "Layout(back
 ### Task 16: Add `stats` op to insights proxy
 
 **Files:**
+
 - Modify: `C:/laragon/www/sites/daem-society/public/api/backstage/insights.php`
 
 - [ ] **Step 1: Add a new `stats` case**
@@ -1886,6 +1906,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.org" commit -m "Proxy(insig
 ### Task 17: Create `insights/insight-panel.js`
 
 **Files:**
+
 - Create: `C:/laragon/www/sites/daem-society/public/pages/backstage/insights/insight-panel.js`
 
 This file replaces the old `insight-modal.js`. It owns the page lifecycle: load list + stats, render KPI sparklines and table rows, open SlidePanel for create/edit, open ConfirmDialog for delete.
@@ -2250,6 +2271,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.org" commit -m "JS(insights
 ### Task 18: Rebuild `insights/index.php` with new patterns
 
 **Files:**
+
 - Modify: `C:/laragon/www/sites/daem-society/public/pages/backstage/insights/index.php`
 
 - [ ] **Step 1: Replace the file**
@@ -2360,6 +2382,7 @@ require __DIR__ . '/../layout.php';
 - [ ] **Step 2: Manual smoke check**
 
 Visit `http://daem-society.local/backstage/insights`. Expected:
+
 - Header renders with new typography.
 - Three KPI cards render: Published, Scheduled, Featured. Initially loading state, then values + sparklines.
 - Toolbar: All / Published / Scheduled segmented switch, search box.
@@ -2385,6 +2408,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.org" commit -m "Page(insigh
 ### Task 19: Delete old `insight-modal.css` and `insight-modal.js`
 
 **Files:**
+
 - Delete: `C:/laragon/www/sites/daem-society/public/pages/backstage/insights/insight-modal.css`
 - Delete: `C:/laragon/www/sites/daem-society/public/pages/backstage/insights/insight-modal.js`
 
@@ -2476,6 +2500,7 @@ Report each list of SHAs to the user. Wait for explicit "pushaa" before pushing.
 After writing this plan, I checked:
 
 **Spec coverage:**
+
 - §3 visual direction (Linear/Notion table + Stripe-style KPI cards w/ sparklines, slide-in edit, centered confirm) → Tasks 11–18.
 - §3 hard constraint on hover animations → CSS in Task 11 has no transform-on-hover; Task 20 step 2 verifies via grep.
 - §4.1 `.kpi-card` → Task 11 (CSS) + Task 13 (partial) + Task 17 (sparkline init via Sparkline helper) + Task 18 (page uses partial).
@@ -2494,11 +2519,13 @@ After writing this plan, I checked:
 - §11 acceptance criteria → covered task-by-task.
 
 **Placeholder scan:**
+
 - Searched for "TBD", "TODO", "implement later", "fill in details", "Add appropriate error handling", "Similar to Task". None found.
 - Every code step contains the actual code; every test step contains the actual test.
 - Step "If the harness API was guessed wrong" in Task 8 acknowledges the fallback path explicitly with a `grep` to read the harness.
 
 **Type consistency:**
+
 - `statsForTenant(TenantId): array` used identically in interface (Task 1), SQL impl (Task 2), in-memory impl (Task 3), use case (Task 4), controller (Task 5).
 - Sparkline data shape `[{date: string, value: int}, ...]` consistent across backend, controller JSON, frontend `Sparkline.init`.
 - KPI shape `{value: int, sparkline: [...]}` consistent across all three KPIs.

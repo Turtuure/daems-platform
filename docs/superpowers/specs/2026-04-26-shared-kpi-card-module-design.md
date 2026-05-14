@@ -38,7 +38,7 @@ This is also a **template extraction** — the conventions chosen here (folder l
 
 ### 4.1 Folder layout
 
-```
+```text
 C:\laragon\www\modules\shared\components\cards\kpi-card\
 ├── kpi-card.php       # PHP partial — exact copy of current daem-society version
 ├── kpi-card.css       # CSS rules — extracted verbatim from daems-backstage-system.css
@@ -129,6 +129,7 @@ These remain in the host stylesheets — the module assumes the host loads its d
    - Add `require_once __DIR__ . '/_shared.php';` near the top of the file (before any HTML output).
    - Add `<link rel="stylesheet" href="/shared/components/cards/kpi-card/kpi-card.css">` immediately after the time-picker stylesheet link.
 4. In each of the 7 consumer files, replace `include __DIR__ . '/../shared/kpi-card.php';` with:
+
    ```php
    daems_shared_partial('components/cards/kpi-card/kpi-card', [
        'kpi_id' => '...',
@@ -136,6 +137,7 @@ These remain in the host stylesheets — the module assumes the host loads its d
        // … other vars currently set inline before the include
    ]);
    ```
+
    Each existing include site sets its variables in the surrounding scope before `include`. The migration moves those into the `$vars` array.
 5. Delete `.kpi-card*` rules from `daems-backstage-system.css` (verify no other selectors depend on the removed lines — the rules are self-contained per the original extraction).
 6. Delete `daem-society/public/pages/backstage/shared/kpi-card.php` (confirm no other includers via grep before deleting).
@@ -154,7 +156,7 @@ These remain in the host stylesheets — the module assumes the host loads its d
 
 The README in `modules/shared/components/cards/kpi-card/` includes a "Adding a new card type" section that codifies:
 
-```
+```text
 1. Create modules/shared/components/cards/<name>/{<name>.php, <name>.css, README.md}
    — copy the existing PHP partial as a template; replace markup; document API.
 2. Add a <link> tag to the relevant shell layout that should auto-load it.

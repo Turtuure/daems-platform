@@ -38,6 +38,7 @@ Running `vendor/bin/phpunit --testsuite=Integration` from `daems-platform` (whic
 **Reproducer of the underlying mystery (untriaged):** with a fresh `daems_db_test`, run only `006_create_users_table.sql` followed by `forum_001_create_forum_tables.sql` via PHP PDO. After the second migration runs, `users` mysteriously gains a `role VARCHAR(30)` column even though `forum_001` only contains 3 `CREATE TABLE IF NOT EXISTS` statements for forum_categories/forum_topics/forum_posts (none of which ALTER users). Reproduced via the standalone PHP script that uses `MigrationTestCase`-equivalent SQL parsing (`preg_split('/;[\r\n]+/', $sql)`). This appears to be either a PDO connection-state leak across unrelated `exec()` calls or a cross-test cache contamination — investigation warrants a separate Phase 1 follow-up plan.
 
 **What IS green and verified for the Members extraction:**
+
 - PHPStan level 9: 0 errors (with the regenerated baseline)
 - Unit suite: 649/649 passing
 - E2E suite: 99/99 passing

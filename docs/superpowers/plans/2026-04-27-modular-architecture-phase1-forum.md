@@ -11,17 +11,20 @@
 **Spec:** `docs/superpowers/specs/2026-04-27-modular-architecture-phase1-forum-design.md` (commit `001104d`)
 
 **REVISION 2026-04-27 (during Wave A execution):** Cross-domain consumers in core (`ListNotificationsStats`, `ListPendingApplicationsForAdmin`, `GetUserActivity`, `AddProjectComment`) import Forum types. To preserve strict-A-isolation while keeping these working, **the entire `src/Domain/Forum/` directory (all 18 files) STAYS in core**. Only implementations (`SqlForum*Repository`), application use cases, controllers, tests, migrations, and frontend move to the module. The module's `bindings.php` binds **core-namespaced interfaces** (e.g. `Daems\Domain\Forum\ForumRepositoryInterface`) to **module-namespaced implementations** (`DaemsModule\Forum\Infrastructure\SqlForumRepository`). Additionally, `ForumIdentityDeriver::initials()` is lifted to `Daems\Application\Shared\IdentityFormatter::initials()` so `AddProjectComment` can stop importing from Forum. **Tasks affected:**
+
 - Task 4 (Move Domain) — **REMOVED**
 - Task 16 (Move Domain unit tests) — **REMOVED** (tests stay alongside their entities in core)
 - Task 3.5 (NEW) — Lift `IdentityFormatter::initials()` to core, update `AddProjectComment`, before any module moves
 - Task 7/8/9/13/14/19/20 namespace rewrites — only `Daems\Application\Forum`, `Daems\Application\Backstage\Forum`, `Daems\Infrastructure\Adapter\{Persistence\Sql,Api\Controller}\*Forum*` rewrite; **leave `Daems\Domain\Forum\*` references unchanged**.
 
 **Repos affected (3 commit streams):**
+
 - `C:\laragon\www\daems-platform\` — removals + `KernelHarness` cleanup + new data-fix migration `065_*` + extraction commits
 - `C:\laragon\www\modules\forum\` = `dp-forum` repo (new — `Turtuure/dp-forum`, branch `dev`) — manifest + all moved Forum code
 - `C:\laragon\www\sites\daem-society\` — frontend deletes only (module-router already in place)
 
 **Verification gates (must pass before final commit on any task touching moved code):**
+
 - `composer analyse` → 0 errors at PHPStan level 9
 - `composer test` (Unit + Integration) → all green
 - `composer test:e2e` → all green
@@ -42,7 +45,7 @@
 
 ## Task waves (dependency order)
 
-```
+```text
 Wave A (parallel-safe, no cross-deps)
 ├── Task 1: dp-forum skeleton (modules/forum + manifest + README + .gitignore + phpunit + composer)
 ├── Task 2: Core data-fix migration 065_*
@@ -92,15 +95,18 @@ Wave G (verification gate)
 ## File map summary
 
 **Created in `daems-platform/`:**
+
 - `database/migrations/065_rename_forum_migrations_in_schema_migrations_table.sql`
 
 **Modified in `daems-platform/`:**
+
 - `bootstrap/app.php` — remove Forum bindings
 - `routes/api.php` — remove Forum routes (lines 179–208 + 411–491 + 492–494)
 - `tests/Support/KernelHarness.php` — remove Forum bindings + InMemory fake registrations
 - `src/Infrastructure/Adapter/Api/Controller/BackstageController.php` — remove 20 Forum methods (lines 680–1232)
 
 **Deleted in `daems-platform/`:**
+
 - `src/Domain/Forum/` (entire dir, 18 files)
 - `src/Application/Forum/` (entire dir, 23 files)
 - `src/Application/Backstage/Forum/` (entire dir, 51 files)
@@ -118,6 +124,7 @@ Wave G (verification gate)
 - `tests/Support/ForumSeed.php`
 
 **Created in `modules/forum/` (dp-forum):**
+
 - `module.json`
 - `README.md`
 - `.gitignore`
@@ -149,6 +156,7 @@ Wave G (verification gate)
 **Modified in `daem-society/`:** none (module-router already handles Forum after manifest discovery)
 
 **Deleted in `daem-society/`:**
+
 - `public/pages/forum/` (entire dir, 8 files)
 - `public/pages/backstage/forum/` (entire dir, ~16 files)
 
@@ -159,6 +167,7 @@ Wave G (verification gate)
 **Repo for commits:** `dp-forum` (the new module)
 
 **Files (created in `C:\laragon\www\modules\forum\`):**
+
 - `module.json`
 - `README.md`
 - `.gitignore`
@@ -233,9 +242,11 @@ mkdir -p C:/laragon/www/modules/forum && cd C:/laragon/www/modules/forum && \
 - [ ] **Step 1.8 — Verify `ModuleRegistry` discovers the manifest**
 
 From `daems-platform/` run:
+
 ```bash
 php -r 'require "vendor/autoload.php"; require "bootstrap/app.php"; $r = $container->make(\Daems\Infrastructure\Module\ModuleRegistry::class); var_dump(array_keys($r->all()));'
 ```
+
 Expected: array contains `"forum"` and `"insights"` (both modules).
 
 - [ ] **Step 1.9 — Commit (in `modules/forum/`)**
@@ -256,6 +267,7 @@ cd C:/laragon/www/modules/forum && \
 **Repo for commits:** `daems-platform`
 
 **Files:**
+
 - Create: `daems-platform/database/migrations/065_rename_forum_migrations_in_schema_migrations_table.sql`
 
 - [ ] **Step 2.1 — Verify the rename map matches what's recorded in dev DB**
@@ -264,6 +276,7 @@ cd C:/laragon/www/modules/forum && \
 "C:/laragon/bin/mysql/mysql-8.4.3-winx64/bin/mysql.exe" -u root -psalasana daems_db \
   -e "SELECT migration FROM schema_migrations WHERE migration LIKE '%forum%' ORDER BY migration"
 ```
+
 Expected: 9 rows for the migrations listed in spec section 2.
 
 - [ ] **Step 2.2 — Write migration SQL**
@@ -297,6 +310,7 @@ UPDATE schema_migrations SET migration = 'forum_009_search_text_forum_topics_bac
 - [ ] **Step 2.3 — Smoke-test migration is idempotent**
 
 Apply migration to a snapshot DB:
+
 ```bash
 "C:/laragon/bin/mysql/mysql-8.4.3-winx64/bin/mysql.exe" -u root -psalasana daems_db \
   < database/migrations/065_rename_forum_migrations_in_schema_migrations_table.sql
@@ -304,6 +318,7 @@ Apply migration to a snapshot DB:
 "C:/laragon/bin/mysql/mysql-8.4.3-winx64/bin/mysql.exe" -u root -psalasana daems_db \
   < database/migrations/065_rename_forum_migrations_in_schema_migrations_table.sql
 ```
+
 Expected: both runs succeed, no errors.
 
 - [ ] **Step 2.4 — Verify final state**
@@ -312,6 +327,7 @@ Expected: both runs succeed, no errors.
 "C:/laragon/bin/mysql/mysql-8.4.3-winx64/bin/mysql.exe" -u root -psalasana daems_db \
   -e "SELECT migration FROM schema_migrations WHERE migration LIKE '%forum%' ORDER BY migration"
 ```
+
 Expected: 9 rows, all starting with `forum_`.
 
 - [ ] **Step 2.5 — Commit (in `daems-platform/`)**
@@ -348,6 +364,7 @@ cd C:/laragon/www/daems-platform && \
    ls database/migrations/{007,013,030,047,048,049,050,061}*forum*.{sql,php} 2>/dev/null) \
    | sort -u > /tmp/forum-files.txt && wc -l /tmp/forum-files.txt
 ```
+
 Expected: ~125 lines (18 + 23 + 51 + 4 + 3 + 24 + 4 + 1 + 2 + 9 + 1 + 4 + 1 + 1 + 1).
 
 - [ ] **Step 3.2 — Verify no other `Forum` files exist outside this list**
@@ -357,6 +374,7 @@ cd C:/laragon/www/daems-platform && \
   git ls-files | grep -i forum | sort > /tmp/forum-git-files.txt && \
   diff /tmp/forum-files.txt /tmp/forum-git-files.txt
 ```
+
 Expected: only diff is the data-fix migration `065_*` and any documentation references — both are expected. If actual code files differ, investigate before proceeding.
 
 - [ ] **Step 3.3 — Document `ForumIdentityDeriver` imports**
@@ -365,6 +383,7 @@ Expected: only diff is the data-fix migration `065_*` and any documentation refe
 cd C:/laragon/www/daems-platform && \
   grep -E "^use " src/Application/Forum/Shared/ForumIdentityDeriver.php
 ```
+
 Expected: imports only `Daems\Domain\{Tenant,User,Auth,Membership}` + `Daems\Infrastructure\Framework\*`. If it imports anything outside core, flag it for the brainstorming author before continuing — strict-A-isolation may require additional handling.
 
 ---
@@ -374,6 +393,7 @@ Expected: imports only `Daems\Domain\{Tenant,User,Auth,Membership}` + `Daems\Inf
 **Repo for commits:** `dp-forum` (move-in) + `daems-platform` (move-out is part of Wave E)
 
 **Files:**
+
 - Move from `daems-platform/src/Domain/Forum/` → `modules/forum/backend/src/Domain/`
 - Files: 18 (per `Glob` in spec section 2)
 
@@ -407,11 +427,13 @@ cd C:/laragon/www/modules/forum/backend/src/Domain && \
 cd C:/laragon/www/modules/forum/backend/src/Domain && \
   grep -rE '^namespace ' --include='*.php' | grep -v 'DaemsModule\\Forum\\Domain'
 ```
+
 Expected: zero results.
 
 ```bash
 grep -r 'namespace Daems\\Domain\\Forum' --include='*.php' .
 ```
+
 Expected: zero results.
 
 - [ ] **Step 4.5 — Commit (in `modules/forum/`)**
@@ -430,6 +452,7 @@ cd C:/laragon/www/modules/forum && \
 **Repo for commits:** `dp-forum`
 
 **Files:**
+
 - Copy `daems-platform/src/Infrastructure/Adapter/Persistence/Sql/SqlForumRepository.php` → `modules/forum/backend/src/Infrastructure/SqlForumRepository.php`
 - Same for `SqlForumModerationAuditRepository`, `SqlForumReportRepository`, `SqlForumUserWarningRepository`
 
@@ -461,6 +484,7 @@ cd C:/laragon/www/modules/forum/backend/src/Infrastructure && \
 cd C:/laragon/www/modules/forum/backend/src/Infrastructure && \
   grep -rE '^namespace |^use Daems\\\\Domain\\\\Forum' --include='*.php' .
 ```
+
 Expected: only `namespace DaemsModule\Forum\Infrastructure;` lines, zero `use Daems\Domain\Forum\` lines.
 
 - [ ] **Step 5.4 — Commit**
@@ -479,6 +503,7 @@ cd C:/laragon/www/modules/forum && \
 **Repo for commits:** `dp-forum`
 
 **Files:**
+
 - Copy `daems-platform/tests/Support/Fake/InMemoryForumRepository.php` → `modules/forum/backend/tests/Support/InMemoryForumRepository.php`
 - Same for `InMemoryForumModerationAuditRepository`, `InMemoryForumReportRepository`, `InMemoryForumUserWarningRepository`
 - Copy `daems-platform/tests/Support/ForumSeed.php` → `modules/forum/backend/tests/Support/ForumSeed.php`
@@ -514,6 +539,7 @@ cd C:/laragon/www/modules/forum/backend/tests/Support && \
 cd C:/laragon/www/modules/forum/backend/tests/Support && \
   grep -rE '^namespace ' --include='*.php' . | grep -v 'DaemsModule\\Forum\\Tests\\Support'
 ```
+
 Expected: zero results.
 
 - [ ] **Step 6.4 — Commit**
@@ -558,6 +584,7 @@ cd C:/laragon/www/modules/forum/backend/src/Application/Forum && \
 cd C:/laragon/www/modules/forum/backend/src/Application/Forum && \
   grep -rE '^(namespace |use ) Daems\\\\(Domain|Application)\\\\Forum' --include='*.php' .
 ```
+
 Expected: zero results.
 
 - [ ] **Step 7.4 — Commit**
@@ -603,6 +630,7 @@ cd C:/laragon/www/modules/forum/backend/src/Application/Backstage/Forum && \
 cd C:/laragon/www/modules/forum/backend/src/Application/Backstage/Forum && \
   grep -rE '^(namespace |use ) Daems\\\\(Domain\\\\Forum|Application\\\\(Forum|Backstage\\\\Forum))' --include='*.php' .
 ```
+
 Expected: zero results.
 
 - [ ] **Step 8.4 — Commit**
@@ -621,6 +649,7 @@ cd C:/laragon/www/modules/forum && \
 **Repo for commits:** `dp-forum`
 
 **Files:**
+
 - Copy `daems-platform/src/Infrastructure/Adapter/Api/Controller/ForumController.php` → `modules/forum/backend/src/Controller/ForumController.php`
 
 - [ ] **Step 9.1 — Copy file**
@@ -649,6 +678,7 @@ cd C:/laragon/www/modules/forum/backend/src/Controller && \
 grep -E '^(namespace |use ) Daems\\\\(Application\\\\Forum|Domain\\\\Forum|Infrastructure\\\\Adapter\\\\Api\\\\Controller)' \
   C:/laragon/www/modules/forum/backend/src/Controller/ForumController.php
 ```
+
 Expected: zero results.
 
 - [ ] **Step 9.4 — Commit**
@@ -667,10 +697,12 @@ cd C:/laragon/www/modules/forum && \
 **Repo for commits:** `dp-forum`
 
 **Files:**
+
 - Create: `modules/forum/backend/src/Controller/ForumModerationBackstageController.php`
 - Test: `modules/forum/backend/tests/Unit/Controller/ForumModerationBackstageControllerTest.php`
 
 **Source methods (in `daems-platform/src/Infrastructure/Adapter/Api/Controller/BackstageController.php`):**
+
 - `listForumReports` (line 680)
 - `getForumReport` (718)
 - `resolveForumReport` (763)
@@ -689,6 +721,7 @@ cd C:/laragon/www/modules/forum && \
 cd C:/laragon/www/daems-platform && \
   sed -n '680,1232p' src/Infrastructure/Adapter/Api/Controller/BackstageController.php > /tmp/backstage-forum-methods.php
 ```
+
 Read `/tmp/backstage-forum-methods.php` to inventory which use cases each method uses.
 
 - [ ] **Step 10.2 — Read BackstageController constructor (line 141) to identify required services**
@@ -791,6 +824,7 @@ cd C:/laragon/www/modules/forum && composer install --no-interaction && \
   vendor/bin/phpunit --filter ForumModerationBackstageControllerTest \
                      backend/tests/Unit/Controller/ForumModerationBackstageControllerTest.php
 ```
+
 Expected: ERROR — class not found.
 
 - [ ] **Step 10.5 — Write `ForumModerationBackstageController.php`**
@@ -856,6 +890,7 @@ cd C:/laragon/www/modules/forum && \
   vendor/bin/phpunit --filter ForumModerationBackstageControllerTest \
                      backend/tests/Unit/Controller/ForumModerationBackstageControllerTest.php
 ```
+
 Expected: PASS.
 
 - [ ] **Step 10.7 — Run PHPStan**
@@ -863,6 +898,7 @@ Expected: PASS.
 ```bash
 cd C:/laragon/www/daems-platform && composer analyse 2>&1 | tail -5
 ```
+
 Expected: 0 errors. (Module's controller is now under `paths: [src/, ../modules/*/backend/src/]`.)
 
 - [ ] **Step 10.8 — Commit**
@@ -882,10 +918,12 @@ cd C:/laragon/www/modules/forum && \
 **Repo for commits:** `dp-forum`
 
 **Files:**
+
 - Create: `modules/forum/backend/src/Controller/ForumContentBackstageController.php`
 - Test: `modules/forum/backend/tests/Unit/Controller/ForumContentBackstageControllerTest.php`
 
 **Source methods (in `daems-platform/src/Infrastructure/Adapter/Api/Controller/BackstageController.php`):**
+
 - `listForumTopicsAdmin` (line 843)
 - `pinForumTopic` (882)
 - `unpinForumTopic` (901)
@@ -974,6 +1012,7 @@ cd C:/laragon/www/modules/forum && \
   vendor/bin/phpunit --filter ForumContentBackstageControllerTest \
                      backend/tests/Unit/Controller/ForumContentBackstageControllerTest.php
 ```
+
 Expected: ERROR — class not found.
 
 - [ ] **Step 11.3 — Write `ForumContentBackstageController.php`** with the same verbatim-copy approach as Task 10. Constructor params match the 10 services in the test's `paramTypes` assertion.
@@ -985,6 +1024,7 @@ Expected: ERROR — class not found.
 ```bash
 cd C:/laragon/www/daems-platform && composer analyse 2>&1 | tail -5
 ```
+
 Expected: 0 errors.
 
 - [ ] **Step 11.6 — Commit**
@@ -1029,12 +1069,14 @@ cd C:/laragon/www/daems-platform && \
 ```bash
 ls C:/laragon/www/modules/forum/backend/migrations/forum_*.{sql,php} 2>/dev/null | wc -l
 ```
+
 Expected: `9`.
 
 ```bash
 diff C:/laragon/www/daems-platform/database/migrations/007_create_forum_tables.sql \
      C:/laragon/www/modules/forum/backend/migrations/forum_001_create_forum_tables.sql
 ```
+
 Expected: zero output.
 
 - [ ] **Step 12.3 — `MigrationTestCase` smoke (verifies module migrations loadable)**
@@ -1042,6 +1084,7 @@ Expected: zero output.
 ```bash
 cd C:/laragon/www/daems-platform && composer test -- --filter MigrationTestCase 2>&1 | tail -10
 ```
+
 Expected: PASS — runner picks up `../modules/forum/backend/migrations/forum_*` per commit `649806c`.
 
 - [ ] **Step 12.4 — Commit**
@@ -1060,6 +1103,7 @@ cd C:/laragon/www/modules/forum && \
 **Repo for commits:** `dp-forum`
 
 **Files:**
+
 - Create: `modules/forum/backend/bindings.php`
 
 - [ ] **Step 13.1 — Read the original Forum bindings in `bootstrap/app.php`**
@@ -1067,6 +1111,7 @@ cd C:/laragon/www/modules/forum && \
 ```bash
 grep -n -A 3 'Forum' C:/laragon/www/daems-platform/bootstrap/app.php | head -100
 ```
+
 Inventory: every `bind()`/`singleton()` call referencing `Daems\Application\{Forum,Backstage\Forum}` or `Daems\Domain\Forum` or `Daems\Infrastructure\Adapter\Persistence\Sql\SqlForum*`.
 
 - [ ] **Step 13.2 — Write `modules/forum/backend/bindings.php`** following `modules/insights/backend/bindings.php`'s structure. Bindings register:
@@ -1198,11 +1243,13 @@ For every use case binding, **read the use case's constructor signature** from i
 ```bash
 cd C:/laragon/www/daems-platform && composer analyse 2>&1 | tail -5
 ```
+
 Expected: 0 errors.
 
 - [ ] **Step 13.4 — Smoke: instantiate every controller via production container**
 
 Save this as `/tmp/smoke-forum-controllers.php`:
+
 ```php
 <?php
 require __DIR__ . '/../../laragon/www/daems-platform/vendor/autoload.php';
@@ -1216,6 +1263,7 @@ echo "OK: ", get_class($c), " | ", get_class($m), " | ", get_class($g), PHP_EOL;
 ```bash
 cd C:/laragon/www/daems-platform && php /tmp/smoke-forum-controllers.php
 ```
+
 Expected: `OK: DaemsModule\Forum\Controller\ForumController | ... | ...`. **If TypeError, constructor parameter order in `bindings.php` is wrong** — fix before commit (this is the bug class from CLAUDE.md feedback file `feedback_bootstrap_and_harness_must_both_wire.md`).
 
 - [ ] **Step 13.5 — Commit**
@@ -1234,6 +1282,7 @@ cd C:/laragon/www/modules/forum && \
 **Repo for commits:** `dp-forum`
 
 **Files:**
+
 - Create: `modules/forum/backend/bindings.test.php`
 
 - [ ] **Step 14.1 — Copy `bindings.php` → `bindings.test.php`**
@@ -1241,6 +1290,7 @@ cd C:/laragon/www/modules/forum && \
 - [ ] **Step 14.2 — Replace 4 SQL repo bindings with InMemory equivalents**
 
 Replace the singleton fns:
+
 ```php
 $container->singleton(ForumRepositoryInterface::class,
     static fn() => new \DaemsModule\Forum\Tests\Support\InMemoryForumRepository());
@@ -1267,6 +1317,7 @@ cd C:/laragon/www/daems-platform && \
           $c = $container->make(\DaemsModule\Forum\Controller\ForumController::class); \
           echo "OK\n";'
 ```
+
 Expected: `OK`.
 
 - [ ] **Step 14.4 — Commit**
@@ -1285,6 +1336,7 @@ cd C:/laragon/www/modules/forum && \
 **Repo for commits:** `dp-forum`
 
 **Files:**
+
 - Create: `modules/forum/backend/routes.php`
 
 - [ ] **Step 15.1 — Read original Forum routes**
@@ -1415,6 +1467,7 @@ cd C:/laragon/www/daems-platform && \
           $count = count($router->routes()); \
           echo "Total routes: $count\n";'
 ```
+
 Expected: count is the original total (which already included all Forum routes via `routes/api.php`) — should be unchanged because Tasks 22 hasn't yet removed the originals. **Routes are temporarily double-registered.** This is fine — the next-occurrence wins per Router contract.
 
 - [ ] **Step 15.4 — Commit**
@@ -1455,6 +1508,7 @@ cd C:/laragon/www/daems-platform && \
 ```bash
 cd C:/laragon/www/modules/forum && vendor/bin/phpunit backend/tests/Unit/Domain
 ```
+
 Expected: 4 test classes, all green.
 
 - [ ] **Step 16.3 — Commit**
@@ -1526,6 +1580,7 @@ cd C:/laragon/www/daems-platform && \
 cd C:/laragon/www/daems-platform && \
   composer test -- --filter 'SqlForumStatsTest|BackstageForumStatsTest'
 ```
+
 Expected: 2 test classes green.
 
 - [ ] **Step 19.3 — Commit**
@@ -1573,6 +1628,7 @@ cd C:/laragon/www/daems-platform && \
   composer test -- --filter 'ForumTenantIsolationTest|ForumStatsTenantIsolationTest' && \
   composer test:e2e -- --filter 'F005_ForumRoleImpersonationTest'
 ```
+
 Expected: 2 isolation + 1 E2E green.
 
 - [ ] **Step 20.3 — Commit**
@@ -1591,6 +1647,7 @@ cd C:/laragon/www/modules/forum && \
 **Repo for commits:** `daems-platform`
 
 **Files:**
+
 - Modify: `daems-platform/bootstrap/app.php`
 
 - [ ] **Step 21.1 — Identify exact line ranges**
@@ -1598,6 +1655,7 @@ cd C:/laragon/www/modules/forum && \
 ```bash
 grep -n -E 'Forum|SqlForum' C:/laragon/www/daems-platform/bootstrap/app.php
 ```
+
 Expected: a contiguous block of bindings (~30+ lines) plus `use` statements at top of file.
 
 - [ ] **Step 21.2 — Delete those lines + use statements**
@@ -1609,6 +1667,7 @@ Use `Edit` tool repeatedly: each binding closure becomes a single `Edit` deletio
 ```bash
 grep -n -E 'Forum|SqlForum' C:/laragon/www/daems-platform/bootstrap/app.php
 ```
+
 Expected: zero results.
 
 - [ ] **Step 21.4 — Run controller smoke test**
@@ -1616,6 +1675,7 @@ Expected: zero results.
 ```bash
 cd C:/laragon/www/daems-platform && php /tmp/smoke-forum-controllers.php
 ```
+
 Expected: `OK` — controllers are now resolved entirely through the module's `bindings.php`. Any TypeError here indicates a constructor mismatch — go back and fix `modules/forum/backend/bindings.php`.
 
 - [ ] **Step 21.5 — PHPStan + tests**
@@ -1623,6 +1683,7 @@ Expected: `OK` — controllers are now resolved entirely through the module's `b
 ```bash
 cd C:/laragon/www/daems-platform && composer analyse 2>&1 | tail -5
 ```
+
 Expected: 0 errors.
 
 - [ ] **Step 21.6 — Commit (in `daems-platform/`)**
@@ -1641,6 +1702,7 @@ cd C:/laragon/www/daems-platform && \
 **Repo for commits:** `daems-platform`
 
 **Files:**
+
 - Modify: `daems-platform/routes/api.php` lines 179–208 + 411–491 + 492–494
 - Also remove unused `use Daems\Infrastructure\Adapter\Api\Controller\ForumController;` at line 9
 
@@ -1653,6 +1715,7 @@ Three blocks total (per spec section 5). Delete corresponding `use ForumControll
 ```bash
 grep -n -E 'Forum|forum' C:/laragon/www/daems-platform/routes/api.php
 ```
+
 Expected: zero results.
 
 - [ ] **Step 22.3 — Smoke browser-side**
@@ -1660,11 +1723,13 @@ Expected: zero results.
 ```bash
 curl -i http://daem-society.local/api/v1/forum/categories
 ```
+
 Expected: `200 OK` with the same JSON as before — module's `routes.php` is registered, double-registration is gone.
 
 ```bash
 curl -i http://daem-society.local/api/v1/backstage/forum/stats -H "Cookie: <auth>"
 ```
+
 Expected: `200 OK` (or `401`/`403` depending on auth state — but NOT `404`).
 
 - [ ] **Step 22.4 — Run all tests**
@@ -1672,6 +1737,7 @@ Expected: `200 OK` (or `401`/`403` depending on auth state — but NOT `404`).
 ```bash
 cd C:/laragon/www/daems-platform && composer test:all 2>&1 | tail -20
 ```
+
 Expected: all green.
 
 - [ ] **Step 22.5 — Commit**
@@ -1690,6 +1756,7 @@ cd C:/laragon/www/daems-platform && \
 **Repo for commits:** `daems-platform`
 
 **Files:**
+
 - Modify: `daems-platform/src/Infrastructure/Adapter/Api/Controller/BackstageController.php`
 
 - [ ] **Step 23.1 — Identify ranges to delete**
@@ -1713,6 +1780,7 @@ Remove `use Daems\Application\Backstage\Forum\*;` and `use Daems\Application\For
 ```bash
 grep -nE 'Forum|forum' C:/laragon/www/daems-platform/src/Infrastructure/Adapter/Api/Controller/BackstageController.php
 ```
+
 Expected: zero results.
 
 - [ ] **Step 23.6 — Run all tests**
@@ -1720,6 +1788,7 @@ Expected: zero results.
 ```bash
 cd C:/laragon/www/daems-platform && composer test:all && composer analyse 2>&1 | tail -5
 ```
+
 Expected: all green, 0 PHPStan errors.
 
 - [ ] **Step 23.7 — Commit**
@@ -1737,6 +1806,7 @@ git add src/Infrastructure/Adapter/Api/Controller/BackstageController.php && \
 **Repo for commits:** `daems-platform`
 
 **Files:**
+
 - Modify: `daems-platform/tests/Support/KernelHarness.php`
 
 - [ ] **Step 24.1 — Identify ranges**
@@ -1744,6 +1814,7 @@ git add src/Infrastructure/Adapter/Api/Controller/BackstageController.php && \
 ```bash
 grep -nE 'Forum|InMemoryForum' C:/laragon/www/daems-platform/tests/Support/KernelHarness.php
 ```
+
 Expected: ~20+ references — repository singletons, use case binds, controller binds, InMemory imports.
 
 - [ ] **Step 24.2 — Delete them**
@@ -1755,6 +1826,7 @@ Use `Edit` tool. Module's `bindings.test.php` covers everything now (Tasks 14 + 
 ```bash
 grep -nE 'Forum|InMemoryForum' C:/laragon/www/daems-platform/tests/Support/KernelHarness.php
 ```
+
 Expected: zero.
 
 - [ ] **Step 24.4 — Run all tests**
@@ -1762,6 +1834,7 @@ Expected: zero.
 ```bash
 cd C:/laragon/www/daems-platform && composer test:all 2>&1 | tail -20
 ```
+
 Expected: all green. Module's `bindings.test.php` carries the load.
 
 - [ ] **Step 24.5 — Commit**
@@ -1784,6 +1857,7 @@ git add tests/Support/KernelHarness.php && \
 "C:/laragon/bin/mysql/mysql-8.4.3-winx64/bin/mysql.exe" -u root -psalasana daems_db \
   < database/migrations/065_rename_forum_migrations_in_schema_migrations_table.sql
 ```
+
 Expected: 9 rows updated; subsequent run is idempotent.
 
 - [ ] **Step 25.2 — Delete original Forum source dirs**
@@ -1831,6 +1905,7 @@ rm database/migrations/007_create_forum_tables.sql \
 cd C:/laragon/www/daems-platform && \
   git ls-files | grep -i forum
 ```
+
 Expected: only `database/migrations/065_rename_forum_migrations_in_schema_migrations_table.sql` and the spec/plan markdown files in `docs/superpowers/`.
 
 - [ ] **Step 25.6 — Run all tests**
@@ -1839,6 +1914,7 @@ Expected: only `database/migrations/065_rename_forum_migrations_in_schema_migrat
 composer test:all 2>&1 | tail -30
 composer analyse 2>&1 | tail -5
 ```
+
 Expected: all green, 0 PHPStan errors.
 
 - [ ] **Step 25.7 — Commit**
@@ -1870,6 +1946,7 @@ cd C:/laragon/www/sites/daem-society && \
 cd C:/laragon/www/modules/forum/frontend/public && \
   grep -rn '__DIR__' --include='*.php' .
 ```
+
 Inventory: every `include __DIR__ . '/../...'` must convert to `include DAEMS_SITE_PUBLIC . '/...'`.
 
 - [ ] **Step 26.3 — Apply rewrites**
@@ -1881,6 +1958,7 @@ For each match, work out the absolute target path, verify the file lives at `dae
 ```bash
 grep -rn 'pages/forum/\|pages/backstage/forum/' --include='*.php' .
 ```
+
 Expected: zero — these files do not reference each other through `/pages/forum/` URLs but may reference `/modules/forum/...` already (after Task 28).
 
 - [ ] **Step 26.5 — Smoke-test page loads**
@@ -1926,6 +2004,7 @@ cd C:/laragon/www/modules/forum/frontend/backstage && \
 ```
 
 For each match, replace:
+
 - `/pages/backstage/forum/forum.css` → `/modules/forum/assets/backstage/forum.css`
 - `/pages/backstage/forum/forum-dashboard.js` → `/modules/forum/assets/backstage/forum-dashboard.js`
 - `/pages/backstage/forum/forum-kpi-strip.js` → `/modules/forum/assets/backstage/forum-kpi-strip.js`
@@ -1941,6 +2020,7 @@ For each match, replace:
 ```bash
 grep -rn 'forum-kpi-strip.php' --include='*.php' .
 ```
+
 Verify the `include`/`require` paths are still correct (e.g. `__DIR__ . '/forum-kpi-strip.php'` if same directory). Adjust if needed.
 
 - [ ] **Step 27.5 — Smoke-test backstage pages load**
@@ -1986,6 +2066,7 @@ for f in forum.css forum-dashboard.js forum-kpi-strip.js forum-reports-page.js \
        "http://daem-society.local/modules/forum/assets/backstage/$f"
 done
 ```
+
 Expected: 9× `200`.
 
 - [ ] **Step 28.3 — Commit assets to dp-forum**
@@ -2030,6 +2111,7 @@ cd C:/laragon/www/sites/daem-society && \
 ```bash
 cd C:/laragon/www/daems-platform && composer analyse 2>&1 | tail -20
 ```
+
 Expected: 0 errors at PHPStan level 9.
 
 - [ ] **Step 29.2 — `composer test:all`**
@@ -2037,6 +2119,7 @@ Expected: 0 errors at PHPStan level 9.
 ```bash
 cd C:/laragon/www/daems-platform && composer test:all 2>&1 | tail -50
 ```
+
 Expected: all green (Unit, Integration, Isolation, E2E suites all in `daems-platform` AND in module via `phpunit.xml.dist` autoloaded testsuites).
 
 - [ ] **Step 29.3 — Production-container controller smoke**
@@ -2044,6 +2127,7 @@ Expected: all green (Unit, Integration, Isolation, E2E suites all in `daems-plat
 ```bash
 php /tmp/smoke-forum-controllers.php
 ```
+
 Expected: `OK: DaemsModule\Forum\Controller\ForumController | ... | ...`. No `TypeError`.
 
 - [ ] **Step 29.4 — `git grep` cleanup verification**
@@ -2053,12 +2137,14 @@ cd C:/laragon/www/daems-platform && \
   git grep -E 'Daems\\\\(Domain\\\\Forum|Application\\\\Forum|Application\\\\Backstage\\\\Forum|Infrastructure\\\\Adapter\\\\Persistence\\\\Sql\\\\SqlForum|Infrastructure\\\\Adapter\\\\Api\\\\Controller\\\\ForumController)' \
     -- src/ tests/ bootstrap/ routes/ 2>/dev/null
 ```
+
 Expected: zero results.
 
 ```bash
 cd C:/laragon/www/daems-platform && \
   git grep -E 'InMemoryForum' -- tests/ 2>/dev/null
 ```
+
 Expected: zero results in `daems-platform/tests/`.
 
 - [ ] **Step 29.5 — Browser smoke-test (mandatory, Insights lesson #6)**
@@ -2086,6 +2172,7 @@ User runs through this checklist manually:
 - [ ] **Step 29.6 — Final report to user**
 
 Provide:
+
 - All commit SHAs in `daems-platform`, `dp-forum`, `daem-society`
 - `composer test:all` summary
 - PHPStan summary
@@ -2097,6 +2184,7 @@ Provide:
 ## Self-review notes
 
 **Spec coverage check:** every section of the spec maps to one or more tasks:
+
 - Spec §2 inventory → Tasks 4–9, 12, 16–20
 - Spec §3 manifest → Task 1
 - Spec §4 bindings + routes → Tasks 13–15

@@ -11,11 +11,13 @@
 **Spec:** `docs/superpowers/specs/2026-04-26-modular-architecture-design.md` (commit `6a0412d`)
 
 **Repos affected (3 repos, separate commit streams):**
+
 - `C:\laragon\www\daems-platform\` (registry code, bootstrap wiring, migration script, namespace cleanup, data-fix migration, phpstan config, final deletes)
 - `C:\laragon\www\modules\insights\` = `dp-insights` repo (initial skeleton + all moved Insights code; branch `dev`, currently empty)
 - `C:\laragon\www\sites\daem-society\` (module router in `public/index.php`, deletes of moved frontend pages)
 
 **Verification gates (must pass before final commit on any task that touches moved code):**
+
 - `composer analyse` → 0 errors at PHPStan level 9
 - `composer test` (Unit + Integration suites) → all green
 - `composer test:e2e` → all green
@@ -32,6 +34,7 @@
 ## File map (created / modified / deleted across all 3 repos)
 
 ### Created in `daems-platform/`
+
 - `src/Infrastructure/Module/ModuleManifest.php` — value object representing a parsed `module.json`
 - `src/Infrastructure/Module/ModuleRegistry.php` — boot-time module discovery + autoloader + bindings + routes registration
 - `src/Infrastructure/Module/ManifestValidationException.php` — exception for invalid manifests
@@ -42,6 +45,7 @@
 - `database/migrations/064_rename_insight_migrations_in_schema_migrations_table.sql` — data-fix to rename the existing schema_migrations rows from `002_create_insights_table.sql` etc. to `insights_001_create_insights_table.sql` etc.
 
 ### Modified in `daems-platform/`
+
 - `bootstrap/app.php` — wire `ModuleRegistry` discovery + bindings + routes; remove all Insight-specific bindings (lines 476-494 + 617-627 + use statements 17-18, 49, 58, 67)
 - `routes/api.php` — remove all Insight-specific routes (lines 64-71 public + 372-394 backstage)
 - `tests/Support/KernelHarness.php` — wire `ModuleRegistry` with `bindings.test.php` mode; remove Insight-specific bindings + InMemory fake registration
@@ -49,6 +53,7 @@
 - `scripts/apply_pending_migrations.php` — scan `../modules/*/backend/migrations/` in addition to `../database/migrations/`; handle both `.sql` and `.php` migration files
 
 ### Deleted in `daems-platform/`
+
 - `src/Domain/Insight/` (entire dir)
 - `src/Application/Insight/` (entire dir)
 - `src/Infrastructure/Adapter/Persistence/Sql/SqlInsightRepository.php`
@@ -63,6 +68,7 @@
 - `tests/Support/Fake/InMemoryInsightRepository.php`
 
 ### Created in `modules/insights/` (dp-insights repo)
+
 - `module.json` — module manifest
 - `README.md` — module documentation
 - `.gitignore` — minimal (OS junk, editor scratch)
@@ -99,9 +105,11 @@
 - `frontend/backstage/edit/index.php`
 
 ### Modified in `daem-society/`
+
 - `public/index.php` — add module router block after the existing `/shared/` block
 
 ### Deleted in `daem-society/`
+
 - `public/pages/insights/` (entire dir)
 - `public/pages/backstage/insights/` (entire dir)
 
@@ -110,6 +118,7 @@
 ## Task 1: ModuleManifest value object
 
 **Files:**
+
 - Create: `daems-platform/src/Infrastructure/Module/ModuleManifest.php`
 - Create: `daems-platform/src/Infrastructure/Module/ManifestValidationException.php`
 - Test: `daems-platform/tests/Unit/Infrastructure/Module/ModuleManifestTest.php`
@@ -336,6 +345,7 @@ file) — no separate manifest field needed."
 ## Task 2: Module manifest JSON Schema
 
 **Files:**
+
 - Create: `daems-platform/docs/schemas/module-manifest.schema.json`
 
 **Repo for commits:** `daems-platform`
@@ -421,6 +431,7 @@ hand-rolled inside ModuleManifest)."
 ## Task 3: ModuleRegistry — discover()
 
 **Files:**
+
 - Create: `daems-platform/src/Infrastructure/Module/ModuleRegistry.php`
 - Test: `daems-platform/tests/Unit/Infrastructure/Module/ModuleRegistryTest.php`
 
@@ -644,6 +655,7 @@ environments without modules wired in). registerAutoloader / registerBindings
 ## Task 4: ModuleRegistry — registerAutoloader()
 
 **Files:**
+
 - Modify: `daems-platform/src/Infrastructure/Module/ModuleRegistry.php`
 - Modify: `daems-platform/tests/Unit/Infrastructure/Module/ModuleRegistryTest.php` (add tests)
 
@@ -739,6 +751,7 @@ require __DIR__.'/../vendor/autoload.php'."
 ## Task 5: ModuleRegistry — registerBindings() + registerRoutes() + migrationPaths()
 
 **Files:**
+
 - Modify: `daems-platform/src/Infrastructure/Module/ModuleRegistry.php`
 - Modify: `daems-platform/tests/Unit/Infrastructure/Module/ModuleRegistryTest.php`
 - Test: `daems-platform/tests/Integration/Infrastructure/Module/ModuleRegistryDiscoveryTest.php`
@@ -1038,6 +1051,7 @@ Integration test exercises the full cycle (discover → registerAutoloader
 ## Task 6: Wire ModuleRegistry into bootstrap/app.php + KernelHarness
 
 **Files:**
+
 - Modify: `daems-platform/bootstrap/app.php` (top of file, after Container init, before existing bindings)
 - Modify: `daems-platform/tests/Support/KernelHarness.php`
 - Modify: `daems-platform/phpstan.neon`
@@ -1150,6 +1164,7 @@ composer analyse 2>&1 | tail -10
 composer test 2>&1 | tail -5
 composer test:e2e 2>&1 | tail -5
 ```
+
 Expected: PHPStan 0 errors. All test suites green. (No moves yet, so nothing should change.)
 
 - [ ] **Step 6.7 — Commit**
@@ -1177,6 +1192,7 @@ break when no modules are present."
 ## Task 7: Extend migration runner script for multi-path
 
 **Files:**
+
 - Modify: `daems-platform/scripts/apply_pending_migrations.php`
 - Create: `daems-platform/database/migrations/064_rename_insight_migrations_in_schema_migrations_table.sql` (data fix, applied automatically when present)
 
@@ -1363,6 +1379,7 @@ After running, verify the rename in the DB:
 ```bash
 "C:/laragon/bin/mysql/mysql-8.4.3-winx64/bin/mysql.exe" -u root -psalasana daems_db -e "SELECT filename FROM schema_migrations WHERE filename LIKE 'insights_%' OR filename LIKE '%insight%' ORDER BY filename;"
 ```
+
 Expected: 6 rows starting with `insights_001` through `insights_006`. No rows with the old filenames.
 
 - [ ] **Step 7.5 — Run all tests + PHPStan**
@@ -1373,6 +1390,7 @@ composer analyse 2>&1 | tail -10
 composer test 2>&1 | tail -5
 composer test:e2e 2>&1 | tail -5
 ```
+
 Expected: 0 errors, all green. (Tests run against `daems_db_test` which is reset by `MigrationTestCase` — the rename will get re-applied there too.)
 
 - [ ] **Step 7.6 — Commit**
@@ -1403,6 +1421,7 @@ Wiring is in place but no module migrations exist yet — that's Task 11."
 ## Task 8: Initial dp-insights skeleton commit
 
 **Files (in `modules/insights/`):**
+
 - Create: `module.json`
 - Create: `README.md`
 - Create: `.gitignore`
@@ -1449,6 +1468,7 @@ CRUD admin + i18n-aware sparkline stats + scheduled-publishing lifecycle.
 ## Layout
 
 ```
+
 backend/
 ├── bindings.php          Production DI bindings (uses SqlInsightRepository)
 ├── bindings.test.php     Test DI bindings (uses InMemoryInsightRepository)
@@ -1463,7 +1483,8 @@ frontend/
 └── assets/               Per-module CSS/JS/images (mounted at /modules/insights/assets/*)
 
 module.json               Manifest read by core's ModuleRegistry at boot
-```
+
+```text
 
 ## Loading
 
@@ -1475,10 +1496,12 @@ config needed in the consuming platform.
 ## Verification commands (from `daems-platform/`)
 
 ```
+
 composer analyse
 composer test
 composer test:e2e
-```
+
+```text
 
 ## License
 
@@ -1489,7 +1512,7 @@ Internal use, daems-platform tenants.
 
 Write `C:\laragon\www\modules\insights\.gitignore`:
 
-```
+```text
 .DS_Store
 Thumbs.db
 desktop.ini
@@ -1578,6 +1601,7 @@ cp C:/laragon/www/daems-platform/src/Domain/Insight/Insight.php \
 ```
 
 Then in each new file, change:
+
 - `namespace Daems\Domain\Insight;` → `namespace DaemsModule\Insights\Domain;`
 - All `use Daems\Domain\Insight\X;` cross-references collapse to same-namespace (delete the use)
 - `use Daems\Domain\Tenant\X;` → keep (Tenant stays in core, no namespace change)
@@ -1597,6 +1621,7 @@ cp C:/laragon/www/daems-platform/src/Application/Insight/CreateInsight/CreateIns
 ```
 
 Namespace edits:
+
 - `namespace Daems\Application\Insight\CreateInsight;` → `namespace DaemsModule\Insights\Application\CreateInsight;`
 - `use Daems\Domain\Insight\X;` → `use DaemsModule\Insights\Domain\X;`
 - `use Daems\Application\Insight\<sub>\X;` → same-namespace (delete) or `use DaemsModule\Insights\Application\<sub>\X;`
@@ -1610,6 +1635,7 @@ cp C:/laragon/www/daems-platform/src/Infrastructure/Adapter/Persistence/Sql/SqlI
 ```
 
 Edit:
+
 - `namespace Daems\Infrastructure\Adapter\Persistence\Sql;` → `namespace DaemsModule\Insights\Infrastructure;`
 - `use Daems\Domain\Insight\Insight;` → `use DaemsModule\Insights\Domain\Insight;`
 - `use Daems\Domain\Insight\InsightId;` → `use DaemsModule\Insights\Domain\InsightId;`
@@ -1625,6 +1651,7 @@ cp C:/laragon/www/daems-platform/src/Infrastructure/Adapter/Api/Controller/Insig
 ```
 
 Edit:
+
 - `namespace Daems\Infrastructure\Adapter\Api\Controller;` → `namespace DaemsModule\Insights\Controller;`
 - All `use Daems\Application\Insight\<sub>\X;` → `use DaemsModule\Insights\Application\<sub>\X;`
 - All `use Daems\Domain\Insight\X;` → `use DaemsModule\Insights\Domain\X;`
@@ -1696,6 +1723,7 @@ cd C:/laragon/www/daems-platform
 composer dump-autoload
 php -r "require 'vendor/autoload.php'; var_dump(class_exists('DaemsModule\\Insights\\Domain\\Insight'));"
 ```
+
 Expected: `bool(true)`
 
 If false: composer.json needs the `DaemsModule\\Insights\\` autoload entry (added in Task 6.5). Verify it's there.
@@ -1706,6 +1734,7 @@ If false: composer.json needs the `DaemsModule\\Insights\\` autoload entry (adde
 cd C:/laragon/www/daems-platform
 composer test 2>&1 | tail -10
 ```
+
 Expected: all green. (Tests still reference `Daems\Domain\Insight\` namespace; those classes still exist in `src/`; we haven't deleted yet.)
 
 - [ ] **Step 9.8 — Commit the moved files on dp-insights**
@@ -1741,6 +1770,7 @@ DO NOT push.
 ## Task 10: Module bindings.php + bindings.test.php + routes.php
 
 **Files (in `modules/insights/`):**
+
 - Create: `backend/bindings.php`
 - Create: `backend/bindings.test.php`
 - Create: `backend/routes.php`
@@ -1935,6 +1965,7 @@ php -l C:/laragon/www/modules/insights/backend/bindings.php
 php -l C:/laragon/www/modules/insights/backend/bindings.test.php
 php -l C:/laragon/www/modules/insights/backend/routes.php
 ```
+
 Expected: "No syntax errors detected" for each.
 
 - [ ] **Step 10.5 — Commit on dp-insights**
@@ -1979,6 +2010,7 @@ cp C:/laragon/www/daems-platform/tests/Support/Fake/InMemoryInsightRepository.ph
 ```
 
 Edit the new file:
+
 - `namespace Daems\Tests\Support\Fake;` → `namespace DaemsModule\Insights\Tests\Support;`
 - `use Daems\Domain\Insight\Insight;` → `use DaemsModule\Insights\Domain\Insight;`
 - `use Daems\Domain\Insight\InsightId;` → `use DaemsModule\Insights\Domain\InsightId;`
@@ -1996,6 +2028,7 @@ cp <src>.php C:/laragon/www/modules/insights/backend/tests/Unit/<basename>.php
 Files: `CreateInsightTest.php`, `DeleteInsightTest.php`, `ListInsightStatsTest.php`, `ListInsightsTest.php`, `UpdateInsightTest.php`.
 
 Namespace edits:
+
 - `namespace Daems\Tests\Unit\Application\Insight;` → `namespace DaemsModule\Insights\Tests\Unit;`
 - `use Daems\Application\Insight\<sub>\X;` → `use DaemsModule\Insights\Application\<sub>\X;`
 - `use Daems\Domain\Insight\X;` → `use DaemsModule\Insights\Domain\X;`
@@ -2134,6 +2167,7 @@ This is the gate task. After this, the originals are gone and only the module co
 - [ ] **Step 12.1 — Delete Insight bindings from bootstrap/app.php**
 
 Remove these lines (line numbers from recon — actual may have shifted by ±5):
+
 - Lines 17-18 (use statements for `Insight` Application classes)
 - Line 49 (CreateInsight use), Line 58 (UpdateInsight use), Line 67 (DeleteInsight use) — may already be in 17-18
 - Lines 476-494 (CreateInsight, UpdateInsight, DeleteInsight, ListInsightStats bindings)
@@ -2202,11 +2236,13 @@ composer test:e2e 2>&1 | tail -10
 ```
 
 Expected:
+
 - PHPStan: 0 errors. If there are errors about missing `Daems\Domain\Insight\`-class references, find the call site and update the import to `DaemsModule\Insights\Domain\X`.
 - Unit + Integration tests: all green. The Insights tests now run from the module's directory (phpunit.xml configured in Task 11.5).
 - E2E: all green. KernelHarness boots the module's `bindings.test.php` automatically.
 
 If anything fails: do NOT commit. Diagnose, fix, re-run gates. Common failure modes:
+
 - Forgot to update a use statement in BackstageController surgery → PHPStan flags
 - Forgot to delete a binding → container has duplicate registration → fatal at boot
 - Migration runner re-ran a moved file because schema_migrations rename didn't include it → check Task 7's migration ran
@@ -2282,6 +2318,7 @@ diff -r C:/laragon/www/sites/daem-society/public/pages/insights \
 diff -r C:/laragon/www/sites/daem-society/public/pages/backstage/insights \
         C:/laragon/www/modules/insights/frontend/backstage
 ```
+
 Expected: no output from either (files identical).
 
 - [ ] **Step 13.4 — Commit on dp-insights**
@@ -2441,6 +2478,7 @@ if (preg_match('#^/([a-z][a-z0-9-]*)(/.*)?$#', $uri, $m)
 - [ ] **Step 14.5 — Smoke-test that module routing serves the moved pages**
 
 Open in browser:
+
 - `http://daem-society.local/insights` — should render the public Insights index (from `modules/insights/frontend/public/index.php`)
 - `http://daem-society.local/backstage/insights` — should render the backstage Insights list
 
@@ -2497,6 +2535,7 @@ composer analyse 2>&1 | tail -10
 composer test 2>&1 | tail -10
 composer test:e2e 2>&1 | tail -10
 ```
+
 Expected: 0 errors, all suites green.
 
 - [ ] **Step 15.2 — Manual smoke-test browser**
@@ -2540,6 +2579,7 @@ If any matches surface, fix and re-commit on the appropriate repo.
 - [ ] **Step 15.5 — Report all SHAs to user**
 
 Compile final report listing:
+
 - daems-platform: 7 commits (Tasks 1, 2, 3, 4, 5, 6, 7, 12)
 - modules/insights: 4 commits (Tasks 8, 9, 10, 11, 13)
 - daem-society: 1 commit (Task 14)

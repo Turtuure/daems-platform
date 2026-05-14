@@ -17,12 +17,14 @@
 ## File Structure
 
 **Created:**
+
 - `src/Infrastructure/Framework/Session/Session.php` — typed session wrapper
 - `src/Infrastructure/Framework/Session/SessionInterface.php` — interface for testability
 - `tests/Unit/Framework/Http/RequestTypedAccessorsTest.php`
 - `tests/Unit/Framework/Session/SessionTest.php`
 
 **Modified:**
+
 - `src/Infrastructure/Framework/Http/Request.php` — add typed accessors (`string`, `int`, `bool`, `arrayValue`) + `withAttribute`/`attribute`
 - `phpstan.neon` — bump level 6 → 7 → 8 → 9 in sequence
 - Various `src/**/*.php` files — null-safety fixes, mixed narrowing, type cleanups (exact files discovered by PHPStan)
@@ -36,6 +38,7 @@
 Per-request scalar/object attribute bag — needed by `TenantContextMiddleware` (PR 2) but easier to add now with the other Request changes. Immutable API (returns new Request instance).
 
 **Files:**
+
 - Modify: `src/Infrastructure/Framework/Http/Request.php`
 - Test: `tests/Unit/Framework/Http/RequestAttributesTest.php`
 
@@ -101,6 +104,7 @@ Expected: FAIL with "method attribute does not exist" or similar.
 In `src/Infrastructure/Framework/Http/Request.php`, modify the constructor and add two methods:
 
 Update constructor signature (add `$attributes` parameter):
+
 ```php
 private function __construct(
     private readonly string $method,
@@ -118,6 +122,7 @@ private function __construct(
 Update `fromGlobals()` and `forTesting()` to pass empty array for attributes (they already call `new self(...)` — no change needed if PHP default takes over; verify).
 
 Add the new methods before `clientIp()`:
+
 ```php
 public function attribute(string $key): mixed
 {
@@ -140,6 +145,7 @@ public function withAttribute(string $key, mixed $value): self
 ```
 
 Update `withActingUser()` to preserve attributes:
+
 ```php
 public function withActingUser(ActingUser $user): self
 {
@@ -169,6 +175,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.org" commit -m "Framework: 
 `string()`, `int()`, `bool()`, `arrayValue()` — narrow `mixed` from `$body`/`$query` to strict types at the read site. Required for level 9 cleanup.
 
 **Files:**
+
 - Modify: `src/Infrastructure/Framework/Http/Request.php`
 - Test: `tests/Unit/Framework/Http/RequestTypedAccessorsTest.php`
 
@@ -363,6 +370,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.org" commit -m "Framework: 
 New `Session` class wrapping `$_SESSION` with typed accessors. Non-static for testability.
 
 **Files:**
+
 - Create: `src/Infrastructure/Framework/Session/SessionInterface.php`
 - Create: `src/Infrastructure/Framework/Session/Session.php`
 - Create: `src/Infrastructure/Framework/Session/ArraySession.php` (test double)
@@ -648,12 +656,14 @@ git -c user.name="Dev Team" -c user.email="dev@daems.org" commit -m "Framework: 
 Level 7 adds union-type strictness and array-offset-access checks. Likely 30–60 errors across the codebase. Fix them mechanically.
 
 **Files:**
+
 - Modify: `phpstan.neon`
 - Modify: various `src/**/*.php` files (determined by PHPStan output)
 
 - [ ] **Step 4.1: Bump level to 7**
 
 Edit `phpstan.neon`:
+
 ```yaml
 parameters:
     level: 7
@@ -676,6 +686,7 @@ Count errors: check the final summary line (e.g., `[ERROR] Found 42 errors`).
 Common patterns to apply (each error category gets its own fix pass):
 
 **Array offset access on possibly-missing key:**
+
 ```php
 // Before (error: "Offset 'x' on array ... in isset() always exists"):
 $name = $data['name'] ?? 'default';
@@ -686,6 +697,7 @@ $name = $data['name'] ?? 'default';
 ```
 
 **Partially wrong union return:**
+
 ```php
 // Before:
 function find(int $id): User|false { ... }
@@ -695,6 +707,7 @@ function find(int $id): ?User { ... }
 ```
 
 **Array shape annotation for dynamic arrays:**
+
 ```php
 /** @param array<string, string|int> $attrs */
 public function render(array $attrs): string
@@ -724,6 +737,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.org" commit -m "Chore: rais
 Level 8 adds null-safety. This is the biggest batch (80–150 errors expected) — lots of `?Entity` chains in the codebase.
 
 **Files:**
+
 - Modify: `phpstan.neon`
 - Modify: various `src/**/*.php` files
 
@@ -741,6 +755,7 @@ Record error count.
 For each error of the form "Cannot call method X() on SomeType|null":
 
 **Pattern A — early-return with domain exception:**
+
 ```php
 // Before:
 public function execute(Input $input): Output
@@ -761,6 +776,7 @@ public function execute(Input $input): Output
 ```
 
 **Pattern B — coalesce-throw (PHP 8.0+):**
+
 ```php
 $project = $this->repo->findBySlug($input->slug)
     ?? throw new ProjectNotFoundException();
@@ -810,6 +826,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.org" commit -m "Chore: rais
 Level 9 adds strict `mixed` handling. Most common fix: replace raw `$_POST`, `$_SESSION`, `$request->input()` with typed accessors from Tasks 2+3.
 
 **Files:**
+
 - Modify: `phpstan.neon`
 - Modify: various `src/**/*.php` files
 
@@ -839,6 +856,7 @@ $user  = $this->svc->login($email, $pw);    // OK
 ```
 
 For array bodies:
+
 ```php
 // Before:
 $roles = $req->input('roles');              // mixed
@@ -899,6 +917,7 @@ return new User(
 ```
 
 For repeated patterns, extract a small helper:
+
 ```php
 /** @param array<string,mixed> $row */
 private static function str(array $row, string $key): string
@@ -937,6 +956,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.org" commit -m "Chore: rais
 Ensure GitHub Actions (or whatever CI is in use) runs `composer analyse` at the new level.
 
 **Files:**
+
 - Modify: `.github/workflows/*.yml` (if present)
 - Modify: `composer.json` — add `analyse:strict` script that fails on any error
 
@@ -971,6 +991,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.org" commit -m "CI: enforce
 Document the decision in the architecture decision record log.
 
 **Files:**
+
 - Modify: `docs/decisions.md` (append ADR)
 
 - [ ] **Step 8.1: Append ADR-015 to docs/decisions.md**
@@ -1018,6 +1039,7 @@ git log --oneline origin/dev..HEAD
 ```
 
 Expected commits in this PR (order):
+
 1. Framework: add Request::withAttribute/attribute ...
 2. Framework: add typed accessors to Request ...
 3. Framework: add Session wrapper ...

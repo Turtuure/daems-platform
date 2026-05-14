@@ -15,6 +15,7 @@
 **Cross-repo work:** Tasks 18–22 add widgets to module repos (`c:/laragon/www/modules/{events,projects,forum}/`). Each module gets its own commits in its own repo; the platform repo tracks the framework only.
 
 **Commit identity (every commit):**
+
 ```bash
 git -c user.name="Dev Team" -c user.email="dev@daems.fi" commit -m "..."
 ```
@@ -26,6 +27,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.fi" commit -m "..."
 ## Task 1: Migration 073 — `user_dashboards` table
 
 **Files:**
+
 - Create: `database/migrations/073_create_user_dashboards_table.sql`
 
 - [ ] **Step 1: Write the migration**
@@ -75,6 +77,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.fi" commit -m "Add(db): mig
 ## Task 2: Domain — `Widget` abstract + supporting value objects
 
 **Files:**
+
 - Create: `src/Domain/Dashboard/WidgetCategory.php`
 - Create: `src/Domain/Dashboard/WidgetSpan.php`
 - Create: `src/Domain/Dashboard/MinRole.php`
@@ -271,6 +274,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.fi" commit -m "Add(domain/d
 ## Task 3: Domain — `WidgetRegistry`
 
 **Files:**
+
 - Create: `src/Domain/Dashboard/Exception/WidgetAlreadyRegistered.php`
 - Create: `src/Domain/Dashboard/Exception/UnknownWidget.php`
 - Create: `src/Domain/Dashboard/WidgetRegistry.php`
@@ -491,6 +495,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.fi" commit -m "Add(domain/d
 ## Task 4: Domain — `UserDashboard` entity + `LayoutEntry` VO + repo interface
 
 **Files:**
+
 - Create: `src/Domain/Dashboard/LayoutEntry.php`
 - Create: `src/Domain/Dashboard/UserDashboard.php`
 - Create: `src/Domain/Dashboard/UserDashboardRepositoryInterface.php`
@@ -639,6 +644,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.fi" commit -m "Add(domain/d
 ## Task 5: Frontend — `DefaultLayouts`
 
 **Files:**
+
 - Create: `src/Frontend/Dashboard/DefaultLayouts.php`
 - Test: `tests/Unit/Frontend/Dashboard/DefaultLayoutsTest.php`
 
@@ -769,6 +775,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.fi" commit -m "Add(frontend
 ## Task 6: Application — `GetUserLayout` use case
 
 **Files:**
+
 - Create: `src/Application/Dashboard/GetUserLayout/GetUserLayout.php`
 - Create: `src/Application/Dashboard/GetUserLayout/GetUserLayoutOutput.php`
 - Test: `tests/Unit/Application/Dashboard/GetUserLayoutTest.php`
@@ -1081,6 +1088,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.fi" commit -m "Add(applicat
 ## Task 7: Application — `SaveUserLayout` use case
 
 **Files:**
+
 - Create: `src/Application/Dashboard/SaveUserLayout/SaveUserLayout.php`
 - Create: `src/Application/Dashboard/SaveUserLayout/SaveUserLayoutInput.php`
 - Create: `src/Domain/Dashboard/Exception/InvalidLayout.php`
@@ -1334,6 +1342,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.fi" commit -m "Add(applicat
 ## Task 8: Application — `ResetUserLayout` use case
 
 **Files:**
+
 - Create: `src/Application/Dashboard/ResetUserLayout/ResetUserLayout.php`
 - Test: `tests/Unit/Application/Dashboard/ResetUserLayoutTest.php`
 
@@ -1425,6 +1434,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.fi" commit -m "Add(applicat
 ## Task 9: Application — `ListCatalog` use case
 
 **Files:**
+
 - Create: `src/Application/Dashboard/ListCatalog/ListCatalog.php`
 - Create: `src/Application/Dashboard/ListCatalog/CatalogItem.php`
 - Test: `tests/Unit/Application/Dashboard/ListCatalogTest.php`
@@ -1583,6 +1593,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.fi" commit -m "Add(applicat
 ## Task 10: Infrastructure — `SqlUserDashboardRepository`
 
 **Files:**
+
 - Create: `src/Infrastructure/Dashboard/SqlUserDashboardRepository.php`
 - Test: `tests/Integration/SqlUserDashboardRepositoryTest.php`
 
@@ -1791,6 +1802,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.fi" commit -m "Add(infra/da
 ## Task 11: Core widgets — KPI and chart shells (no real data yet)
 
 **Files:**
+
 - Create: `src/Infrastructure/Dashboard/CoreWidgets/MembersKpiWidget.php`
 - Create: `src/Infrastructure/Dashboard/CoreWidgets/ApplicationsKpiWidget.php`
 - Create: `src/Infrastructure/Dashboard/CoreWidgets/MemberGrowthChartWidget.php`
@@ -1872,11 +1884,13 @@ final class MembersKpiWidget extends Widget
 - [ ] **Step 2: Implement remaining 6 core widgets following the same pattern**
 
 Each widget:
+
 - Takes its data source via constructor (reuse existing `GetAdminStats`, `ListPendingApplications`, `MemberGrowthRepository`, etc.)
 - Implements `id()`, `category()`, `defaultSpan()`, `minRole()`, `labelKey()`, `descriptionKey()`, `render()`, `data()`
 - Returns HTML matching the current dashboard look
 
 Mapping to data:
+
 - `ApplicationsKpiWidget` (span 1) — `GetAdminStats::execute()->pendingApplications`
 - `MemberGrowthChartWidget` (span 3) — existing `/backstage/member-growth` data; render an empty `<div id="chart-..."></div>` and embed JSON in a `<script>` tag. Actual ApexCharts rendering happens in `dashboard.js` (Task 28).
 - `PlatformActivityChartWidget` (span 3) — same shape, different data source (`AdminController::platformActivity` if it exists; otherwise stub `data()` returning empty `series` and update once a use case is identified).
@@ -1885,6 +1899,7 @@ Mapping to data:
 - `ActivityFeedWidget` (span 2) — new use case `Application/Dashboard/GetActivityFeed/GetActivityFeed.php` that aggregates: new members (membership audit), new applications, application decisions. Implement minimally for v1: pull last 10 from a new view or unionised query. **If the union is non-trivial, scope it down to "last 10 applications" only and leave a TODO comment for full activity** — the widget itself is unblocked.
 
 For each widget, write a unit test that asserts:
+
 - `id()`, `category()`, `defaultSpan()`, `minRole()`, `module()` return the spec values
 - `data()` returns the expected shape (mock the dependency)
 
@@ -1910,6 +1925,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.fi" commit -m "Add(infra/da
 ## Task 12: Platform widgets — GSA-only
 
 **Files:**
+
 - Create: `src/Infrastructure/Dashboard/PlatformWidgets/TenantsKpiWidget.php`
 - Create: `src/Infrastructure/Dashboard/PlatformWidgets/PlatformUsersKpiWidget.php`
 - Create: `src/Infrastructure/Dashboard/PlatformWidgets/DbSizeKpiWidget.php`
@@ -1954,6 +1970,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.fi" commit -m "Add(infra/da
 ## Task 13: Module widgets — events module
 
 **Files (in module repo `c:/laragon/www/modules/events/`):**
+
 - Create: `backend/src/Frontend/Backstage/Widgets/EventsKpiWidget.php`
 - Create: `backend/src/Frontend/Backstage/Widgets/UpcomingEventsListWidget.php`
 - Modify: `backend/bindings.php` (register the 2 widgets)
@@ -2100,6 +2117,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.fi" commit -m "Add(events):
 ## Task 14: Module widgets — projects module
 
 **Files (in module repo `c:/laragon/www/modules/projects/`):**
+
 - Create: `backend/src/Frontend/Backstage/Widgets/ProjectsKpiWidget.php`
 - Modify: `backend/bindings.php`
 
@@ -2122,6 +2140,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.fi" commit -m "Add(projects
 ## Task 15: Module widgets — forum module (6 widgets)
 
 **Files (in module repo `c:/laragon/www/modules/forum/`):**
+
 - Create: `backend/src/Frontend/Backstage/Widgets/ReportsKpiWidget.php` (span 1)
 - Create: `backend/src/Frontend/Backstage/Widgets/PostsTodayKpiWidget.php` (span 1)
 - Create: `backend/src/Frontend/Backstage/Widgets/FlaggedUsersKpiWidget.php` (span 1)
@@ -2158,9 +2177,11 @@ git -c user.name="Dev Team" -c user.email="dev@daems.fi" commit -m "Add(forum): 
 ## Task 16: DI wiring — `bootstrap/app.php` (production)
 
 **Files:**
+
 - Modify: `bootstrap/app.php`
 
 The container must:
+
 1. Bind `WidgetRegistry` as a singleton.
 2. Bind all core widgets and platform widgets.
 3. Run module bindings AFTER `WidgetRegistry` is bound (so module widgets can register).
@@ -2295,6 +2316,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.fi" commit -m "Add(bootstra
 ## Task 17: DI wiring — `tests/Support/KernelHarness.php` (test container)
 
 **Files:**
+
 - Modify: `tests/Support/KernelHarness.php`
 
 Mirror the production wiring with `InMemoryUserDashboardRepository` instead of SQL.
@@ -2340,6 +2362,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.fi" commit -m "Add(harness)
 ## Task 18: API controller — `DashboardController`
 
 **Files:**
+
 - Create: `src/Infrastructure/Adapter/Api/Controller/DashboardController.php`
 - Modify: `routes/api.php` — add 4 routes
 - Test: `tests/E2E/DashboardLayoutE2ETest.php`
@@ -2645,6 +2668,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.fi" commit -m "Add(api): Da
 ## Task 19: Isolation test — cross-tenant layout isolation
 
 **Files:**
+
 - Create: `tests/Isolation/UserDashboardIsolationTest.php`
 
 - [ ] **Step 1: Write the test**
@@ -2719,13 +2743,14 @@ git -c user.name="Dev Team" -c user.email="dev@daems.fi" commit -m "Add(tests/is
 ## Task 20: i18n keys — widget labels + edit-mode chrome
 
 **Files:**
+
 - Modify: `lang/en_GB.php`
 - Modify: `lang/fi_FI.php`
 - Modify: `lang/sw_TZ.php`
 
 Keys to add (each in 3 locales):
 
-```
+```text
 backstage.dashboard.title                            Dashboard / Etusivu / Dashibodi (already exists — verify)
 backstage.dashboard.edit_mode                        Edit dashboard / Muokkaa / Hariri
 backstage.dashboard.edit_done                        Done / Valmis / Maliza
@@ -2771,10 +2796,12 @@ git -c user.name="Dev Team" -c user.email="dev@daems.fi" commit -m "Add(i18n): d
 ## Task 21: Frontend — rewrite `pages/index.php`
 
 **Files:**
+
 - Modify: `public/backstage/pages/index.php`
 - Create: `public/backstage/pages/partials/dashboard-grid.php`
 
 The new page:
+
 1. Fetches resolved layout via `ApiClient::get('/backstage/dashboard/layout')`.
 2. For each `LayoutEntry`, looks up the widget via the registry (server-side container access through `$GLOBALS['daems_backstage_container']` like the sidebar does in `layout.php`).
 3. Renders each widget into a grid cell with `grid-column: span N`.
@@ -2901,6 +2928,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.fi" commit -m "Refactor(bac
 ## Task 22: Vendor SortableJS
 
 **Files:**
+
 - Create: `public/backstage/assets/js/vendor/sortable.min.js`
 
 - [ ] **Step 1: Download SortableJS 1.15 (latest stable, MIT)**
@@ -2938,6 +2966,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.fi" commit -m "Add(assets):
 ## Task 23: Frontend — `dashboard-edit.js`
 
 **Files:**
+
 - Create: `public/backstage/assets/js/dashboard-edit.js`
 
 This script handles edit-mode interactions: drag-drop reorder, hide widget, save layout, reset, open catalog modal.
@@ -3111,6 +3140,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.fi" commit -m "Add(frontend
 ## Task 24: Edit-mode CSS
 
 **Files:**
+
 - Modify: `public/backstage/assets/css/daems-backstage.css`
 
 Add CSS for: `.dashboard-grid`, `.dashboard-cell`, `.dashboard-cell__handle`, `.dashboard-cell__remove`, `.dashboard-add-widget`, `.dashboard-reset`, `.dashboard-catalog-modal*`.
@@ -3278,6 +3308,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.fi" commit -m "Add(css): da
 ## Task 25: Backstage proxy handler
 
 **Files:**
+
 - Create: `public/backstage/api/dashboard.php`
 
 This proxies `/api/backstage/dashboard/*` from the tenant frontend (society) to the platform's `/api/v1/backstage/dashboard/*` via `ApiClient`.
@@ -3375,6 +3406,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.fi" commit -m "Add(backstag
 ## Task 26: Decommission `/backstage/stats` page-level usage
 
 **Files:**
+
 - Modify: `public/backstage/pages/index.php` (already done in Task 21 — verify the old `ApiClient::get('/backstage/stats')` line is gone)
 - Possibly modify: `routes/api.php` (only if no other consumers)
 
@@ -3385,6 +3417,7 @@ grep -rn "backstage/stats" --include="*.php" --include="*.js" .
 ```
 
 Expected output should now show ONLY:
+
 - `routes/api.php` (the route definition)
 - Possibly some test stubs
 

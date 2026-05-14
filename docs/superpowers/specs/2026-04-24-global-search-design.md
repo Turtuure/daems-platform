@@ -7,6 +7,7 @@
 ## Goal
 
 Ship a single search bar that finds content across the platform:
+
 - **Public surfaces**: events, projects, forum topics, insights
 - **Backstage (admin)**: everything above + members + drafts/unpublished rows
 
@@ -35,7 +36,7 @@ One canonical backend; two frontends (public + backstage) sharing one typeahead 
 
 ### Platform (clean architecture)
 
-```
+```text
 src/Domain/Search/
     SearchHit.php                      # unified result value object
     SearchRepositoryInterface.php
@@ -51,7 +52,7 @@ src/Infrastructure/Adapter/Api/Controller/
 
 ### Routes (platform)
 
-```
+```text
 GET /api/v1/search
     ?q={term}
     &type={all|events|projects|forum|insights}
@@ -70,7 +71,7 @@ GET /api/v1/backstage/search
 
 ### Routes & files (daem-society)
 
-```
+```text
 public/
   index.php                              # add routes: /search, /backstage/search, /api/search, /api/backstage/search
   pages/
@@ -150,6 +151,7 @@ interface SearchRepositoryInterface {
 ### `SearchController::index`
 
 Thin controller:
+
 - Parse `q`, `type`, `limit`
 - Detect backstage route vs public (two separate controller methods keep routing simple: `public(Request)` and `backstage(Request)`)
 - On backstage: verify auth middleware already ran (route config), read acting user
@@ -159,7 +161,7 @@ Thin controller:
 
 ## Data flow — example "summer" on public
 
-```
+```text
 Browser (top-nav search overlay)
   │ user types "summer", 300 ms debounce
   ▼

@@ -19,6 +19,7 @@
 ## File Structure
 
 **Created — Database migrations:**
+
 - `database/migrations/019_create_tenants_and_tenant_domains.sql`
 - `database/migrations/020_add_is_platform_admin_to_users.sql`
 - `database/migrations/021_backfill_is_platform_admin_from_role.sql`
@@ -27,6 +28,7 @@
 - `database/migrations/024_drop_users_role_column.sql`
 
 **Created — Domain:**
+
 - `src/Domain/Tenant/Tenant.php`
 - `src/Domain/Tenant/TenantId.php`
 - `src/Domain/Tenant/TenantSlug.php`
@@ -37,10 +39,12 @@
 - `src/Domain/Tenant/TenantNotFoundException.php`
 
 **Created — Application:**
+
 - `src/Application/UseCase/Auth/GetAuthMe/GetAuthMe.php`
 - `src/Application/UseCase/Auth/GetAuthMe/GetAuthMeOutput.php`
 
 **Created — Infrastructure:**
+
 - `src/Infrastructure/Adapter/Persistence/Sql/SqlTenantRepository.php`
 - `src/Infrastructure/Adapter/Persistence/Sql/SqlUserTenantRepository.php`
 - `src/Infrastructure/Tenant/HostTenantResolver.php`
@@ -48,6 +52,7 @@
 - `config/tenant-fallback.php`
 
 **Modified:**
+
 - `src/Domain/Auth/ActingUser.php` — new shape (isPlatformAdmin, activeTenant, roleInActiveTenant)
 - `src/Domain/User/Role.php` — **DELETED** (replaced by `UserTenantRole` in Tenant namespace)
 - `src/Infrastructure/Framework/Http/Middleware/AuthMiddleware.php` — load role from user_tenants, handle `X-Daems-Tenant`
@@ -59,6 +64,7 @@
 - `docs/decisions.md` — append ADR-014
 
 **Deleted:**
+
 - `src/Domain/User/Role.php` (in Task 12)
 
 ---
@@ -66,6 +72,7 @@
 ## Task 1: Migration 019 — tenants + tenant_domains with seed
 
 **Files:**
+
 - Create: `database/migrations/019_create_tenants_and_tenant_domains.sql`
 - Test: `tests/Integration/Migration/Migration019Test.php`
 
@@ -191,9 +198,11 @@ Expected: PASS (5 tests).
 Run: `mysql -u root daems_db < /c/laragon/www/daems-platform/database/migrations/019_create_tenants_and_tenant_domains.sql`
 
 Verify:
+
 ```bash
 mysql -u root daems_db -e "SELECT slug, name FROM tenants;"
 ```
+
 Expected: two rows (daems, sahegroup).
 
 - [ ] **Step 1.6: Commit**
@@ -210,6 +219,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.org" commit -m "Feat(db): m
 Reusable base class for all migration tests.
 
 **Files:**
+
 - Create: `tests/Integration/MigrationTestCase.php`
 
 - [ ] **Step 2.1: Write MigrationTestCase**
@@ -309,6 +319,7 @@ abstract class MigrationTestCase extends TestCase
 - [ ] **Step 2.2: Add test MySQL db creation note to docs/setup.md**
 
 Append to `docs/setup.md`:
+
 ```markdown
 ## Test database
 
@@ -320,7 +331,8 @@ mysql -u root -e "CREATE DATABASE IF NOT EXISTS daems_db_test CHARACTER SET utf8
 ```
 
 The `MigrationTestCase` base class drops all tables between tests.
-```
+
+```text
 
 - [ ] **Step 2.3: Create the test database**
 
@@ -338,6 +350,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.org" commit -m "Tests: add 
 ## Task 3: Migration 020 — is_platform_admin + audit table + trigger
 
 **Files:**
+
 - Create: `database/migrations/020_add_is_platform_admin_to_users.sql`
 - Test: `tests/Integration/Migration/Migration020Test.php`
 
@@ -470,6 +483,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.org" commit -m "Feat(db): m
 ## Task 4: Migration 021 — backfill is_platform_admin from role
 
 **Files:**
+
 - Create: `database/migrations/021_backfill_is_platform_admin_from_role.sql`
 - Test: `tests/Integration/Migration/Migration021Test.php`
 
@@ -530,6 +544,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.org" commit -m "Feat(db): m
 ## Task 5: Migration 022 — create user_tenants pivot
 
 **Files:**
+
 - Create: `database/migrations/022_create_user_tenants_pivot.sql`
 - Test: `tests/Integration/Migration/Migration022Test.php`
 
@@ -615,6 +630,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.org" commit -m "Feat(db): m
 All existing users get `tenant='daems'` (since everything was single-tenant); their per-tenant role = their old `users.role` (except GSA which goes to `registered` since GSA is now a global flag, not a tenant role).
 
 **Files:**
+
 - Create: `database/migrations/023_backfill_user_tenants_from_users_role.sql`
 - Test: `tests/Integration/Migration/Migration023Test.php`
 
@@ -699,6 +715,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.org" commit -m "Feat(db): m
 **Caution:** This must run AFTER code has been updated to read `user_tenants.role` everywhere. Order in this plan puts code changes in Tasks 8–18; this migration becomes the last before middleware tasks.
 
 **Files:**
+
 - Create: `database/migrations/024_drop_users_role_column.sql`
 - Test: `tests/Integration/Migration/Migration024Test.php`
 
@@ -758,6 +775,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.org" commit -m "Feat(db): m
 ## Task 8: Domain — TenantId VO
 
 **Files:**
+
 - Create: `src/Domain/Tenant/TenantId.php`
 - Test: `tests/Unit/Domain/Tenant/TenantIdTest.php`
 
@@ -802,6 +820,7 @@ final class TenantIdTest extends TestCase
 - [ ] **Step 8.2: Write the VO**
 
 Check first if `Uuid7Id` base class exists:
+
 ```bash
 ls /c/laragon/www/daems-platform/src/Domain/Shared/ValueObject/
 ```
@@ -839,6 +858,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.org" commit -m "Feat(domain
 ## Task 9: Domain — TenantSlug VO
 
 **Files:**
+
 - Create: `src/Domain/Tenant/TenantSlug.php`
 - Test: `tests/Unit/Domain/Tenant/TenantSlugTest.php`
 
@@ -943,6 +963,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.org" commit -m "Feat(domain
 Bundle three small classes together.
 
 **Files:**
+
 - Create: `src/Domain/Tenant/UserTenantRole.php`
 - Create: `src/Domain/Tenant/Tenant.php`
 - Create: `src/Domain/Tenant/TenantDomain.php`
@@ -986,6 +1007,7 @@ enum UserTenantRole: string
 ```
 
 Test:
+
 ```php
 <?php
 
@@ -1053,6 +1075,7 @@ final readonly class TenantDomain
 ```
 
 Test:
+
 ```php
 <?php
 
@@ -1116,6 +1139,7 @@ final readonly class Tenant
 ```
 
 Test:
+
 ```php
 <?php
 
@@ -1159,6 +1183,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.org" commit -m "Feat(domain
 ## Task 11: Domain — Repository interfaces + TenantNotFoundException
 
 **Files:**
+
 - Create: `src/Domain/Tenant/TenantRepositoryInterface.php`
 - Create: `src/Domain/Tenant/UserTenantRepositoryInterface.php`
 - Create: `src/Domain/Tenant/TenantNotFoundException.php`
@@ -1250,6 +1275,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.org" commit -m "Feat(domain
 This is a wide refactor. Every file that imports `Daems\Domain\User\Role` must change.
 
 **Files:**
+
 - Delete: `src/Domain/User/Role.php`
 - Modify: every file that imports `Daems\Domain\User\Role`
 
@@ -1262,6 +1288,7 @@ List every file; each needs updating.
 - [ ] **Step 12.2: For each usage — apply replacement pattern**
 
 **Pattern A — tenant-scoped role check:**
+
 ```php
 // Before:
 use Daems\Domain\User\Role;
@@ -1273,6 +1300,7 @@ if ($actingUser->roleInActiveTenant === UserTenantRole::Admin) { ... }
 ```
 
 **Pattern B — GSA check (was `Role::GlobalSystemAdministrator`):**
+
 ```php
 // Before:
 if ($user->role === Role::GlobalSystemAdministrator) { ... }
@@ -1282,6 +1310,7 @@ if ($actingUser->isPlatformAdmin()) { ... }
 ```
 
 **Pattern C — "isAdmin" (admin OR GSA):**
+
 ```php
 // Before:
 if (in_array($user->role, [Role::Admin, Role::GlobalSystemAdministrator], true)) { ... }
@@ -1293,6 +1322,7 @@ if ($actingUser->isAdminIn($actingUser->activeTenant)) { ... }
 - [ ] **Step 12.3: Update User entity**
 
 In `src/Domain/User/User.php`:
+
 - Remove `role` field
 - Add `isPlatformAdmin: bool` field
 
@@ -1301,11 +1331,13 @@ In `src/Domain/User/UserRepositoryInterface.php`: no signature changes (role no 
 - [ ] **Step 12.4: Update SqlUserRepository**
 
 In `src/Infrastructure/Adapter/Persistence/Sql/SqlUserRepository.php`:
+
 - SQL SELECTs: remove `role`, add `is_platform_admin`
 - User hydration: remove role, add isPlatformAdmin
 - If SqlUserRepository stores user data outside what User entity has, move to a separate DTO
 
 Specific diff patterns:
+
 ```sql
 -- Before:
 SELECT id, name, email, password_hash, date_of_birth, role, created_at FROM users WHERE id = ?
@@ -1347,6 +1379,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.org" commit -m "Refactor: r
 ## Task 13: Update ActingUser
 
 **Files:**
+
 - Modify: `src/Domain/Auth/ActingUser.php`
 - Test: `tests/Unit/Domain/Auth/ActingUserTest.php`
 
@@ -1490,6 +1523,7 @@ new ActingUser(
 ```
 
 Most construction sites are in:
+
 - `AuthMiddleware` (will be updated in Task 16)
 - Test helpers (update as encountered)
 
@@ -1508,6 +1542,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.org" commit -m "Refactor: A
 ## Task 14: SqlTenantRepository
 
 **Files:**
+
 - Create: `src/Infrastructure/Adapter/Persistence/Sql/SqlTenantRepository.php`
 - Test: `tests/Integration/Persistence/Sql/SqlTenantRepositoryTest.php`
 
@@ -1665,6 +1700,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.org" commit -m "Feat(infra)
 ## Task 15: SqlUserTenantRepository
 
 **Files:**
+
 - Create: `src/Infrastructure/Adapter/Persistence/Sql/SqlUserTenantRepository.php`
 - Test: `tests/Integration/Persistence/Sql/SqlUserTenantRepositoryTest.php`
 
@@ -1822,6 +1858,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.org" commit -m "Feat(infra)
 ## Task 16: HostTenantResolver + config/tenant-fallback.php
 
 **Files:**
+
 - Create: `config/tenant-fallback.php`
 - Create: `src/Infrastructure/Tenant/HostTenantResolver.php`
 - Test: `tests/Unit/Infrastructure/Tenant/HostTenantResolverTest.php`
@@ -1969,6 +2006,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.org" commit -m "Feat(infra)
 ## Task 17: TenantContextMiddleware
 
 **Files:**
+
 - Create: `src/Infrastructure/Framework/Http/Middleware/TenantContextMiddleware.php`
 - Test: `tests/Unit/Framework/Http/Middleware/TenantContextMiddlewareTest.php`
 
@@ -2085,6 +2123,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.org" commit -m "Feat(http):
 Add `X-Daems-Tenant` override handling + load `user_tenants.role` for `ActingUser`.
 
 **Files:**
+
 - Modify: `src/Infrastructure/Framework/Http/Middleware/AuthMiddleware.php`
 - Test: `tests/Unit/Framework/Http/Middleware/AuthMiddlewareTest.php` (update)
 
@@ -2281,6 +2320,7 @@ composer analyse
 ## Task 20: Create GetAuthMe use case + controller + route
 
 **Files:**
+
 - Create: `src/Application/UseCase/Auth/GetAuthMe/GetAuthMe.php`
 - Create: `src/Application/UseCase/Auth/GetAuthMe/GetAuthMeOutput.php`
 - Modify: an auth controller (e.g. `src/Infrastructure/Adapter/Api/Controller/AuthController.php`)
@@ -2396,6 +2436,7 @@ public function me(Request $req): Response
 - [ ] **Step 20.4: Register route**
 
 In `routes/api.php`:
+
 ```php
 $router->get('/api/v1/auth/me', static function (Request $req) use ($container): Response {
     return $container->make(AuthController::class)->me($req);
@@ -2468,6 +2509,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.org" commit -m "Feat(api): 
 Every route in `routes/api.php` must have `TenantContextMiddleware` as its first middleware.
 
 **Files:**
+
 - Modify: `routes/api.php`
 
 - [ ] **Step 21.1: Read current routes**
@@ -2491,6 +2533,7 @@ $router->get('/api/v1/projects', ..., [TenantContextMiddleware::class, AuthMiddl
 ```
 
 Add `use` import at the top:
+
 ```php
 use Daems\Infrastructure\Framework\Http\Middleware\TenantContextMiddleware;
 ```
@@ -2515,6 +2558,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.org" commit -m "Feat(http):
 ## Task 22: Documentation updates
 
 **Files:**
+
 - Modify: `docs/api.md`
 - Modify: `docs/decisions.md`
 - Modify: `docs/architecture.md`
@@ -2556,6 +2600,7 @@ Replace or extend the high-level architecture diagram with the multi-tenant view
 - [ ] **Step 22.4: Update database.md**
 
 Add sections for:
+
 - `tenants` table
 - `tenant_domains` table
 - `user_tenants` table

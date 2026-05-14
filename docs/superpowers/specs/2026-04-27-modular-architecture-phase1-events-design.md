@@ -5,6 +5,7 @@
 **Scope:** Extract the Events domain (Event + EventProposal + EventRegistration) from `daems-platform` core into a self-contained module `modules/events/` (the `dp-events` git repo), following the manifest convention proven by the Insights pilot, the Forum extraction (completed 2026-04-27, 943/943 tests green), and the Projects extraction design (parallel work, design committed 2026-04-27 — `dbfc1de`/`6c25c8f`). Zero user-visible change — Events must work exactly as it does today after the move.
 
 **Foundation already shipped (Insights pilot + Forum + Projects design, branch `dev`):**
+
 - `module.json` schema + `ModuleRegistry` boot-time loader
 - Composer runtime autoloader extension for `DaemsModule\<Name>\` namespaces
 - `daem-society/public/index.php` module-router block (`/<module>/...`, `/backstage/<module>/...`, `/modules/<module>/assets/...`)
@@ -76,12 +77,14 @@ Forum extraction (commits `001104d…0b9fb98` in daems-platform; `bcda770…b72f
 3. **Task 9.5 (NEW infra commit on daems-platform):** add `DaemsModule\Events\` + `DaemsModule\Events\Tests\` to `composer.json` `autoload-dev`, add `../modules/events/backend/src` to `phpstan.neon` `paths`, run `composer dump-autoload`. Single commit on daems-platform `dev`. Without this, PHPStan + autoloader can't see the module.
 
 4. **Module migration ALTERs on core tables need conditional guards** (proven in Forum's `forum_006_extend_dismissals_enum_forum_report.sql`):
+
    ```sql
    SET @t := (SELECT COUNT(*) FROM information_schema.tables
               WHERE table_schema = DATABASE() AND table_name = 'admin_application_dismissals');
    SET @sql := IF(@t > 0, 'ALTER TABLE admin_application_dismissals ...', 'DO 0');
    PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
    ```
+
    Same guard for the `06N_*` schema_migrations rename data-fix.
 
 5. **Migration numbering (data-fix):** new core migration `database/migrations/0NN_rename_event_migrations_in_schema_migrations_table.sql` — idempotent, conditional, renames the existing `*event*` rows in `schema_migrations` table from old → new filenames so dev DBs don't re-run them. Number to be assigned during plan (one above the highest existing migration at extraction time, e.g. `067` if Projects shipped `066`).
@@ -89,6 +92,7 @@ Forum extraction (commits `001104d…0b9fb98` in daems-platform; `bcda770…b72f
 6. **TDD-controller-extraction (Task 10):** use Reflection-based signature tests as Forum's Task 10/11 did. Verify constructor parameter list, method names, parameter types, return types BEFORE extracting body. Catches constructor-arg-mismatch bugs.
 
 7. **Production-container smoke** mandatory after Task 13 + every Wave E task (T21–T25). Pattern:
+
    ```php
    $kernel = require __DIR__ . '/bootstrap/app.php';
    $ref = new \ReflectionObject($kernel);
@@ -98,6 +102,7 @@ Forum extraction (commits `001104d…0b9fb98` in daems-platform; `bcda770…b72f
        $container->make($fqcn); // assert no TypeError
    }
    ```
+
    Catches DI wiring drift the moment legacy code is removed.
 
 8. **`composer test:all` exceeds 600s**. Run suites separately via `vendor/bin/phpunit --testsuite=Unit|Integration|Isolation|E2E` to bypass `COMPOSER_PROCESS_TIMEOUT`. Plan Task 29 verification gate enforces this.
@@ -114,7 +119,7 @@ Forum extraction (commits `001104d…0b9fb98` in daems-platform; `bcda770…b72f
 
 #### Domain layer (7 files — MOVES, unlike Forum/Projects)
 
-```
+```text
 src/Domain/Event/Event.php
 src/Domain/Event/EventId.php
 src/Domain/Event/EventProposal.php
@@ -123,13 +128,14 @@ src/Domain/Event/EventProposalRepositoryInterface.php
 src/Domain/Event/EventRegistration.php
 src/Domain/Event/EventRepositoryInterface.php
 ```
+
 → `modules/events/backend/src/Domain/{Event,EventId,EventProposal,EventProposalId,EventProposalRepositoryInterface,EventRegistration,EventRepositoryInterface}.php`
 
 **Namespace rewrite:** `Daems\Domain\Event\*` → `DaemsModule\Events\Domain\*`. ALL references in core src/ + tests/ + bootstrap/ + routes/ change to the new namespace (verified zero outside-Event-folder refs by grep). Module's bindings.php binds `DaemsModule\Events\Domain\EventRepositoryInterface` etc. directly (no core interface to satisfy).
 
 #### Application/Event public use cases (8 dirs, ~21 files)
 
-```
+```text
 src/Application/Event/GetEvent/                       (use case + Input + Output)
 src/Application/Event/GetEventBySlugForLocale/        ...
 src/Application/Event/ListEvents/
@@ -139,13 +145,14 @@ src/Application/Event/SubmitEventProposal/
 src/Application/Event/UnregisterFromEvent/
 src/Application/Event/UpdateEvent/                    (NB: there's also a Backstage UpdateEvent — verify during plan)
 ```
+
 → `modules/events/backend/src/Application/`
 
 **Namespace rewrite:** `Daems\Application\Event\*` → `DaemsModule\Events\Application\*`.
 
 #### Application/Backstage admin use cases (15 sibling dirs, ~41 files — flat structure preserved)
 
-```
+```text
 src/Application/Backstage/ApproveEventProposal/
 src/Application/Backstage/ArchiveEvent/
 src/Application/Backstage/CreateEvent/
@@ -162,25 +169,28 @@ src/Application/Backstage/UpdateEvent/
 src/Application/Backstage/UpdateEventTranslation/
 src/Application/Backstage/UploadEventImage/
 ```
+
 → `modules/events/backend/src/Application/Backstage/<same-names>/` (flat, 15 sibling dirs at module's Backstage level, no double-folder umbrella).
 
 **Namespace rewrite:** `Daems\Application\Backstage\<UseCase>\*` → `DaemsModule\Events\Application\Backstage\<UseCase>\*`.
 
 #### SQL repositories (2 files)
 
-```
+```text
 src/Infrastructure/Adapter/Persistence/Sql/SqlEventRepository.php
 src/Infrastructure/Adapter/Persistence/Sql/SqlEventProposalRepository.php
 ```
+
 → `modules/events/backend/src/Infrastructure/{SqlEventRepository,SqlEventProposalRepository}.php`
 
 **Namespace rewrite:** `Daems\Infrastructure\Adapter\Persistence\Sql\*` → `DaemsModule\Events\Infrastructure\*`.
 
 #### Public controller (1 file → split into module's Controller dir)
 
-```
+```text
 src/Infrastructure/Adapter/Api/Controller/EventController.php
 ```
+
 → `modules/events/backend/src/Controller/EventController.php`
 
 **Namespace rewrite:** `Daems\Infrastructure\Adapter\Api\Controller\EventController` → `DaemsModule\Events\Controller\EventController`.
@@ -212,7 +222,7 @@ src/Infrastructure/Adapter/Api/Controller/EventController.php
 
 #### Tests (~30 files)
 
-```
+```text
 tests/Unit/Domain/Event/EventTest.php                                  (1 — moves with Domain)
 tests/Unit/Application/Event/RegisterForEventTest.php                  (1 — Application/Event)
 tests/Unit/Application/Backstage/{ArchiveEvent,CreateEvent,DeleteEventImage,
@@ -236,6 +246,7 @@ tests/E2E/EventsLocaleE2ETest.php                                      (1)
 tests/Support/Fake/InMemoryEventRepository.php                         (1 fake)
 tests/Support/Fake/InMemoryEventProposalRepository.php                 (1 fake)
 ```
+
 → `modules/events/backend/tests/{Unit,Integration,Isolation,E2E}/...` (mirror folder shape) + `modules/events/backend/tests/Support/{InMemoryEventRepository,InMemoryEventProposalRepository}.php`
 
 **Namespace rewrite:** `Daems\Tests\*` → `DaemsModule\Events\Tests\*` for all moved test files. All `use` statements importing `Daems\(Domain|Application|Infrastructure)\Event*` → `DaemsModule\Events\(Domain|Application|Infrastructure)\*`.
@@ -244,7 +255,7 @@ tests/Support/Fake/InMemoryEventProposalRepository.php                 (1 fake)
 
 #### Public pages (`daem-society/public/pages/events/`)
 
-```
+```text
 cta.php
 data/                  (data files — inventory exact contents during plan)
 detail/                (detail sub-includes — inventory exact contents during plan)
@@ -254,28 +265,31 @@ hero.php
 index.php              (events listing page)
 propose.php            (member event-proposal submit form)
 ```
+
 → `modules/events/frontend/public/{cta,detail,grid,hero,index,propose}.php` + sub-dirs.
 
 **`__DIR__` chrome rewrite (Wave F pattern):** site-chrome includes (`top-nav.php`, `footer.php`, `pages/errors/404.php`) become `DAEMS_SITE_PUBLIC . '/...'`. Sibling includes (`hero.php`, `cta.php`, `grid.php` from same module dir) keep `__DIR__`. Sub-folder includes (`detail/<file>.php`) keep `__DIR__`.
 
 #### Backstage events admin (`daem-society/public/pages/backstage/events/`)
 
-```
+```text
 event-modal.css
 event-modal.js
 events-stats.js
 index.php
 upload-widget.js
 ```
+
 → `modules/events/frontend/backstage/index.php` (PHP) + `modules/events/frontend/assets/backstage/{event-modal.css,event-modal.js,events-stats.js,upload-widget.js}` (assets).
 
 #### Backstage event-proposals admin (`daem-society/public/pages/backstage/event-proposals/`)
 
-```
+```text
 index.php
 proposal-modal.css
 proposal-modal.js
 ```
+
 → `modules/events/frontend/backstage/event-proposals/index.php` (PHP) + `modules/events/frontend/assets/backstage/{proposal-modal.css,proposal-modal.js}` (assets).
 
 **Asset URL rewrite (in moved PHP files):** `<script src="/pages/backstage/events/<X>"></script>` → `<script src="/modules/events/assets/backstage/<X>"></script>`. Same for `<link href=>`.
@@ -403,6 +417,7 @@ After Wave E, all of these must be **deleted** (not stubbed):
 ### `daem-society/`
 
 Wave F **after** front-controller route updates land:
+
 - `public/pages/events/` (8 files + sub-dirs)
 - `public/pages/backstage/events/` (5 files)
 - `public/pages/backstage/event-proposals/` (3 files)
@@ -547,11 +562,13 @@ Every binding moved out of `bootstrap/app.php` MUST appear in module's `backend/
 ## 15. Plan task wave summary (preview — full plan in separate doc)
 
 **Wave A — module skeleton** (3 tasks, ~3 commits)
+
 - T1: `module.json` + README + `composer.json` (fresh repo) + `phpunit.xml.dist` + `.gitkeep`s
 - T2: data-fix migration `0NN_rename_event_migrations_in_schema_migrations_table.sql` in core
 - T3: stub `bindings.php` + `bindings.test.php` + `routes.php` (return-closure no-op)
 
 **Wave B — backend moves** (8 tasks, ~9 commits)
+
 - T4: move Domain (7 files + `Daems\Domain\Event` → `DaemsModule\Events\Domain`)
 - T5: move SQL repos
 - T6: move InMemory fakes + Domain unit tests
@@ -563,24 +580,28 @@ Every binding moved out of `bootstrap/app.php` MUST appear in module's `backend/
 - T11: move event migrations (event_001..007)
 
 **Wave C — wire-up** (3 tasks, ~3 commits)
+
 - T12: production `bindings.php` (full bindings, ~30 use cases + 2 controllers)
 - T13: test `bindings.test.php` (InMemory fakes + same closure shape)
 - T14: `routes.php` (22 routes, 7 public + 15 backstage)
 
 **Wave D — test moves** (4 tasks, ~4 commits)
+
 - T15: Unit/Application/Event tests
 - T16: Unit/Application/Backstage event tests (10 tests)
 - T17: Integration tests (5)
 - T18: Isolation (5) + E2E (5) tests
 
 **Wave E — core removals** (5 tasks, ~5 commits)
+
 - T19: Remove Event bindings from `bootstrap/app.php`
 - T20: Remove Event routes from `routes/api.php`
 - T21: Remove 13 Event methods from `BackstageController.php` + 2 Event image methods from `MediaController.php` + update `routes/api.php` inline closures to reference module's controller
 - T22: Remove Event bindings from `KernelHarness.php`
-- T23: Delete legacy Event src/* + tests/Support/Fake/InMemoryEvent*Repository.php
+- T23: Delete legacy Event src/*+ tests/Support/Fake/InMemoryEvent*Repository.php
 
 **Wave F — frontend** (5 tasks, ~5 commits) — **REGRESSION-PREVENTION ORDER**
+
 - T24: **FIRST** update `daem-society/public/index.php` front-controller routes (5 paths) to point at `$daemsKnownModules['events']` paths — single commit. Curl-smoke gate before T25.
 - T25: Move 8 public pages → `modules/events/frontend/public/`. `__DIR__` chrome rewrite to `DAEMS_SITE_PUBLIC`. Commit dp-events.
 - T26: Move 5 backstage events PHP + 3 backstage event-proposals PHP → `modules/events/frontend/backstage/`. Asset-URL rewrite. Commit dp-events.

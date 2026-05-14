@@ -39,6 +39,7 @@
 ## Task 1: Composer lock fix (daems-platform)
 
 **Files:**
+
 - Modify: `composer.json` (add `config.platform.php`)
 - Regenerate: `composer.lock` (via `composer update --with-all-dependencies`)
 
@@ -125,6 +126,7 @@ resolver to pick 8.1-compatible releases for all transitive deps."
 ## Task 2: MySQL service + checkout v5 in platform CI
 
 **Files:**
+
 - Modify: `.github/workflows/ci.yml` (replace entire file with the version below)
 
 Add a `mysql:8.4` service container, a `Wait for MySQL` step, a `Run migrations` step, and the test DB env vars on the PHPUnit step. Bump `actions/checkout@v4` → `@v5`.
@@ -215,6 +217,7 @@ jobs:
 ```
 
 Notes:
+
 - `apply_pending_migrations.php` reads connection details from hardcoded variables in the script (`$host = '127.0.0.1'`, etc.). The `env:` block on that step is informational — the script's defaults already match the service container. No script edits required for this plan.
 - The PHPUnit step uses the matrix-level `env:` block for `TEST_DB_*` so the integration tests' `getenv('TEST_DB_*')` calls resolve to the service container.
 
@@ -287,6 +290,7 @@ cd /c/laragon/www/daems-platform && \
 Expected: both matrix legs (`PHP 8.1` and `PHP 8.3`) finish with conclusion `success`. CI duration ~3-5 minutes per leg.
 
 If a leg fails:
+
 - `composer install` failure → revisit Task 1 (lock not actually fixed).
 - `Wait for MySQL` timeout → service container slow; bump retries to 30 → 60.
 - Migration failure → check the migration filename in the log; the issue is in the migration SQL, not the workflow.
@@ -354,6 +358,7 @@ cd /c/laragon/www/daems-platform && \
 ## Task 5: Add Playwright job + checkout v5 in society CI
 
 **Files:**
+
 - Modify: `.github/workflows/ci.yml` in `daem-society` repo (replace entire file)
 
 Add a second job `e2e` that runs only on PRs targeting main. Boots `php -S` and runs Playwright on chromium.
@@ -561,6 +566,7 @@ This is a single shell command per repo. Each modifies repo configuration on git
 Print this to the user verbatim:
 
 > About to apply branch protection to `main` in both repos. After this:
+>
 > - No direct pushes to `main` (PR required).
 > - PR cannot merge unless `PHP 8.1` and `PHP 8.3` checks are green.
 > - `enforce_admins: true` — even GSAs cannot bypass.
@@ -623,6 +629,7 @@ Expected: both print `["PHP 8.1","PHP 8.3"]`.
 - [ ] **Step 5: Final report**
 
 Report to the user:
+
 - Both PRs merged (with merge-commit SHAs).
 - Branch protection active on both `main`s.
 - CI matrix sizes (~3-5 min platform, ~30 s society test job + ~3-4 min e2e on PR-to-main).

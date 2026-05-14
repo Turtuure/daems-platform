@@ -98,6 +98,7 @@ Status-change POST handling (activate/suspend/terminate) on the Register tab sta
 ### 4.8 Backend — explicitly no change
 
 No modifications to:
+
 - `src/Application/Backstage/ListPendingApplications/*`
 - `src/Application/Backstage/DecideApplication/*`
 - `src/Application/Backstage/DismissApplication/*`
@@ -113,18 +114,22 @@ This is a frontend-only PR on the `daem-society` repo. No commits land in `daems
 ## 5. Files touched
 
 **daem-society (frontend) — modified:**
+
 - `public/pages/backstage/members/index.php` — wrap existing body in Register tabpanel, add tab bar, append Pending tabpanel with applications content, conditional POST handler dispatch.
 - `public/pages/backstage/layout.php` — remove Applications nav entries (sidebar + bottom-nav + command-palette), rename badge element, update fetch target binding.
 - `public/pages/backstage/index.php` (or wherever the dashboard pending-applications toast renders) — update "View applications" href.
 - `public/assets/css/daems-backstage.css` — add `.members-tabs`, `.members-tab`, `.members-tab__badge`, `.members-tab.is-active` rules colocated with the existing `.members-*` block. Use existing design-system tokens (`--surface-border`, `--brand-primary`, `--text-muted`).
 
 **daem-society (frontend) — replaced with redirect stub:**
+
 - `public/pages/backstage/applications/index.php` — body deleted, replaced with 302 redirect to `/backstage/members?tab=pending`.
 
 **daem-society (frontend) — deleted:**
+
 - `public/pages/backstage/applications/applications-stats.js` — moved to `public/pages/backstage/members/applications-stats.js` (filename kept; it pairs with the Pending-tab KPI strip and remains identifiable by its endpoint binding).
 
 **daem-society (frontend) — kept as-is:**
+
 - `public/api/backstage/applications.php` (proxy to backend) — unchanged.
 - `public/api/backstage/members.php` (proxy to backend) — unchanged.
 
@@ -140,6 +145,7 @@ This is a frontend-only PR on the `daem-society` repo. No commits land in `daems
 ### 6.2 New E2E test
 
 `tests/E2E/Backstage/MembersTabsE2ETest.php` (in daems-platform) verifying the **API contract** still holds — no UI tabs to test from PHP, but ensure:
+
 - `GET /api/v1/backstage/applications/pending` and `GET /api/v1/backstage/applications/pending-count` keep their shapes (covered by existing tests).
 - `GET /api/v1/backstage/members` keeps its shape.
 
@@ -165,6 +171,7 @@ Single PR on `daem-society`. If a regression appears, revert the PR — backend 
 ## 8. Open questions
 
 None at spec close. All design decisions resolved during brainstorming:
+
 - A: UI-only merge (no schema unification).
 - A: Single sidebar nav entry "Members" with badge (no dual entries).
 - A: Default tab = Register (no smart switching, no Pending-default).

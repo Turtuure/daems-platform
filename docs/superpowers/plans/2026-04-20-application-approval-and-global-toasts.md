@@ -17,6 +17,7 @@
 ## File Inventory
 
 **Migrations (new):**
+
 - `database/migrations/036_make_users_password_hash_nullable.sql`
 - `database/migrations/037_make_users_date_of_birth_nullable.sql`
 - `database/migrations/038_create_tenant_member_counters.sql`
@@ -24,6 +25,7 @@
 - `database/migrations/040_create_admin_application_dismissals.sql`
 
 **Domain (new):**
+
 - `src/Domain/Invite/UserInvite.php`
 - `src/Domain/Invite/InviteToken.php`
 - `src/Domain/Invite/UserInviteRepositoryInterface.php`
@@ -34,10 +36,12 @@
 - `src/Domain/Config/BaseUrlResolverInterface.php`
 
 **Domain (modified):**
+
 - `src/Domain/User/User.php` — `passwordHash` and `dateOfBirth` become nullable.
 - `src/Domain/User/UserRepositoryInterface.php` — add `createActivated(...)` for invite-based creation.
 
 **Infrastructure (new):**
+
 - `src/Infrastructure/Token/RandomTokenGenerator.php`
 - `src/Infrastructure/Config/EnvBaseUrlResolver.php`
 - `src/Infrastructure/Adapter/Persistence/Sql/SqlUserInviteRepository.php`
@@ -48,10 +52,12 @@
 - `src/Infrastructure/Adapter/Persistence/InMemory/InMemoryAdminApplicationDismissalRepository.php`
 
 **Infrastructure (modified):**
+
 - `src/Infrastructure/Adapter/Persistence/Sql/SqlUserRepository.php` — add `createActivated(...)`, allow NULL hydration.
 - `src/Infrastructure/Adapter/Persistence/InMemory/InMemoryUserRepository.php` — mirror.
 
 **Application use cases (new):**
+
 - `src/Application/Invite/IssueInvite/{IssueInvite.php, IssueInviteInput.php, IssueInviteOutput.php}`
 - `src/Application/Invite/RedeemInvite/{RedeemInvite.php, RedeemInviteInput.php, RedeemInviteOutput.php}`
 - `src/Application/Backstage/ActivateMember/MemberActivationService.php`
@@ -60,30 +66,36 @@
 - `src/Application/Backstage/ListPendingApplications/{ListPendingApplicationsForAdmin.php, ListPendingApplicationsForAdminInput.php, ListPendingApplicationsForAdminOutput.php}`
 
 **Application (modified):**
+
 - `src/Application/Backstage/DecideApplication/DecideApplication.php` — new dependencies, transactional approve path.
 - `src/Application/Backstage/DecideApplication/DecideApplicationOutput.php` — add `activatedUserId`, `inviteUrl`, `inviteExpiresAt`, `memberNumber`.
 - `src/Application/Auth/LoginUser/LoginUser.php` — reject NULL hash; clear dismissals on success.
 
 **HTTP (modified):**
+
 - `src/Infrastructure/Http/Controller/BackstageController.php` — add `listPendingForAdmin`, `dismissApplication`.
 - `src/Infrastructure/Http/Controller/AuthController.php` — add `redeemInvite`.
 - `routes/api.php` — wire new endpoints.
 
 **Wiring (modified):**
+
 - `bootstrap/app.php` — bind all new classes.
 - `tests/Support/KernelHarness.php` — bind InMemory variants.
 
 **Frontend daem-society (new):**
+
 - `sites/daem-society/public/pages/backstage/toasts.js`
 - `sites/daem-society/public/pages/backstage/toasts.css`
 - `sites/daem-society/public/pages/invite.php`
 
 **Frontend daem-society (modified):**
+
 - `sites/daem-society/public/pages/backstage/layout.php` — include toast module.
 - `sites/daem-society/public/pages/backstage/index.php` — remove inline toast block.
 - `sites/daem-society/public/pages/backstage/applications/index.php` — show invite-URL success toast, support `?highlight=` scroll.
 
 **Tests (new):**
+
 - `tests/Integration/Migration/Migration036Test.php` … `Migration040Test.php`
 - `tests/Unit/Application/Invite/IssueInviteTest.php`
 - `tests/Unit/Application/Invite/RedeemInviteTest.php`
@@ -113,6 +125,7 @@ Tasks 1–5 (migrations) must land before any Application-layer work. Tasks 6–
 ### Task 1: Migration 036 — make `users.password_hash` nullable
 
 **Files:**
+
 - Create: `database/migrations/036_make_users_password_hash_nullable.sql`
 - Create: `tests/Integration/Migration/Migration036Test.php`
 
@@ -181,6 +194,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.org" commit -m "Feat(auth):
 ### Task 2: Migration 037 — make `users.date_of_birth` nullable
 
 **Files:**
+
 - Create: `database/migrations/037_make_users_date_of_birth_nullable.sql`
 - Create: `tests/Integration/Migration/Migration037Test.php`
 
@@ -245,6 +259,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.org" commit -m "Feat(users)
 ### Task 3: Migration 038 — `tenant_member_counters` with backfill
 
 **Files:**
+
 - Create: `database/migrations/038_create_tenant_member_counters.sql`
 - Create: `tests/Integration/Migration/Migration038Test.php`
 
@@ -361,6 +376,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.org" commit -m "Feat(member
 ### Task 4: Migration 039 — `user_invites`
 
 **Files:**
+
 - Create: `database/migrations/039_create_user_invites.sql`
 - Create: `tests/Integration/Migration/Migration039Test.php`
 
@@ -441,6 +457,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.org" commit -m "Feat(invite
 ### Task 5: Migration 040 — `admin_application_dismissals`
 
 **Files:**
+
 - Create: `database/migrations/040_create_admin_application_dismissals.sql`
 - Create: `tests/Integration/Migration/Migration040Test.php`
 
@@ -516,6 +533,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.org" commit -m "Feat(toasts
 ### Task 6: Domain — Invite bounded context (entity + VO + repo interface)
 
 **Files:**
+
 - Create: `src/Domain/Invite/UserInvite.php`
 - Create: `src/Domain/Invite/InviteToken.php`
 - Create: `src/Domain/Invite/UserInviteRepositoryInterface.php`
@@ -624,6 +642,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.org" commit -m "Feat(invite
 ### Task 7: Domain — TenantMemberCounter + AdminApplicationDismissal + BaseUrlResolver
 
 **Files:**
+
 - Create: `src/Domain/Tenant/TenantMemberCounterRepositoryInterface.php`
 - Create: `src/Domain/Dismissal/AdminApplicationDismissal.php`
 - Create: `src/Domain/Dismissal/AdminApplicationDismissalRepositoryInterface.php`
@@ -726,6 +745,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.org" commit -m "Feat(domain
 ### Task 8: Domain User — nullable fields + `createActivated` contract
 
 **Files:**
+
 - Modify: `src/Domain/User/User.php`
 - Modify: `src/Domain/User/UserRepositoryInterface.php`
 - Modify: `src/Application/Auth/LoginUser/LoginUser.php` (defensive — property type change)
@@ -735,12 +755,14 @@ git -c user.name="Dev Team" -c user.email="dev@daems.org" commit -m "Feat(domain
 Edit `src/Domain/User/User.php`:
 
 Change constructor params:
+
 ```php
 private readonly ?string $passwordHash,
 private readonly ?string $dateOfBirth,
 ```
 
 Change getters:
+
 ```php
 public function passwordHash(): ?string { return $this->passwordHash; }
 public function dateOfBirth(): ?string { return $this->dateOfBirth; }
@@ -792,6 +814,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.org" commit -m "Refactor(us
 ### Task 9: Infrastructure — InMemory repositories
 
 **Files:**
+
 - Create: `src/Infrastructure/Adapter/Persistence/InMemory/InMemoryUserInviteRepository.php`
 - Create: `src/Infrastructure/Adapter/Persistence/InMemory/InMemoryTenantMemberCounterRepository.php`
 - Create: `src/Infrastructure/Adapter/Persistence/InMemory/InMemoryAdminApplicationDismissalRepository.php`
@@ -976,6 +999,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.org" commit -m "Feat(infra)
 ### Task 10: Infrastructure — Token generator + BaseUrlResolver + SQL repositories
 
 **Files:**
+
 - Create: `src/Infrastructure/Token/RandomTokenGenerator.php`
 - Create: `src/Infrastructure/Config/EnvBaseUrlResolver.php`
 - Create: `src/Infrastructure/Adapter/Persistence/Sql/SqlUserInviteRepository.php`
@@ -1243,6 +1267,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.org" commit -m "Feat(infra)
 ### Task 11: Use case — `IssueInvite`
 
 **Files:**
+
 - Create: `src/Application/Invite/IssueInvite/IssueInvite.php`
 - Create: `src/Application/Invite/IssueInvite/IssueInviteInput.php`
 - Create: `src/Application/Invite/IssueInvite/IssueInviteOutput.php`
@@ -1308,6 +1333,7 @@ Expected: class not found.
 - [ ] **Step 3: Create `IssueInviteInput` + `IssueInviteOutput`**
 
 `IssueInviteInput.php`:
+
 ```php
 <?php
 declare(strict_types=1);
@@ -1323,6 +1349,7 @@ final class IssueInviteInput
 ```
 
 `IssueInviteOutput.php`:
+
 ```php
 <?php
 declare(strict_types=1);
@@ -1410,6 +1437,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.org" commit -m "Feat(invite
 ### Task 12: Use case — `MemberActivationService`
 
 **Files:**
+
 - Create: `src/Application/Backstage/ActivateMember/MemberActivationService.php`
 - Create: `tests/Unit/Application/Backstage/MemberActivationServiceTest.php`
 
@@ -1568,6 +1596,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.org" commit -m "Feat(member
 ### Task 13: Use case — `SupporterActivationService`
 
 **Files:**
+
 - Create: `src/Application/Backstage/ActivateSupporter/SupporterActivationService.php`
 - Create: `tests/Unit/Application/Backstage/SupporterActivationServiceTest.php`
 
@@ -1693,6 +1722,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.org" commit -m "Feat(suppor
 ### Task 14: Rework `DecideApplication` approve path
 
 **Files:**
+
 - Modify: `src/Application/Backstage/DecideApplication/DecideApplication.php`
 - Modify: `src/Application/Backstage/DecideApplication/DecideApplicationOutput.php`
 - Create: `tests/Unit/Application/Backstage/DecideApplicationApproveMemberTest.php`
@@ -1971,6 +2001,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.org" commit -m "Feat(backst
 ### Task 15: Use case — `DismissApplication`
 
 **Files:**
+
 - Create: `src/Application/Backstage/DismissApplication/DismissApplication.php`
 - Create: `src/Application/Backstage/DismissApplication/DismissApplicationInput.php`
 - Create: `tests/Unit/Application/Backstage/DismissApplicationTest.php`
@@ -2030,6 +2061,7 @@ Expected: class not found.
 - [ ] **Step 3: Create input + use case**
 
 `DismissApplicationInput.php`:
+
 ```php
 <?php
 declare(strict_types=1);
@@ -2047,6 +2079,7 @@ final class DismissApplicationInput
 ```
 
 `DismissApplication.php`:
+
 ```php
 <?php
 declare(strict_types=1);
@@ -2105,6 +2138,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.org" commit -m "Feat(backst
 ### Task 16: Use case — `ListPendingApplicationsForAdmin`
 
 **Files:**
+
 - Create: `src/Application/Backstage/ListPendingApplications/ListPendingApplicationsForAdmin.php`
 - Create: `src/Application/Backstage/ListPendingApplications/ListPendingApplicationsForAdminInput.php`
 - Create: `src/Application/Backstage/ListPendingApplications/ListPendingApplicationsForAdminOutput.php`
@@ -2229,6 +2263,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.org" commit -m "Feat(backst
 ### Task 17: Use case — `RedeemInvite`
 
 **Files:**
+
 - Create: `src/Application/Auth/RedeemInvite/RedeemInvite.php`
 - Create: `src/Application/Auth/RedeemInvite/RedeemInviteInput.php`
 - Create: `src/Application/Auth/RedeemInvite/RedeemInviteOutput.php`
@@ -2237,6 +2272,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.org" commit -m "Feat(backst
 - [ ] **Step 1: Write failing test — happy path, used-twice, expired, unknown-token**
 
 Key assertions:
+
 - valid token + password ≥ 8 chars + ≤ 72 chars → sets `users.password_hash`, marks invite used_at, returns success with the activated user.
 - token with `used_at != null` → `ValidationException('invite_used')`.
 - token past `expires_at` → `ValidationException('invite_expired')`.
@@ -2345,6 +2381,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.org" commit -m "Feat(invite
 ### Task 18: `LoginUser` — reject NULL hash + clear dismissals on success
 
 **Files:**
+
 - Modify: `src/Application/Auth/LoginUser/LoginUser.php`
 - Create: `tests/Unit/Application/Auth/LoginUserNullHashTest.php`
 
@@ -2425,6 +2462,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.org" commit -m "Feat(auth):
 ### Task 19: HTTP endpoints
 
 **Files:**
+
 - Modify: `src/Infrastructure/Http/Controller/BackstageController.php`
 - Modify: `src/Infrastructure/Http/Controller/AuthController.php`
 - Modify: `routes/api.php`
@@ -2514,6 +2552,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.org" commit -m "Feat(http):
 ### Task 20: DI wiring — bootstrap/app.php + KernelHarness
 
 **Files:**
+
 - Modify: `bootstrap/app.php`
 - Modify: `tests/Support/KernelHarness.php`
 
@@ -2537,6 +2576,7 @@ For every new class in Tasks 6–19, add a binding. Use the existing container's
 - [ ] **Step 2: Update `tests/Support/KernelHarness.php`**
 
 For every binding above, provide the InMemory or fake equivalent:
+
 - `TokenGeneratorInterface` → deterministic test generator (counter-based)
 - `BaseUrlResolverInterface` → constant `'https://test.local'`
 - All three new repos → InMemory variants
@@ -2546,23 +2586,29 @@ For every binding above, provide the InMemory or fake equivalent:
 - [ ] **Step 3: Sanity-grep**
 
 Run (via Bash or Grep):
-```
+
+```text
 Grep for: SqlUserInviteRepository, SqlTenantMemberCounterRepository, SqlAdminApplicationDismissalRepository,
 IssueInvite, MemberActivationService, SupporterActivationService, DismissApplication,
 ListPendingApplicationsForAdmin, RedeemInvite
 ```
+
 Every symbol must appear in BOTH `bootstrap/app.php` and `tests/Support/KernelHarness.php`.
 
 - [ ] **Step 4: Boot the server smoke-check**
 
 Run (from `C:\laragon\www\daems-platform`):
-```
+
+```text
 php -S 127.0.0.1:8090 -t public public/index.php
 ```
+
 In another shell:
-```
+
+```text
 curl -i http://127.0.0.1:8090/api/v1/backstage/applications/pending-count
 ```
+
 Expected: 401 (no auth) — the route is registered and the container resolves everything without throwing. Any 500 is a wiring bug; fix before committing.
 
 - [ ] **Step 5: Run PHPStan + full unit suite**
@@ -2582,6 +2628,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.org" commit -m "Wire: DI bi
 ### Task 21: Integration tests (real DB)
 
 **Files:**
+
 - Create: `tests/Integration/Application/MemberActivationIntegrationTest.php`
 - Create: `tests/Integration/Application/InviteRedemptionIntegrationTest.php`
 
@@ -2590,6 +2637,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.org" commit -m "Wire: DI bi
 Extends `MigrationTestCase`. In `setUp` run migrations to 40, seed a tenant + admin user + `user_tenants(role='admin')` + a pending member application.
 
 Test method: executes the real (PDO-backed) `DecideApplication` approve path via the real repositories + real `PdoTransactionManager`. Asserts:
+
 - `users` row exists with `member_number = '00001'` (first for this tenant), `password_hash IS NULL`
 - `user_tenants` row with `role='member'`
 - `member_status_audit` row with `reason='application_approved'`
@@ -2603,6 +2651,7 @@ Also add a second test that approves two applications back-to-back and asserts t
 - [ ] **Step 2: `InviteRedemptionIntegrationTest`**
 
 Seeds a user + user_invite row, runs `RedeemInvite::execute`, asserts:
+
 - `users.password_hash` is bcrypt-verifiable against the new password
 - `user_invites.used_at` is set
 - Second redemption attempt throws `ValidationException('invite_used')`
@@ -2624,6 +2673,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.org" commit -m "Test(int): 
 ### Task 22: Isolation tests
 
 **Files:**
+
 - Create: `tests/Isolation/ApplicationApprovalTenantIsolationTest.php`
 - Create: `tests/Isolation/AdminDismissalTenantIsolationTest.php`
 
@@ -2654,6 +2704,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.org" commit -m "Test(iso): 
 ### Task 23: E2E tests (KernelHarness)
 
 **Files:**
+
 - Create: `tests/E2E/Backstage/ApproveAndInviteFlowTest.php`
 - Create: `tests/E2E/Backstage/PendingCountAndDismissTest.php`
 - Create: `tests/E2E/Auth/InviteRedeemEndpointTest.php`
@@ -2695,10 +2746,12 @@ git -c user.name="Dev Team" -c user.email="dev@daems.org" commit -m "Test(e2e): 
 ### Task 24: Frontend — global toast JS/CSS + layout integration + dashboard cleanup
 
 **Architecture note:** daem-society's JS cannot call the platform API directly — auth tokens live in the PHP session and all backend calls go through server-side `ApiClient` (see `public/api/*.php` proxies, `public/pages/backstage/applications/index.php`, etc.). The toast system follows the same pattern:
+
 1. **Initial load data:** `layout.php` calls `ApiClient::get('/backstage/applications/pending-count')` server-side and injects the JSON into `<script>window.DAEMS_PENDING_APPS = ...</script>`.
 2. **Dismiss action:** a new PHP proxy at `public/api/backstage/dismiss.php` receives the JS `fetch` and relays it through `ApiClient::post` — same pattern as existing `public/api/forum/reply.php`, etc.
 
 **Files:**
+
 - Create: `C:/laragon/www/sites/daem-society/public/pages/backstage/toasts.js`
 - Create: `C:/laragon/www/sites/daem-society/public/pages/backstage/toasts.css`
 - Create: `C:/laragon/www/sites/daem-society/public/api/backstage/dismiss.php`
@@ -2852,11 +2905,13 @@ if ($__backstageRole === 'global_system_administrator' || $__backstageRole === '
 ```
 
 In the `<head>`:
+
 ```php
 <link rel="stylesheet" href="/pages/backstage/toasts.css">
 ```
 
 Just before `</body>`:
+
 ```php
 <script>window.DAEMS_PENDING_APPS = <?= json_encode($__pendingApps, JSON_UNESCAPED_SLASHES | JSON_HOT_TAGS); ?>;</script>
 <script src="/pages/backstage/toasts.js" defer></script>
@@ -2924,6 +2979,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.org" commit -m "Feat(backst
 ### Task 25: Frontend — applications page success toast + invite page
 
 **Files:**
+
 - Modify: `C:/laragon/www/sites/daem-society/public/pages/backstage/applications/index.php`
 - Create: `C:/laragon/www/sites/daem-society/public/pages/invite.php`
 - Create: `C:/laragon/www/sites/daem-society/public/api/auth/redeem-invite.php`

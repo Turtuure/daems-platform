@@ -3017,7 +3017,7 @@ Each Application task follows TDD: write the unit test first using InMemory repo
 
 - [ ] **Step 1: Write Input + Output value objects**
 
-`CreateTenantInput`: actingUserId (UserId), slug (string), displayNamesI18n (array), publicDescriptionsI18n (array), supportedLocales (list<string>), defaultLocale (string), memberNumberPrefix (string).
+`CreateTenantInput`: actingUserId (UserId), slug (string), displayNamesI18n (array), publicDescriptionsI18n (array), supportedLocales (`list<string>`), defaultLocale (string), memberNumberPrefix (string).
 
 `CreateTenantOutput`: tenantId (TenantId), createdAt (DateTimeImmutable).
 
@@ -3202,7 +3202,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.fi" commit -m "Add(platform
 **E7 — RevokeModuleAvailability (with cascade)**
 
 - Atomically disables the module if currently enabled, AND clears available_at, AND writes audit rows: one for `REVOKED_AVAILABILITY` and one for the implicit `DISABLED` if the module was previously enabled.
-- Cascades through dependents: any module that depends_on this one and is currently enabled is also force-disabled (one audit row each, action=`DISABLED`, reason="cascade from <root>").
+- Cascades through dependents: any module that depends_on this one and is currently enabled is also force-disabled (one audit row each, action=`DISABLED`, reason="cascade from `<root>`").
 - Rejects non-GSA.
 
 The cascade logic uses `ModuleRegistry::dependents($name)` to walk transitively.

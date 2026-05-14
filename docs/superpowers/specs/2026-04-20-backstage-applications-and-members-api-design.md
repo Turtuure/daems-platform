@@ -37,14 +37,14 @@ Molemmat endpointit toimivat tenant-scopessa: kutsu nähden tenantista A ei kosk
 
 Uusi kontrolleri `BackstageController` (erillään `AdminController`ista joka hoitaa pelkästään stats/growth). Miksi uusi: `AdminController` on jo tulkittu "dashboard stats" -kontrolleriksi, sekoittaminen hallinta-toimintojen kanssa tekisi siitä 400+ rivisen monoliitin.
 
-```
+```text
 HTTP  → TenantContextMiddleware → AuthMiddleware → BackstageController
        → (use case) → Repository → MySQL
 ```
 
 ### 4.2 Reittikartta
 
-```
+```text
 GET  /api/v1/backstage/applications/pending
 POST /api/v1/backstage/applications/{type}/{id}/decision
 GET  /api/v1/backstage/members
@@ -127,6 +127,7 @@ Miksi read-modelleja eikä aggregaatteja: nämä ovat pelkkiä admin-näkymiä, 
 ### 6.2 Repositoriomuutokset
 
 **`MemberApplicationRepositoryInterface`** — lisätään:
+
 ```php
 /** @return MemberApplication[] */
 public function listPendingForTenant(TenantId $tenantId, int $limit): array;
@@ -276,11 +277,13 @@ final class BackstageController
 ### 7.1 Vastausmuoto
 
 **Onnistuminen:**
+
 ```json
 {"data": {...}}
 ```
 
 **Virhe:**
+
 ```json
 {"error": "<code>", "message": "optional human-readable"}
 ```
@@ -299,13 +302,14 @@ final class BackstageController
 
 Endpoint: `GET /api/v1/backstage/members?export=csv` (muut filtterit vaikuttavat riveihin).
 
-```
+```text
 Content-Type: text/csv; charset=utf-8
 Content-Disposition: attachment; filename="members-{tenantSlug}-{YYYY-MM-DD}.csv"
 ```
 
 Sisältö: ensimmäinen rivi on otsikot, sitten data. Sarakkeet:
-```
+
+```text
 member_number, name, email, membership_type, membership_status, role_in_tenant, joined_at
 ```
 
@@ -316,6 +320,7 @@ Sivutusta ei käytetä export-tilassa — kaikki suodatukseen sopivat rivit.
 ### 8.1 Unit-testit (`tests/Unit/Application/Backstage/`)
 
 Yksi testiluokka per use case. Mockatut repositoriot. Kattaa:
+
 - Happy path: oikea auth → oikea repo-kutsu → oikea output
 - `ForbiddenException` kun acting ei ole admin (ChangeMemberStatus: ei ole GSA)
 - `NotFoundException` kun kohdeobjektia ei ole
@@ -324,11 +329,13 @@ Yksi testiluokka per use case. Mockatut repositoriot. Kattaa:
 ### 8.2 Integration-testit (`tests/Integration/Persistence/Sql/`)
 
 SqlMemberApplicationRepositoryTest (laajennetaan olemassa olevaa):
+
 - `listPendingForTenant` palauttaa vain saman tenantin ja status=pending -rivit
 - `recordDecision` asettaa decided_at/by/note oikein
 - `findByIdForTenant` filteröi tenant-id:n
 
 SqlMemberDirectoryRepositoryTest (uusi):
+
 - `listMembersForTenant` palauttaa yhdistetyn näkymän users+user_tenants-tauluista
 - Suodattimet (status, type, q) toimivat
 - Lajittelu & sivutus toimii
@@ -338,6 +345,7 @@ SqlMemberDirectoryRepositoryTest (uusi):
 ### 8.3 E2E-testit (`tests/E2E/`)
 
 KernelHarness-pohjaiset testit jotka testaavat HTTP-kerrosta päästä päähän:
+
 - `F008_BackstageApplicationsAccessTest` — anonyymi → 401, ei-admin → 403, admin → 200
 - `F009_BackstageDecideApplicationTest` — admin hyväksyy → status='approved' + decided_at set + audit entry luotu
 - `F010_BackstageMembersGsaOnlyStatusTest` — admin yrittää muuttaa statusta → 403, GSA yrittää → 200
@@ -345,6 +353,7 @@ KernelHarness-pohjaiset testit jotka testaavat HTTP-kerrosta päästä päähän
 ### 8.4 Isolation-testit (`tests/Isolation/`)
 
 `BackstageTenantIsolationTest` (uusi):
+
 - Admin tenantista 'daems' kutsuu `listPendingForTenant('daems')` — ei näe tenantin 'sahegroup' hakemuksia
 - Admin tenantista 'daems' kutsuu `findByIdForTenant(sahegroup-app-id, 'daems')` → null
 - Sama members + audit-endpointeille
@@ -373,6 +382,7 @@ Tämä on yksi PR (PR 4, jos numeroidaan jatkumona PR 1-3:n jälkeen).
 ### 11.1 Mitä tarkoittaa "supporter-hakemus hyväksytty"?
 
 Supporter on organisaatio, ei yksittäinen käyttäjä. Hyväksyntä:
+
 - luoko `users`-rivin yhteyshenkilölle? (kuten member?)
 - pelkkä organisaatio-rekisteröityminen ilman login-kykyä?
 
@@ -397,6 +407,7 @@ Yli 10 000 rivin tenantille CSV voi kestää kauan tai syödä muistia. Mitigaat
 ### GET /backstage/applications/pending?limit=200
 
 Vastaus (200):
+
 ```json
 {
   "data": {
@@ -427,11 +438,13 @@ Vastaus (200):
 ### POST /backstage/applications/member/{id}/decision
 
 Pyyntö:
+
 ```json
 {"decision": "approved", "note": "Welcome."}
 ```
 
 Vastaus (200):
+
 ```json
 {"data": {"success": true}}
 ```
@@ -439,6 +452,7 @@ Vastaus (200):
 ### GET /backstage/members?status=active&sort=member_number&dir=ASC&page=1&per_page=50
 
 Vastaus (200):
+
 ```json
 {
   "data": [
@@ -465,16 +479,19 @@ Vastaus (200):
 ### POST /backstage/members/{userId}/status (GSA only)
 
 Pyyntö:
+
 ```json
 {"status": "suspended", "reason": "Payment overdue > 90 days."}
 ```
 
 Vastaus (200):
+
 ```json
 {"data": {"success": true}}
 ```
 
 Vastaus (403, ei-GSA):
+
 ```json
 {"error": "forbidden", "message": "Only platform admins can change member status."}
 ```
@@ -482,6 +499,7 @@ Vastaus (403, ei-GSA):
 ### GET /backstage/members/{userId}/audit?limit=25
 
 Vastaus (200):
+
 ```json
 {
   "data": [

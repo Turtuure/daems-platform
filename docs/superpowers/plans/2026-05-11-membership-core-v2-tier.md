@@ -13,6 +13,7 @@
 ## Task 1: Migration 074 — add `users.membership_subtier` column
 
 **Files:**
+
 - Create: `database/migrations/074_membership_type_v2.sql`
 
 - [ ] **Step 1: Create the SQL migration**
@@ -48,6 +49,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.fi" commit -m "Add(db): mig
 ## Task 2: Migration 075 — backfill legacy `membership_type` values
 
 **Files:**
+
 - Create: `database/migrations/075_backfill_membership_type.php`
 
 - [ ] **Step 1: Create the PHP migration**
@@ -127,6 +129,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.fi" commit -m "Add(db): mig
 ## Task 3: Migration 076 — create `tenant_membership_subtiers` table
 
 **Files:**
+
 - Create: `database/migrations/076_tenant_membership_subtiers.sql`
 
 - [ ] **Step 1: Create the SQL migration**
@@ -181,6 +184,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.fi" commit -m "Add(db): mig
 ## Task 4: Migration 077 — seed default sub-tier catalog
 
 **Files:**
+
 - Create: `database/migrations/077_seed_default_subtiers.php`
 
 - [ ] **Step 1: Create the PHP seeder**
@@ -251,6 +255,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.fi" commit -m "Add(db): mig
 ## Task 5: Domain — `MembershipType` enum
 
 **Files:**
+
 - Create: `src/Domain/Membership/MembershipType.php`
 - Test: `tests/Unit/Domain/Membership/MembershipTypeTest.php`
 
@@ -405,6 +410,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.fi" commit -m "Add(domain/m
 ## Task 6: Domain — `TenantMembershipSubTierId` Uuid7Id subclass
 
 **Files:**
+
 - Create: `src/Domain/Membership/TenantMembershipSubTierId.php`
 
 - [ ] **Step 1: Create the ID class**
@@ -441,6 +447,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.fi" commit -m "Add(domain/m
 ## Task 7: Domain — `TenantMembershipSubTier` entity
 
 **Files:**
+
 - Create: `src/Domain/Membership/TenantMembershipSubTier.php`
 - Create: `src/Domain/Membership/Exception/InvalidSubTierAppliesTo.php`
 - Test: `tests/Unit/Domain/Membership/TenantMembershipSubTierTest.php`
@@ -601,6 +608,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.fi" commit -m "Add(domain/m
 ## Task 8: Domain — `TenantMembershipSubTierRepositoryInterface`
 
 **Files:**
+
 - Create: `src/Domain/Membership/TenantMembershipSubTierRepositoryInterface.php`
 
 - [ ] **Step 1: Create the port**
@@ -651,6 +659,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.fi" commit -m "Add(domain/m
 ## Task 9: Infrastructure — `InMemoryTenantMembershipSubTierRepository` (test fake)
 
 **Files:**
+
 - Create: `tests/Support/Fake/InMemoryTenantMembershipSubTierRepository.php`
 - Test: `tests/Unit/Tests/Support/Fake/InMemoryTenantMembershipSubTierRepositoryTest.php`
 
@@ -847,6 +856,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.fi" commit -m "Add(tests/fa
 ## Task 10: Infrastructure — `SqlTenantMembershipSubTierRepository`
 
 **Files:**
+
 - Create: `src/Infrastructure/Adapter/Persistence/Sql/SqlTenantMembershipSubTierRepository.php`
 - Test: `tests/Integration/Infrastructure/Adapter/Persistence/Sql/SqlTenantMembershipSubTierRepositoryTest.php`
 
@@ -1075,6 +1085,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.fi" commit -m "Add(infra/pe
 ## Task 11: Application — `ListMembershipSubTiers` use case
 
 **Files:**
+
 - Create: `src/Application/Membership/ListMembershipSubTiers/ListMembershipSubTiers.php`
 - Create: `src/Application/Membership/ListMembershipSubTiers/ListMembershipSubTiersOutput.php`
 - Test: `tests/Unit/Application/Membership/ListMembershipSubTiersTest.php`
@@ -1205,6 +1216,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.fi" commit -m "Add(applicat
 ## Task 12: DI wiring — `bootstrap/app.php` + `KernelHarness`
 
 **Files:**
+
 - Modify: `bootstrap/app.php`
 - Modify: `tests/Support/KernelHarness.php`
 
@@ -1283,6 +1295,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.fi" commit -m "Add(bootstra
 ## Task 13: Infrastructure — `MembershipSubTiersController` + route
 
 **Files:**
+
 - Create: `src/Infrastructure/Adapter/Api/Controller/Backstage/MembershipSubTiersController.php`
 - Modify: `routes/api.php`
 - Modify: `bootstrap/app.php` (DI binding for controller)
@@ -1389,6 +1402,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.fi" commit -m "Add(api/back
 ## Task 14: E2E test — sub-tier endpoint
 
 **Files:**
+
 - Create: `tests/E2E/MembershipSubTiersEndpointE2ETest.php`
 
 - [ ] **Step 1: Write the test**
@@ -1464,6 +1478,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.fi" commit -m "Add(tests/e2
 ## Task 15: Isolation test — cross-tenant sub-tier isolation
 
 **Files:**
+
 - Create: `tests/Isolation/TenantMembershipSubTierIsolationTest.php`
 
 - [ ] **Step 1: Write the test**
@@ -1548,6 +1563,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.fi" commit -m "Add(tests/is
 ## Task 16: Module-side update — `MemberActivationService` + `SupporterActivationService`
 
 **Files (in `c:/laragon/www/modules/members/`):**
+
 - Modify: `backend/src/Application/Backstage/ActivateMember/MemberActivationService.php`
 - Modify: `backend/src/Application/Backstage/ActivateSupporter/SupporterActivationService.php`
 - Test: `backend/tests/Unit/Application/Backstage/ActivateMember/MemberActivationServiceTest.php` (if exists; otherwise create)
@@ -1620,6 +1636,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.fi" commit -m "Update(membe
 ## Task 17: Module-side update — `MemberRecord` carries sub-tier slug
 
 **Files (in `c:/laragon/www/modules/members/`):**
+
 - Modify: `backend/src/Infrastructure/SqlMemberDirectoryRepository.php`
 - Modify: `backend/src/Infrastructure/SqlPublicMemberRepository.php`
 - Modify: corresponding `MemberRecord` / `MemberDirectoryRow` value objects (search for them)
@@ -1713,6 +1730,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.fi" commit -m "Update(membe
 ## Task 18: AdminStats — `getMembersByTier` method
 
 **Files:**
+
 - Modify: `src/Domain/Admin/AdminStatsRepositoryInterface.php`
 - Modify: `src/Infrastructure/Adapter/Persistence/Sql/SqlAdminRepository.php`
 - Modify: `tests/Unit/Infrastructure/Dashboard/CoreWidgets/CoreWidgetsTest.php` (inline fake update)
@@ -1794,6 +1812,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.fi" commit -m "Add(admin/st
 ## Task 19: Dashboard widget — `MembersByTierKpiWidget`
 
 **Files:**
+
 - Create: `src/Infrastructure/Dashboard/CoreWidgets/MembersByTierKpiWidget.php`
 - Test: `tests/Unit/Infrastructure/Dashboard/CoreWidgets/MembersByTierKpiWidgetTest.php`
 
@@ -1964,6 +1983,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.fi" commit -m "Add(infra/da
 ## Task 20: Widget DI wiring + dashboard exposure
 
 **Files:**
+
 - Modify: `bootstrap/app.php` (widget registration)
 - Modify: `tests/Support/KernelHarness.php` (same)
 - Modify: `src/Frontend/Dashboard/DefaultLayouts.php` (add widget to admin defaults)
@@ -2026,6 +2046,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.fi" commit -m "Add(dashboar
 ## Task 21: i18n keys
 
 **Files:**
+
 - Modify: `lang/en_GB.php`
 - Modify: `lang/fi_FI.php`
 - Modify: `lang/sw_TZ.php`
@@ -2156,6 +2177,7 @@ Expected: 2 tests pass.
 - [ ] **Step 6: Browser smoke for three roles**
 
 For each role, log in to `daems.local/backstage` and verify:
+
 - **Admin**: Members KPI shows active-only count; `MembersByTierKpiWidget` shows 4 tier numbers; Members list has a "Tier" column populated with new enum values.
 - **Moderator**: same KPI is visible (admin minRole — moderator sees it via catalog if they add it; not in default).
 - **GSA (`playwright-admin@dev.local` / `Playwright-Dev-Test-2026!`)**: Same as admin plus platform widgets — the tier KPI must appear at the top of the GSA layout.

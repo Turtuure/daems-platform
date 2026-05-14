@@ -48,7 +48,7 @@ Establish the **four-tier model** plus **per-tenant configurable sub-tier honor 
 
 ### Layered components (Clean Architecture)
 
-```
+```text
 Domain/Membership/                       (existing)
   MembershipType.php                       NEW — enum (4 values + rights methods)
   MembershipSubTierSlug.php                NEW — VO (slug + tenant-id binding)
@@ -256,7 +256,7 @@ The `users.membership_subtier` column stays NULL in 0.6a. Award logic comes in 0
 
 One read-only endpoint added in 0.6a:
 
-```
+```text
 GET /api/v1/backstage/tenant-settings/membership-subtiers
     Response:
     {
@@ -278,7 +278,7 @@ CRUD endpoints (POST/PUT/DELETE) are out-of-scope here — defer to 0.6b when bo
 
 **Dashboard KPI** (`MembersKpiWidget` already exists and counts active members): unchanged in 0.6a. A new **members-by-tier KPI widget** is added (`MembersByTierKpiWidget`, span 2) that shows four numbers in a 2×2 grid:
 
-```
+```text
 SUPPORTING: 4    BASIC: 12
 FULL:       3    HONORARY: 0
 ```
@@ -291,7 +291,7 @@ The widget is registered in `bootstrap/app.php` and `KernelHarness`, added to mo
 
 Add to `lang/{fi_FI,en_GB,sw_TZ}.php`:
 
-```
+```text
 membership.type.supporting          Kannattava jäsen / Supporting member / Mwanachama wa kuunga mkono
 membership.type.basic               Perusjäsen / Basic member / Mwanachama wa kawaida
 membership.type.full                Varsinainen jäsen / Full member / Mwanachama kamili

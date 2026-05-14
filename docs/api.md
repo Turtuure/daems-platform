@@ -2,7 +2,7 @@
 
 ## Base URL
 
-```
+```text
 http://daems-platform.local/api/v1
 ```
 
@@ -12,7 +12,7 @@ All responses are `application/json; charset=utf-8`.
 
 **Opaque bearer tokens.** Login issues a 32-byte random token; the server stores only `SHA-256(token)`. Attach to every protected request:
 
-```
+```text
 Authorization: Bearer <token>
 ```
 
@@ -33,12 +33,14 @@ Platform administrators can override the active tenant context on any authentica
 **Data scope:** every list/detail endpoint (`/projects`, `/events`, `/insights`, `/forum/*`, `/backstage/stats`, etc.) returns only rows where `tenant_id` matches the resolved tenant. Attempting to fetch a resource by slug from a tenant that doesn't own it returns `404` — this is enforced at the repository layer (`*ForTenant` methods) and verified by `tests/Isolation/*TenantIsolationTest.php`.
 
 Example:
+
 ```http
 GET /api/v1/backstage/stats HTTP/1.1
 Host: daems.fi
 Authorization: Bearer <gsa-token>
 X-Daems-Tenant: sahegroup
 ```
+
 Response contains `sahegroup`-scoped stats.
 
 ## Response envelope
@@ -204,6 +206,7 @@ Revoke the caller's token. Requires `Authorization: Bearer <token>`.
 Returns the authenticated user's identity, their active tenant, their role in that tenant, and the bearer token's expiry. Used by frontend clients to validate tokens on load and to drive tenant-scoped UI.
 
 **Headers:**
+
 - `Authorization: Bearer <token>` (required)
 - `X-Daems-Tenant: <slug>` (optional, platform admins only)
 
@@ -1294,6 +1297,7 @@ Submit an organisational supporter application. **Requires authentication.**
 ## Backstage — admin endpoints
 
 All backstage endpoints require `TenantContextMiddleware` + `AuthMiddleware`. Use cases enforce authorization:
+
 - List / read / decide applications: `ActingUser::isAdminIn(activeTenant)` required
 - List / audit members: `ActingUser::isAdminIn(activeTenant)` required
 - **Change member status:** `ActingUser::isPlatformAdmin` required (GSA only)
@@ -1303,6 +1307,7 @@ All backstage endpoints require `TenantContextMiddleware` + `AuthMiddleware`. Us
 Query params: `limit` (default 200, max 500).
 
 Response 200:
+
 ```json
 {"data": {"member": [...], "supporter": [...]}}
 ```
@@ -1319,6 +1324,7 @@ Response 200: `{"data": {"success": true}}`
 Query params: `status`, `type`, `q`, `sort` (`member_number|name|joined_at|status`), `dir` (`ASC|DESC`), `page`, `per_page` (max 200), `export=csv`.
 
 Response 200:
+
 ```json
 {"data": [...], "meta": {"page": 1, "per_page": 50, "total": 127, "total_pages": 3}}
 ```
@@ -1337,6 +1343,7 @@ Response 200: `{"data": {"success": true}}`
 Query: `limit` (default 25, max 500).
 
 Response 200:
+
 ```json
 {"data": [{"id": "...", "previousStatus": "active", "newStatus": "suspended", "reason": "...", "performedByName": "...", "createdAt": "..."}]}
 ```

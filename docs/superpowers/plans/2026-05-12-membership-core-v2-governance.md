@@ -33,6 +33,7 @@
 git rev-parse --abbrev-ref HEAD
 git status --short
 ```
+
 Expected: `membership-core-v2-governance` and an empty status (no working-tree changes beyond the spec commit `c6f9391`).
 
 - [ ] **Verify spec is committed**
@@ -40,6 +41,7 @@ Expected: `membership-core-v2-governance` and an empty status (no working-tree c
 ```bash
 git log --oneline -3
 ```
+
 Expected: top commit is `c6f9391 Add(docs/spec): MembershipCore v2 0.6b governance design — board + decisions + expulsions`.
 
 - [ ] **Verify current migration baseline**
@@ -47,6 +49,7 @@ Expected: top commit is `c6f9391 Add(docs/spec): MembershipCore v2 0.6b governan
 ```bash
 ls database/migrations/ | tail -5
 ```
+
 Expected output ends with `077_seed_default_subtiers.php`. The first new migration is `078`.
 
 - [ ] **Verify baseline tests + analysis green**
@@ -54,6 +57,7 @@ Expected output ends with `077_seed_default_subtiers.php`. The first new migrati
 ```bash
 composer analyse && composer test && composer test:e2e
 ```
+
 Expected: PHPStan 0 errors; all Unit / Integration / E2E tests pass.
 
 If any pre-flight step fails STOP and fix before starting Task 1.
@@ -67,6 +71,7 @@ This wave creates the 11 migrations defined in the spec under "Database schema" 
 ## Task 1: Migration 078 — `boards` table
 
 **Files:**
+
 - Create: `database/migrations/078_create_boards.sql`
 
 - [ ] **Step 1: Write the migration**
@@ -96,6 +101,7 @@ CREATE TABLE IF NOT EXISTS boards (
 "C:/laragon/bin/mysql/mysql-8.4.3-winx64/bin/mysql.exe" -u root -psalasana daems_db < database/migrations/078_create_boards.sql
 "C:/laragon/bin/mysql/mysql-8.4.3-winx64/bin/mysql.exe" -u root -psalasana daems_db -e "SHOW CREATE TABLE boards;"
 ```
+
 Expected: table is shown with the UNIQUE on tenant_id.
 
 - [ ] **Step 3: Apply to test DB**
@@ -116,6 +122,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.fi" commit -m "Add(db): mig
 ## Task 2: Migration 079 — `board_members` table
 
 **Files:**
+
 - Create: `database/migrations/079_create_board_members.sql`
 
 - [ ] **Step 1: Write the migration**
@@ -152,6 +159,7 @@ CREATE TABLE IF NOT EXISTS board_members (
 "C:/laragon/bin/mysql/mysql-8.4.3-winx64/bin/mysql.exe" -u root -psalasana daems_db_test < database/migrations/079_create_board_members.sql
 "C:/laragon/bin/mysql/mysql-8.4.3-winx64/bin/mysql.exe" -u root -psalasana daems_db -e "SHOW INDEXES FROM board_members WHERE Key_name = 'idx_active';"
 ```
+
 Expected: composite index on `(board_id, term_ended_at, term_ends_at)`.
 
 - [ ] **Step 3: Commit**
@@ -166,6 +174,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.fi" commit -m "Add(db): mig
 ## Task 3: Migration 080 — `board_decisions` table
 
 **Files:**
+
 - Create: `database/migrations/080_create_board_decisions.sql`
 
 - [ ] **Step 1: Write the migration**
@@ -227,6 +236,7 @@ CREATE TABLE IF NOT EXISTS board_decisions (
 "C:/laragon/bin/mysql/mysql-8.4.3-winx64/bin/mysql.exe" -u root -psalasana daems_db_test < database/migrations/080_create_board_decisions.sql
 "C:/laragon/bin/mysql/mysql-8.4.3-winx64/bin/mysql.exe" -u root -psalasana daems_db -e "SHOW COLUMNS FROM board_decisions;" | wc -l
 ```
+
 Expected: 25 columns + header line = 26 lines.
 
 - [ ] **Step 3: Commit**
@@ -241,6 +251,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.fi" commit -m "Add(db): mig
 ## Task 4: Migration 081 — `board_decision_votes` table
 
 **Files:**
+
 - Create: `database/migrations/081_create_board_decision_votes.sql`
 
 - [ ] **Step 1: Write the migration**
@@ -273,6 +284,7 @@ CREATE TABLE IF NOT EXISTS board_decision_votes (
 "C:/laragon/bin/mysql/mysql-8.4.3-winx64/bin/mysql.exe" -u root -psalasana daems_db_test < database/migrations/081_create_board_decision_votes.sql
 "C:/laragon/bin/mysql/mysql-8.4.3-winx64/bin/mysql.exe" -u root -psalasana daems_db -e "SHOW INDEXES FROM board_decision_votes WHERE Key_name='uniq_vote';"
 ```
+
 Expected: composite UNIQUE on `(decision_id, board_member_id)`.
 
 - [ ] **Step 3: Commit**
@@ -287,6 +299,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.fi" commit -m "Add(db): mig
 ## Task 5: Migration 082 — `board_delegations` table
 
 **Files:**
+
 - Create: `database/migrations/082_create_board_delegations.sql`
 
 - [ ] **Step 1: Write the migration**
@@ -319,6 +332,7 @@ CREATE TABLE IF NOT EXISTS board_delegations (
 "C:/laragon/bin/mysql/mysql-8.4.3-winx64/bin/mysql.exe" -u root -psalasana daems_db_test < database/migrations/082_create_board_delegations.sql
 "C:/laragon/bin/mysql/mysql-8.4.3-winx64/bin/mysql.exe" -u root -psalasana daems_db -e "SHOW CREATE TABLE board_delegations;"
 ```
+
 Expected: enum on `decision_type` lists exactly three values; `delegated_to_role` has only `admin`.
 
 - [ ] **Step 3: Commit**
@@ -333,6 +347,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.fi" commit -m "Add(db): mig
 ## Task 6: Migrations 083 + 084 — `member_expulsions` and `member_sub_tier_awards`
 
 **Files:**
+
 - Create: `database/migrations/083_create_member_expulsions.sql`
 - Create: `database/migrations/084_create_member_sub_tier_awards.sql`
 
@@ -406,6 +421,7 @@ CREATE TABLE IF NOT EXISTS member_sub_tier_awards (
 "C:/laragon/bin/mysql/mysql-8.4.3-winx64/bin/mysql.exe" -u root -psalasana daems_db_test < database/migrations/084_create_member_sub_tier_awards.sql
 "C:/laragon/bin/mysql/mysql-8.4.3-winx64/bin/mysql.exe" -u root -psalasana daems_db -e "SHOW TABLES LIKE 'member_%';"
 ```
+
 Expected: lists at least `member_applications`, `member_expulsions`, `member_status_audits`, `member_sub_tier_awards`.
 
 - [ ] **Step 4: Commit (single commit for both, related)**
@@ -420,6 +436,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.fi" commit -m "Add(db): mig
 ## Task 7: Migrations 085 + 086 + 087 — settings, GSA overrides, users column
 
 **Files:**
+
 - Create: `database/migrations/085_create_tenant_governance_settings.sql`
 - Create: `database/migrations/086_create_gsa_overrides.sql`
 - Create: `database/migrations/087_add_invited_to_full_at_to_users.sql`
@@ -489,6 +506,7 @@ ALTER TABLE users
 "C:/laragon/bin/mysql/mysql-8.4.3-winx64/bin/mysql.exe" -u root -psalasana daems_db_test < database/migrations/087_add_invited_to_full_at_to_users.sql
 "C:/laragon/bin/mysql/mysql-8.4.3-winx64/bin/mysql.exe" -u root -psalasana daems_db -e "SHOW COLUMNS FROM users WHERE Field='invited_to_full_at';"
 ```
+
 Expected: `invited_to_full_at | datetime | YES | | NULL`.
 
 - [ ] **Step 5: Commit**
@@ -503,6 +521,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.fi" commit -m "Add(db): mig
 ## Task 8: Migration 088 — seed defaults + bump IsolationTestCase baseline
 
 **Files:**
+
 - Create: `database/migrations/088_seed_governance_settings_defaults.php`
 - Modify: `tests/Isolation/IsolationTestCase.php` (one number)
 
@@ -537,6 +556,7 @@ php -r '$pdo = new PDO("mysql:host=127.0.0.1;dbname=daems_db", "root", "salasana
 php -r '$pdo = new PDO("mysql:host=127.0.0.1;dbname=daems_db_test", "root", "salasana"); require "database/migrations/088_seed_governance_settings_defaults.php";'
 "C:/laragon/bin/mysql/mysql-8.4.3-winx64/bin/mysql.exe" -u root -psalasana daems_db -e "SELECT COUNT(*) FROM tenant_governance_settings;"
 ```
+
 Expected: count equals number of tenants (currently 2 — daems + sahegroup).
 
 - [ ] **Step 3: Verify idempotency by re-running**
@@ -545,6 +565,7 @@ Expected: count equals number of tenants (currently 2 — daems + sahegroup).
 php -r '$pdo = new PDO("mysql:host=127.0.0.1;dbname=daems_db", "root", "salasana"); require "database/migrations/088_seed_governance_settings_defaults.php";'
 "C:/laragon/bin/mysql/mysql-8.4.3-winx64/bin/mysql.exe" -u root -psalasana daems_db -e "SELECT COUNT(*) FROM tenant_governance_settings;"
 ```
+
 Expected: same count (no duplicates inserted).
 
 - [ ] **Step 4: Update IsolationTestCase baseline**
@@ -564,6 +585,7 @@ $this->runMigrationsUpTo(88);
 ```bash
 composer test -- --testsuite Isolation
 ```
+
 Expected: every isolation test still passes against the new baseline (none of them touch governance tables yet, so behaviour is unchanged).
 
 - [ ] **Step 6: Commit**
@@ -582,6 +604,7 @@ This wave defines every Domain type the rest of the plan depends on: enums, Id v
 ## Task 9: Governance enums (8 enums)
 
 **Files:**
+
 - Create: `src/Domain/Governance/BoardMemberRole.php`
 - Create: `src/Domain/Governance/BoardMemberTermEndedReason.php`
 - Create: `src/Domain/Governance/BoardDecisionType.php`
@@ -663,6 +686,7 @@ final class EnumsTest extends TestCase
 ```bash
 composer test -- --filter EnumsTest
 ```
+
 Expected: errors saying every enum class is missing.
 
 - [ ] **Step 3: Create the enums**
@@ -836,6 +860,7 @@ enum BoardDecisionVoteValue: string
 composer test -- --filter EnumsTest
 composer analyse
 ```
+
 Expected: EnumsTest passes; PHPStan 0 errors.
 
 - [ ] **Step 5: Commit**
@@ -850,6 +875,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.fi" commit -m "Add(domain/g
 ## Task 10: Board + BoardMember + BoardDelegation entities + Id VOs + repository interfaces
 
 **Files:**
+
 - Create: `src/Domain/Governance/BoardId.php`
 - Create: `src/Domain/Governance/BoardMemberId.php`
 - Create: `src/Domain/Governance/BoardDelegationId.php`
@@ -1030,6 +1056,7 @@ final class BoardDelegationTest extends TestCase
 ```bash
 composer test -- --filter "BoardMemberTest|BoardDelegationTest"
 ```
+
 Expected: missing classes.
 
 - [ ] **Step 3: Create the Id VOs**
@@ -1280,6 +1307,7 @@ interface BoardDelegationRepositoryInterface
 composer test -- --filter "BoardMemberTest|BoardDelegationTest"
 composer analyse
 ```
+
 Expected: both tests pass; PHPStan 0 errors.
 
 - [ ] **Step 9: Commit**
@@ -1294,6 +1322,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.fi" commit -m "Add(domain/g
 ## Task 11: BoardDecision aggregate + BoardDecisionVote + invariants
 
 **Files:**
+
 - Create: `src/Domain/Governance/BoardDecision.php`
 - Create: `src/Domain/Governance/BoardDecisionVote.php`
 - Create: `src/Domain/Governance/BoardDecisionVoteId.php`
@@ -1629,6 +1658,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.fi" commit -m "Add(domain/g
 ## Task 12: MemberExpulsion + MemberSubTierAward + TenantGovernanceSettings + IsEligibleForFullMembership
 
 **Files:**
+
 - Create: `src/Domain/Membership/MemberExpulsion.php`
 - Create: `src/Domain/Membership/MemberExpulsionId.php`
 - Create: `src/Domain/Membership/MemberExpulsionStatus.php`
@@ -1956,6 +1986,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.fi" commit -m "Add(domain/m
 ## Task 13: Remaining domain exceptions + GsaOverride types
 
 **Files:**
+
 - Create: `src/Domain/Governance/Exception/BoardNotBootstrapped.php`
 - Create: `src/Domain/Governance/Exception/BoardAlreadyBootstrapped.php`
 - Create: `src/Domain/Governance/Exception/NotABoardMember.php`
@@ -2098,6 +2129,7 @@ interface GsaOverrideRepositoryInterface
 ```bash
 composer analyse
 ```
+
 Expected: 0 errors.
 
 - [ ] **Step 4: Commit**
@@ -2116,6 +2148,7 @@ Each task creates a real SQL repo against MySQL + an InMemory fake for tests + a
 ## Task 14: Board + BoardMember SQL repositories + InMemory + isolation
 
 **Files:**
+
 - Create: `src/Infrastructure/Adapter/Persistence/Sql/SqlBoardRepository.php`
 - Create: `src/Infrastructure/Adapter/Persistence/Sql/SqlBoardMemberRepository.php`
 - Create: `tests/Support/Fake/InMemoryBoardRepository.php`
@@ -2535,6 +2568,7 @@ composer test -- --testsuite Integration --filter "SqlBoardRepositoryTest|SqlBoa
 composer test -- --testsuite Isolation  --filter BoardIsolationTest
 composer analyse
 ```
+
 Expected: all pass; PHPStan 0.
 
 - [ ] **Step 8: Commit**
@@ -2549,6 +2583,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.fi" commit -m "Add(infra/pe
 ## Task 15: BoardDecision + Votes + Delegation + GovernanceSettings repos
 
 **Files:**
+
 - Create: `src/Infrastructure/Adapter/Persistence/Sql/SqlBoardDecisionRepository.php`
 - Create: `src/Infrastructure/Adapter/Persistence/Sql/SqlBoardDecisionVoteRepository.php`
 - Create: `src/Infrastructure/Adapter/Persistence/Sql/SqlBoardDelegationRepository.php`
@@ -2998,6 +3033,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.fi" commit -m "Add(infra/pe
 ## Task 16: MemberExpulsion + MemberSubTierAward repos
 
 **Files:**
+
 - Create: `src/Infrastructure/Adapter/Persistence/Sql/SqlMemberExpulsionRepository.php`
 - Create: `src/Infrastructure/Adapter/Persistence/Sql/SqlMemberSubTierAwardRepository.php`
 - Create: `tests/Support/Fake/InMemoryMemberExpulsionRepository.php`
@@ -3250,6 +3286,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.fi" commit -m "Add(infra/pe
 ## Task 17: GsaOverride repo
 
 **Files:**
+
 - Create: `src/Infrastructure/Adapter/Persistence/Sql/SqlGsaOverrideRepository.php`
 - Create: `tests/Support/Fake/InMemoryGsaOverrideRepository.php`
 - Create: `tests/Integration/Persistence/SqlGsaOverrideRepositoryTest.php`
@@ -3343,6 +3380,7 @@ The three building blocks every Propose-use-case in Wave E will use: the resolut
 ## Task 18: `BoardDecisionResolutionService` + unit tests (the math)
 
 **Files:**
+
 - Create: `src/Application/Governance/BoardDecisionResolutionService.php`
 - Create: `tests/Unit/Application/Governance/BoardDecisionResolutionServiceTest.php`
 
@@ -3585,6 +3623,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.fi" commit -m "Add(applicat
 ## Task 19: `CastBoardVote` + `WithdrawBoardDecision` + `ResolveBoardDecisionIfReady`
 
 **Files:**
+
 - Create: `src/Application/Governance/CastBoardVote.php`
 - Create: `src/Application/Governance/WithdrawBoardDecision.php`
 - Create: `src/Application/Governance/ResolveBoardDecisionIfReady.php`
@@ -4097,6 +4136,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.fi" commit -m "Add(applicat
 ## Task 20: `ExpireOverdueBoardDecisionsCron`
 
 **Files:**
+
 - Create: `src/Application/Governance/ExpireOverdueBoardDecisionsCron.php`
 - Create: `tests/Unit/Application/Governance/ExpireOverdueBoardDecisionsCronTest.php`
 - Create: `bin/governance-cron.php` (Cron entrypoint script)
@@ -4244,12 +4284,14 @@ Each task in this wave produces one propose-use case + (when applicable) its del
 3. Executor implements the side-effect that a Passed resolution triggers (called by `ResolveBoardDecisionIfReady` after a normal Pending → Passed transition, OR directly by the delegate-path).
 
 Each use case has:
+
 - A short Unit test exercising preconditions + happy-path output (using InMemory fakes).
 - An E2E test slot — those land in Wave K once the controllers are wired.
 
 ## Task 21: `BootstrapBoard` use case + `BoardController.bootstrap`
 
 **Files:**
+
 - Create: `src/Application/Governance/BootstrapBoard.php`
 - Create: `src/Application/Governance/BootstrapBoardInput.php`
 - Create: `tests/Unit/Application/Governance/BootstrapBoardTest.php`
@@ -4524,6 +4566,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.fi" commit -m "Add(applicat
 ## Task 22: ApproveBasic — propose + delegate + executor
 
 **Files:**
+
 - Create: `src/Application/Governance/Propose/ProposeApproveBasic.php`
 - Create: `src/Application/Governance/Delegate/ApproveBasicAsDelegate.php`
 - Create: `src/Application/Governance/Executor/ApproveBasicExecutor.php`
@@ -4814,6 +4857,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.fi" commit -m "Add(applicat
 ## Task 23: InviteFull — propose + delegate + executor + 12 kk eligibility precondition
 
 **Files:**
+
 - Create: `src/Application/Governance/Propose/ProposeInviteFull.php`
 - Create: `src/Application/Governance/Propose/ProposeInviteFullInput.php`
 - Create: `src/Application/Governance/Delegate/InviteFullAsDelegate.php`
@@ -4851,6 +4895,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.fi" commit -m "Add(applicat
 ## Task 24: AwardSubTier — propose + delegate + executor
 
 **Files:**
+
 - Create: `src/Application/Governance/Propose/ProposeAwardSubTier.php`
 - Create: `src/Application/Governance/Propose/ProposeAwardSubTierInput.php`
 - Create: `src/Application/Governance/Delegate/AwardSubTierAsDelegate.php`
@@ -4879,6 +4924,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.fi" commit -m "Add(applicat
 ## Task 25: RevokeSubTier — propose + executor
 
 **Files:**
+
 - Create: `src/Application/Governance/Propose/ProposeRevokeSubTier.php`
 - Create: `src/Application/Governance/Propose/ProposeRevokeSubTierInput.php`
 - Create: `src/Application/Governance/Executor/RevokeSubTierExecutor.php`
@@ -4902,6 +4948,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.fi" commit -m "Add(applicat
 ## Task 26: SubTierCrud — propose + executor (Create/Update/Delete operations)
 
 **Files:**
+
 - Create: `src/Application/Governance/Propose/ProposeSubTierCrud.php`
 - Create: `src/Application/Governance/Propose/ProposeSubTierCrudInput.php`
 - Create: `src/Application/Governance/Executor/SubTierCrudExecutor.php`
@@ -4929,6 +4976,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.fi" commit -m "Add(applicat
 ## Task 27: RemoveBoardMember — propose + executor
 
 **Files:**
+
 - Create: `src/Application/Governance/Propose/ProposeRemoveBoardMember.php`
 - Create: `src/Application/Governance/Propose/ProposeRemoveBoardMemberInput.php`
 - Create: `src/Application/Governance/Executor/RemoveBoardMemberExecutor.php`
@@ -4952,6 +5000,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.fi" commit -m "Add(applicat
 ## Task 28: DelegateAuthority + RevokeDelegation — meta-decisions
 
 **Files:**
+
 - Create: `src/Application/Governance/Propose/ProposeDelegateAuthority.php`
 - Create: `src/Application/Governance/Propose/ProposeDelegateAuthorityInput.php`
 - Create: `src/Application/Governance/Executor/DelegateAuthorityExecutor.php`
@@ -4998,6 +5047,7 @@ The expulsion sub-flow is its own state machine that emits a `BoardDecision` onl
 ## Task 29: `InitiateMemberExpulsion` + `SubmitExpulsionStatement`
 
 **Files:**
+
 - Create: `src/Application/Membership/InitiateMemberExpulsion.php`
 - Create: `src/Application/Membership/InitiateMemberExpulsionInput.php`
 - Create: `src/Application/Membership/SubmitExpulsionStatement.php`
@@ -5192,6 +5242,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.fi" commit -m "Add(applicat
 ## Task 30: `AdvanceExpulsionToVote` + `FileExpulsionAppeal` + `ExpelExecutor`
 
 **Files:**
+
 - Create: `src/Application/Membership/AdvanceExpulsionToVote.php`
 - Create: `src/Application/Membership/FileExpulsionAppeal.php`
 - Create: `src/Application/Governance/Executor/ExpelExecutor.php`
@@ -5515,6 +5566,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.fi" commit -m "Add(applicat
 ## Task 31: `GsaForceApproveBasic`
 
 **Files:**
+
 - Create: `src/Application/Audit/GsaForceApproveBasic.php`
 - Create: `src/Application/Audit/GsaForceApproveBasicInput.php`
 - Create: `tests/Unit/Application/Audit/GsaForceApproveBasicTest.php`
@@ -5659,6 +5711,7 @@ Controllers, routes, backstage proxies, and DI wiring. After this wave the backe
 ## Task 32: BoardController + BoardDecisionController + routing
 
 **Files:**
+
 - Create: `src/Infrastructure/Adapter/Api/Controller/Backstage/Governance/BoardController.php`
 - Create: `src/Infrastructure/Adapter/Api/Controller/Backstage/Governance/BoardDecisionController.php`
 - Modify: `public/backstage/api-router.php` (register new proxies)
@@ -5997,7 +6050,7 @@ grep -rn 'MembershipSubTiersController\|membership-subtiers' --include='*.php' s
 
 Bind these routes (path → controller method) using the same pattern:
 
-```
+```text
 GET    /api/v1/backstage/governance/board                                 BoardController::index
 POST   /api/v1/backstage/governance/board/bootstrap                       BoardController::bootstrap
 
@@ -6084,6 +6137,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.fi" commit -m "Add(api/back
 ## Task 33: ExpulsionController + DelegationController + EligibilityController + GsaOverrideController
 
 **Files:**
+
 - Create: `src/Infrastructure/Adapter/Api/Controller/Backstage/Governance/ExpulsionController.php`
 - Create: `src/Infrastructure/Adapter/Api/Controller/Backstage/Governance/DelegationController.php`
 - Create: `src/Infrastructure/Adapter/Api/Controller/Backstage/Governance/EligibilityController.php`
@@ -6099,6 +6153,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.fi" commit -m "Add(api/back
 Pattern is identical to `BoardDecisionController` — inject the relevant use cases / repositories, parse `Request`, return `Response::json(...)`. Specific endpoints per the spec § "API contract":
 
 **ExpulsionController** methods:
+
 - `index(Request)` → calls `MemberExpulsionRepositoryInterface::listForTenant`
 - `show(Request, $id)` → `find` + serialize statement, decision-link
 - `initiate(Request)` → calls `InitiateMemberExpulsion`
@@ -6107,12 +6162,15 @@ Pattern is identical to `BoardDecisionController` — inject the relevant use ca
 - `appeal(Request, $id)` → calls `FileExpulsionAppeal`
 
 **DelegationController:**
+
 - `index(Request)` → `BoardDelegationRepositoryInterface::listActive`
 
 **EligibilityController:**
+
 - `fullMembership(Request)` → query BASIC members from members repo; filter by `IsEligibleForFullMembership::check` for `NOW`; return list.
 
 **GsaOverrideController:**
+
 - `forceApproveBasic(Request)` → calls `GsaForceApproveBasic`. Auth: GSA only (`$actor->isPlatformAdmin()` else 403).
 
 - [ ] **Step 2: Add routes + proxies + commit**
@@ -6128,6 +6186,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.fi" commit -m "Add(api/back
 ## Task 34: DI wiring (BOTH containers)
 
 **Files:**
+
 - Modify: `bootstrap/app.php`
 - Modify: `tests/Support/KernelHarness.php`
 
@@ -6245,6 +6304,7 @@ $this->boardVotes     = new \Daems\Tests\Support\Fake\InMemoryBoardDecisionVoteR
 composer test
 composer analyse
 ```
+
 Expected: Unit + Integration + Isolation + E2E all green; PHPStan 0 errors.
 
 - [ ] **Step 4: Commit**
@@ -6263,6 +6323,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.fi" commit -m "Add(bootstra
 ## Task 35: Hallitus-sivu + bootstrap-lomake
 
 **Files:**
+
 - Create: `public/backstage/pages/governance/board.php`
 - Create: `public/backstage/pages/governance/board.js`
 - Create: `public/backstage/pages/governance/board.css`
@@ -6425,6 +6486,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.fi" commit -m "Add(backstag
 ## Task 36: Decisions list + new + detail pages
 
 **Files:**
+
 - Create: `public/backstage/pages/governance/decisions-list.php`
 - Create: `public/backstage/pages/governance/decisions-list.js`
 - Create: `public/backstage/pages/governance/decisions-new.php`
@@ -6524,6 +6586,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.fi" commit -m "Add(backstag
 ## Task 37: Expulsions list + new + detail pages
 
 **Files:**
+
 - Create: `public/backstage/pages/governance/expulsions-list.php`
 - Create: `public/backstage/pages/governance/expulsions-list.js`
 - Create: `public/backstage/pages/governance/expulsions-new.php`
@@ -6554,6 +6617,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.fi" commit -m "Add(backstag
 ## Task 38: Delegations + Settings pages
 
 **Files:**
+
 - Create: `public/backstage/pages/governance/delegations.php`
 - Create: `public/backstage/pages/governance/delegations.js`
 - Create: `public/backstage/pages/governance/settings.php`
@@ -6577,6 +6641,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.fi" commit -m "Add(backstag
 ## Task 39: Members-page integrations + Applications-flow update
 
 **Files:**
+
 - Modify: `public/backstage/pages/members.php` (action menu) — file may need exploration first; look for the existing per-row actions block
 - Modify: `public/backstage/pages/members.js` (or wherever members-listing JS lives) — add new actions
 - Modify: `public/backstage/pages/applications.php` / corresponding JS — replace "Hyväksy" one-click with delegation-aware flow
@@ -6622,6 +6687,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.fi" commit -m "Update(backs
 ## Task 40: 4 widget classes
 
 **Files:**
+
 - Create: `src/Infrastructure/Dashboard/CoreWidgets/PendingDecisionsForMeKpiWidget.php`
 - Create: `src/Infrastructure/Dashboard/CoreWidgets/EligibleForFullMembershipWidget.php`
 - Create: `src/Infrastructure/Dashboard/CoreWidgets/OpenExpulsionsKpiWidget.php`
@@ -6689,6 +6755,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.fi" commit -m "Add(infra/da
 ## Task 41: Register widgets + update default layouts + DefaultLayoutsTest
 
 **Files:**
+
 - Modify: `bootstrap/app.php` (register the 4 widgets in `WidgetRegistry`)
 - Modify: `tests/Support/KernelHarness.php` (register InMemory variants)
 - Modify: `src/Domain/Dashboard/DefaultLayouts.php` (add to admin + GSA defaults)
@@ -6754,6 +6821,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.fi" commit -m "Update(dashb
 ## Task 42: i18n keys × 3 locales
 
 **Files:**
+
 - Modify: `lang/fi_FI.php`
 - Modify: `lang/en_GB.php`
 - Modify: `lang/sw_TZ.php`
@@ -6902,6 +6970,7 @@ Use English and Swahili translations from the spec where given. For the few new 
 ```bash
 composer test -- --filter I18nParityTest
 ```
+
 Expected: all 3 locales hold the same key set.
 
 - [ ] **Step 4: Commit**
@@ -6916,6 +6985,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.fi" commit -m "Add(i18n/gov
 ## Task 43: E2E test scenarios (7 scenarios)
 
 **Files:**
+
 - Create: `tests/E2E/Governance/BootstrapAndApproveBasicE2ETest.php`
 - Create: `tests/E2E/Governance/InviteFullEligibilityE2ETest.php`
 - Create: `tests/E2E/Governance/ExpulsionFullFlowE2ETest.php`
@@ -7005,6 +7075,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.fi" commit -m "Add(tests/e2
 ## Task 44: Final verification — full suite + manual smoke + summary commit
 
 **Files:**
+
 - Modify: nothing (verification-only); the commit body is a free-text summary.
 
 - [ ] **Step 1: Full PHPStan + test sweep**
@@ -7015,6 +7086,7 @@ composer test
 composer test:e2e
 composer test:all
 ```
+
 Expected:
 
 - PHPStan level 9 = 0 errors.
@@ -7034,6 +7106,7 @@ Re-run every governance migration against a fresh `daems_db_test` and confirm th
 # replay every migration 001..088 in order using the existing test bootstrap
 composer test -- --testsuite Integration --filter MigrationTestCase
 ```
+
 Expected: all migrations apply cleanly.
 
 - [ ] **Step 3: Manual browser smoke (Laragon)**
@@ -7069,8 +7142,3 @@ Before marking 0.6b complete:
 - [ ] No staged `.claude/` content.
 - [ ] No `Co-Authored-By:` trailers in any of this branch's commits.
 - [ ] Branch `membership-core-v2-governance` has ~100–130 commits and is awaiting `pushaa`.
-
-
-
-
-

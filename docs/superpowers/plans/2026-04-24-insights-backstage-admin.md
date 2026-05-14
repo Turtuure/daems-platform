@@ -82,6 +82,7 @@
 ### Task 1: Extend `InsightRepositoryInterface` + SQL repo + update `ListInsights`
 
 **Files:**
+
 - Modify `src/Domain/Insight/InsightRepositoryInterface.php`
 - Modify `src/Infrastructure/Adapter/Persistence/Sql/SqlInsightRepository.php`
 - Modify `src/Application/Insight/ListInsights/ListInsightsInput.php`
@@ -246,6 +247,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.org" commit \
 ### Task 2: `CreateInsight` use case + TDD
 
 **Files:**
+
 - Create `src/Application/Insight/CreateInsight/CreateInsightInput.php`
 - Create `src/Application/Insight/CreateInsight/CreateInsightOutput.php`
 - Create `src/Application/Insight/CreateInsight/CreateInsight.php`
@@ -553,6 +555,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.org" commit \
 ### Task 3: `UpdateInsight` use case + TDD
 
 **Files:**
+
 - Create `src/Application/Insight/UpdateInsight/UpdateInsightInput.php`
 - Create `src/Application/Insight/UpdateInsight/UpdateInsightOutput.php`
 - Create `src/Application/Insight/UpdateInsight/UpdateInsight.php`
@@ -852,6 +855,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.org" commit \
 ### Task 4: `DeleteInsight` use case + TDD
 
 **Files:**
+
 - Create `src/Application/Insight/DeleteInsight/DeleteInsightInput.php`
 - Create `src/Application/Insight/DeleteInsight/DeleteInsight.php`
 - Create `tests/Unit/Application/Insight/DeleteInsightTest.php`
@@ -1072,6 +1076,7 @@ sed -n '340,440p' src/Infrastructure/Adapter/Api/Controller/BackstageController.
 ```
 
 Identify:
+
 - How the acting user + tenant are obtained
 - How the admin gate is enforced
 - How JSON body is parsed
@@ -1175,7 +1180,7 @@ Concretely: add a private method `private function findByIdOrNull(InsightId $id,
 
 Add `GetInsightById` use case alongside the existing `GetInsight`. Trivial:
 
-```
+```text
 src/Application/Insight/GetInsightById/
     GetInsightById.php
     GetInsightByIdInput.php
@@ -1286,6 +1291,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.org" commit \
 ### Task 7: Routes + DI BOTH-wire
 
 **Files:**
+
 - Modify `routes/api.php` — add 5 new routes
 - Modify `bootstrap/app.php` — bind 3 (or 4 if GetInsightById) new use cases
 - Modify `tests/Support/KernelHarness.php` — mirror the bindings
@@ -1736,6 +1742,7 @@ Work in `C:\laragon\www\sites\daem-society`. Assumes the platform routes are mer
 ### Task 11: Branch + routes + proxy
 
 **Files:**
+
 - Create `public/api/backstage/insights.php`
 - Modify `public/index.php` (add 2 route entries)
 
@@ -1940,6 +1947,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.org" commit \
 ### Task 13: Modal `insight-modal.js` + `insight-modal.css`
 
 **Files:**
+
 - Create `public/pages/backstage/insights/insight-modal.js`
 - Create `public/pages/backstage/insights/insight-modal.css`
 
@@ -2305,6 +2313,7 @@ gh pr merge "$PR_NUM" --merge --delete-branch && \
 - [ ] **Step 5: Final manual verification**
 
 Report to user:
+
 - Both PRs merged
 - Manual: sign in as admin → `/backstage/insights` → "Add insight" → fill + save → row appears in table; edit → change title → save → updated; delete → confirm → row gone
 - Manual: sign in as non-admin → `/backstage/insights` → redirected to `/`

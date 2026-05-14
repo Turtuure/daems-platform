@@ -21,16 +21,19 @@ These ship in one PR because the toast is the UI contract for the approve flow: 
 ## 2. Current state (as of commit b5a3b94)
 
 **Approve flow (broken):**
+
 - `DecideApplication.php` updates `{member,supporter}_applications.status`, writes `decided_at/by/note`, writes an audit row. Nothing else happens.
 - No `users` row is created. No `user_tenants` attach. No member number. No credentials for the new user.
 - Result: an "approved" application is a dead record; the applicant cannot log in, does not appear in `/backstage/members`, does not exist anywhere outside the applications table.
 
 **Toast (partial):**
+
 - Dashboard (`sites/daem-society/public/pages/backstage/index.php` L108–230) renders an inline PHP toast from `/backstage/stats` data. Fixed top-right, no dismiss logic, no persistence.
 - Other backstage pages (`/applications`, `/members`, future `/events`, etc.) have no toast at all.
 - No `admin_application_dismissals` table exists yet.
 
 **Supporting infra that exists and we can lean on:**
+
 - `auth_tokens` (session tokens keyed by `token_hash`) — we'll tie dismissals to session identity via `admin_id` and clear on new login.
 - `user_tenants` pivot with `role ENUM(admin, moderator, member, supporter, registered)`.
 - `users` has `member_number VARCHAR(30) NULL`, `membership_type`, `membership_status`, country, address fields — enough for activation without schema extension.
@@ -58,16 +61,19 @@ These are the open questions the user listed, with the chosen answers:
 Five new migrations, numbered 036–040, in order:
 
 ### 036 — `users.password_hash` nullable
+
 ```sql
 ALTER TABLE users MODIFY password_hash VARCHAR(255) NULL;
 ```
 
 ### 037 — `users.date_of_birth` nullable
+
 ```sql
 ALTER TABLE users MODIFY date_of_birth DATE NULL;
 ```
 
 ### 038 — `tenant_member_counters`
+
 ```sql
 CREATE TABLE tenant_member_counters (
     tenant_id  CHAR(36) NOT NULL,
@@ -79,9 +85,11 @@ CREATE TABLE tenant_member_counters (
         REFERENCES tenants(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 ```
+
 Seed: one row per existing tenant with `next_value = COALESCE(MAX(CAST(member_number AS UNSIGNED)), 0) + 1` via backfill in the same migration file, joining `users` ↔ `user_tenants` to scope per tenant.
 
 ### 039 — `user_invites`
+
 ```sql
 CREATE TABLE user_invites (
     id         CHAR(36) NOT NULL,
@@ -100,10 +108,13 @@ CREATE TABLE user_invites (
         REFERENCES tenants(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 ```
+
 Token lifetime: 7 days. Raw token never stored — `token_hash = SHA256(token)`. Invite URL format: `https://<host>/invite/<raw-token>`.
 
 ### 040 — `admin_application_dismissals`
+
 Verbatim from roadmap §7:
+
 ```sql
 CREATE TABLE admin_application_dismissals (
     id           CHAR(36) NOT NULL,
@@ -165,19 +176,23 @@ Out of scope **to fully build**, in scope **to stub the endpoint** so the invite
 ### 5.3 Pending-applications feed for toasts
 
 New endpoint:
-```
+
+```text
 GET /api/v1/backstage/applications/pending-count
   → { items: [{ id, type, name, created_at }...], total }
 ```
+
 - Returns every pending member + supporter application for the active tenant that the **calling admin has not dismissed**.
 - Filter: `LEFT JOIN admin_application_dismissals aad ON aad.app_id = app.id AND aad.admin_id = ?` where `aad.id IS NULL`.
 - Capped at 50 items (more than 50 pending applications should trigger a roll-up badge, not 50 individual toasts — see §6).
 
 New endpoint:
-```
+
+```text
 POST /api/v1/backstage/applications/{type}/{id}/dismiss
   → 204
 ```
+
 - Upsert into `admin_application_dismissals` keyed by `(admin_id, app_id)`.
 - Idempotent — dismissing an already-dismissed application is a no-op 204.
 
@@ -245,6 +260,7 @@ This is the manual bridge until Mailu is deployed. Clicking Copy uses the clipbo
 ### 7.3 Isolation tests (`tests/Isolation/`)
 
 Extend the existing pattern:
+
 - `ApplicationApprovalTenantIsolationTest`: approving an application in tenant A never creates users/user_tenants/invites in tenant B. Tenant B admins cannot dismiss tenant A's applications.
 - `AdminDismissalTenantIsolationTest`: tenant A admin dismissing app cannot affect tenant B admin's view of unrelated apps.
 
@@ -258,6 +274,7 @@ Extend the existing pattern:
 ### 7.5 Manual frontend smoke
 
 Not automated, listed for the execution checklist:
+
 1. Approve a member on `/backstage/applications` — toast appears with invite URL, pending-count toast on next page load no longer includes that application.
 2. Approve a supporter — same.
 3. Dismiss a pending toast — refresh page, still gone. Log out and back in — reappears.
@@ -280,6 +297,7 @@ Not automated, listed for the execution checklist:
 ## 9. Files touched (inventory)
 
 **New:**
+
 - `database/migrations/036_make_users_password_hash_nullable.sql`
 - `database/migrations/037_make_users_date_of_birth_nullable.sql`
 - `database/migrations/038_create_tenant_member_counters.sql`
@@ -303,6 +321,7 @@ Not automated, listed for the execution checklist:
 - Frontend: `sites/daem-society/public/pages/backstage/toasts.js`, `toasts.css`, `public/pages/invite.php`, wiring in `backstage/layout.php`.
 
 **Modified:**
+
 - `src/Application/Backstage/DecideApplication/DecideApplication.php` — new dependencies, approve path orchestration, expanded output.
 - `src/Application/Backstage/DecideApplication/DecideApplicationOutput.php` — add invite fields.
 - `src/Application/Auth/LoginUser/LoginUser.php` — NULL-hash rejection, dismissal cleanup on success.

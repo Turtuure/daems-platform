@@ -9,6 +9,7 @@ The platform's `bin/console` -CLI runs scheduled jobs. Three jobs are in scope f
 | `membership:lapse-inactive-members` | Daily | 03:00 | Lapse members with 2 consecutive years OVERDUE (§ 4 deemed-resignation) |
 
 Each command:
+
 - Acquires an exclusive `flock()` on `var/run/<command>.lock` — overlapping runs exit 0 cleanly
 - Writes JSONL audit to `var/log/cron/<command>-YYYY-MM-DD.log`
 - Per-tenant try/catch — one tenant's failure does not block others

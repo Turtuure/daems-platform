@@ -58,6 +58,7 @@ These hold for **every** section in this spec — referenced once, not repeated 
 ### 3.3 Testing pattern (per section)
 
 Each section ships:
+
 - **Unit:** `tests/Unit/Application/Backstage/ListXStatsTest.php` — anonymous fake of the repo interface(s); asserts the use case wires inputs to outputs correctly.
 - **Integration:** `tests/Integration/Backstage/ListXStatsTest.php` (or repo-aligned location) — exercises the SQL `statsForTenant` method against a seeded `daems_db_test`; asserts counts and sparkline shape.
 - **Isolation:** `tests/Isolation/XStatsIsolationTest.php` — seeds two tenants (`daems` + `sahegroup`) with overlapping data; asserts the second tenant's data does not leak into the first's stats payload.
@@ -92,6 +93,7 @@ Trend label format: `+N vs prev 30d` (compute by counting prior 30d window and d
 ### 4.4 Files
 
 **Backend (`daems-platform`):**
+
 - New: `src/Application/Backstage/ListMembersStats/{ListMembersStats,ListMembersStatsInput,ListMembersStatsOutput}.php`
 - New method: `BackstageController::statsMembers(Request, array $params): Response`
 - New route: `GET /api/v1/backstage/members/stats` in `routes/api.php`
@@ -101,6 +103,7 @@ Trend label format: `+N vs prev 30d` (compute by counting prior 30d window and d
 - New tests: Unit + Integration + Isolation + E2E (per §3.3)
 
 **Frontend (`daem-society`):**
+
 - Modified: `pages/backstage/members/index.php` — insert `.kpis-grid` with 4 `kpi-card.php` includes after `.page-header` block, before existing filters/table
 - New: `pages/backstage/members/members-stats.js` — fetches stats and inits sparklines
 - Modified: `public/api/backstage/members.php` — add `op=stats` case + verify `session_start()` is at top
@@ -134,6 +137,7 @@ Trend label for Avg response time: `<N>h` plain (no comparison vs prev period �
 ### 5.4 Files
 
 **Backend:**
+
 - New: `src/Application/Backstage/ListApplicationsStats/{ListApplicationsStats,Input,Output}.php`
 - New method: `BackstageController::statsApplications`
 - New route: `GET /api/v1/backstage/applications/stats`
@@ -142,6 +146,7 @@ Trend label for Avg response time: `<N>h` plain (no comparison vs prev period �
 - New tests per §3.3
 
 **Frontend:**
+
 - Modified: `pages/backstage/applications/index.php` — `.kpis-grid` insertion
 - New: `pages/backstage/applications/applications-stats.js`
 - Modified: `public/api/backstage/applications.php` — add `op=stats` + ensure `session_start()`
@@ -172,6 +177,7 @@ Trend label: `+N vs prev 30d` for Drafts/Registrations/Pending; `+N next 30d vs 
 ### 6.4 Files
 
 **Backend:**
+
 - New: `src/Application/Backstage/ListEventsStats/{...}`
 - New: `BackstageController::statsEvents`
 - New route: `GET /api/v1/backstage/events/stats`
@@ -180,6 +186,7 @@ Trend label: `+N vs prev 30d` for Drafts/Registrations/Pending; `+N next 30d vs 
 - New tests per §3.3
 
 **Frontend:**
+
 - Modified: `pages/backstage/events/index.php` — `.kpis-grid` insertion
 - New: `pages/backstage/events/events-stats.js`
 - Modified: `public/api/backstage/events.php` — `op=stats` + `session_start()`
@@ -212,6 +219,7 @@ Trend label: `+N vs prev 30d` for Active/Drafts/Pending; `Curated` plain text fo
 ### 7.4 Files
 
 **Backend:**
+
 - New: `src/Application/Backstage/ListProjectsStats/{...}`
 - New: `BackstageController::statsProjects`
 - New route: `GET /api/v1/backstage/projects/stats`
@@ -220,6 +228,7 @@ Trend label: `+N vs prev 30d` for Active/Drafts/Pending; `Curated` plain text fo
 - New tests per §3.3
 
 **Frontend:**
+
 - Modified: `pages/backstage/projects/index.php` — `.kpis-grid` insertion
 - New: `pages/backstage/projects/projects-stats.js`
 - Modified: `public/api/backstage/projects.php` — `op=stats` + `session_start()`
@@ -246,6 +255,7 @@ Trend label: `+N vs prev 30d` for Pending (you), Pending (all), Cleared. Oldest 
 ### 8.2 Repo wiring
 
 The use case orchestrates four repos. Each repo gets a method returning its slice (the count + per-day series):
+
 - `MemberApplicationRepository::notificationStatsForTenant(TenantId): array`
 - `SupporterApplicationRepository::notificationStatsForTenant(TenantId): array`
 - `ProjectProposalRepository::notificationStatsForTenant(TenantId): array`
@@ -261,6 +271,7 @@ If existing methods on these repos already cover parts of this (they do for Memb
 ### 8.4 Files
 
 **Backend:**
+
 - New: `src/Application/Backstage/ListNotificationsStats/{...}`
 - New: `BackstageController::statsNotifications`
 - New route: `GET /api/v1/backstage/notifications/stats`
@@ -269,6 +280,7 @@ If existing methods on these repos already cover parts of this (they do for Memb
 - New tests per §3.3
 
 **Frontend:**
+
 - Modified: `pages/backstage/notifications/index.php` — `.kpis-grid` insertion (the page is server-rendered today, but the strip is JS-hydrated like every other section)
 - New: `pages/backstage/notifications/notifications-stats.js`
 - Modified: `public/api/backstage/notifications.php` (creates the file if it does not yet exist) — add `op=stats` case + `session_start()`. Today the page calls `applications/pending-count` directly; the strip uses the new dedicated stats endpoint.
@@ -276,10 +288,12 @@ If existing methods on these repos already cover parts of this (they do for Memb
 ## 9. Testing — overall
 
 Per phase:
+
 - Unit + Integration + Isolation + E2E (per §3.3).
 - PHPStan level 9 = 0 errors.
 
 Run order during execution (per phase, mirrors Phase 2):
+
 ```bash
 "C:/laragon/bin/mysql/mysql-8.4.3-winx64/bin/mysql.exe" -h127.0.0.1 -uroot -psalasana \
   -e "DROP DATABASE IF EXISTS daems_db_test; CREATE DATABASE daems_db_test \
@@ -291,6 +305,7 @@ composer analyse
 ```
 
 Manual UAT per section:
+
 - KPI strip renders 4 cards.
 - Values are non-negative integers (or `Nh`/`Nd`) and match a hand-spotcheck SQL query against the dev database.
 - Sparklines render or render gracefully on empty array.

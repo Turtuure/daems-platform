@@ -11,11 +11,13 @@
 **Spec:** `docs/superpowers/specs/2026-04-27-modular-architecture-phase1-events-design.md` (commit `8dbf733`)
 
 **Repos affected (3 commit streams):**
+
 - `C:\laragon\www\daems-platform\` (branch `dev`) — new data-fix migration + autoload-dev/phpstan paths commit + Wave E removals + KernelHarness cleanup
 - `C:\laragon\www\modules\events\` = `dp-events` repo (existing local `.git`, origin `Turtuure/dp-events`, branch `dev`, no commits yet) — manifest + all moved Events code
 - `C:\laragon\www\sites\daem-society\` (branch `dev`) — Wave F front-controller routes update commit + Wave F delete-originals commit (module-router already in place)
 
 **Verification gates (must pass before final commit on any task touching moved code):**
+
 - `composer analyse` → 0 errors at PHPStan level 9 (with baseline)
 - `composer test` (Unit + Integration) → all green
 - `composer test:e2e` → all green
@@ -36,7 +38,7 @@
 
 ## Task waves (dependency order)
 
-```
+```text
 Wave A (parallel-safe)
 ├── Task 1: dp-events skeleton (manifest + README + .gitignore + phpunit + composer + STUB bindings/routes)
 ├── Task 2: Core data-fix migration 0NN_rename_event_migrations_in_schema_migrations_table.sql
@@ -89,9 +91,11 @@ Wave G (verification gate)
 ## File map summary
 
 **Created in `daems-platform/`:**
+
 - `database/migrations/0NN_rename_event_migrations_in_schema_migrations_table.sql` (NN to be assigned during Task 2 = highest existing + 1)
 
 **Modified in `daems-platform/`:**
+
 - `composer.json` (autoload-dev `DaemsModule\\Events\\` + `DaemsModule\\Events\\Tests\\`)
 - `phpstan.neon` (paths += `../modules/events/backend/src`)
 - `bootstrap/app.php` — remove ~9 import lines + ~30 binding lines for Events
@@ -101,6 +105,7 @@ Wave G (verification gate)
 - `src/Infrastructure/Adapter/Api/Controller/MediaController.php` — remove 2 Event image methods (`uploadEventImage` + `deleteEventImage`)
 
 **Deleted in `daems-platform/`:**
+
 - `src/Domain/Event/` (entire dir, 7 files)
 - `src/Application/Event/` (entire dir, 8 sub-dirs, ~21 files)
 - 15 admin sibling dirs under `src/Application/Backstage/`: `ApproveEventProposal`, `ArchiveEvent`, `CreateEvent`, `DeleteEventImage`, `Events`, `GetEventWithAllTranslations`, `ListEventProposalsForAdmin`, `ListEventRegistrations`, `ListEventsForAdmin`, `PublishEvent`, `RejectEventProposal`, `UnregisterUserFromEvent`, `UpdateEvent`, `UpdateEventTranslation`, `UploadEventImage` (~41 files)
@@ -120,9 +125,11 @@ Wave G (verification gate)
 - Any dangling `tests/Integration/Migration/Migration{025,032,043,051,056}Test.php` files (verify during Task 25)
 
 **Retained in `daems-platform/` (NOT deleted):**
+
 - Migrations `database/migrations/{053_backfill_events_projects_i18n,054_drop_translated_columns_from_events_projects,059_fulltext_events_projects_i18n}.sql` — mixed scope (touch both events + projects). Same retention as Projects extraction.
 
 **Created in `modules/events/` (dp-events):**
+
 - `module.json`, `README.md`, `.gitignore`, `phpunit.xml.dist`, `composer.json`
 - `backend/bindings.php`, `backend/bindings.test.php`, `backend/routes.php`
 - `backend/migrations/event_001..007_*.sql` (7 files)
@@ -147,9 +154,11 @@ Wave G (verification gate)
 - `frontend/assets/backstage/{event-modal.css,event-modal.js,events-stats.js,upload-widget.js,proposal-modal.css,proposal-modal.js}` (6)
 
 **Modified in `daem-society/`:**
+
 - `public/index.php` — front-controller routes update: 5 paths `__DIR__ . '/pages/events/...'` → `$daemsKnownModules['events']['public']` / `['backstage']` (Task 26)
 
 **Deleted in `daem-society/`:**
+
 - `public/pages/events/` (entire dir, 8 files + sub-dirs)
 - `public/pages/backstage/events/` (entire dir, 5 files)
 - `public/pages/backstage/event-proposals/` (entire dir, 3 files)
@@ -161,6 +170,7 @@ Wave G (verification gate)
 **Repo for commits:** `dp-events` (the new module). Local `.git` already initialised at `C:\laragon\www\modules\events\` with `origin = https://github.com/Turtuure/dp-events.git`, HEAD → `refs/heads/dev`. Working copy is empty (no commits).
 
 **Files:**
+
 - Create: `C:/laragon/www/modules/events/module.json`
 - Create: `C:/laragon/www/modules/events/README.md`
 - Create: `C:/laragon/www/modules/events/.gitignore`
@@ -183,6 +193,7 @@ gh repo view Turtuure/dp-events 2>&1 | head -3
 ```
 
 If "GraphQL: Could not resolve to a Repository" appears, create:
+
 ```bash
 gh repo create Turtuure/dp-events --public --description "Events module for daems-platform — extracted Phase 1" --homepage "https://daems.fi"
 ```
@@ -192,6 +203,7 @@ Otherwise skip.
 - [ ] **Step 2: Create `module.json`**
 
 Path: `C:/laragon/www/modules/events/module.json`
+
 ```json
 {
   "name": "events",
@@ -216,6 +228,7 @@ Path: `C:/laragon/www/modules/events/module.json`
 - [ ] **Step 3: Create `README.md`**
 
 Path: `C:/laragon/www/modules/events/README.md`
+
 ```markdown
 # dp-events — Events module
 
@@ -242,7 +255,8 @@ Extracted from `daems-platform` Phase 1, 2026-04-27. Pattern proven by Insights 
 - [ ] **Step 4: Create `.gitignore`**
 
 Path: `C:/laragon/www/modules/events/.gitignore`
-```
+
+```text
 /vendor/
 /.phpunit.cache/
 /.phpunit.result.cache
@@ -256,6 +270,7 @@ Thumbs.db
 - [ ] **Step 5: Create `phpunit.xml.dist`**
 
 Path: `C:/laragon/www/modules/events/phpunit.xml.dist`
+
 ```xml
 <?xml version="1.0" encoding="UTF-8"?>
 <phpunit xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
@@ -277,6 +292,7 @@ Path: `C:/laragon/www/modules/events/phpunit.xml.dist`
 - [ ] **Step 6: Create `composer.json`**
 
 Path: `C:/laragon/www/modules/events/composer.json`
+
 ```json
 {
   "name": "daems/dp-events",
@@ -302,6 +318,7 @@ Path: `C:/laragon/www/modules/events/composer.json`
 - [ ] **Step 7: Create STUB `backend/bindings.php`**
 
 Path: `C:/laragon/www/modules/events/backend/bindings.php`
+
 ```php
 <?php
 
@@ -317,6 +334,7 @@ return static function (Container $container): void {
 - [ ] **Step 8: Create STUB `backend/bindings.test.php`**
 
 Path: `C:/laragon/www/modules/events/backend/bindings.test.php`
+
 ```php
 <?php
 
@@ -332,6 +350,7 @@ return static function (Container $container): void {
 - [ ] **Step 9: Create STUB `backend/routes.php`**
 
 Path: `C:/laragon/www/modules/events/backend/routes.php`
+
 ```php
 <?php
 
@@ -361,9 +380,11 @@ touch C:/laragon/www/modules/events/backend/migrations/.gitkeep \
 - [ ] **Step 11: Verify ModuleRegistry can boot the empty module**
 
 Run from `C:/laragon/www/daems-platform`:
+
 ```bash
 vendor/bin/phpunit --testsuite=E2E --filter=KernelHarness 2>&1 | tail -10
 ```
+
 Expected: tests pass (or skipped). Stub closures prevent the "missing bindings.php" crash that hit Forum extraction.
 
 - [ ] **Step 12: Commit + push initial branch**
@@ -387,6 +408,7 @@ cd C:/laragon/www/modules/events && \
 **Why:** During Task 12 we'll move 7 core migrations into the module's `backend/migrations/` and rename them `event_001..007_*.sql`. Production + dev DBs already have rows like `('001_create_events_table.sql', ...)` in `schema_migrations`. If we just rename the files, dev DBs would re-run the migrations (different filename = unseen). The data-fix migration UPDATEs those rows in place, idempotent, conditional, runs once per DB.
 
 **Files:**
+
 - Create: `C:/laragon/www/daems-platform/database/migrations/0NN_rename_event_migrations_in_schema_migrations_table.sql` (NN = highest existing + 1; verify in Step 1)
 
 - [ ] **Step 1: Determine next migration number**
@@ -394,11 +416,13 @@ cd C:/laragon/www/modules/events && \
 ```bash
 cd C:/laragon/www/daems-platform && ls database/migrations/ | sort | tail -3
 ```
+
 Use the highest NNN seen + 1. (Forum used `065`, Projects will use `066`. If Projects has shipped, Events uses `067`. If Projects hasn't shipped yet, Events uses `066`. **For the rest of this plan, refer to it as `NN`.** Verify before continuing.)
 
 - [ ] **Step 2: Create the migration file**
 
 Path: `C:/laragon/www/daems-platform/database/migrations/NN_rename_event_migrations_in_schema_migrations_table.sql`
+
 ```sql
 -- Idempotent rename of event-related migration filenames in schema_migrations
 -- so dev/prod DBs don't re-run them after Task 12 moves them into the module.
@@ -459,6 +483,7 @@ cd C:/laragon/www/daems-platform && \
 ```bash
 cd C:/laragon/www/daems-platform && find src/Domain/Event -name '*.php' | sort
 ```
+
 Expected: 7 files (`Event.php`, `EventId.php`, `EventProposal.php`, `EventProposalId.php`, `EventProposalRepositoryInterface.php`, `EventRegistration.php`, `EventRepositoryInterface.php`). If different, update Task 4 list inline.
 
 - [ ] **Step 2: Application/Event count**
@@ -466,6 +491,7 @@ Expected: 7 files (`Event.php`, `EventId.php`, `EventProposal.php`, `EventPropos
 ```bash
 cd C:/laragon/www/daems-platform && find src/Application/Event -name '*.php' | sort
 ```
+
 Record the count. Expected: ~21. Each sub-directory is a use-case bundle (UseCase.php + Input.php + Output.php). Update Task 7 list if different.
 
 - [ ] **Step 3: Application/Backstage event use cases**
@@ -474,6 +500,7 @@ Record the count. Expected: ~21. Each sub-directory is a use-case bundle (UseCas
 cd C:/laragon/www/daems-platform && ls -d src/Application/Backstage/*Event* src/Application/Backstage/{Approve,Reject}EventProposal src/Application/Backstage/Events 2>&1 | sort
 find src/Application/Backstage -path '*Event*' -name '*.php' 2>/dev/null | wc -l
 ```
+
 Expected: 15 directories, ~41 files. Update Task 8 list if different.
 
 - [ ] **Step 4: SQL repos**
@@ -481,6 +508,7 @@ Expected: 15 directories, ~41 files. Update Task 8 list if different.
 ```bash
 ls C:/laragon/www/daems-platform/src/Infrastructure/Adapter/Persistence/Sql/Sql{Event,EventProposal}Repository.php 2>&1
 ```
+
 Expected: 2 files. If only 1 or 3, update Task 5 list.
 
 - [ ] **Step 5: Public controller**
@@ -488,6 +516,7 @@ Expected: 2 files. If only 1 or 3, update Task 5 list.
 ```bash
 ls C:/laragon/www/daems-platform/src/Infrastructure/Adapter/Api/Controller/EventController.php 2>&1
 ```
+
 Expected: 1 file.
 
 - [ ] **Step 6: BackstageController Event methods**
@@ -495,6 +524,7 @@ Expected: 1 file.
 ```bash
 grep -nE "function (listEvents|createEvent|updateEvent|publishEvent|archiveEvent|listEventRegistrations|removeEventRegistration|statsEvents|getEventWithTranslations|updateEventTranslation|listEventProposals|approveEventProposal|rejectEventProposal)" C:/laragon/www/daems-platform/src/Infrastructure/Adapter/Api/Controller/BackstageController.php
 ```
+
 Expected: 13 lines. Record line numbers for Task 10.
 
 - [ ] **Step 7: MediaController Event image methods**
@@ -502,6 +532,7 @@ Expected: 13 lines. Record line numbers for Task 10.
 ```bash
 grep -nE "function (uploadEventImage|deleteEventImage)" C:/laragon/www/daems-platform/src/Infrastructure/Adapter/Api/Controller/MediaController.php
 ```
+
 Expected: 2 lines. Record line numbers for Task 10 + Task 23.
 
 - [ ] **Step 8: Routes count**
@@ -509,6 +540,7 @@ Expected: 2 lines. Record line numbers for Task 10 + Task 23.
 ```bash
 grep -cE "/api/v1/(events|event-proposals|backstage/events|backstage/event-proposals)" C:/laragon/www/daems-platform/routes/api.php
 ```
+
 Expected: 22 lines.
 
 - [ ] **Step 9: Test file count**
@@ -516,6 +548,7 @@ Expected: 22 lines.
 ```bash
 find C:/laragon/www/daems-platform/tests -name '*Event*' -name '*.php' | wc -l
 ```
+
 Expected: ~30 files (29 tests + 2 fakes − 1 if any unexpected drop).
 
 - [ ] **Step 10: Migrations check**
@@ -523,6 +556,7 @@ Expected: ~30 files (29 tests + 2 fakes − 1 if any unexpected drop).
 ```bash
 ls C:/laragon/www/daems-platform/database/migrations/ | grep -iE "event"
 ```
+
 Expected: 10 files (7 event-pure → move; 3 mixed events+projects → stay: 053, 054, 059).
 
 - [ ] **Step 11: Cross-domain consumer scan (NULL test — must return 0 for E2 to hold)**
@@ -530,6 +564,7 @@ Expected: 10 files (7 event-pure → move; 3 mixed events+projects → stay: 053
 ```bash
 cd C:/laragon/www/daems-platform && grep -rE "use Daems\\\\(Domain|Application)\\\\Event\\\\" src/ tests/ --include='*.php' -l 2>/dev/null | grep -vE "/Event/|/Backstage/(Approve|Archive|Create|DeleteEvent|Events|GetEventWith|ListEvent|Publish|Reject|UnregisterUserFromEvent|UpdateEvent|UploadEvent)" | head -10
 ```
+
 Expected: 0 results (zero non-Event-folder files import Event types). If results appear → STOP, this contradicts E2 = MOVE Domain. Promote to user before proceeding.
 
 - [ ] **Step 12: No commit (audit task)**
@@ -543,6 +578,7 @@ If counts deviate ≥10% from the numbers in the spec, update the spec (commit a
 **Repo for commits:** `dp-events`
 
 **Files (move):**
+
 - `src/Domain/Event/Event.php` → `backend/src/Domain/Event.php`
 - `src/Domain/Event/EventId.php` → `backend/src/Domain/EventId.php`
 - `src/Domain/Event/EventProposal.php` → `backend/src/Domain/EventProposal.php`
@@ -559,20 +595,24 @@ cp C:/laragon/www/daems-platform/src/Domain/Event/*.php \
    C:/laragon/www/modules/events/backend/src/Domain/
 ls C:/laragon/www/modules/events/backend/src/Domain/
 ```
+
 Expected: 7 PHP files.
 
 - [ ] **Step 2: Rewrite namespace in copies (Edit each file)**
 
 For each of the 7 files, change:
+
 - Old: `namespace Daems\Domain\Event;`
 - New: `namespace DaemsModule\Events\Domain;`
 
 Use sed for bulk:
+
 ```bash
 cd C:/laragon/www/modules/events/backend/src/Domain && \
   sed -i 's|^namespace Daems\\Domain\\Event;|namespace DaemsModule\\Events\\Domain;|' *.php
 grep -h '^namespace ' *.php | sort -u
 ```
+
 Expected: only `namespace DaemsModule\Events\Domain;` printed.
 
 - [ ] **Step 3: Verify each file PHP-lints**
@@ -580,6 +620,7 @@ Expected: only `namespace DaemsModule\Events\Domain;` printed.
 ```bash
 for f in C:/laragon/www/modules/events/backend/src/Domain/*.php; do php -l "$f" || exit 1; done
 ```
+
 Expected: all 7 "No syntax errors detected".
 
 - [ ] **Step 4: Verify no internal cross-imports broken**
@@ -587,6 +628,7 @@ Expected: all 7 "No syntax errors detected".
 ```bash
 grep -rh "use Daems\\\\Domain\\\\Event\\\\" C:/laragon/www/modules/events/backend/src/Domain/ | sort -u
 ```
+
 Expected: zero results — Domain files reference each other via same-namespace, no `use` needed.
 
 - [ ] **Step 5: Commit**
@@ -607,6 +649,7 @@ cd C:/laragon/www/modules/events && \
 **Repo for commits:** `dp-events`
 
 **Files (move):**
+
 - `src/Infrastructure/Adapter/Persistence/Sql/SqlEventRepository.php` → `backend/src/Infrastructure/SqlEventRepository.php`
 - `src/Infrastructure/Adapter/Persistence/Sql/SqlEventProposalRepository.php` → `backend/src/Infrastructure/SqlEventProposalRepository.php`
 
@@ -624,22 +667,26 @@ cp C:/laragon/www/daems-platform/src/Infrastructure/Adapter/Persistence/Sql/SqlE
 For each of the 2 files in `modules/events/backend/src/Infrastructure/`:
 
 Change namespace declaration:
+
 - Old: `namespace Daems\Infrastructure\Adapter\Persistence\Sql;`
 - New: `namespace DaemsModule\Events\Infrastructure;`
 
 Update Domain imports (Domain moved in Task 4):
+
 - Old: `use Daems\Domain\Event\Event;` etc.
 - New: `use DaemsModule\Events\Domain\Event;` etc.
 
 (Other imports — `Daems\Infrastructure\Framework\Database\Database`, `Daems\Domain\Tenant\TenantId`, etc. — stay unchanged.)
 
 Use sed:
+
 ```bash
 cd C:/laragon/www/modules/events/backend/src/Infrastructure && \
   sed -i 's|^namespace Daems\\Infrastructure\\Adapter\\Persistence\\Sql;|namespace DaemsModule\\Events\\Infrastructure;|' Sql*Repository.php && \
   sed -i 's|use Daems\\Domain\\Event\\|use DaemsModule\\Events\\Domain\\|g' Sql*Repository.php
 grep -h '^namespace \|^use Daems\\Domain\\Event\|^use DaemsModule\\Events\\Domain' Sql*Repository.php | sort -u
 ```
+
 Expected: namespace lines show `DaemsModule\Events\Infrastructure;`. No `use Daems\Domain\Event\` lines remain. All Domain imports rewritten to `use DaemsModule\Events\Domain\`.
 
 - [ ] **Step 3: PHP lint**
@@ -664,6 +711,7 @@ cd C:/laragon/www/modules/events && \
 **Repo for commits:** `dp-events`
 
 **Files (move):**
+
 - `tests/Support/Fake/InMemoryEventRepository.php` → `backend/tests/Support/InMemoryEventRepository.php`
 - `tests/Support/Fake/InMemoryEventProposalRepository.php` → `backend/tests/Support/InMemoryEventProposalRepository.php`
 
@@ -684,6 +732,7 @@ cd C:/laragon/www/modules/events/backend/tests/Support && \
   sed -i 's|use Daems\\Domain\\Event\\|use DaemsModule\\Events\\Domain\\|g' InMemoryEvent*.php
 grep -h '^namespace ' InMemoryEvent*.php | sort -u
 ```
+
 Expected: `namespace DaemsModule\Events\Tests\Support;`.
 
 - [ ] **Step 3: PHP lint**
@@ -708,6 +757,7 @@ cd C:/laragon/www/modules/events && \
 **Repo for commits:** `dp-events`
 
 **Files (move):**
+
 - `src/Application/Event/{GetEvent,GetEventBySlugForLocale,ListEvents,ListEventsForLocale,RegisterForEvent,SubmitEventProposal,UnregisterFromEvent,UpdateEvent}/*.php` → `backend/src/Application/{same-dir-names}/*.php`
 
 - [ ] **Step 1: Copy directory tree**
@@ -719,6 +769,7 @@ cp -r C:/laragon/www/daems-platform/src/Application/Event/* \
 ls C:/laragon/www/modules/events/backend/src/Application/
 find C:/laragon/www/modules/events/backend/src/Application -name '*.php' | wc -l
 ```
+
 Expected: 8 sub-dirs, ~21 PHP files.
 
 - [ ] **Step 2: Rewrite namespaces + Domain imports across all files**
@@ -731,6 +782,7 @@ cd C:/laragon/www/modules/events/backend/src/Application && \
     -e 's|use Daems\\Application\\Event\\|use DaemsModule\\Events\\Application\\|g'
 grep -rh '^namespace ' . | sort -u
 ```
+
 Expected: every namespace line is `namespace DaemsModule\Events\Application\<UseCaseDir>;`. No leftover `Daems\Application\Event` or `Daems\Domain\Event` imports.
 
 - [ ] **Step 3: PHP lint each file**
@@ -738,6 +790,7 @@ Expected: every namespace line is `namespace DaemsModule\Events\Application\<Use
 ```bash
 find C:/laragon/www/modules/events/backend/src/Application -name '*.php' -exec php -l {} \;
 ```
+
 Expected: all "No syntax errors detected".
 
 - [ ] **Step 4: Commit**
@@ -792,6 +845,7 @@ done
 ls C:/laragon/www/modules/events/backend/src/Application/Backstage/ | wc -l
 find C:/laragon/www/modules/events/backend/src/Application/Backstage -name '*.php' | wc -l
 ```
+
 Expected: 15 dirs, ~41 PHP files.
 
 - [ ] **Step 2: Rewrite namespaces + imports**
@@ -805,6 +859,7 @@ cd C:/laragon/www/modules/events/backend/src/Application/Backstage && \
     -e 's|use Daems\\Application\\Backstage\\\(ApproveEventProposal\|ArchiveEvent\|CreateEvent\|DeleteEventImage\|Events\|GetEventWithAllTranslations\|ListEventProposalsForAdmin\|ListEventRegistrations\|ListEventsForAdmin\|PublishEvent\|RejectEventProposal\|UnregisterUserFromEvent\|UpdateEvent\|UpdateEventTranslation\|UploadEventImage\)\\|use DaemsModule\\Events\\Application\\Backstage\\\1\\|g'
 grep -rh '^namespace ' . | sort -u
 ```
+
 Expected: namespaces like `namespace DaemsModule\Events\Application\Backstage\<UseCase>;`.
 
 - [ ] **Step 3: Verify no leftover legacy imports**
@@ -813,6 +868,7 @@ Expected: namespaces like `namespace DaemsModule\Events\Application\Backstage\<U
 cd C:/laragon/www/modules/events/backend/src/Application/Backstage && \
   grep -rE "use Daems\\\\(Domain\\\\Event|Application\\\\Event|Application\\\\Backstage\\\\(ApproveEventProposal|ArchiveEvent|CreateEvent|DeleteEventImage|Events|GetEventWithAllTranslations|ListEventProposalsForAdmin|ListEventRegistrations|ListEventsForAdmin|PublishEvent|RejectEventProposal|UnregisterUserFromEvent|UpdateEvent|UpdateEventTranslation|UploadEventImage))" .
 ```
+
 Expected: zero results.
 
 - [ ] **Step 4: PHP lint each file**
@@ -820,6 +876,7 @@ Expected: zero results.
 ```bash
 find C:/laragon/www/modules/events/backend/src/Application/Backstage -name '*.php' -exec php -l {} \; | grep -v "No syntax errors"
 ```
+
 Expected: empty (no errors).
 
 - [ ] **Step 5: Commit**
@@ -838,6 +895,7 @@ cd C:/laragon/www/modules/events && \
 **Repo for commits:** `dp-events`
 
 **Files (move):**
+
 - `src/Infrastructure/Adapter/Api/Controller/EventController.php` → `backend/src/Controller/EventController.php`
 
 - [ ] **Step 1: Copy file**
@@ -859,6 +917,7 @@ cd C:/laragon/www/modules/events/backend/src/Controller && \
     EventController.php
 grep '^namespace \|^use Daems\\\(Domain\|Application\)\\Event' EventController.php
 ```
+
 Expected: only `namespace DaemsModule\Events\Controller;` shows; no leftover legacy imports.
 
 - [ ] **Step 3: PHP lint**
@@ -885,12 +944,14 @@ cd C:/laragon/www/modules/events && \
 **Why:** Without this, PHPStan's level-9 analysis can't see module classes and the autoloader can't resolve `DaemsModule\Events\*`. Forum lesson 3.
 
 **Files modified:**
+
 - `composer.json` — add 2 `autoload-dev` PSR-4 entries
 - `phpstan.neon` — add 1 path
 
 - [ ] **Step 1: Edit `composer.json`**
 
 In `autoload-dev.psr-4`, add (next to existing `DaemsModule\\Insights\\`, `DaemsModule\\Forum\\`, `DaemsModule\\Projects\\`):
+
 ```json
 "DaemsModule\\Events\\": "../modules/events/backend/src/",
 "DaemsModule\\Events\\Tests\\": "../modules/events/backend/tests/"
@@ -899,6 +960,7 @@ In `autoload-dev.psr-4`, add (next to existing `DaemsModule\\Insights\\`, `Daems
 - [ ] **Step 2: Edit `phpstan.neon`**
 
 In the `paths:` block, add at the end:
+
 ```yaml
         - ../modules/events/backend/src
 ```
@@ -908,6 +970,7 @@ In the `paths:` block, add at the end:
 ```bash
 cd C:/laragon/www/daems-platform && composer dump-autoload 2>&1 | tail -3
 ```
+
 Expected: "Generated optimized autoload files" (or similar success message).
 
 - [ ] **Step 4: Verify PHPStan finds the module's existing files**
@@ -915,6 +978,7 @@ Expected: "Generated optimized autoload files" (or similar success message).
 ```bash
 cd C:/laragon/www/daems-platform && composer analyse 2>&1 | tail -5
 ```
+
 Expected: `[OK] No errors` (with baseline). Already-moved Domain + SQL + Application files now lint successfully because the autoloader can resolve their classes.
 
 - [ ] **Step 5: Commit**
@@ -935,10 +999,12 @@ cd C:/laragon/www/daems-platform && \
 **Why:** Spec E4 = single controller. 13 Event methods live in core's `BackstageController.php` + 2 image methods (`uploadEventImage`, `deleteEventImage`) in core's `MediaController.php`. Extract via TDD: write Reflection-based signature tests for the new class first, fail, implement minimal class to pass, then port method bodies.
 
 **Files (create):**
+
 - `backend/src/Controller/EventBackstageController.php` (NEW class, 15 public methods)
 - `backend/tests/Unit/Controller/EventBackstageControllerSignatureTest.php` (NEW Reflection signature tests)
 
 **Reference (read-only):**
+
 - `src/Infrastructure/Adapter/Api/Controller/BackstageController.php` lines 293, 308, 331, 359, 373, 387, 401, 639, 721, 740, 812, 833, 855
 - `src/Infrastructure/Adapter/Api/Controller/MediaController.php` (locate `uploadEventImage` + `deleteEventImage` via Step 1 grep)
 
@@ -950,11 +1016,13 @@ grep -nE "function (listEvents|createEvent|updateEvent|publishEvent|archiveEvent
 
 grep -nE "function (uploadEventImage|deleteEventImage)" src/Infrastructure/Adapter/Api/Controller/MediaController.php
 ```
+
 Record line numbers. (Spec lists lines 293, 308, 331, 359, 373, 387, 401, 639, 721, 740, 812, 833, 855 for BackstageController; verify MediaController numbers in this step.)
 
 - [ ] **Step 2: Write Reflection signature test (failing)**
 
 Path: `C:/laragon/www/modules/events/backend/tests/Unit/Controller/EventBackstageControllerSignatureTest.php`
+
 ```php
 <?php
 
@@ -1014,11 +1082,13 @@ final class EventBackstageControllerSignatureTest extends TestCase
 cd C:/laragon/www/daems-platform && \
   vendor/bin/phpunit C:/laragon/www/modules/events/backend/tests/Unit/Controller/EventBackstageControllerSignatureTest.php 2>&1 | tail -15
 ```
+
 Expected: FAIL with "class does not exist". This proves test runs and is wired.
 
 - [ ] **Step 4: Create minimal `EventBackstageController` skeleton**
 
 Path: `C:/laragon/www/modules/events/backend/src/Controller/EventBackstageController.php`
+
 ```php
 <?php
 
@@ -1057,6 +1127,7 @@ final class EventBackstageController
 cd C:/laragon/www/daems-platform && \
   vendor/bin/phpunit C:/laragon/www/modules/events/backend/tests/Unit/Controller/EventBackstageControllerSignatureTest.php 2>&1 | tail -5
 ```
+
 Expected: PASS (16 tests — class-exists + 15 method tests).
 
 - [ ] **Step 6: Port method bodies + constructor wiring (port from BackstageController.php + MediaController.php)**
@@ -1087,6 +1158,7 @@ public function __construct(
 ```
 
 Port each method body verbatim from the source file, replacing parent class's `$this->approveEventProposal` (use case property) with the new local `$this->approveEventProposal` (constructor-injected). Method bodies often:
+
 - Read inputs from `$request` (Authorization, JSON body, multipart form)
 - Build `Input` value object
 - Call `$this-><useCase>->execute($input)`
@@ -1101,6 +1173,7 @@ Port each method body verbatim from the source file, replacing parent class's `$
 cd C:/laragon/www/daems-platform && \
   vendor/bin/phpunit C:/laragon/www/modules/events/backend/tests/Unit/Controller/EventBackstageControllerSignatureTest.php 2>&1 | tail -3
 ```
+
 Expected: PASS.
 
 - [ ] **Step 8: PHPStan check on the new file**
@@ -1109,6 +1182,7 @@ Expected: PASS.
 cd C:/laragon/www/daems-platform && \
   vendor/bin/phpstan analyse C:/laragon/www/modules/events/backend/src/Controller/EventBackstageController.php 2>&1 | tail -10
 ```
+
 Expected: 0 errors. If list<>/array<> issues surface (likely from the route's `array $params` parameter), follow the precedent set in Forum + PHPStan-2.x upgrade: prefer real `list<string,string>` typing OR baseline if structural.
 
 - [ ] **Step 9: Commit**
@@ -1155,6 +1229,7 @@ cp "$SRC/051_create_events_i18n.sql"                  "$DST/event_006_create_eve
 cp "$SRC/056_create_event_proposals.sql"              "$DST/event_007_create_event_proposals.sql"
 ls "$DST"
 ```
+
 Expected: 7 files.
 
 - [ ] **Step 2: Verify ALTER-on-core-tables migrations have conditional guards**
@@ -1162,6 +1237,7 @@ Expected: 7 files.
 ```bash
 grep -lE "ALTER TABLE (admin|users|tenants)" C:/laragon/www/modules/events/backend/migrations/*.sql 2>/dev/null
 ```
+
 Events migrations only ALTER tables they own (events, event_registrations, events_i18n, event_proposals). Likely no cross-table ALTERs need guards. If any are flagged, verify the table is created in core; if so, wrap in conditional `IF (table_count > 0) THEN ALTER ELSE DO 0` per Forum lesson 4. Otherwise no guard needed (the table is created by an earlier event migration in the same module).
 
 - [ ] **Step 3: Commit**
@@ -1182,6 +1258,7 @@ cd C:/laragon/www/modules/events && \
 **Repo for commits:** `dp-events`
 
 **Files (modify):**
+
 - `backend/bindings.php` — replace stub with full production bindings
 
 - [ ] **Step 1: List all use cases that need bindings (read from moved code)**
@@ -1190,11 +1267,13 @@ cd C:/laragon/www/modules/events && \
 cd C:/laragon/www/modules/events && \
   find backend/src/Application -name '*.php' | xargs -I{} grep -lE "^final class .* implements" {} 2>/dev/null
 ```
+
 Expected: each use case class. Note them.
 
 - [ ] **Step 2: Replace `bindings.php` stub with full bindings**
 
 Path: `C:/laragon/www/modules/events/backend/bindings.php`
+
 ```php
 <?php
 
@@ -1378,6 +1457,7 @@ return static function (Container $container): void {
 - [ ] **Step 3: Production-container smoke**
 
 Create `C:/laragon/www/daems-platform/smoke-events-controllers.php`:
+
 ```php
 <?php
 declare(strict_types=1);
@@ -1402,12 +1482,15 @@ foreach ([
 ```
 
 Run:
+
 ```bash
 cd C:/laragon/www/daems-platform && php smoke-events-controllers.php
 ```
+
 Expected: `OK: DaemsModule\Events\Controller\EventController` and `OK: DaemsModule\Events\Controller\EventBackstageController`. **Block on any FAIL** — investigate constructor mismatch, fix bindings.php, re-run.
 
 Delete the smoke script after success:
+
 ```bash
 rm C:/laragon/www/daems-platform/smoke-events-controllers.php
 ```
@@ -1417,6 +1500,7 @@ rm C:/laragon/www/daems-platform/smoke-events-controllers.php
 ```bash
 cd C:/laragon/www/daems-platform && composer analyse 2>&1 | tail -3
 ```
+
 Expected: 0 errors.
 
 - [ ] **Step 5: Commit**
@@ -1435,11 +1519,13 @@ cd C:/laragon/www/modules/events && \
 **Repo for commits:** `dp-events`
 
 **Files (modify):**
+
 - `backend/bindings.test.php` — replace stub with full test bindings (InMemory fakes for repositories)
 
 - [ ] **Step 1: Replace stub**
 
 Path: `C:/laragon/www/modules/events/backend/bindings.test.php`
+
 ```php
 <?php
 
@@ -1472,6 +1558,7 @@ To DRY this up (Forum extracted a shared file), copy the use case + controller b
 If choosing duplication (recommended for parity with Forum):
 
 Path: `C:/laragon/www/modules/events/backend/bindings.test.php`
+
 ```php
 <?php
 
@@ -1493,10 +1580,12 @@ return static function (Container $container): void {
 ```
 
 Verify the bindings match production by diff:
+
 ```bash
 diff <(grep "container->bind\|container->singleton" C:/laragon/www/modules/events/backend/bindings.php) \
      <(grep "container->bind\|container->singleton" C:/laragon/www/modules/events/backend/bindings.test.php)
 ```
+
 Expected: only the 2 repository singleton lines differ (production = SqlEventRepository / SqlEventProposalRepository; test = InMemoryEventRepository / InMemoryEventProposalRepository). All other binds identical.
 
 - [ ] **Step 3: Run a small E2E test to verify KernelHarness loads test bindings**
@@ -1505,6 +1594,7 @@ Expected: only the 2 repository singleton lines differ (production = SqlEventRep
 cd C:/laragon/www/daems-platform && \
   vendor/bin/phpunit --testsuite=E2E --filter=KernelHarness 2>&1 | tail -5
 ```
+
 Expected: tests pass (or N/A skipped). No "Cannot resolve EventRepositoryInterface" errors.
 
 - [ ] **Step 4: Commit**
@@ -1523,11 +1613,13 @@ cd C:/laragon/www/modules/events && \
 **Repo for commits:** `dp-events`
 
 **Files (modify):**
+
 - `backend/routes.php` — replace stub with all 22 Event routes
 
 - [ ] **Step 1: Replace stub**
 
 Path: `C:/laragon/www/modules/events/backend/routes.php`
+
 ```php
 <?php
 
@@ -1642,6 +1734,7 @@ return static function (Router $router, Container $container): void {
 ```bash
 grep -c "router->" C:/laragon/www/modules/events/backend/routes.php
 ```
+
 Expected: 22.
 
 - [ ] **Step 3: Live API smoke**
@@ -1652,6 +1745,7 @@ After Wave E removes Event routes from core's `routes/api.php`, the module's rou
 curl -s -o /dev/null -w "GET /api/v1/events: %{http_code}\n" "http://daems-platform.local/api/v1/events"
 curl -s -o /dev/null -w "GET /api/v1/backstage/events/stats: %{http_code}\n" "http://daems-platform.local/api/v1/backstage/events/stats"
 ```
+
 Expected: 200 (events) and 401 (backstage stats — needs auth). **Both non-500.** (The auth fail on backstage is expected, not a regression.)
 
 - [ ] **Step 4: Commit**
@@ -1670,6 +1764,7 @@ cd C:/laragon/www/modules/events && \
 **Repo for commits:** `dp-events`
 
 **Files (move):**
+
 - `tests/Unit/Domain/Event/EventTest.php` → `backend/tests/Unit/Domain/EventTest.php`
 
 - [ ] **Step 1: Copy file**
@@ -1696,6 +1791,7 @@ cd C:/laragon/www/modules/events/backend/tests/Unit/Domain && \
 cd C:/laragon/www/daems-platform && \
   vendor/bin/phpunit C:/laragon/www/modules/events/backend/tests/Unit/Domain/EventTest.php 2>&1 | tail -5
 ```
+
 Expected: PASS.
 
 - [ ] **Step 4: Commit**
@@ -1714,6 +1810,7 @@ cd C:/laragon/www/modules/events && \
 **Repo for commits:** `dp-events`
 
 **Files (move):**
+
 - `tests/Unit/Application/Event/RegisterForEventTest.php` → `backend/tests/Unit/Application/RegisterForEventTest.php`
 
 - [ ] **Step 1: Copy + rewrite**
@@ -1738,6 +1835,7 @@ cd C:/laragon/www/modules/events/backend/tests/Unit/Application && \
 cd C:/laragon/www/daems-platform && \
   vendor/bin/phpunit C:/laragon/www/modules/events/backend/tests/Unit/Application/RegisterForEventTest.php 2>&1 | tail -5
 ```
+
 Expected: PASS.
 
 - [ ] **Step 3: Commit**
@@ -1758,6 +1856,7 @@ cd C:/laragon/www/modules/events && \
 **Files (move):**
 
 Each of these from `tests/Unit/Application/Backstage/` to `backend/tests/Unit/Application/Backstage/`:
+
 - `ArchiveEventTest.php`
 - `CreateEventTest.php`
 - `DeleteEventImageTest.php`
@@ -1780,6 +1879,7 @@ for f in ArchiveEvent CreateEvent DeleteEventImage ListEventRegistrations ListEv
 done
 ls C:/laragon/www/modules/events/backend/tests/Unit/Application/Backstage/ | wc -l
 ```
+
 Expected: 10 files.
 
 - [ ] **Step 2: Rewrite namespaces + imports across all 10**
@@ -1803,6 +1903,7 @@ cd C:/laragon/www/modules/events/backend/tests/Unit/Application/Backstage && \
 cd C:/laragon/www/daems-platform && \
   vendor/bin/phpunit C:/laragon/www/modules/events/backend/tests/Unit/Application/Backstage/ 2>&1 | tail -5
 ```
+
 Expected: 10 tests passing.
 
 - [ ] **Step 4: Commit**
@@ -1821,6 +1922,7 @@ cd C:/laragon/www/modules/events && \
 **Repo for commits:** `dp-events`
 
 **Files (move):**
+
 - `tests/Integration/Application/EventsAdminIntegrationTest.php` → `backend/tests/Integration/Application/EventsAdminIntegrationTest.php`
 - `tests/Integration/EventProposalStatsTest.php` → `backend/tests/Integration/EventProposalStatsTest.php`
 - `tests/Integration/EventStatsTest.php` → `backend/tests/Integration/EventStatsTest.php`
@@ -1861,6 +1963,7 @@ find C:/laragon/www/modules/events/backend/tests/Integration -name '*.php' -prin
 cd C:/laragon/www/daems-platform && \
   vendor/bin/phpunit C:/laragon/www/modules/events/backend/tests/Integration/ 2>&1 | tail -10
 ```
+
 Expected: 5 tests passing. (Note: Integration suite is slow; ~5-10 min for these 5 tests.)
 
 - [ ] **Step 4: Commit**
@@ -1881,6 +1984,7 @@ cd C:/laragon/www/modules/events && \
 **Files (move):**
 
 Isolation:
+
 - `tests/Isolation/EventProposalTenantIsolationTest.php`
 - `tests/Isolation/EventsAdminTenantIsolationTest.php`
 - `tests/Isolation/EventsI18nTenantIsolationTest.php`
@@ -1888,6 +1992,7 @@ Isolation:
 - `tests/Isolation/EventTenantIsolationTest.php`
 
 E2E:
+
 - `tests/E2E/Backstage/EventAdminEndpointsTest.php`
 - `tests/E2E/Backstage/EventsStatsEndpointTest.php`
 - `tests/E2E/Backstage/EventUploadTest.php`
@@ -1934,9 +2039,11 @@ find C:/laragon/www/modules/events/backend/tests/E2E -name '*.php' -print0 | xar
 ```
 
 **Note on IsolationTestCase:** the base class `Daems\Tests\Isolation\IsolationTestCase` STAYS in core (provides shared MigrationTestCase setup). Moved tests use `use Daems\Tests\Isolation\IsolationTestCase;` — that line should NOT be rewritten. Verify with grep:
+
 ```bash
 grep -h "use Daems\\\\Tests\\\\Isolation\\\\IsolationTestCase" C:/laragon/www/modules/events/backend/tests/Isolation/*.php
 ```
+
 Expected: 5 lines (one per test).
 
 - [ ] **Step 3: Run isolation suite for these tests**
@@ -1945,6 +2052,7 @@ Expected: 5 lines (one per test).
 cd C:/laragon/www/daems-platform && \
   vendor/bin/phpunit C:/laragon/www/modules/events/backend/tests/Isolation/ 2>&1 | tail -10
 ```
+
 Expected: 5 tests passing. (Slow — ~5 min.)
 
 - [ ] **Step 4: Run E2E suite for these tests**
@@ -1953,6 +2061,7 @@ Expected: 5 tests passing. (Slow — ~5 min.)
 cd C:/laragon/www/daems-platform && \
   vendor/bin/phpunit C:/laragon/www/modules/events/backend/tests/E2E/ 2>&1 | tail -10
 ```
+
 Expected: 5 tests passing.
 
 - [ ] **Step 5: Commit**
@@ -1971,6 +2080,7 @@ cd C:/laragon/www/modules/events && \
 **Repo for commits:** `daems-platform`
 
 **Files (modify):**
+
 - `bootstrap/app.php` — remove ~9 Event-import lines + ~30 Event-binding lines
 
 - [ ] **Step 1: Locate Event bindings**
@@ -1980,11 +2090,13 @@ cd C:/laragon/www/daems-platform && \
   grep -nE "use Daems\\\\(Domain|Application|Infrastructure)\\\\(Event|Adapter\\\\Api\\\\Controller\\\\EventController|Adapter\\\\Persistence\\\\Sql\\\\SqlEvent)" bootstrap/app.php
 grep -nE "GetEvent|ListEvents|RegisterForEvent|SubmitEventProposal|UnregisterFromEvent|EventRepositoryInterface|EventProposalRepositoryInterface|SqlEvent|EventController" bootstrap/app.php
 ```
+
 Record the line numbers. (Mix of `use` lines + `$container->bind` blocks.)
 
 - [ ] **Step 2: Delete the lines**
 
 Use Edit tool on `bootstrap/app.php`:
+
 - Remove every `use Daems\(Domain|Application)\Event\` import (8-9 lines, top of file)
 - Remove every `$container->singleton(EventRepositoryInterface::class, ...)` and `EventProposalRepositoryInterface` block (~10 lines each)
 - Remove every `$container->bind(\Daems\Application\Event\<X>::class, ...)` block (~5 lines each × 8 use cases)
@@ -1996,11 +2108,13 @@ Use Edit tool on `bootstrap/app.php`:
 cd C:/laragon/www/daems-platform && \
   grep -E "Event(?!s2030|sLog|ementInfo)" bootstrap/app.php | grep -vE "//.*Event"
 ```
+
 Expected: zero results (no remaining Event-related lines outside comments).
 
 - [ ] **Step 4: Production-container smoke (module controllers still work via module bindings)**
 
 Recreate the smoke script from Task 13 + run:
+
 ```bash
 cd C:/laragon/www/daems-platform && cat > smoke-events-controllers.php <<'EOF'
 <?php
@@ -2021,6 +2135,7 @@ EOF
 php smoke-events-controllers.php
 rm smoke-events-controllers.php
 ```
+
 Expected: 2× OK.
 
 - [ ] **Step 5: Commit**
@@ -2039,6 +2154,7 @@ cd C:/laragon/www/daems-platform && \
 **Repo for commits:** `daems-platform`
 
 **Files (modify):**
+
 - `routes/api.php` — remove all 22 Event routes (7 public + 15 backstage)
 
 - [ ] **Step 1: Locate route blocks**
@@ -2047,6 +2163,7 @@ cd C:/laragon/www/daems-platform && \
 cd C:/laragon/www/daems-platform && \
   grep -nE "/api/v1/(events|event-proposals|backstage/events|backstage/event-proposals)" routes/api.php
 ```
+
 Record line numbers (each route is ~3 lines).
 
 - [ ] **Step 2: Delete each route block + its surrounding comments**
@@ -2059,6 +2176,7 @@ For each line range, delete the `$router->...({...}, [...]);` block. Total: 22 r
 cd C:/laragon/www/daems-platform && \
   grep -cE "/api/v1/(events|event-proposals|backstage/events|backstage/event-proposals)" routes/api.php
 ```
+
 Expected: 0.
 
 - [ ] **Step 4: Live API smoke (module routes still serve)**
@@ -2066,6 +2184,7 @@ Expected: 0.
 ```bash
 curl -s -o /dev/null -w "GET /api/v1/events: %{http_code}\n" "http://daems-platform.local/api/v1/events"
 ```
+
 Expected: 200 (module routes from `routes.php` serve the request).
 
 - [ ] **Step 5: Commit**
@@ -2084,12 +2203,14 @@ cd C:/laragon/www/daems-platform && \
 **Repo for commits:** `daems-platform`
 
 **Files (modify):**
+
 - `src/Infrastructure/Adapter/Api/Controller/BackstageController.php` — remove 13 methods + their `use` imports
 - `src/Infrastructure/Adapter/Api/Controller/MediaController.php` — remove 2 methods + their `use` imports
 
 - [ ] **Step 1: Remove 13 methods from BackstageController.php**
 
 Use the line numbers recorded in Task 3 Step 6 + Task 10 Step 1. For each of these 13 methods, delete the entire method body (`public function <name>(...): Response { ... }`):
+
 - `listEvents` (line 293)
 - `createEvent` (line 308)
 - `updateEvent` (line 331)
@@ -2105,12 +2226,14 @@ Use the line numbers recorded in Task 3 Step 6 + Task 10 Step 1. For each of the
 - `rejectEventProposal` (line 855)
 
 Also remove from the constructor:
+
 - All Event-related use case parameters (`ListEventsForAdmin $listEventsForAdmin`, `CreateEvent $createEvent`, etc.)
 - Their `use` import statements at the top of the file
 
 - [ ] **Step 2: Remove 2 methods from MediaController.php**
 
 Delete:
+
 - `uploadEventImage`
 - `deleteEventImage`
 
@@ -2122,11 +2245,13 @@ And their constructor parameters + `use` imports.
 cd C:/laragon/www/daems-platform && \
   grep -nE "(Event|EventProposal|EventRegistration|EventController)" src/Infrastructure/Adapter/Api/Controller/BackstageController.php | grep -vE "^[0-9]+:\s*//"
 ```
+
 Expected: zero non-comment Event references.
 
 ```bash
 grep -nE "(uploadEventImage|deleteEventImage|UploadEventImage|DeleteEventImage)" src/Infrastructure/Adapter/Api/Controller/MediaController.php
 ```
+
 Expected: zero results.
 
 - [ ] **Step 4: PHPStan + smoke**
@@ -2134,6 +2259,7 @@ Expected: zero results.
 ```bash
 cd C:/laragon/www/daems-platform && composer analyse 2>&1 | tail -3
 ```
+
 Expected: 0 errors.
 
 ```bash
@@ -2150,6 +2276,7 @@ EOF
 php smoke.php
 rm smoke.php
 ```
+
 Expected: 3× OK.
 
 - [ ] **Step 5: Commit**
@@ -2169,6 +2296,7 @@ cd C:/laragon/www/daems-platform && \
 **Repo for commits:** `daems-platform`
 
 **Files (modify):**
+
 - `tests/Support/KernelHarness.php` — remove all Event-related bindings (mirror of bootstrap/app.php cleanup)
 
 - [ ] **Step 1: Locate Event bindings in KernelHarness**
@@ -2188,6 +2316,7 @@ cd C:/laragon/www/daems-platform && \
 cd C:/laragon/www/daems-platform && \
   vendor/bin/phpunit --testsuite=E2E 2>&1 | tail -3
 ```
+
 Expected: both pass.
 
 - [ ] **Step 4: Commit**
@@ -2201,11 +2330,12 @@ cd C:/laragon/www/daems-platform && \
 
 ---
 
-## Task 25: Apply data-fix migration; delete legacy Event src/* + tests/* + dangling Migration tests + 7 original migration files
+## Task 25: Apply data-fix migration; delete legacy Event src/*+ tests/* + dangling Migration tests + 7 original migration files
 
 **Repo for commits:** `daems-platform`
 
 **Files (delete):**
+
 - `src/Domain/Event/` (entire dir)
 - `src/Application/Event/` (entire dir)
 - 15 admin sibling dirs under `src/Application/Backstage/`
@@ -2217,6 +2347,7 @@ cd C:/laragon/www/daems-platform && \
 - Any dangling `tests/Integration/Migration/Migration{025,032,043,051,056}Test.php`
 
 **Files (apply):**
+
 - Migration `database/migrations/NN_rename_event_migrations_in_schema_migrations_table.sql` (created in Task 2) — apply to dev DB.
 
 - [ ] **Step 1: Apply data-fix migration to dev DB**
@@ -2226,12 +2357,15 @@ cd C:/laragon/www/daems-platform && \
   -h 127.0.0.1 -u root -psalasana daems_db \
   < C:/laragon/www/daems-platform/database/migrations/NN_rename_event_migrations_in_schema_migrations_table.sql
 ```
+
 Expected: silent success. Verify rows updated:
+
 ```bash
 "C:/laragon/bin/mysql/mysql-8.4.3-winx64/bin/mysql.exe" \
   -h 127.0.0.1 -u root -psalasana daems_db \
   -e "SELECT COUNT(*) FROM schema_migrations WHERE migration LIKE 'event_%';"
 ```
+
 Expected: 7.
 
 - [ ] **Step 2: Delete legacy src/ directories**
@@ -2294,7 +2428,9 @@ rmdir tests/Unit/Domain/Event tests/Unit/Application/Event 2>/dev/null
 cd C:/laragon/www/daems-platform && \
   ls tests/Integration/Migration/Migration{025,032,043,051,056}Test.php 2>/dev/null
 ```
+
 For each that exists, delete:
+
 ```bash
 rm tests/Integration/Migration/Migration025Test.php tests/Integration/Migration/Migration032Test.php tests/Integration/Migration/Migration043Test.php tests/Integration/Migration/Migration051Test.php tests/Integration/Migration/Migration056Test.php 2>/dev/null
 ```
@@ -2306,6 +2442,7 @@ cd C:/laragon/www/daems-platform && \
   git grep -E 'Daems\\(Domain\\Event|Application\\Event|Application\\Backstage\\(ApproveEventProposal|ArchiveEvent|CreateEvent|DeleteEventImage|Events|GetEventWithAllTranslations|ListEventProposalsForAdmin|ListEventRegistrations|ListEventsForAdmin|PublishEvent|RejectEventProposal|UnregisterUserFromEvent|UpdateEvent|UpdateEventTranslation|UploadEventImage)|Infrastructure\\Adapter\\Persistence\\Sql\\SqlEvent|Infrastructure\\Adapter\\Api\\Controller\\EventController)' \
     -- src/ tests/ bootstrap/ routes/ 2>/dev/null
 ```
+
 Expected: zero results.
 
 - [ ] **Step 7: PHPStan + tests**
@@ -2315,6 +2452,7 @@ cd C:/laragon/www/daems-platform && composer analyse 2>&1 | tail -3
 cd C:/laragon/www/daems-platform && vendor/bin/phpunit --testsuite=Unit 2>&1 | tail -3
 cd C:/laragon/www/daems-platform && vendor/bin/phpunit --testsuite=E2E 2>&1 | tail -3
 ```
+
 Expected: 0 errors + all passing. Module's tests run via the autoload-dev mapping (Task 9.5).
 
 - [ ] **Step 8: Commit**
@@ -2338,6 +2476,7 @@ cd C:/laragon/www/daems-platform && \
 **Why:** Wave F regression-prevention. The `daem-society/public/index.php` front controller hardcodes `__DIR__ . '/pages/events/...'` paths in 5 places. If we delete the originals (Task 27+) BEFORE updating these requires, every legacy `/events*` URL hits a fatal "failed to open required file" → HTTP 500 (the `/forums`-style regression we just fixed). Update routes FIRST, curl-smoke gate, THEN delete.
 
 **Files (modify):**
+
 - `daem-society/public/index.php`
 
 - [ ] **Step 1: Locate the hardcoded paths**
@@ -2346,7 +2485,9 @@ cd C:/laragon/www/daems-platform && \
 grep -nE "pages/(events|backstage/events|backstage/event-proposals)" \
   C:/laragon/www/sites/daem-society/public/index.php
 ```
+
 Expected: 5 paths (verify exact line numbers):
+
 - `__DIR__ . '/pages/events/index.php'` in `$routes` array (~line 415)
 - `__DIR__ . '/pages/events/propose.php'` in `/events/propose` if-block (~line 530)
 - `__DIR__ . '/pages/events/detail.php'` in `/events/{slug}` if-block (~line 540)
@@ -2360,9 +2501,11 @@ Expected: 5 paths (verify exact line numbers):
 Actually — since the module page router resolves `/events/` via pattern `^/<module>/<sub>?$`, and `index.php` exists at `modules/events/frontend/public/index.php`, the module router serves `/events` automatically. **Just remove the `/events` entry from `$routes`.** No replacement needed.
 
 Old:
+
 ```php
 '/events'           => __DIR__ . '/pages/events/index.php',
 ```
+
 New: (delete the entire line)
 
 **Change 2 (line ~530, `/events/propose`):**
@@ -2370,17 +2513,20 @@ New: (delete the entire line)
 The module router doesn't match `/events/propose` because no `propose.php` is in the module's public dir's root sub-handler... actually, `/events/propose` DOES match the module router (it tries `modules/events/frontend/public/propose/index.php` first, then `modules/events/frontend/public/propose.php`). The latter exists after Task 27. So the module router handles it. **Just remove the explicit handler.**
 
 Old:
+
 ```php
 if ($uri === '/events/propose') {
     require __DIR__ . '/pages/events/propose.php';
     exit;
 }
 ```
+
 New: (delete the entire if-block)
 
 **Change 3 (line ~540, `/events/{slug}`):** This is the dynamic detail page that fetches via API and forwards. Keep the regex + API-fetch logic, only update the require path.
 
 Old:
+
 ```php
 if (preg_match('#^/events/([a-z0-9\-]+)$#', $uri, $m)) {
     $userId = $_SESSION['user']['id'] ?? null;
@@ -2392,7 +2538,9 @@ if (preg_match('#^/events/([a-z0-9\-]+)$#', $uri, $m)) {
     }
 }
 ```
+
 New:
+
 ```php
 if (preg_match('#^/events/([a-z0-9\-]+)$#', $uri, $m)) {
     $userId = $_SESSION['user']['id'] ?? null;
@@ -2411,11 +2559,14 @@ if (preg_match('#^/events/([a-z0-9\-]+)$#', $uri, $m)) {
 **Change 4 + 5 (lines ~386, ~387, backstage admin map):** remove the 2 entries. Module router serves `/backstage/events` and `/backstage/event-proposals` natively.
 
 Old:
+
 ```php
         '/events'             => __DIR__ . '/pages/backstage/events/index.php',
         '/event-proposals'    => __DIR__ . '/pages/backstage/event-proposals/index.php',
 ```
+
 New: (delete both lines + leave a comment)
+
 ```php
         // /backstage/events + /backstage/event-proposals served by the module
         // page router (block above this) → modules/events/frontend/backstage/.
@@ -2426,6 +2577,7 @@ New: (delete both lines + leave a comment)
 ```bash
 php -l C:/laragon/www/sites/daem-society/public/index.php
 ```
+
 Expected: "No syntax errors detected".
 
 - [ ] **Step 4: Curl-smoke gate (BLOCK if any returns 500)**
@@ -2438,6 +2590,7 @@ for u in /events /events/propose /events/some-published-slug \
   echo "$(curl -s -o /dev/null -w '%{http_code}' http://daems.local$u) $u"
 done
 ```
+
 Expected: all non-500 (200 / 302 to login / 404 on non-existent slug). **STOP and investigate any 500.**
 
 - [ ] **Step 5: Commit**
@@ -2455,7 +2608,7 @@ the Forum 92fae96 regression-prevention (Wave F lesson #10)."
 
 ---
 
-## Task 27: Move 8 daem-society public pages + __DIR__ rewrite
+## Task 27: Move 8 daem-society public pages + **DIR** rewrite
 
 **Repo for commits:** `dp-events`
 
@@ -2464,6 +2617,7 @@ the Forum 92fae96 regression-prevention (Wave F lesson #10)."
 ```bash
 ls C:/laragon/www/sites/daem-society/public/pages/events/
 ```
+
 Expected: `cta.php`, `data/`, `detail/`, `detail.php`, `grid.php`, `hero.php`, `index.php`, `propose.php`. (8 entries.)
 
 - [ ] **Step 1: Copy entire dir**
@@ -2483,6 +2637,7 @@ grep -rn '__DIR__' --include='*.php' C:/laragon/www/modules/events/frontend/publ
 ```
 
 Inventory all `__DIR__ . '/../../...'` includes (chrome). Each should be rewritten to `DAEMS_SITE_PUBLIC . '/...'`:
+
 - `__DIR__ . '/../../partials/top-nav.php'` → `DAEMS_SITE_PUBLIC . '/partials/top-nav.php'`
 - `__DIR__ . '/../../partials/footer.php'` → `DAEMS_SITE_PUBLIC . '/partials/footer.php'`
 - `__DIR__ . '/../../pages/errors/404.php'` → `DAEMS_SITE_PUBLIC . '/pages/errors/404.php'`
@@ -2499,11 +2654,13 @@ For each file with chrome includes, use Edit tool to replace the exact lines.
 ```bash
 grep -rn '__DIR__ . .\\.\\./\\.\\./' C:/laragon/www/modules/events/frontend/public/
 ```
+
 Expected: zero results (all upward-traversing chrome includes rewritten).
 
 ```bash
 grep -rn 'pages/(404|errors)/' --include='*.php' C:/laragon/www/modules/events/frontend/public/
 ```
+
 Expected: only `pages/errors/404.php` (no orphan `pages/404.php`).
 
 - [ ] **Step 5: PHP lint**
@@ -2511,6 +2668,7 @@ Expected: only `pages/errors/404.php` (no orphan `pages/404.php`).
 ```bash
 find C:/laragon/www/modules/events/frontend/public -name '*.php' -exec php -l {} \; | grep -v "No syntax errors"
 ```
+
 Expected: empty.
 
 - [ ] **Step 6: Curl-smoke**
@@ -2520,6 +2678,7 @@ for u in /events /events/propose; do
   echo "$(curl -s -o /dev/null -w '%{http_code}' http://daems.local$u) $u"
 done
 ```
+
 Expected: 200 (events) and 302 to login (propose). **Block on 500.**
 
 - [ ] **Step 7: Commit**
@@ -2540,6 +2699,7 @@ cd C:/laragon/www/modules/events && \
 **Repo for commits:** `dp-events`
 
 **Files (move):**
+
 - `daem-society/public/pages/backstage/events/index.php` → `modules/events/frontend/backstage/index.php`
 - `daem-society/public/pages/backstage/event-proposals/index.php` → `modules/events/frontend/backstage/event-proposals/index.php`
 
@@ -2570,6 +2730,7 @@ grep -rn 'pages/backstage/(events|event-proposals)/' --include='*.php' C:/larago
 ```
 
 For each asset URL `/pages/backstage/(events|event-proposals)/<file>`, rewrite to `/modules/events/assets/backstage/<file>`. Files referenced:
+
 - `/pages/backstage/events/event-modal.css` → `/modules/events/assets/backstage/event-modal.css`
 - `/pages/backstage/events/event-modal.js` → `/modules/events/assets/backstage/event-modal.js`
 - `/pages/backstage/events/events-stats.js` → `/modules/events/assets/backstage/events-stats.js`
@@ -2582,11 +2743,13 @@ For each asset URL `/pages/backstage/(events|event-proposals)/<file>`, rewrite t
 ```bash
 grep -rn 'pages/backstage/(events|event-proposals)/' --include='*.php' C:/laragon/www/modules/events/frontend/backstage/
 ```
+
 Expected: zero results.
 
 ```bash
 grep -rn '/modules/events/assets/backstage/' --include='*.php' C:/laragon/www/modules/events/frontend/backstage/
 ```
+
 Expected: 6 references (or as many asset-files as actually referenced).
 
 - [ ] **Step 5: PHP lint**
@@ -2611,6 +2774,7 @@ cd C:/laragon/www/modules/events && \
 **Repo for commits:** `dp-events` (move-in) + `daem-society` (delete originals)
 
 **Files (move):**
+
 - `event-modal.css`, `event-modal.js`, `events-stats.js`, `upload-widget.js` from `daem-society/public/pages/backstage/events/`
 - `proposal-modal.css`, `proposal-modal.js` from `daem-society/public/pages/backstage/event-proposals/`
 - → `modules/events/frontend/assets/backstage/`
@@ -2626,6 +2790,7 @@ cp "$SRC_E/event-modal.css" "$SRC_E/event-modal.js" "$SRC_E/events-stats.js" "$S
 cp "$SRC_P/proposal-modal.css" "$SRC_P/proposal-modal.js" "$DST/"
 ls -la "$DST"
 ```
+
 Expected: 6 files.
 
 - [ ] **Step 2: HTTP smoke 6× 200**
@@ -2637,6 +2802,7 @@ for f in event-modal.css event-modal.js events-stats.js upload-widget.js \
   echo "$code /modules/events/assets/backstage/$f"
 done
 ```
+
 Expected: 6× 200. **STOP** on any other code.
 
 - [ ] **Step 3: Commit assets to dp-events**
@@ -2660,6 +2826,7 @@ cd C:/laragon/www/sites/daem-society && \
 ```bash
 cd C:/laragon/www/sites/daem-society && git status -s | head -40
 ```
+
 Expected: many `D` (deleted) lines for events + backstage/events + backstage/event-proposals files. **No `M` (modified)** lines for those subtrees (we shouldn't have edited originals — only the front controller in Task 26).
 
 If any `M` line appears for events files: STOP — investigate, originals must not be modified.
@@ -2671,6 +2838,7 @@ for u in /events /events/propose /backstage/events /backstage/event-proposals; d
   echo "$(curl -s -o /dev/null -w '%{http_code}' http://daems.local$u) $u"
 done
 ```
+
 Expected: 200 (events) / 302 (propose, login) / 302 (backstage *, login). **All non-500.**
 
 - [ ] **Step 7: Commit deletion in daem-society**
@@ -2693,6 +2861,7 @@ cd C:/laragon/www/sites/daem-society && \
 ```bash
 cd C:/laragon/www/daems-platform && composer analyse 2>&1 | tail -3
 ```
+
 Expected: `[OK] No errors` (with baseline).
 
 - [ ] **Step 2: All test suites (run separately to bypass 600s composer timeout)**
@@ -2707,6 +2876,7 @@ cd C:/laragon/www/daems-platform && \
 cd C:/laragon/www/daems-platform && \
   vendor/bin/phpunit --testsuite=E2E 2>&1 | tail -3
 ```
+
 Expected: each suite OK. Total green tests close to current count (943 minus ~30 moved Event tests + module's tests if loaded via autoload-dev mapping = stays roughly even).
 
 - [ ] **Step 3: Production-container controller smoke**
@@ -2739,6 +2909,7 @@ EOF
 php smoke.php
 rm smoke.php
 ```
+
 Expected: 4× OK (2 module + 2 core).
 
 - [ ] **Step 4: git grep cleanup verification**
@@ -2748,6 +2919,7 @@ cd C:/laragon/www/daems-platform && \
   git grep -E 'Daems\\(Domain\\Event|Application\\Event|Application\\Backstage\\(ApproveEventProposal|ArchiveEvent|CreateEvent|DeleteEventImage|Events|GetEventWithAllTranslations|ListEventProposalsForAdmin|ListEventRegistrations|ListEventsForAdmin|PublishEvent|RejectEventProposal|UnregisterUserFromEvent|UpdateEvent|UpdateEventTranslation|UploadEventImage)|Infrastructure\\Adapter\\Persistence\\Sql\\SqlEvent|Infrastructure\\Adapter\\Api\\Controller\\EventController)' \
     -- src/ tests/ bootstrap/ routes/ 2>/dev/null
 ```
+
 Expected: zero results.
 
 - [ ] **Step 5: Curl-smoke all URL families**
@@ -2758,6 +2930,7 @@ for u in /events /events/propose /events/some-published-slug \
   echo "$(curl -s -o /dev/null -w '%{http_code}' http://daems.local$u) $u"
 done
 ```
+
 Expected: 200 / 302-or-200 / 200-or-404 / 302 / 302. **All non-500.**
 
 - [ ] **Step 6: Browser smoke (manual, mandatory)**
@@ -2789,6 +2962,7 @@ User runs through this checklist in browser at `http://daems.local`:
 - [ ] **Step 7: Final report to user**
 
 Provide:
+
 - All commit SHAs in `daems-platform`, `dp-events`, `daem-society`
 - `composer test:all` summary (4 suites)
 - PHPStan summary (0 errors w/ baseline)
@@ -2800,6 +2974,7 @@ Provide:
 ## Self-review notes
 
 **Spec coverage check:** every section of the spec maps to one or more tasks:
+
 - Spec §1 decisions → encoded in Tasks 4–10, 12–15
 - Spec §2 lessons → embedded across all relevant tasks (Task 1 stub bindings = lesson 2; Task 9.5 = lesson 3; Task 26 = lesson 10; etc.)
 - Spec §3 inventory → Tasks 4–9, 12, 16–20
@@ -2814,16 +2989,19 @@ Provide:
 - Spec §12 success criteria → enforced in Task 30
 
 **Tasks DROPPED from spec §15 preview:**
+
 - Task 11 (Second controller) — single controller decision (E4=A)
 
 **No placeholder content:** every code block + command is concrete. Migration NN number to be assigned in Task 2 Step 1 (highest existing + 1) and used consistently from there.
 
 **Type consistency:**
+
 - `Daems\Infrastructure\Framework\Container\Container` used as type hint in all binding closures
 - `EventBackstageController` constructor parameter list in Task 10 Step 6 matches the `$container->make(...)` calls in Task 13 Step 2 (15 use cases + LocalImageStorage)
 - Method names used in `routes.php` (Task 15) match method names in `EventBackstageController` (Task 10)
 
 **Outstanding plan-phase research items** (carried from spec):
+
 - Final inventory of `tests/Integration/Migration/Migration{NNN}Test.php` files (Task 25 Step 5 — delete what exists)
 - `events-legacy` route alias confirmation (Task 15 Step 1 — verify if frontend still calls these; if not, drop from `routes.php`)
 - Exact constructor parameters for each Backstage use case (Task 13 Step 2 — verify by reading moved files; adjust if any takes additional dependencies)

@@ -16,6 +16,7 @@ Add `/backstage/projects` admin page (roadmap §5): proposal moderation, project
 ## 2. Scope
 
 **In:**
+
 - Admin proposal inbox: approve / reject pending `project_proposals` with optional note.
 - Approve copies proposal fields into a new `projects` row (status=`draft`); proposal row stays for audit with `status='approved'`.
 - Reject marks proposal `status='rejected'` with optional note; no project created.
@@ -26,6 +27,7 @@ Add `/backstage/projects` admin page (roadmap §5): proposal moderation, project
 - Pending proposals feed into the existing global admin-toast stack (same UX as member/supporter applications).
 
 **Out (explicit YAGNI):**
+
 - Insights admin `featured` UI — Insights already has the DB column; the UI belongs in a later Insights-admin iteration (track in CLAUDE.md).
 - Comment report/flag workflow — only hard-delete in MVP.
 - Soft-delete for comments (ghost rows) — hard-delete.
@@ -99,6 +101,7 @@ Migration 045 bundles both — one PR, one forward-only migration file.
 - Public `ListProjects::execute` boosts featured items to the top of the result (ORDER BY `featured DESC, sort_order ASC, created_at DESC`).
 
 If `project_proposals` has no `decided_at/decided_by/decision_note`, add migration 046 in this PR:
+
 ```sql
 ALTER TABLE project_proposals
     ADD COLUMN decided_at    DATETIME NULL,
@@ -126,12 +129,14 @@ Each use case has admin authorization (tenant admin OR platform admin), tenant s
 ### 4.3 Pending-toast integration
 
 Extend `ListPendingApplicationsForAdmin` (rename internally to `ListPendingAdminInboxForAdmin` OR keep the name and broaden semantics — **keep the name**; its response shape already has a polymorphic `type` field). Add a third branch:
+
 - In addition to member + supporter applications, merge pending project proposals filtered by dismissal.
 - `items` entries for proposals: `{id, type: "project_proposal", name: <title>, created_at}`.
 
 `DismissApplication` input's `appType` validation adds `'project_proposal'`.
 
 Frontend `toasts.js` decides navigation by `type`:
+
 - `member` / `supporter` → `/backstage/applications?highlight=...`
 - `project_proposal` → `/backstage/projects?tab=proposals&highlight=...`
 
@@ -166,12 +171,14 @@ Existing `/backstage/applications/pending-count` and dismissal endpoint stay —
 Three tabs rendered as inline sections (no URL routing needed — keep it simple, tab switching is client-side). Tab selected via `?tab=proposals|projects|comments` for linkability.
 
 **Tab: Proposals (default when pending > 0)**
+
 - Counter badge "N pending" in tab title.
 - Cards or compact rows: proposer name + email + project title, category, summary, expandable description, `Approve` / `Reject` buttons, optional note textarea for reject.
 - On approve: success banner "Approved — project created as draft" with link to edit the new project.
 - Pending count updates in-place after decision.
 
 **Tab: Projects**
+
 - Filters: status (All/draft/active/archived), category, featured-only toggle, search.
 - Table: Title · Owner · Status pill · Featured ★ toggle · Participants · Comments · Actions (✏ edit, 🗄 archive / ↩ restore).
 - "+ New project" button opens the same create/edit modal as Events admin uses (separate component for projects).
@@ -179,6 +186,7 @@ Three tabs rendered as inline sections (no URL routing needed — keep it simple
 - Featured toggle is a row-level action (no modal needed) — clicking ★ flips the state and POSTs immediately.
 
 **Tab: Comments**
+
 - List of last 100 comments across all admin-accessible projects.
 - Each row: Avatar + name · project title (clickable to project) · excerpt · timestamp · Delete button.
 - Delete opens a small confirm prompt with optional reason; POSTs and fades the row.
@@ -198,6 +206,7 @@ Same pattern as `public/api/backstage/events.php`.
 ### 5.4 Global toast update
 
 `toasts.js` already renders items blindly from `window.DAEMS_PENDING_APPS`. The only change needed is the navigation routing on click:
+
 ```js
 if (item.type === 'project_proposal') {
     window.location.href = '/backstage/projects?tab=proposals&highlight=' + encodeURIComponent(item.id);
@@ -219,6 +228,7 @@ Minimal change: backend `ListProjects` already orders; tightening to `ORDER BY f
 ### 6.1 Unit
 
 One test class per new use case:
+
 - `ListProjectsForAdminTest` — all statuses returned, tenant-scoped, filters (status/category/featured/q), forbidden for non-admin.
 - `CreateProjectAsAdminTest` — admin can create without owner coupling; validation errors.
 - `AdminUpdateProjectTest` — admin bypasses owner check, validation, tenant scoping.
@@ -262,6 +272,7 @@ One test class per new use case:
 ## 7. Files inventory (high level)
 
 **New backend:**
+
 - `database/migrations/044_add_featured_to_projects.sql`
 - `database/migrations/045_extend_dismissals_enum_and_comment_audit.sql`
 - `database/migrations/046_add_decision_metadata_to_project_proposals.sql` (only if missing; verify first)
@@ -271,6 +282,7 @@ One test class per new use case:
 - Route additions
 
 **Modified backend:**
+
 - `Project` entity — `featured` field
 - `ProjectRepositoryInterface` + `SqlProjectRepository` + `InMemoryProjectRepository` — new methods + featured ordering in public `ListProjects`
 - `ProjectProposalRepositoryInterface` + Sql + InMemory — `listPendingForTenant`, `findByIdForTenant`, `recordDecision`
@@ -279,6 +291,7 @@ One test class per new use case:
 - `DismissApplication` input — accept `project_proposal` in validation whitelist
 
 **New frontend daem-society:**
+
 - `public/pages/backstage/projects/index.php`
 - `public/pages/backstage/projects/project-modal.js`
 - `public/pages/backstage/projects/project-modal.css` (reuse event-modal.css mostly)
@@ -286,10 +299,12 @@ One test class per new use case:
 - `public/api/backstage/proposals.php`
 
 **Modified frontend:**
+
 - `public/pages/backstage/toasts.js` — route by `type` to proposals URL for `project_proposal`.
 - `public/pages/projects/index.php` + relevant render files — show Featured badge + reorder (if the rendering isn't purely driven by API order already).
 
 **Tests:**
+
 - ~10 unit test classes, 2 integration, 1 isolation, 2 E2E.
 
 ---

@@ -44,7 +44,7 @@ Deliver a **governance workflow engine** that models:
 
 ### Clean-Architecture layers
 
-```
+```text
 src/Domain/Governance/                        (NEW namespace)
   Board.php                                   entity (id, tenantId, bootstrappedByUserId, bootstrappedAt, createdAt)
   BoardId.php                                 Uuid7Id subclass
@@ -197,7 +197,7 @@ These rules are enforced in the Domain layer and tested at the Unit level. They 
 
 ### Decision-lifecycle (state machine)
 
-```
+```text
                   withdraw (proposer or chair)
                           ┌─────────────────┐
                           ▼                 │
@@ -212,7 +212,7 @@ These rules are enforced in the Domain layer and tested at the Unit level. They 
 
 **Resoluutio-tarkistuksen logiikka** (Unit-tested per case):
 
-```
+```text
 ActiveBoard = SELECT * FROM board_members WHERE board_id = ? AND term_ended_at IS NULL
               AND term_started_at <= NOW AND term_ends_at > NOW
 yes      = count(votes WHERE vote=Yes)
@@ -255,7 +255,7 @@ For mode = Async + Unanimous, quorum is implicit — passing requires every acti
 
 ### Expulsion sub-flow (oma rich aggregate)
 
-```
+```text
 [InitiateMemberExpulsion] ──→ member_expulsions row
                               status = Hearing
                               hearing_deadline_at = NOW + tenant_settings.expulsion_hearing_days
@@ -284,7 +284,7 @@ For mode = Async + Unanimous, quorum is implicit — passing requires every acti
 
 ### Bootstrap flow
 
-```
+```text
 [GSA opens TenantManagement → Tenant detail → "Hallitus"-tab]
    ↓
    (no board exists for this tenant)
@@ -539,7 +539,7 @@ All endpoints under `/api/v1/backstage/governance/*`. Tenant context resolved by
 
 ### Boards & members
 
-```
+```text
 GET /governance/board
     Auth: tenant member (any role)
     Response: { board: { id, bootstrapped_by, bootstrapped_at } | null,
@@ -559,7 +559,7 @@ GET /governance/board/eligible-users
 
 ### Decisions
 
-```
+```text
 GET /governance/decisions?status=pending&type=approve_basic&my_pending=true
     Auth: board member, admin, or GSA
     Response: { data: [{ id, type, threshold, mode, vote_visibility, status,
@@ -597,7 +597,7 @@ POST /governance/decisions/{id}/withdraw            body: { withdrawal_reason }
 
 ### Expulsions
 
-```
+```text
 GET  /governance/expulsions?status=hearing
 GET  /governance/expulsions/{id}
 POST /governance/expulsions                          body: { target_user_id, reason }
@@ -608,14 +608,14 @@ POST /governance/expulsions/{id}/appeal              body: { appeal_text }
 
 ### Delegations
 
-```
+```text
 GET  /governance/delegations
     Response: { data: [{ id, decision_type, delegated_to_role, valid_from, source_decision_id }] }
 ```
 
 ### GSA overrides
 
-```
+```text
 POST /governance/gsa-overrides/approve-basic         body: { application_id, reason }
     Auth: GSA only; reason ≥ 10 chars
     Response: 200 + audit row
@@ -623,7 +623,7 @@ POST /governance/gsa-overrides/approve-basic         body: { application_id, rea
 
 ### Eligibility queries
 
-```
+```text
 GET /governance/eligibility/full-membership
     Auth: board member or admin
     Response: { data: [{ user_id, name, member_number, membership_started_at, months_since_join }] }
@@ -671,9 +671,11 @@ All four widgets added to admin + GSA default layouts via `DefaultLayouts::admin
 Add to `lang/{fi_FI,en_GB,sw_TZ}.php`. Approximately 95 new keys × 3 locales.
 
 Sidebar:
+
 - `backstage.sidebar.governance` = Hallinto / Governance / Utawala
 
 Board:
+
 - `governance.board.title`
 - `governance.board.bootstrap.title`, `governance.board.bootstrap.cta`, `governance.board.bootstrap.help`
 - `governance.board.members.empty`
@@ -682,6 +684,7 @@ Board:
 - `governance.board.member.ended.resigned`, `governance.board.member.ended.removed`, `governance.board.member.ended.lost_full_status`, `governance.board.member.ended.term_expired`
 
 Decisions:
+
 - `governance.decision.type.{approve_basic,invite_full,expel,award_subtier,revoke_subtier,subtier_crud,remove_board_member,delegate_authority,revoke_delegation}`
 - `governance.decision.threshold.{unanimous,majority}`
 - `governance.decision.mode.{async,sync}`
@@ -694,6 +697,7 @@ Decisions:
 - `governance.decision.subtier_crud.operation.{create,update,delete}`
 
 Expulsions:
+
 - `governance.expulsion.status.{hearing,awaiting_vote,expelled,rejected,appealed}`
 - `governance.expulsion.hearing_deadline`
 - `governance.expulsion.statement.label`, `governance.expulsion.statement.empty`, `governance.expulsion.statement.submit`
@@ -701,27 +705,33 @@ Expulsions:
 - `governance.expulsion.appeal.label`, `governance.expulsion.appeal.submit`, `governance.expulsion.appeal.note_deferred_to_next_meeting`
 
 Delegations:
+
 - `governance.delegation.title`
 - `governance.delegation.delegated_to.admin`
 - `governance.delegation.active_since`
 - `governance.delegation.revoke`
 
 Settings:
+
 - `governance.settings.title`
 - `governance.settings.expulsion_hearing_days.label`, `governance.settings.expulsion_hearing_days.help`
 - `governance.settings.decision_expiration_days.label`, `governance.settings.decision_expiration_days.help`
 
 Eligibility:
+
 - `governance.eligibility.full_membership.title`, `governance.eligibility.full_membership.empty`
 - `governance.eligibility.full_membership.months_since_join`
 
 GSA overrides:
+
 - `governance.gsa_override.approve_basic.title`, `governance.gsa_override.approve_basic.reason.label`, `governance.gsa_override.approve_basic.confirm`
 
 Errors (mapped from domain exceptions):
+
 - `governance.error.{not_a_board_member, async_requires_unanimous, board_already_bootstrapped, board_not_bootstrapped, not_eligible_for_full, vote_already_cast, decision_already_resolved, insufficient_quorum, delegation_not_permitted_for_type, duplicate_active_delegation, gsa_override_requires_reason, invalid_bootstrap_roster_size, invalid_bootstrap_roster_chair, board_candidate_not_full, expulsion_hearing_not_elapsed, expulsion_already_advanced, appeal_already_filed, last_board_member_cannot_be_removed}`
 
 Dashboard widgets:
+
 - `backstage.dashboard.widget.pending_decisions_for_me_kpi.{label,description}`
 - `backstage.dashboard.widget.eligible_for_full_membership.{label,description}`
 - `backstage.dashboard.widget.open_expulsions_kpi.{label,description}`
@@ -750,6 +760,7 @@ Each new class binds in:
 - `tests/Support/KernelHarness.php` — `InMemory*Repository` fakes under `tests/Support/Fake/` + executor fakes that simulate effects against the in-memory store.
 
 In-memory fakes needed:
+
 - `InMemoryBoardRepository`
 - `InMemoryBoardMemberRepository`
 - `InMemoryBoardDecisionRepository`

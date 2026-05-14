@@ -5,6 +5,7 @@
 **Branch:** `dev`
 **Milestone:** Admin Panel, section 1.8 (between forum moderation and settings)
 **Related specs:**
+
 - `2026-04-20-events-admin-design.md` (events CRUD baseline)
 - `2026-04-20-projects-admin-design.md` (projects CRUD baseline)
 
@@ -17,6 +18,7 @@ Supported locales: **`fi_FI`, `en_GB`, `sw_TZ`**. Pattern is designed to extend 
 ## 2. Scope
 
 ### In scope
+
 - DB schema: `events_i18n`, `projects_i18n` per-locale tables; drop translated columns from parent tables after backfill
 - Domain: `Daems\Domain\Locale\{SupportedLocale, LocaleNegotiator, TranslationMap}`; refactor `Event`, `Project` entities to carry `TranslationMap`
 - Application: locale-aware read use cases (`ListEventsForLocale`, `GetEventBySlugForLocale`, same for projects); translation-update use cases (`UpdateEventTranslation`, `UpdateProjectTranslation`)
@@ -29,6 +31,7 @@ Supported locales: **`fi_FI`, `en_GB`, `sw_TZ`**. Pattern is designed to extend 
 - Tests: unit for value objects & negotiator, integration for repos (MySQL), isolation tests extended, Playwright E2E
 
 ### Out of scope
+
 - Backstage "translation coverage dashboard" (global cross-content report) — coverage visible per-item in list + editor; dashboard deferred
 - Machine translation (Google Translate / DeepL API) — manual translation only
 - `public/pages/events/data/*.php` hardcoded demo events — these are dev placeholders; ignored (admins will create real events in DB)
@@ -38,24 +41,30 @@ Supported locales: **`fi_FI`, `en_GB`, `sw_TZ`**. Pattern is designed to extend 
 ## 3. Locale model
 
 ### Identifiers
+
 - `Daems\Domain\Locale\SupportedLocale`: value object wrapping one of `['fi_FI', 'en_GB', 'sw_TZ']`. Throws `InvalidLocaleException` on unsupported input.
 - Constants: `UiDefaultLocale = 'fi_FI'`, `ContentFallbackLocale = 'en_GB'`. These are *different*: UI chrome defaults to Finnish (user's preferred), content falls back to English when translation missing.
 
 ### Negotiation
+
 `Daems\Domain\Locale\LocaleNegotiator::negotiate(Request): SupportedLocale` with priority:
+
 1. `Accept-Language` header — first supported tag, supporting `fi-FI`, `fi_FI`, `fi` forms. Short form maps to default region: `fi → fi_FI`, `en → en_GB`, `sw → sw_TZ`.
 2. `?lang=` query param — overrides Accept-Language when present.
 3. `X-Daems-Locale` custom header — last resort, consistent with existing `X-Daems-Tenant` pattern.
 4. Default: `ContentFallbackLocale` (`en_GB`) for API; `UiDefaultLocale` (`fi_FI`) for frontend chrome.
 
 ### Content fallback (per-field)
+
 For a given requested locale, repository returns a `TranslationMap` containing that locale's row. When a field in the requested locale is `NULL` or the locale row doesn't exist, the field is taken from the `en_GB` row. API response includes:
+
 - `{field}_fallback: true` when the value was taken from `en_GB` (not the requested locale)
 - `{field}_missing: true` when neither locale has a value (field returned as `null`)
 
 Both flags are boolean, present on every translatable field. Admin UI uses the `coverage` payload to render per-locale progress.
 
 ### `src/I18n.php` migration (UI chrome)
+
 - `SUPPORTED = ['fi_FI', 'en_GB', 'sw_TZ']`, `DEFAULT_LOCALE = 'fi_FI'`
 - Rename `lang/fi.php` → `lang/fi_FI.php`, `lang/en.php` → `lang/en_GB.php`, `lang/sw.php` → `lang/sw_TZ.php`. File contents unchanged.
 - Cookie + session readers: if legacy 2-letter value encountered (`fi`, `en`, `sw`), remap to full form (`fi_FI` etc.) and overwrite cookie on next response.
@@ -65,6 +74,7 @@ Both flags are boolean, present on every translatable field. Admin UI uses the `
 ## 4. DB schema
 
 ### Migration 051 — `create_events_i18n`
+
 ```sql
 CREATE TABLE events_i18n (
     event_id    CHAR(36)     NOT NULL,
@@ -80,6 +90,7 @@ CREATE TABLE events_i18n (
 ```
 
 ### Migration 052 — `create_projects_i18n`
+
 ```sql
 CREATE TABLE projects_i18n (
     project_id  CHAR(36)     NOT NULL,
@@ -95,6 +106,7 @@ CREATE TABLE projects_i18n (
 ```
 
 ### Migration 053 — `backfill_events_projects_i18n`
+
 Insert one `fi_FI` row per existing event/project, copying `title`, `location`, `description` (events) and `title`, `summary`, `description` (projects).
 
 ```sql
@@ -108,13 +120,16 @@ FROM projects;
 ```
 
 ### Migration 054 — `drop_translated_columns_from_events_projects`
+
 After code is updated to read from `*_i18n` and backfill is verified:
+
 ```sql
 ALTER TABLE events DROP COLUMN title, DROP COLUMN location, DROP COLUMN description;
 ALTER TABLE projects DROP COLUMN title, DROP COLUMN summary, DROP COLUMN description;
 ```
 
 ### Migration 055 — `add_source_locale_to_project_proposals`
+
 ```sql
 ALTER TABLE project_proposals
 ADD COLUMN source_locale VARCHAR(10) NOT NULL DEFAULT 'fi_FI' AFTER description;
@@ -122,7 +137,9 @@ ADD COLUMN source_locale VARCHAR(10) NOT NULL DEFAULT 'fi_FI' AFTER description;
 ```
 
 ### Migration 056 — `create_event_proposals`
+
 Mirrors `project_proposals` structure. Includes `source_locale` from the start.
+
 ```sql
 CREATE TABLE event_proposals (
     id              CHAR(36)     NOT NULL,
@@ -151,15 +168,19 @@ CREATE TABLE event_proposals (
 ## 5. Domain model
 
 ### New value objects (Agent A)
+
 - `Daems\Domain\Locale\SupportedLocale` — enum-style: `fromString()` validating + throwing `InvalidLocaleException` on unsupported input; `value(): string`
 - `Daems\Domain\Locale\LocaleNegotiator` — static `negotiate(array $server, array $query): SupportedLocale`; unit-tested across all priority paths
 - `Daems\Domain\Locale\TranslationMap` — keyed by `SupportedLocale`, stores `array<string, ?string>` per locale; `forLocale(SupportedLocale): array`, `withFallback(SupportedLocale requested, SupportedLocale fallback): EntityTranslationView` where `EntityTranslationView` carries per-field value + `isFallback` + `isMissing`
 
 ### Entity refactor
+
 `Event` and `Project` constructors accept a `TranslationMap` instead of individual `title/description` strings. Getters return a localized view: `$event->view(SupportedLocale $locale): EntityTranslationView`. Tenant-scoped invariants unchanged.
 
 ### New domain: `EventProposal`
+
 Mirrors `ProjectProposal`:
+
 - `Daems\Domain\Event\EventProposal` — constructor + getters (id, tenantId, userId, authorName, authorEmail, title, eventDate, eventTime, location, isOnline, description, sourceLocale, status, createdAt, decidedAt, decidedBy, decisionNote)
 - `Daems\Domain\Event\EventProposalId`
 - `Daems\Domain\Event\EventProposalRepositoryInterface` — `save`, `findById`, `listPendingForTenant`, `listAllForTenant` (with status filter)
@@ -167,16 +188,19 @@ Mirrors `ProjectProposal`:
 ## 6. Application layer
 
 ### Read path use cases
+
 - `ListEventsForLocale(tenantId, locale)` → `EventView[]` with `{field}_fallback` / `{field}_missing` flags computed
 - `GetEventBySlugForLocale(tenantId, slug, locale)` → single `EventView`
 - `ListEventWithAllTranslations(tenantId, eventId)` → admin view with all 3 locales + coverage counts
 - Same three for projects (`ListProjectsForLocale`, `GetProjectBySlugForLocale`, `ListProjectWithAllTranslations`)
 
 ### Write path use cases
+
 - `UpdateEventTranslation(tenantId, eventId, locale, fields, actingUser)` — admin-only, upsert into `events_i18n`
 - `UpdateProjectTranslation(tenantId, projectId, locale, fields, actingUser)` — admin-only, upsert into `projects_i18n`
 
 ### Proposal use cases (new)
+
 - `SubmitEventProposal(tenantId, userId, authorName, authorEmail, title, eventDate, eventTime, location, isOnline, description, sourceLocale)` → `EventProposalId`
 - `ApproveEventProposal(tenantId, proposalId, actingUser)` → creates `Event` entity + `events_i18n` row for `source_locale`; returns new `EventId`
 - `RejectEventProposal(tenantId, proposalId, actingUser, note)` — sets status `rejected`, records `decided_at/by/note`
@@ -189,6 +213,7 @@ Mirrors `ProjectProposal`:
 **`GET /api/v1/events`**
 Request: `Accept-Language: sw-TZ` (or `?lang=sw_TZ`).
 Response (200):
+
 ```json
 [
   {
@@ -220,6 +245,7 @@ Response (200):
 ### Admin endpoints (return all translations)
 
 **`GET /api/v1/backstage/events/{id}`**
+
 ```json
 {
   "id": "uuid", "slug": "...", "type": "...", "event_date": "...",
@@ -251,6 +277,7 @@ Same pattern for projects: `GET/PUT /api/v1/backstage/projects/{id}`, `/translat
 
 **`POST /api/v1/event-proposals`** (member, authenticated)
 Body:
+
 ```json
 {
   "title": "...", "event_date": "2026-09-01", "event_time": "18:00",
@@ -258,6 +285,7 @@ Body:
   "source_locale": "fi_FI"
 }
 ```
+
 `source_locale` is required, must be one of `SupportedLocale`. Response (201): `{"proposal_id": "uuid"}`.
 
 **`GET /api/v1/backstage/event-proposals`** (admin) — list; each includes `source_locale` for badge display.
@@ -277,9 +305,11 @@ Body:
 ## 8. HTTP layer
 
 ### Middleware
+
 `Daems\Infrastructure\Adapter\Api\Middleware\LocaleMiddleware` runs after `TenantContextMiddleware` and before controllers. Uses `LocaleNegotiator` to populate `$request->getAttribute('locale')`.
 
 ### Controllers
+
 - `EventController` — gains `handleListLocalized`, `handleGetBySlugLocalized`, `handleSubmitProposal`
 - `ProjectController` — gains `handleListLocalized`, `handleGetBySlugLocalized`; existing `handleSubmitProposal` gets `source_locale` plumbing
 - `BackstageController` — gains event/project translation endpoints and event-proposal CRUD
@@ -287,10 +317,12 @@ Body:
 ## 9. Backstage admin UX — locale-cards
 
 ### Event / Project editor
+
 The existing event/project editor is a **modal** (`backstage/events/event-modal.js`, `backstage/projects/project-modal.js`) launched from the list page — not a standalone page. Locale cards integrate at the top of the modal body. Non-translated fields (slug, event_date, is_online, hero_image for events; slug, category, icon, status, sort_order, featured for projects) occupy a shared panel below the cards.
 
 Top of modal body renders a card grid (one card per `SupportedLocale`):
-```
+
+```text
 ┌─────────────────────┐ ┌─────────────────────┐ ┌─────────────────────┐
 │ 🇫🇮 Suomi  fi_FI     │ │ 🇬🇧 English  en_GB  │ │ 🇹🇿 Kiswahili sw_TZ │
 │ ████████████ 3/3    │ │ ██████░░░░░░ 1/3    │ │ ░░░░░░░░░░░░ 0/3    │
@@ -311,17 +343,21 @@ Description: [______________________________]
 - Non-translated fields (event_date, slug, is_online, hero_image) live *below* the card grid as a single shared panel
 
 ### List views
+
 `/backstage/events` and `/backstage/projects` — each row gets a compact coverage badge: `● ● ○` or textual `3/3 · 1/3 · 0/3` (color-coded). Clicking badge jumps into editor at the least-translated locale.
 
 ### Event-proposal review (new)
+
 `/backstage/event-proposals` — new page. List with columns: author, title (in source_locale), event_date, submitted, source_locale badge, actions [Approve / Reject]. Approval flow opens a confirmation modal showing the proposal content and noting "This will create an Event visible only in `{source_locale}` until you translate it."
 
 ### Project-proposal review (new — backend exists, UI does not)
+
 `/backstage/project-proposals` — **new page built as part of this work** (backend use cases `ApproveProjectProposal` / `RejectProjectProposal` exist but no admin UI yet). Same layout as event-proposals: author, title (in source_locale), submitted, source_locale badge, actions [Approve / Reject]. Approval confirmation notes the single-locale caveat.
 
 ## 10. Public frontend
 
 ### `src/I18n.php`
+
 - Constants updated (`SUPPORTED`, `DEFAULT_LOCALE`)
 - `lang/*.php` files renamed
 - `locale()` method gains normalization: returns `fi_FI`, not `fi`
@@ -329,53 +365,64 @@ Description: [______________________________]
 - Accept-Language parser mirrors backend `LocaleNegotiator`
 
 ### `ApiClient`
+
 Adds `Accept-Language: {I18n::locale()}` header to every request by default. Callers can override via explicit header argument.
 
 ### Events/projects pages
+
 - `public/pages/events/grid.php`, `events/detail.php`, `events/detail/content.php`, `events/detail/hero.php` — render API response fields as-is (`title`, `location`, `description`); no per-locale branching, no `*_fallback` indicator
 - Same for `public/pages/projects/grid.php`, `projects/detail.php`, `projects/detail/content.php`, `projects/detail/hero.php`
 - `projects/cta.php` and `events/cta.php` remain UI-chrome-only (uses `I18n::t()`)
 
 ### Member proposal forms (new + updated)
+
 - **New** `public/pages/events/propose.php` — authenticated member page, form posts to `POST /api/v1/event-proposals` with `source_locale` = current session locale (hidden field, auto-populated from `I18n::locale()`)
 - **Updated** existing project-proposal page: same treatment — adds hidden `source_locale` field; existing UX unchanged otherwise
 
 ### Admin-only pages remain admin-only
+
 `projects/new.php`, `projects/edit.php`, and analogous event admin pages continue to enforce admin role check.
 
 ## 11. Testing
 
 ### Unit (`tests/Unit`)
+
 - `SupportedLocaleTest` — valid codes, invalid codes, normalization
 - `LocaleNegotiatorTest` — priority order, short→full mapping, fallback
 - `TranslationMapTest` — per-field fallback, missing markers
 
 ### Integration (`tests/Integration`) — real MySQL via `MigrationTestCase`
+
 - `SqlEventRepositoryTest` — `listForTenantInLocale` returns fallback-marked view; `saveTranslation` upserts; cascade delete via parent
 - `SqlProjectRepositoryTest` — analogous
 - `SqlEventProposalRepositoryTest` — submit, list by status, update on approve/reject
 - `SqlProjectProposalRepositoryTest` — extended to cover `source_locale`
 
 ### Isolation (`tests/Isolation`) — extends existing `IsolationTestCase`
+
 - `EventsI18nTenantIsolationTest` — seeding event in tenant A does not leak translations into tenant B's queries
 - `ProjectsI18nTenantIsolationTest` — analogous
 - `EventProposalTenantIsolationTest` — new proposal domain gets same isolation coverage as project proposals
 
 ### E2E (`tests/e2e` via KernelHarness)
+
 - `EventsLocaleE2ETest` — Accept-Language variations return expected locale; `*_fallback` markers correct; admin translation save round-trip
 - `ProjectsLocaleE2ETest` — analogous
 - `EventProposalFlowE2ETest` — submit proposal with `source_locale`, approve, verify event exists with translation in that locale
 
 ### Playwright (daem-society)
+
 - Extend `tests/e2e/i18n.spec.ts`: navigate `?lang=en_GB`, confirm events/projects list pages render English content
 - New `tests/e2e/admin-locale-cards.spec.ts`: admin saves `sw_TZ` translation for an event, verifies coverage badge updates and frontend at `?lang=sw_TZ` shows new content
 
 ## 12. Workstream split (3 parallel agents)
 
 ### Agent A — Platform/Backend
+
 **Owns:** Everything in `daems-platform` repo except frontend rendering.
 
 Workload:
+
 - Migrations 051–056
 - Domain: `SupportedLocale`, `LocaleNegotiator`, `TranslationMap`; refactor `Event` and `Project` entities; new `EventProposal` / `EventProposalId` / `EventProposalRepositoryInterface`
 - Application: 6 new read use cases + 2 translation-update use cases + 4 new event-proposal use cases
@@ -388,9 +435,11 @@ Workload:
 **Contract-lock point:** Agent A publishes the exact JSON response shapes for `GET /api/v1/events`, `GET /api/v1/backstage/events/{id}`, and `PUT /api/v1/backstage/events/{id}/translations/{locale}` at task 1 so agents B and C can start immediately with mocks.
 
 ### Agent B — Backstage admin UI
+
 **Owns:** `daem-society/public/pages/backstage/{events,projects,event-proposals,project-proposals}`.
 
 Workload:
+
 - `locale-cards.php` partial + CSS + JS (shared between events and projects modal editors)
 - Integrate cards into existing `event-modal.js` and `project-modal.js` (cards at top of modal body; non-translated fields in shared panel below)
 - List-view coverage badges on `backstage/events/index.php` and `backstage/projects/index.php`
@@ -399,9 +448,11 @@ Workload:
 - Playwright smoke: admin saves `en_GB` translation, coverage badge updates; admin approves event proposal → new event visible at `?lang={source_locale}`
 
 ### Agent C — Public frontend + I18n migration
+
 **Owns:** `daem-society/src/I18n.php`, `daem-society/lang/`, `daem-society/public/pages/{events,projects}` non-backstage, `ApiClient`.
 
 Workload:
+
 - Upgrade `src/I18n.php` to full-locale form; rename lang files; add legacy-value remapping
 - Update `ApiClient` to send `Accept-Language` header
 - Refactor events/projects public pages to consume localized API
@@ -410,6 +461,7 @@ Workload:
 - Extend `tests/e2e/i18n.spec.ts` + new `admin-locale-cards.spec.ts` (shared with Agent B)
 
 ### Dependencies & coordination
+
 - B and C depend on A's API contract being locked. The spec above IS the contract — no separate contract-lock document needed.
 - Merge order: A → B → C into `dev`. If B/C complete before A, they sit on PR branches until A merges.
 - Each agent commits to `dev` with `-c user.name="Dev Team" -c user.email="dev@daems.org"`. No Co-Authored-By. Never auto-push.
@@ -418,6 +470,7 @@ Workload:
 ## 13. Rollout
 
 One PR per agent, all targeting `dev`:
+
 1. **PR-i18n-A**: backend + migrations + tests (largest)
 2. **PR-i18n-B**: backstage UI (depends on A's API)
 3. **PR-i18n-C**: frontend + I18n migration (depends on A's API)

@@ -11,6 +11,7 @@
 **Spec:** `docs/superpowers/specs/2026-04-26-per-section-kpi-strips-design.md`
 
 **Phase order:**
+
 - Phase 3 — Members
 - Phase 4 — Applications
 - Phase 5 — Events
@@ -18,6 +19,7 @@
 - Phase 7 — Notifications
 
 **Reference templates** (read these once before starting Phase 3):
+
 - Phase 1 use case shape: `src/Application/Insight/ListInsightStats/ListInsightStats.php`
 - Phase 2 multi-repo use case: `src/Application/Backstage/Forum/ListForumStats/ListForumStats.php`
 - Phase 2 controller method: `BackstageController::statsForum` (`:1199`)
@@ -68,6 +70,7 @@ KPI map:
 ### Task 3.1: UserTenantRepository stats slice + integration test
 
 **Files:**
+
 - Modify: `src/Domain/Tenant/UserTenantRepositoryInterface.php`
 - Modify: `src/Infrastructure/Adapter/Persistence/Sql/SqlUserTenantRepository.php`
 - Modify (or create if no in-memory exists yet): `src/Infrastructure/Adapter/Persistence/Memory/InMemoryUserTenantRepository.php` (verify name; if absent, the InMemory variant lives where the Forum InMemory analogues live — search `tests/Support` first)
@@ -261,6 +264,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.org" commit -m "Repo(member
 ### Task 3.2: MemberStatusAudit stats slice + integration test
 
 **Files:**
+
 - Modify: `src/Domain/Membership/MemberStatusAuditRepositoryInterface.php`
 - Modify: `src/Infrastructure/Adapter/Persistence/Sql/SqlMemberStatusAuditRepository.php`
 - Modify InMemory equivalent if it exists (search first)
@@ -376,6 +380,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.org" commit -m "Repo(member
 ### Task 3.3: ListMembersStats use case + unit test
 
 **Files:**
+
 - Create: `src/Application/Backstage/Members/ListMembersStats/ListMembersStats.php`
 - Create: `src/Application/Backstage/Members/ListMembersStats/ListMembersStatsInput.php`
 - Create: `src/Application/Backstage/Members/ListMembersStats/ListMembersStatsOutput.php`
@@ -550,6 +555,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.org" commit -m "UseCase(mem
 ### Task 3.4: Controller method + route + DI BOTH-wire
 
 **Files:**
+
 - Modify: `src/Infrastructure/Adapter/Api/Controller/BackstageController.php`
 - Modify: `routes/api.php`
 - Modify: `bootstrap/app.php`
@@ -636,6 +642,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.org" commit -m "Wire(member
 ### Task 3.5: E2E + isolation tests
 
 **Files:**
+
 - Test: `tests/E2E/Backstage/MembersStatsEndpointTest.php`
 - Test: `tests/Isolation/MembersStatsIsolationTest.php`
 
@@ -750,6 +757,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.org" commit -m "Test(member
 ### Task 3.6: Frontend — KPI strip on Members page
 
 **Files:**
+
 - Modify: `daem-society/public/pages/backstage/members/index.php`
 - Create: `daem-society/public/pages/backstage/members/members-stats.js`
 - Modify: `daem-society/public/api/backstage/members.php` (add `op=stats`; create file if absent)
@@ -876,7 +884,7 @@ Create `daem-society/public/pages/backstage/members/members-stats.js`:
 
 - [ ] **Step 4: Manual UAT**
 
-```
+```text
 1. Open http://daem-society.local/backstage/members in browser
 2. Verify 4 KPI cards render above the existing members table
 3. Verify all 4 cards have non-zero values that match a hand spotcheck:
@@ -922,6 +930,7 @@ KPI map:
 ### Task 4.1: MemberApplication stats slice + integration test
 
 **Files:**
+
 - Modify: `src/Domain/Membership/MemberApplicationRepositoryInterface.php`
 - Modify: `src/Infrastructure/Adapter/Persistence/Sql/SqlMemberApplicationRepository.php`
 - Modify InMemory equivalent
@@ -1079,6 +1088,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.org" commit -m "Repo(applic
 ### Task 4.3: ListApplicationsStats use case + unit test
 
 **Files:**
+
 - Create: `src/Application/Backstage/Applications/ListApplicationsStats/{ListApplicationsStats,Input,Output}.php`
 - Test: `tests/Unit/Application/Backstage/ListApplicationsStatsTest.php`
 
@@ -1198,9 +1208,11 @@ git -c user.name="Dev Team" -c user.email="dev@daems.org" commit -m "UseCase(app
 ### Task 4.4: Controller + route + DI BOTH-wire
 
 Same shape as Task 3.4 with these substitutions:
+
 - Method name: `statsApplications`
 - Route: `/api/v1/backstage/applications/stats`
 - Use case binding signature:
+
 ```php
 $container->bind(\Daems\Application\Backstage\Applications\ListApplicationsStats\ListApplicationsStats::class,
     static fn(Container $c) => new \Daems\Application\Backstage\Applications\ListApplicationsStats\ListApplicationsStats(
@@ -1221,6 +1233,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.org" commit -m "Wire(applic
 ### Task 4.5: E2E + isolation tests
 
 Mirror Task 3.5 with:
+
 - Endpoint: `/api/v1/backstage/applications/stats`
 - Payload assertions: `pending`, `approved_30d`, `rejected_30d`, `avg_response_hours` keys
 - Isolation: seed pending apps in both tenants; assert only daems's count is in daems response
@@ -1236,6 +1249,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.org" commit -m "Test(applic
 ### Task 4.6: Frontend KPI strip on Applications page
 
 Mirror Task 3.6 with:
+
 - Page: `daem-society/public/pages/backstage/applications/index.php`
 - Proxy: `daem-society/public/api/backstage/applications.php` (verify whether file exists; create or modify)
 - JS: `daem-society/public/pages/backstage/applications/applications-stats.js`
@@ -1312,6 +1326,7 @@ KPI map:
 ### Task 5.1: EventRepository stats slice (Upcoming + Drafts) + integration test
 
 **Files:**
+
 - Modify: `src/Domain/Event/EventRepositoryInterface.php`
 - Modify: `src/Infrastructure/Adapter/Persistence/Sql/SqlEventRepository.php`
 - InMemory variant
@@ -1445,6 +1460,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.org" commit -m "Repo(events
 ### Task 5.4: ListEventsStats use case + unit test
 
 **Files:**
+
 - Create: `src/Application/Backstage/Events/ListEventsStats/{ListEventsStats,Input,Output}.php`
 - Test: `tests/Unit/Application/Backstage/ListEventsStatsTest.php`
 
@@ -1515,6 +1531,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.org" commit -m "Test(events
 ### Task 5.7: Frontend KPI strip on Events page
 
 Mirror Task 3.6 with:
+
 - Page: `daem-society/public/pages/backstage/events/index.php`
 - Proxy: `daem-society/public/api/backstage/events.php`
 - JS: `daem-society/public/pages/backstage/events/events-stats.js`
@@ -1550,6 +1567,7 @@ KPI map:
 ### Task 6.1: ProjectRepository stats slice + integration test
 
 Mirror Task 5.1 with `projects` table, three values (`active`, `drafts`, `featured`), and these queries:
+
 - `active`: status='active' / sparkline created_at 30d backward filtered to status='active'
 - `drafts`: status='draft' / sparkline created_at 30d backward filtered to status='draft'
 - `featured`: status='active' AND featured=1 / sparkline `[]`
@@ -1635,6 +1653,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.org" commit -m "Test(projec
 ### Task 6.6: Frontend KPI strip on Projects page
 
 Mirror Task 3.6 with:
+
 - Page: `daem-society/public/pages/backstage/projects/index.php`
 - Proxy: `daem-society/public/api/backstage/projects.php`
 - JS: `daem-society/public/pages/backstage/projects/projects-stats.js`
@@ -1683,6 +1702,7 @@ If `forum_reports` lacks a closure timestamp, fall back to joining `forum_modera
 This task batches small slice methods on 4 existing repos. TDD per repo, but commit one bundle.
 
 **Files:**
+
 - Modify: 4 SQL repos + their domain interfaces + InMemory variants
 - Tests: `tests/Integration/NotificationStatsSourceSlicesTest.php` (one test per source)
 
@@ -1701,6 +1721,7 @@ public function test_oldest_pending_age_in_days_across_sources(): void { /* ... 
 - [ ] **Step 3: Add `notificationStatsForTenant(TenantId): array` to each domain interface and SQL repo**
 
 Method contract (each repo):
+
 ```php
 /**
  * @return array{
@@ -1762,6 +1783,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.org" commit -m "Repo(notifi
 ### Task 7.2: AdminApplicationDismissal repo — actor-dismissed-ids slice
 
 **Files:**
+
 - Modify: `src/Domain/Dismissal/AdminApplicationDismissalRepositoryInterface.php`
 - Modify: `src/Infrastructure/Adapter/Persistence/Sql/SqlAdminApplicationDismissalRepository.php`
 - InMemory variant
@@ -1822,6 +1844,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.org" commit -m "Repo(notifi
 ### Task 7.4: ListNotificationsStats use case + unit test
 
 **Files:**
+
 - Create: `src/Application/Backstage/Notifications/ListNotificationsStats/{ListNotificationsStats,Input,Output}.php`
 - Test: `tests/Unit/Application/Backstage/ListNotificationsStatsTest.php`
 
@@ -1979,6 +2002,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.org" commit -m "Test(notifi
 ### Task 7.7: Frontend KPI strip on Notifications page
 
 Mirror Task 3.6 with:
+
 - Page: `daem-society/public/pages/backstage/notifications/index.php`
 - Proxy: `daem-society/public/api/backstage/notifications.php` (verify exists or create new mirroring `forum.php`)
 - JS: `daem-society/public/pages/backstage/notifications/notifications-stats.js`
@@ -2012,6 +2036,7 @@ composer analyse
 ```
 
 All green; PHPStan 0 errors. Manual UAT walkthrough on all 5 backstage pages confirming:
+
 - Each page renders 4 KPI cards above its existing body
 - Values match hand spotcheck SQL
 - Sparklines render or render gracefully on empty

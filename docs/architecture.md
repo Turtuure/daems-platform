@@ -2,7 +2,7 @@
 
 ## Clean Architecture diagram
 
-```
+```text
 +----------------------------------------------------------+
 |  Infrastructure                                          |
 |  +----------------------------------------------------+  |
@@ -35,7 +35,7 @@ Pure PHP classes with no dependencies on any framework or library.
 
 One subdirectory per feature, one class per use case. Each use case follows the pattern:
 
-```
+```text
 Daems\Application\{Domain}\{UseCaseName}\
   {UseCaseName}.php        — execute(Input): Output
   {UseCaseName}Input.php   — readonly DTO
@@ -76,7 +76,7 @@ $container->singleton(SomeClass::class, static fn(Container $c) => new SomeClass
 
 `Router` stores an ordered list of `[method, pattern, handler]` tuples. On each request, `dispatch()` iterates the list and calls `match()` against the incoming URI. `match()` converts `{param}` placeholders into named capture groups:
 
-```
+```text
 /api/v1/events/{slug}  →  #^/api/v1/events/(?P<slug>[^/]+)$#
 ```
 
@@ -86,7 +86,7 @@ Routes are registered in `routes/api.php`, which receives the `Router` and `Cont
 
 ## Request lifecycle
 
-```
+```text
 public/index.php
   └─ require bootstrap/app.php          → builds Container, returns Kernel
   └─ Request::fromGlobals()             → parses $_SERVER, $_GET, php://input
@@ -125,7 +125,7 @@ Exceptions thrown anywhere inside `Kernel::handle()` are caught and converted to
 
 ## Namespace structure
 
-```
+```text
 Daems\
   Domain\
     Shared\ValueObject\Uuid7

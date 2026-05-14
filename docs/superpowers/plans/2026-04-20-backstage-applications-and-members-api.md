@@ -19,10 +19,12 @@
 ## File Structure
 
 **Created — database migrations:**
+
 - `database/migrations/034_add_decision_metadata_to_applications.sql`
 - `database/migrations/035_create_member_status_audit.sql`
 
 **Created — Domain read models:**
+
 - `src/Domain/Backstage/PendingApplication.php`
 - `src/Domain/Backstage/ApplicationDecision.php` (enum)
 - `src/Domain/Backstage/MemberDirectoryEntry.php`
@@ -30,10 +32,12 @@
 - `src/Domain/Backstage/MemberDirectoryRepositoryInterface.php`
 
 **Modified — existing Domain interfaces:**
+
 - `src/Domain/Membership/MemberApplicationRepositoryInterface.php` — add 3 methods
 - `src/Domain/Membership/SupporterApplicationRepositoryInterface.php` — add 3 methods
 
 **Created — Application use cases:**
+
 - `src/Application/Backstage/ListPendingApplications/{ListPendingApplications,ListPendingApplicationsInput,ListPendingApplicationsOutput}.php`
 - `src/Application/Backstage/DecideApplication/{DecideApplication,DecideApplicationInput,DecideApplicationOutput}.php`
 - `src/Application/Backstage/ListMembers/{ListMembers,ListMembersInput,ListMembersOutput}.php`
@@ -41,23 +45,28 @@
 - `src/Application/Backstage/GetMemberAudit/{GetMemberAudit,GetMemberAuditInput,GetMemberAuditOutput}.php`
 
 **Created — Infrastructure:**
+
 - `src/Infrastructure/Adapter/Persistence/Sql/SqlMemberDirectoryRepository.php`
 - `src/Infrastructure/Adapter/Api/Controller/BackstageController.php`
 
 **Modified — existing Infrastructure:**
+
 - `src/Infrastructure/Adapter/Persistence/Sql/SqlMemberApplicationRepository.php` — implement new interface methods
 - `src/Infrastructure/Adapter/Persistence/Sql/SqlSupporterApplicationRepository.php` — implement new interface methods
 - `routes/api.php` — add 5 new routes
 
 **Created — test fakes:**
+
 - `tests/Support/Fake/InMemoryMemberDirectoryRepository.php`
 
 **Modified — existing test fakes:**
+
 - `tests/Support/Fake/InMemoryMemberApplicationRepository.php`
 - `tests/Support/Fake/InMemorySupporterApplicationRepository.php`
 - `tests/Support/KernelHarness.php` — wire new use cases + controller
 
 **Created — tests:**
+
 - `tests/Integration/Migration/Migration034Test.php`
 - `tests/Integration/Migration/Migration035Test.php`
 - `tests/Integration/Persistence/Sql/SqlMemberDirectoryRepositoryTest.php`
@@ -73,6 +82,7 @@
 - `tests/Isolation/BackstageTenantIsolationTest.php`
 
 **Modified — docs:**
+
 - `docs/api.md` — append backstage endpoints section
 - `docs/database.md` — append migrations 034 & 035
 
@@ -149,6 +159,7 @@ All commits use `git -c user.name="Dev Team" -c user.email="dev@daems.org" commi
 ## Task 1: Migration 034 — application decision metadata
 
 **Files:**
+
 - Create: `database/migrations/034_add_decision_metadata_to_applications.sql`
 - Test: `tests/Integration/Migration/Migration034Test.php`
 
@@ -232,6 +243,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.org" commit -m "Feat(db): m
 ## Task 2: Migration 035 — member_status_audit table
 
 **Files:**
+
 - Create: `database/migrations/035_create_member_status_audit.sql`
 - Test: `tests/Integration/Migration/Migration035Test.php`
 
@@ -317,6 +329,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.org" commit -m "Feat(db): m
 ## Task 3: Backstage domain read models
 
 **Files:**
+
 - Create: `src/Domain/Backstage/PendingApplication.php`
 - Create: `src/Domain/Backstage/ApplicationDecision.php`
 - Create: `src/Domain/Backstage/MemberDirectoryEntry.php`
@@ -460,6 +473,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.org" commit -m "Feat(domain
 ## Task 4: MemberDirectoryRepositoryInterface
 
 **Files:**
+
 - Create: `src/Domain/Backstage/MemberDirectoryRepositoryInterface.php`
 
 - [ ] **Step 4.1: Write the interface**
@@ -521,6 +535,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.org" commit -m "Feat(domain
 ## Task 5: Extend application repository interfaces
 
 **Files:**
+
 - Modify: `src/Domain/Membership/MemberApplicationRepositoryInterface.php`
 - Modify: `src/Domain/Membership/SupporterApplicationRepositoryInterface.php`
 
@@ -599,6 +614,7 @@ Interfaces alone will break PHPStan (no implementations). Continue to Task 6 to 
 ## Task 6: SqlMemberApplicationRepository — implement new methods + test
 
 **Files:**
+
 - Modify: `src/Infrastructure/Adapter/Persistence/Sql/SqlMemberApplicationRepository.php`
 - Create: `tests/Integration/Persistence/Sql/SqlMemberApplicationRepositoryTest.php`
 
@@ -814,6 +830,7 @@ Expected: 3 passing tests.
 ## Task 7: SqlSupporterApplicationRepository — implement new methods
 
 **Files:**
+
 - Modify: `src/Infrastructure/Adapter/Persistence/Sql/SqlSupporterApplicationRepository.php`
 
 - [ ] **Step 7.1: Extend SqlSupporterApplicationRepository**
@@ -908,6 +925,7 @@ Expected: 0 errors (both interfaces + both implementations now coherent).
 ## Task 8: SqlMemberDirectoryRepository + integration test
 
 **Files:**
+
 - Create: `src/Infrastructure/Adapter/Persistence/Sql/SqlMemberDirectoryRepository.php`
 - Create: `tests/Integration/Persistence/Sql/SqlMemberDirectoryRepositoryTest.php`
 
@@ -1249,6 +1267,7 @@ Expected: 5 tests pass, PHPStan 0 errors.
 ## Task 9: InMemory fakes for all 3 repositories
 
 **Files:**
+
 - Modify: `tests/Support/Fake/InMemoryMemberApplicationRepository.php`
 - Modify: `tests/Support/Fake/InMemorySupporterApplicationRepository.php`
 - Create: `tests/Support/Fake/InMemoryMemberDirectoryRepository.php`
@@ -1433,6 +1452,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.org" commit -m "Feat(persis
 ## Task 10: Use case — ListPendingApplications
 
 **Files:**
+
 - Create: `src/Application/Backstage/ListPendingApplications/ListPendingApplications.php`
 - Create: `src/Application/Backstage/ListPendingApplications/ListPendingApplicationsInput.php`
 - Create: `src/Application/Backstage/ListPendingApplications/ListPendingApplicationsOutput.php`
@@ -1650,6 +1670,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.org" commit -m "Feat(app): 
 ## Task 11: Use case — DecideApplication
 
 **Files:**
+
 - Create: `src/Application/Backstage/DecideApplication/DecideApplication.php`
 - Create: `src/Application/Backstage/DecideApplication/DecideApplicationInput.php`
 - Create: `src/Application/Backstage/DecideApplication/DecideApplicationOutput.php`
@@ -1658,6 +1679,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.org" commit -m "Feat(app): 
 - [ ] **Step 11.1: Write Input + Output**
 
 Input:
+
 ```php
 <?php
 
@@ -1680,6 +1702,7 @@ final class DecideApplicationInput
 ```
 
 Output:
+
 ```php
 <?php
 
@@ -1907,6 +1930,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.org" commit -m "Feat(app): 
 ## Task 12: Use case — ListMembers
 
 **Files:**
+
 - Create: `src/Application/Backstage/ListMembers/ListMembers.php`
 - Create: `src/Application/Backstage/ListMembers/ListMembersInput.php`
 - Create: `src/Application/Backstage/ListMembers/ListMembersOutput.php`
@@ -2113,6 +2137,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.org" commit -m "Feat(app): 
 ## Task 13: Use case — ChangeMemberStatus (GSA only)
 
 **Files:**
+
 - Create: `src/Application/Backstage/ChangeMemberStatus/ChangeMemberStatus.php`
 - Create: `src/Application/Backstage/ChangeMemberStatus/ChangeMemberStatusInput.php`
 - Create: `src/Application/Backstage/ChangeMemberStatus/ChangeMemberStatusOutput.php`
@@ -2317,6 +2342,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.org" commit -m "Feat(app): 
 ## Task 14: Use case — GetMemberAudit
 
 **Files:**
+
 - Create: `src/Application/Backstage/GetMemberAudit/GetMemberAudit.php`
 - Create: `src/Application/Backstage/GetMemberAudit/GetMemberAuditInput.php`
 - Create: `src/Application/Backstage/GetMemberAudit/GetMemberAuditOutput.php`
@@ -2325,6 +2351,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.org" commit -m "Feat(app): 
 - [ ] **Step 14.1: Write Input + Output**
 
 Input:
+
 ```php
 <?php
 
@@ -2345,6 +2372,7 @@ final class GetMemberAuditInput
 ```
 
 Output:
+
 ```php
 <?php
 
@@ -2480,6 +2508,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.org" commit -m "Feat(app): 
 ## Task 15: BackstageController
 
 **Files:**
+
 - Create: `src/Infrastructure/Adapter/Api/Controller/BackstageController.php`
 
 - [ ] **Step 15.1: Write the controller**
@@ -2680,6 +2709,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.org" commit -m "Feat(http):
 ## Task 16: Routes + KernelHarness wiring
 
 **Files:**
+
 - Modify: `routes/api.php` (add 5 routes)
 - Modify: `tests/Support/KernelHarness.php` (wire use cases + controller)
 
@@ -2715,21 +2745,25 @@ $router->get('/api/v1/backstage/members/{id}/audit', static function (Request $r
 Read `tests/Support/KernelHarness.php`. Add these additions (after existing bindings):
 
 Property:
+
 ```php
 public InMemoryMemberDirectoryRepository $memberDirectory;
 ```
 
 Constructor (alongside other repo inits):
+
 ```php
 $this->memberDirectory = new InMemoryMemberDirectoryRepository();
 ```
 
 Container bindings (with the other repo singletons):
+
 ```php
 $container->singleton(\Daems\Domain\Backstage\MemberDirectoryRepositoryInterface::class, fn() => $this->memberDirectory);
 ```
 
 Use case bindings (with other use case binds):
+
 ```php
 $container->bind(\Daems\Application\Backstage\ListPendingApplications\ListPendingApplications::class, static fn(Container $c) => new \Daems\Application\Backstage\ListPendingApplications\ListPendingApplications(
     $c->make(\Daems\Domain\Membership\MemberApplicationRepositoryInterface::class),
@@ -2753,6 +2787,7 @@ $container->bind(\Daems\Application\Backstage\GetMemberAudit\GetMemberAudit::cla
 ```
 
 Controller binding:
+
 ```php
 $container->bind(\Daems\Infrastructure\Adapter\Api\Controller\BackstageController::class, static fn(Container $c) => new \Daems\Infrastructure\Adapter\Api\Controller\BackstageController(
     $c->make(\Daems\Application\Backstage\ListPendingApplications\ListPendingApplications::class),
@@ -2786,6 +2821,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.org" commit -m "Feat(http):
 ## Task 17: E2E tests
 
 **Files:**
+
 - Create: `tests/E2E/F011_BackstageApplicationsAccessTest.php`
 - Create: `tests/E2E/F012_BackstageDecideApplicationTest.php`
 - Create: `tests/E2E/F013_BackstageMembersGsaOnlyStatusTest.php`
@@ -3021,6 +3057,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.org" commit -m "Tests(e2e):
 ## Task 18: Isolation test — BackstageTenantIsolationTest
 
 **Files:**
+
 - Create: `tests/Isolation/BackstageTenantIsolationTest.php`
 
 - [ ] **Step 18.1: Write the test**
@@ -3122,6 +3159,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.org" commit -m "Tests(isola
 ## Task 19: Documentation
 
 **Files:**
+
 - Modify: `docs/api.md`
 - Modify: `docs/database.md`
 
@@ -3158,6 +3196,7 @@ Response 200: `{"data": {"success": true}}`
 Query params: `status`, `type`, `q`, `sort` (`member_number|name|joined_at|status`), `dir` (`ASC|DESC`), `page`, `per_page` (max 200), `export=csv`.
 
 Response 200:
+
 ```json
 {"data": [...], "meta": {"page": 1, "per_page": 50, "total": 127, "total_pages": 3}}
 ```
@@ -3176,10 +3215,12 @@ Response 200: `{"data": {"success": true}}`
 Query: `limit` (default 25, max 500).
 
 Response 200:
+
 ```json
 {"data": [{"id": "...", "previousStatus": "active", "newStatus": "suspended", "reason": "...", "performedByName": "...", "createdAt": "..."}]}
 ```
-```
+
+```text
 
 - [ ] **Step 19.2: Append migrations 034 + 035 to database.md**
 
@@ -3210,6 +3251,7 @@ composer test:e2e
 ```
 
 Expected:
+
 - `composer analyse`: 0 errors at level 9
 - `composer test`: all unit + integration + isolation tests pass
 - `composer test:e2e`: all E2E tests pass (including new F011–F013)

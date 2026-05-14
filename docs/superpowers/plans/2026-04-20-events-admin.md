@@ -13,6 +13,7 @@
 **Commit identity (every commit):** `git -c user.name="Dev Team" -c user.email="dev@daems.org" commit -m "..."`. No `Co-Authored-By` trailer. Never stage `.claude/`. Never auto-push — report SHAs only.
 
 **Project conventions (critical):**
+
 - PHPUnit testsuite names are capitalised: `Unit`, `Integration`, `E2E`. Lowercased silently returns "No tests executed!" — always check the test count in output.
 - InMemory fakes live at `tests/Support/Fake/` with namespace `Daems\Tests\Support\Fake` — not under `src/Infrastructure/Adapter/Persistence/InMemory/`.
 - DI bindings must be added to BOTH `bootstrap/app.php` AND `tests/Support/KernelHarness.php`. Missing the production container = 500 in prod, green E2E. See `~/.claude/projects/C--laragon-www-daems-platform/memory/feedback_bootstrap_and_harness_must_both_wire.md`.
@@ -25,12 +26,15 @@
 ### Backend — new
 
 **Migrations:**
+
 - `database/migrations/043_add_status_to_events.sql`
 
 **Domain:**
+
 - `src/Domain/Storage/ImageStorageInterface.php`
 
 **Application — use cases:**
+
 - `src/Application/Backstage/ListEventsForAdmin/{ListEventsForAdmin.php, ListEventsForAdminInput.php, ListEventsForAdminOutput.php}`
 - `src/Application/Backstage/CreateEvent/{CreateEvent.php, CreateEventInput.php, CreateEventOutput.php}`
 - `src/Application/Backstage/UpdateEvent/{UpdateEvent.php, UpdateEventInput.php, UpdateEventOutput.php}`
@@ -42,13 +46,16 @@
 - `src/Application/Backstage/DeleteEventImage/{DeleteEventImage.php, DeleteEventImageInput.php}`
 
 **Infrastructure:**
+
 - `src/Infrastructure/Storage/LocalImageStorage.php`
 - `src/Infrastructure/Adapter/Api/Controller/MediaController.php`
 
 **Test fakes:**
+
 - `tests/Support/Fake/InMemoryImageStorage.php`
 
 **Tests:**
+
 - `tests/Integration/Migration/Migration043Test.php`
 - `tests/Unit/Application/Backstage/ListEventsForAdminTest.php`
 - `tests/Unit/Application/Backstage/CreateEventTest.php`
@@ -101,6 +108,7 @@ Tasks 1 (migration) blocks all backend. 2–3 (domain + repo ifc) block 4–12 (
 ### Task 1: Migration 043 — `events.status` column
 
 **Files:**
+
 - Create: `database/migrations/043_add_status_to_events.sql`
 - Create: `tests/Integration/Migration/Migration043Test.php`
 - Modify: `tests/Isolation/IsolationTestCase.php`
@@ -108,6 +116,7 @@ Tasks 1 (migration) blocks all backend. 2–3 (domain + repo ifc) block 4–12 (
 - [ ] **Step 1: Write the failing test**
 
 `tests/Integration/Migration/Migration043Test.php`:
+
 ```php
 <?php
 
@@ -168,6 +177,7 @@ Expected: FAIL — migration file does not exist.
 - [ ] **Step 3: Create the migration**
 
 `database/migrations/043_add_status_to_events.sql`:
+
 ```sql
 ALTER TABLE events
     ADD COLUMN status ENUM('draft','published','archived')
@@ -189,14 +199,17 @@ Edit `tests/Isolation/IsolationTestCase.php` line 18: change `$this->runMigratio
 - [ ] **Step 6: Apply migration to dev DB**
 
 Run:
+
 ```bash
 C:/laragon/bin/mysql/mysql-8.4.3-winx64/bin/mysql.exe -h 127.0.0.1 -u root -psalasana daems_db < database/migrations/043_add_status_to_events.sql
 ```
 
 Verify:
+
 ```bash
 C:/laragon/bin/mysql/mysql-8.4.3-winx64/bin/mysql.exe -h 127.0.0.1 -u root -psalasana daems_db -e "SELECT status, COUNT(*) FROM events GROUP BY status;"
 ```
+
 Expected: all existing rows report `status = 'published'`.
 
 - [ ] **Step 7: Commit**
@@ -211,11 +224,13 @@ git -c user.name="Dev Team" -c user.email="dev@daems.org" commit -m "Feat(events
 ### Task 2: Domain — Event entity gains `status`
 
 **Files:**
+
 - Modify: `src/Domain/Event/Event.php`
 
 - [ ] **Step 1: Add `$status` field, getter, and constructor arg**
 
 Replace `src/Domain/Event/Event.php` with:
+
 ```php
 <?php
 
@@ -283,6 +298,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.org" commit -m "Feat(events
 ### Task 3: EventRepositoryInterface + SQL + InMemory — add admin methods
 
 **Files:**
+
 - Modify: `src/Domain/Event/EventRepositoryInterface.php`
 - Modify: `src/Infrastructure/Adapter/Persistence/Sql/SqlEventRepository.php`
 - Modify: `tests/Support/Fake/InMemoryEventRepository.php`
@@ -290,6 +306,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.org" commit -m "Feat(events
 - [ ] **Step 1: Extend the interface**
 
 Replace `src/Domain/Event/EventRepositoryInterface.php` with:
+
 ```php
 <?php
 
@@ -347,6 +364,7 @@ Expected: FAIL — `SqlEventRepository` and `InMemoryEventRepository` no longer 
 In `src/Infrastructure/Adapter/Persistence/Sql/SqlEventRepository.php`:
 
 Narrow public `listForTenant` — change the SQL to include `AND status = 'published'`:
+
 ```php
 public function listForTenant(TenantId $tenantId, ?string $type = null): array
 {
@@ -367,6 +385,7 @@ public function listForTenant(TenantId $tenantId, ?string $type = null): array
 ```
 
 Add new methods (at end of the class, before `hydrate`):
+
 ```php
 public function listAllStatusesForTenant(TenantId $tenantId, array $filters = []): array
 {
@@ -448,6 +467,7 @@ public function listRegistrationsForEvent(string $eventId, TenantId $tenantId): 
 ```
 
 In `save()`, extend the INSERT to include `status`:
+
 ```php
 'INSERT INTO events
     (id, tenant_id, slug, title, type, event_date, event_time, location, is_online, description, hero_image, gallery_json, status)
@@ -464,9 +484,11 @@ In `save()`, extend the INSERT to include `status`:
     gallery_json = VALUES(gallery_json),
     status = VALUES(status)'
 ```
+
 and append `$event->status(),` to the params array.
 
 In `hydrate()`, add `status` to the Event constructor call:
+
 ```php
 return new Event(
     // ... existing args ...
@@ -480,6 +502,7 @@ return new Event(
 Read `tests/Support/Fake/InMemoryEventRepository.php` first. Add the new interface methods using the same in-memory array the existing methods use. Implement filtering by status inside the new `listAllStatusesForTenant`. `listForTenant` must filter to `status='published'`.
 
 Minimum added methods:
+
 ```php
 public function listAllStatusesForTenant(TenantId $tenantId, array $filters = []): array
 {
@@ -563,6 +586,7 @@ public function listRegistrationsForEvent(string $eventId, TenantId $tenantId): 
 ```
 
 Adjust `listForTenant` to filter by `status='published'`:
+
 ```php
 public function listForTenant(TenantId $tenantId, ?string $type = null): array
 {
@@ -601,6 +625,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.org" commit -m "Feat(events
 ### Task 4: `ImageStorageInterface` + `LocalImageStorage` + InMemory fake
 
 **Files:**
+
 - Create: `src/Domain/Storage/ImageStorageInterface.php`
 - Create: `src/Infrastructure/Storage/LocalImageStorage.php`
 - Create: `tests/Support/Fake/InMemoryImageStorage.php`
@@ -608,6 +633,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.org" commit -m "Feat(events
 - [ ] **Step 1: Create the interface**
 
 `src/Domain/Storage/ImageStorageInterface.php`:
+
 ```php
 <?php
 
@@ -639,6 +665,7 @@ interface ImageStorageInterface
 ```
 
 Also create `src/Domain/Storage/ImageStorageException.php`:
+
 ```php
 <?php
 declare(strict_types=1);
@@ -649,6 +676,7 @@ final class ImageStorageException extends \RuntimeException {}
 - [ ] **Step 2: Create `LocalImageStorage`**
 
 `src/Infrastructure/Storage/LocalImageStorage.php`:
+
 ```php
 <?php
 
@@ -780,6 +808,7 @@ final class LocalImageStorage implements ImageStorageInterface
 - [ ] **Step 3: Create `InMemoryImageStorage` test fake**
 
 `tests/Support/Fake/InMemoryImageStorage.php`:
+
 ```php
 <?php
 
@@ -825,6 +854,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.org" commit -m "Feat(storag
 ### Task 5: `ListEventsForAdmin` use case (TDD)
 
 **Files:**
+
 - Create: `src/Application/Backstage/ListEventsForAdmin/ListEventsForAdminInput.php`
 - Create: `src/Application/Backstage/ListEventsForAdmin/ListEventsForAdminOutput.php`
 - Create: `src/Application/Backstage/ListEventsForAdmin/ListEventsForAdmin.php`
@@ -833,6 +863,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.org" commit -m "Feat(storag
 - [ ] **Step 1: Write the failing test**
 
 `tests/Unit/Application/Backstage/ListEventsForAdminTest.php`:
+
 ```php
 <?php
 
@@ -958,6 +989,7 @@ Expected: class-not-found.
 - [ ] **Step 3: Implement Input + Output + UseCase**
 
 `ListEventsForAdminInput.php`:
+
 ```php
 <?php
 declare(strict_types=1);
@@ -975,6 +1007,7 @@ final class ListEventsForAdminInput
 ```
 
 `ListEventsForAdminOutput.php`:
+
 ```php
 <?php
 declare(strict_types=1);
@@ -990,6 +1023,7 @@ final class ListEventsForAdminOutput
 ```
 
 `ListEventsForAdmin.php`:
+
 ```php
 <?php
 declare(strict_types=1);
@@ -1049,6 +1083,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.org" commit -m "Feat(events
 ### Task 6: `CreateEvent` use case (TDD)
 
 **Files:**
+
 - Create: `src/Application/Backstage/CreateEvent/{CreateEvent.php, CreateEventInput.php, CreateEventOutput.php}`
 - Create: `tests/Unit/Application/Backstage/CreateEventTest.php`
 
@@ -1069,6 +1104,7 @@ Write the full test file following the pattern in Task 5's test. Cover each rule
 - [ ] **Step 3: Implement Input + Output + UseCase**
 
 `CreateEventInput.php`:
+
 ```php
 <?php
 declare(strict_types=1);
@@ -1092,6 +1128,7 @@ final class CreateEventInput
 ```
 
 `CreateEventOutput.php`:
+
 ```php
 <?php
 declare(strict_types=1);
@@ -1104,6 +1141,7 @@ final class CreateEventOutput
 ```
 
 `CreateEvent.php`:
+
 ```php
 <?php
 declare(strict_types=1);
@@ -1204,6 +1242,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.org" commit -m "Feat(events
 ### Task 7: `UpdateEvent` use case (TDD)
 
 **Files:**
+
 - Create: `src/Application/Backstage/UpdateEvent/{UpdateEvent.php, UpdateEventInput.php, UpdateEventOutput.php}`
 - Create: `tests/Unit/Application/Backstage/UpdateEventTest.php`
 
@@ -1225,6 +1264,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.org" commit -m "Feat(events
 Note: this means you cannot use this Input to explicitly set `hero_image = NULL`. For that case, use `DeleteEventImage` (Task 13). Document this in the class docblock.
 
 `UpdateEventOutput.php`:
+
 ```php
 <?php
 declare(strict_types=1);
@@ -1237,6 +1277,7 @@ final class UpdateEventOutput
 ```
 
 `UpdateEvent.php`:
+
 ```php
 <?php
 declare(strict_types=1);
@@ -1323,6 +1364,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.org" commit -m "Feat(events
 ### Task 8: `PublishEvent` + `ArchiveEvent` use cases (TDD, combined)
 
 **Files:**
+
 - Create: `src/Application/Backstage/PublishEvent/{PublishEvent.php, PublishEventInput.php}`
 - Create: `src/Application/Backstage/ArchiveEvent/{ArchiveEvent.php, ArchiveEventInput.php}`
 - Create: `tests/Unit/Application/Backstage/PublishEventTest.php`
@@ -1331,6 +1373,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.org" commit -m "Feat(events
 - [ ] **Step 1: Failing tests**
 
 Both use cases: take `ActingUser $acting, string $eventId` → call `$events->setStatus($id, $tenantId, 'published' or 'archived')`. Cover:
+
 - Non-admin → Forbidden.
 - Not-found event → NotFoundException.
 - Successful call sets status correctly (assert via `$repo->findByIdForTenant`).
@@ -1340,6 +1383,7 @@ Both use cases: take `ActingUser $acting, string $eventId` → call `$events->se
 - [ ] **Step 3: Implement both**
 
 Both follow the same skeleton. Example for PublishEvent:
+
 ```php
 <?php
 declare(strict_types=1);
@@ -1366,6 +1410,7 @@ final class PublishEvent
     }
 }
 ```
+
 ArchiveEvent — identical but sets `'archived'`.
 
 - [ ] **Step 4: Run — expect PASS**
@@ -1382,6 +1427,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.org" commit -m "Feat(events
 ### Task 9: `ListEventRegistrations` + `UnregisterUserFromEvent` (TDD)
 
 **Files:**
+
 - Create: `src/Application/Backstage/ListEventRegistrations/{ListEventRegistrations.php, Input.php, Output.php}`
 - Create: `src/Application/Backstage/UnregisterUserFromEvent/{UnregisterUserFromEvent.php, Input.php}`
 - Create: `tests/Unit/Application/Backstage/ListEventRegistrationsTest.php`
@@ -1417,6 +1463,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.org" commit -m "Feat(events
 ### Task 10: `UploadEventImage` use case (TDD)
 
 **Files:**
+
 - Create: `src/Application/Backstage/UploadEventImage/{UploadEventImage.php, UploadEventImageInput.php, UploadEventImageOutput.php}`
 - Create: `tests/Unit/Application/Backstage/UploadEventImageTest.php`
 
@@ -1436,6 +1483,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.org" commit -m "Feat(events
 `UploadEventImageOutput.php`: `readonly string $url` + `toArray()` returning `['url' => $this->url]`.
 
 `UploadEventImage.php`:
+
 ```php
 <?php
 declare(strict_types=1);
@@ -1492,6 +1540,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.org" commit -m "Feat(events
 ### Task 11: `DeleteEventImage` use case (TDD)
 
 **Files:**
+
 - Create: `src/Application/Backstage/DeleteEventImage/{DeleteEventImage.php, DeleteEventImageInput.php}`
 - Create: `tests/Unit/Application/Backstage/DeleteEventImageTest.php`
 
@@ -1567,6 +1616,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.org" commit -m "Feat(events
 ### Task 12: HTTP — `BackstageController` event methods + `MediaController`
 
 **Files:**
+
 - Modify: `src/Infrastructure/Adapter/Api/Controller/BackstageController.php`
 - Create: `src/Infrastructure/Adapter/Api/Controller/MediaController.php`
 
@@ -1690,6 +1740,7 @@ Add the matching `use` statements at the top of the file.
 - [ ] **Step 2: Create `MediaController`**
 
 `src/Infrastructure/Adapter/Api/Controller/MediaController.php`:
+
 ```php
 <?php
 declare(strict_types=1);
@@ -1769,6 +1820,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.org" commit -m "Feat(events
 ### Task 13: Routes
 
 **Files:**
+
 - Modify: `routes/api.php`
 
 - [ ] **Step 1: Add the 9 new routes**
@@ -1828,6 +1880,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.org" commit -m "Feat(events
 ### Task 14: DI wiring — `bootstrap/app.php` + `KernelHarness`
 
 **Files:**
+
 - Modify: `bootstrap/app.php`
 - Modify: `tests/Support/KernelHarness.php`
 
@@ -1907,6 +1960,7 @@ $container->bind(\Daems\Infrastructure\Adapter\Api\Controller\MediaController::c
 ```
 
 Update the `BackstageController` binding (grep for its current binding) to inject the 7 new use cases. Example of the addition (keep existing args, append):
+
 ```php
 $c->make(\Daems\Application\Backstage\ListEventsForAdmin\ListEventsForAdmin::class),
 $c->make(\Daems\Application\Backstage\CreateEvent\CreateEvent::class),
@@ -1924,7 +1978,8 @@ Bind `ImageStorageInterface` to a new `InMemoryImageStorage` instance on the har
 - [ ] **Step 3: Grep sanity-check**
 
 Run for each symbol below — must appear in BOTH `bootstrap/app.php` AND `tests/Support/KernelHarness.php`:
-```
+
+```text
 ListEventsForAdmin
 CreateEvent
 UpdateEvent
@@ -1941,6 +1996,7 @@ MediaController
 - [ ] **Step 4: Live smoke**
 
 From `C:\laragon\www\daems-platform`:
+
 ```bash
 echo "APP_DEBUG=true" >> .env
 php -S 127.0.0.1:8090 -t public public/index.php > /tmp/srv.log 2>&1 &
@@ -1949,6 +2005,7 @@ curl -i http://127.0.0.1:8090/api/v1/backstage/events -H "Host: daems-platform.l
 kill %1
 sed -i '/^APP_DEBUG=true$/d' .env
 ```
+
 Expected: HTTP 401 (auth required), **not** 500. A 500 with a TypeError means a binding mismatch — fix before committing.
 
 - [ ] **Step 5: Run the whole suite**
@@ -1958,6 +2015,7 @@ composer analyse
 vendor/bin/phpunit --testsuite Unit
 vendor/bin/phpunit --testsuite E2E
 ```
+
 All three must be green. Expect Unit count to have grown by ~30+ from the new use-case tests.
 
 - [ ] **Step 6: Commit**
@@ -1972,6 +2030,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.org" commit -m "Wire: bind 
 ### Task 15: Integration + Isolation + E2E tests
 
 **Files:**
+
 - Create: `tests/Integration/Application/EventsAdminIntegrationTest.php`
 - Create: `tests/Isolation/EventsAdminTenantIsolationTest.php`
 - Create: `tests/E2E/Backstage/EventAdminEndpointsTest.php`
@@ -1980,6 +2039,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.org" commit -m "Wire: bind 
 - [ ] **Step 1: Integration test**
 
 Extends `MigrationTestCase`. `setUp` runs migrations to 43, seeds one tenant + one admin user + `user_tenants` admin link. Tests:
+
 1. `test_full_lifecycle_via_real_sql`: CreateEvent (draft) → UpdateEvent → PublishEvent → ArchiveEvent. After each step, assert the `events` row reflects the expected state.
 2. `test_registrations_list_joins_user_data`: seed an event + user + registration row; call `ListEventRegistrations`; assert name + email come through correctly.
 3. `test_public_list_excludes_drafts_and_archived`: seed one of each status; call public `ListEvents`; assert only published visible.
@@ -1987,6 +2047,7 @@ Extends `MigrationTestCase`. `setUp` runs migrations to 43, seeds one tenant + o
 - [ ] **Step 2: Isolation test**
 
 Extends `IsolationTestCase`. Seeds two tenants + admins. Tests:
+
 1. Admin A cannot list events in tenant B (filters automatically because `listAllStatusesForTenant` is tenant-scoped).
 2. Admin A cannot publish/archive/update/delete a tenant-B event (`NotFoundException`).
 3. Admin A cannot upload to a tenant-B event.
@@ -1994,6 +2055,7 @@ Extends `IsolationTestCase`. Seeds two tenants + admins. Tests:
 - [ ] **Step 3: E2E endpoints test**
 
 Mirrors `ApproveAndInviteFlowTest`. Uses `KernelHarness` + `request(method, path, body)`. Covers:
+
 - `POST /backstage/events` with full body → 201 + new id/slug.
 - `POST /backstage/events/{id}` with `{title: 'new'}` → 200 + asserts title was updated via a subsequent `GET`.
 - `POST /backstage/events/{id}/publish` → 200 with `{status: 'published'}`.
@@ -2014,6 +2076,7 @@ Also test: upload 15 times → 16th call returns 422 `max_15_images` (requires s
 vendor/bin/phpunit --testsuite Integration
 vendor/bin/phpunit --testsuite E2E
 ```
+
 Integration test count must grow by at least 3. E2E by at least 8.
 
 - [ ] **Step 6: Commit**
@@ -2028,6 +2091,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.org" commit -m "Test(events
 ### Task 16: daem-society — proxy endpoints
 
 **Files (frontend repo `C:\laragon\www\sites\daem-society`):**
+
 - Create: `public/api/backstage/events.php`
 - Create: `public/api/backstage/event-upload.php`
 
@@ -2114,6 +2178,7 @@ Match the existing proxy's path to `ApiClient` (check `public/api/backstage/dism
 - [ ] **Step 2: Multipart relay `event-upload.php`**
 
 This one forwards `$_FILES` through cURL because `ApiClient::post` only handles JSON. Use PHP's `CURLFile`:
+
 ```php
 <?php
 declare(strict_types=1);
@@ -2176,6 +2241,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.org" commit -m "Feat(backst
 ### Task 17: daem-society — events admin page + modal + upload widget
 
 **Files:**
+
 - Create: `public/pages/backstage/events/index.php`
 - Create: `public/pages/backstage/events/event-modal.js`
 - Create: `public/pages/backstage/events/event-modal.css`
@@ -2185,6 +2251,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.org" commit -m "Feat(backst
 - [ ] **Step 1: `index.php` — list page**
 
 PHP-side: admin guard (same as other backstage pages), fetch `ApiClient::get('/backstage/events')` server-side for initial render (fall back to empty array on failure). Render the page with:
+
 - Header "+ New event" button (opens modal in create mode).
 - Filter bar (status, type, search).
 - Table: date · title · type · status pill · registration count · actions (✏ 📢 🗄).
@@ -2210,6 +2277,7 @@ Progress UI: `<p class="upload-progress">3/5 images uploaded…</p>`.
 - [ ] **Step 3: `upload-widget.js`**
 
 Two responsibilities:
+
 - Renders the drag-drop zone + file-picker + preview thumbnails with delete buttons.
 - Exposes `window.UploadWidget.getPending()` → queued `File[]`; `window.UploadWidget.uploadOne(eventId, file)` → `Promise<{url}>`.
 
@@ -2248,6 +2316,7 @@ If browser not available, report "manual-smoke skipped — no browser access".
 - [ ] **Step 7: Commits**
 
 In backend repo:
+
 ```bash
 cd C:/laragon/www/daems-platform
 git add public/uploads/events/.gitkeep
@@ -2255,6 +2324,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.org" commit -m "Feat(events
 ```
 
 In daem-society repo:
+
 ```bash
 cd C:/laragon/www/sites/daem-society
 git add public/pages/backstage/events/
@@ -2266,6 +2336,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.org" commit -m "Feat(backst
 ### Task 18: Public event-detail — verify gallery lightbox integration
 
 **Files (frontend repo):**
+
 - Verify: `public/pages/events/detail/gallery.php`
 - Possibly modify: event-detail page that assembles the full event view.
 
@@ -2276,6 +2347,7 @@ Find it (`grep -r "event-gallery-thumb" public/pages/events/` or similar). Confi
 - [ ] **Step 2: Absolute URL handling**
 
 Images live at `http://daems-platform.local/uploads/events/...`. If the event-detail page renders `gallery_json` URLs as-is (relative paths), the daem-society host will 404 on them. Choose one:
+
 - **A (simpler):** Backend returns absolute URLs (LocalImageStorage already does — `urlPrefix` is the APP_URL).
 - **B:** Frontend prefixes all gallery URLs with a config'd platform host before rendering.
 
@@ -2288,6 +2360,7 @@ If URLs are already absolute, this task is just a verification. Report in the ta
 - [ ] **Step 4: If change required**
 
 Edit the event-detail PHP to wrap `htmlspecialchars($url)` with an absolutise helper. Commit:
+
 ```bash
 cd C:/laragon/www/sites/daem-society
 git -c user.name="Dev Team" -c user.email="dev@daems.org" commit -m "Feat(events-public): resolve gallery image URLs against platform host"

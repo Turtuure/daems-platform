@@ -425,7 +425,7 @@ Audit log for changes to `users.is_platform_admin`. Populated automatically by t
 
 ## Entity Relationship Diagram
 
-```
+```text
 tenants
   |
   |--< tenant_domains

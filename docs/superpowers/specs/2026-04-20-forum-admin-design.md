@@ -16,6 +16,7 @@ Deliver `/backstage/forum` (roadmap §1.6): full moderator console for reports, 
 ## 2. Scope
 
 **In:**
+
 - Report-based moderation: authenticated users report **posts or topics** (not categories) via a new `forum_reports` table.
 - Deduplicated admin queue: one row per `(reporter_user_id, target_type, target_id)`, aggregated per target in the admin UI.
 - Three report statuses: `open` / `resolved` / `dismissed`.
@@ -28,6 +29,7 @@ Deliver `/backstage/forum` (roadmap §1.6): full moderator console for reports, 
 - `CreateForumPost` guards against posting to a locked topic (returns 409 `topic_locked`).
 
 **Out (explicit YAGNI):**
+
 - Reporting of categories (c2 discussion) — deferred to a later iteration. Noted in `CLAUDE.md` follow-ups.
 - Automatic ban threshold wired to warnings count — warnings only write an audit row in MVP.
 - Email notification to the reporter or reported user — Mailu is not yet wired. Same reasoning as earlier PRs.
@@ -140,11 +142,13 @@ The dismissal row for forum reports uses the **aggregated target key** (`target_
 ### 4.1 Domain entities + repositories
 
 **New entities** (under `src/Domain/Forum/`), all tenant-scoped (2nd ctor arg `TenantId`):
+
 - `ForumReport` — id, tenantId, targetType, targetId, reporterUserId, reasonCategory, reasonDetail, status, resolvedAt, resolvedBy, resolutionNote, resolutionAction, createdAt.
 - `ForumModerationAuditEntry` — id, tenantId, targetType, targetId, action, originalPayload (array|null), newPayload (array|null), reason, performedBy, relatedReportId, createdAt.
 - `ForumUserWarning` — id, tenantId, userId, reason, relatedReportId, issuedBy, createdAt.
 
 **Additions to `ForumRepositoryInterface`:**
+
 - `setTopicPinnedForTenant(string $topicId, TenantId $tenantId, bool $pinned): void`
 - `setTopicLockedForTenant(string $topicId, TenantId $tenantId, bool $locked): void`
 - `deleteTopicForTenant(string $topicId, TenantId $tenantId): void` — cascades posts.
@@ -159,6 +163,7 @@ The dismissal row for forum reports uses the **aggregated target key** (`target_
 - `deleteCategoryForTenant(string $categoryId, TenantId $tenantId): void` — throws domain exception if topics exist.
 
 **New repositories:**
+
 - `ForumReportRepositoryInterface`:
   - `upsert(ForumReport $report): void` — INSERT ... ON DUPLICATE KEY UPDATE reason_category/reason_detail/created_at (re-open semantics when user re-reports).
   - `findByIdForTenant(string $id, TenantId $tenantId): ?ForumReport`
@@ -212,11 +217,13 @@ Under `src/Application/Backstage/Forum/`:
 All `[TenantContextMiddleware, AuthMiddleware]` except where public reads are explicitly allowed by existing forum endpoints.
 
 **User side (authenticated member):**
+
 | Method | Path | Handler |
 |---|---|---|
 | POST | `/forum/reports` | `ForumController::createReport` |
 
 **Admin (extends `BackstageController`):**
+
 | Method | Path | Handler |
 |---|---|---|
 | GET  | `/backstage/forum/reports` | `listForumReports` |
@@ -244,6 +251,7 @@ Existing `/backstage/applications/pending-count` response shape unchanged — ju
 ### 4.4 DI wiring
 
 Bind every new controller dep, use case, and Sql repo in **BOTH**:
+
 - `bootstrap/app.php`
 - `tests/Support/KernelHarness.php` (with InMemory repo fakes)
 
@@ -258,22 +266,26 @@ Per `feedback_bootstrap_and_harness_must_both_wire.md`, grep for each new class 
 Four tabs selected via `?tab=reports|topics|categories|audit` (client-side tab switching, URL-linkable). Default tab = `reports` if `open > 0`, otherwise `topics`.
 
 **Reports tab**
+
 - Filter row: status pill group (Open / Resolved / Dismissed), target_type (all / posts / topics).
 - Aggregated cards: target excerpt (first 160 chars of post content or topic title), category-badges for reason distribution ("12× spam, 3× off_topic"), reporter-count ("15 raportoijaa"), earliest / latest report timestamps.
 - Actions row per card: **Delete**, **Lock** (disabled if target is a post), **Warn author**, **Edit** (disabled if target is a topic), **Dismiss**. Each primary action opens a small inline confirm with an optional note textarea. `Edit` opens a modal with the current content pre-filled.
 - After resolve/dismiss: row fades out, queue count badge updates, top-level toast count decrements.
 
 **Topics tab**
+
 - Filters: category, pinned-only, locked-only, search.
 - Table: Title · Category · Author · 📌 Pin toggle · 🔒 Lock toggle · Replies · Last activity · Actions (Delete, View on site).
 - No inline edit for topic titles in MVP — admin must delete + recreate if rename needed. (Note in spec: keep YAGNI, add if it becomes common ask.)
 
 **Categories tab**
+
 - Table: Name · Slug · Icon · Sort · Topic count · Actions (Edit, Delete).
 - "New category" opens modal (slug / name / icon / description / sort_order).
 - Delete button disabled (with tooltip) if `topic_count > 0`, shows "Siirrä topicit ensin" link that scrolls to Topics tab filtered by that category.
 
 **Audit tab**
+
 - Read-only table: Timestamp · Action · Target (clickable if not deleted) · Performer · Reason · Linked report (if any).
 - Paging optional — MVP shows last 200; filter by action enum.
 
@@ -304,11 +316,13 @@ Same pattern as `public/api/backstage/projects.php`.
 ### 5.5 Toast routing
 
 `public/pages/backstage/toasts.js` adds:
+
 ```js
 if (item.type === 'forum_report') {
     window.location.href = '/backstage/forum?tab=reports&highlight=' + encodeURIComponent(item.id);
 }
 ```
+
 `highlight` may be the compound `target_type:target_id` key — dialog scrolls to the matching card.
 
 ---
@@ -318,6 +332,7 @@ if (item.type === 'forum_report') {
 ### 6.1 Unit (~18 use-case tests)
 
 One class per new use case:
+
 - `ReportForumTargetTest` — happy, unauthenticated forbidden, invalid target, dedup upsert, dismissal cleared.
 - `ListForumReportsForAdminTest` — aggregated shape, filters, forbidden for non-admin.
 - `GetForumReportDetailTest` — aggregation + raw reports + content, tenant-scoped.
@@ -373,6 +388,7 @@ One class per new use case:
 ## 7. Files inventory
 
 **New backend:**
+
 - `database/migrations/047_add_locked_to_forum_topics.sql`
 - `database/migrations/048_create_forum_reports_audit_warnings_and_edited_at.sql`
 - `database/migrations/049_extend_dismissals_enum_forum_report.sql`
@@ -394,6 +410,7 @@ One class per new use case:
 - Route registrations
 
 **Modified backend:**
+
 - `ForumRepositoryInterface` + `SqlForumRepository` + `InMemoryForumRepository` — new methods (pin/lock/delete/edit/listRecent*/categoryCrud guards).
 - `ForumTopic` entity — gains `locked` field.
 - `ForumPost` entity — gains `editedAt` field.
@@ -402,6 +419,7 @@ One class per new use case:
 - `DismissApplication` — allow `forum_report` appType + compound appId validation.
 
 **New frontend daem-society:**
+
 - `public/pages/backstage/forum/index.php`
 - `public/pages/backstage/forum/forum-admin.js`
 - `public/pages/backstage/forum/forum-admin.css`
@@ -412,11 +430,13 @@ One class per new use case:
 - `public/pages/forum/_report-dialog.js` (reusable) + associated CSS
 
 **Modified frontend:**
+
 - `public/pages/backstage/toasts.js` — forum_report routing.
 - `public/pages/backstage/layout.php` — sidebar entry (verify + add).
 - Public forum view files — add Report link under posts, topic header Report link, locked banner, moderator-edited caption.
 
 **Tests:**
+
 - ~18 unit, 4 integration, 1 isolation, 2 E2E classes.
 
 ---

@@ -94,15 +94,18 @@
 - [ ] **P0.1: Verify baseline**
 
 Run:
+
 ```bash
 cd /root/daems/daems-platform/.worktrees/auth-remediation
 ./vendor/bin/phpunit
 ```
+
 Expected: `OK (62 tests, 125 assertions)`. If not passing, stop and investigate before adding code.
 
 - [ ] **P0.2: Confirm git identity**
 
 Run:
+
 ```bash
 git config user.email   # expect: hammersmashed89@gmail.com
 git config user.name    # expect: Hammer
@@ -115,6 +118,7 @@ git config user.name    # expect: Hammer
 ### Task 1: `Clock` interface + `SystemClock` + `FrozenClock`
 
 **Files:**
+
 - Create: `src/Domain/Shared/Clock.php`
 - Create: `src/Infrastructure/Framework/Clock/SystemClock.php`
 - Create: `tests/Support/FrozenClock.php`
@@ -160,6 +164,7 @@ final class SystemClockTest extends TestCase
 ```bash
 ./vendor/bin/phpunit --filter SystemClockTest
 ```
+
 Expected: `Class "Daems\Infrastructure\Framework\Clock\SystemClock" not found`.
 
 - [ ] **Step 1.3: Write `Clock` interface**
@@ -209,6 +214,7 @@ final class SystemClock implements Clock
 ```bash
 ./vendor/bin/phpunit --filter SystemClockTest
 ```
+
 Expected: `OK (2 tests, …)`.
 
 - [ ] **Step 1.6: Write `FrozenClock` test support + its test**
@@ -296,10 +302,12 @@ Edit `composer.json` `autoload-dev` block to add `"files": []` or a `"psr-4"` fo
 (The existing entry already maps `Daems\Tests\\` to `tests/`, so `Daems\Tests\Support\` resolves under `tests/Support/`. No change needed — verify.)
 
 Run:
+
 ```bash
 composer dump-autoload
 ./vendor/bin/phpunit --filter FrozenClockTest
 ```
+
 Expected: `OK (2 tests, …)`.
 
 - [ ] **Step 1.8: Commit**
@@ -318,6 +326,7 @@ git commit -m "Add Clock interface with SystemClock and FrozenClock test double"
 ### Task 2: `LoggerInterface` + `ErrorLogLogger`
 
 **Files:**
+
 - Create: `src/Infrastructure/Framework/Logging/LoggerInterface.php`
 - Create: `src/Infrastructure/Framework/Logging/ErrorLogLogger.php`
 - Create: `tests/Unit/Infrastructure/Framework/Logging/ErrorLogLoggerTest.php`
@@ -382,6 +391,7 @@ final class ErrorLogLoggerTest extends TestCase
 ```bash
 ./vendor/bin/phpunit --filter ErrorLogLoggerTest
 ```
+
 Expected: class not found.
 
 - [ ] **Step 2.3: Implement interface + logger**
@@ -440,6 +450,7 @@ final class ErrorLogLogger implements LoggerInterface
 ```bash
 ./vendor/bin/phpunit --filter ErrorLogLoggerTest
 ```
+
 Expected: `OK (3 tests, …)`.
 
 - [ ] **Step 2.5: Commit**
@@ -454,6 +465,7 @@ git commit -m "Add LoggerInterface with error_log-backed adapter"
 ### Task 3: Exception family
 
 **Files:**
+
 - Create: `src/Domain/Auth/AuthorizationException.php`
 - Create: `src/Domain/Auth/UnauthorizedException.php`
 - Create: `src/Domain/Auth/ForbiddenException.php`
@@ -623,6 +635,7 @@ git commit -m "Add domain exception family for auth/validation/not-found"
 ### Task 4: Response helpers (`unauthorized`, `forbidden`, `tooManyRequests`)
 
 **Files:**
+
 - Modify: `src/Infrastructure/Framework/Http/Response.php`
 - Create: `tests/Unit/Infrastructure/Framework/Http/ResponseTest.php`
 
@@ -670,6 +683,7 @@ final class ResponseTest extends TestCase
 ```bash
 ./vendor/bin/phpunit --filter ResponseTest
 ```
+
 Expected: `Call to undefined method … unauthorized`, etc. (Also `status()`, `body()`, `header()` don't exist.)
 
 - [ ] **Step 4.3: Extend `Response`**
@@ -722,6 +736,7 @@ git commit -m "Add Response helpers for 401/403/429 plus accessors"
 ### Task 5: `Request::withActingUser`, `actingUser`, `clientIp`, `bearerToken`
 
 **Files:**
+
 - Modify: `src/Infrastructure/Framework/Http/Request.php`
 - Create: `tests/Unit/Infrastructure/Framework/Http/RequestTest.php`
 
@@ -906,6 +921,7 @@ git commit -m "Extend Request with acting user, bearer token, client IP"
 ### Task 6: `MiddlewareInterface`
 
 **Files:**
+
 - Create: `src/Infrastructure/Framework/Http/MiddlewareInterface.php`
 
 - [ ] **Step 6.1: Create interface (no test needed — interface only)**
@@ -940,6 +956,7 @@ git commit -m "Add MiddlewareInterface for Router pipeline"
 ### Task 7: Extend `Router` to accept per-route middleware list
 
 **Files:**
+
 - Modify: `src/Infrastructure/Framework/Http/Router.php`
 - Create: `tests/Unit/Infrastructure/Framework/Http/RouterTest.php`
 
@@ -1114,6 +1131,7 @@ $container->singleton(Router::class, static function (Container $container): Rou
 ```bash
 ./vendor/bin/phpunit
 ```
+
 All previous tests + RouterTest should pass.
 
 - [ ] **Step 7.6: Commit**
@@ -1130,6 +1148,7 @@ git commit -m "Add middleware pipeline to Router with per-route registration"
 ### Task 8: `ActingUser` value object
 
 **Files:**
+
 - Create: `src/Domain/Auth/ActingUser.php`
 - Create: `tests/Unit/Domain/Auth/ActingUserTest.php`
 
@@ -1227,6 +1246,7 @@ git commit -m "Add ActingUser value object with role and ownership helpers"
 ### Task 9: `AuthTokenId`, `AuthToken`, and repository interfaces
 
 **Files:**
+
 - Create: `src/Domain/Auth/AuthTokenId.php`
 - Create: `src/Domain/Auth/AuthToken.php`
 - Create: `src/Domain/Auth/AuthTokenRepositoryInterface.php`
@@ -1427,6 +1447,7 @@ git commit -m "Add AuthToken entity and repository interfaces"
 ### Task 10: Write three migrations
 
 **Files:**
+
 - Create: `database/migrations/014_create_auth_tokens.sql`
 - Create: `database/migrations/015_create_auth_login_attempts.sql`
 - Create: `database/migrations/016_add_owner_id_to_projects.sql`
@@ -1477,11 +1498,13 @@ ALTER TABLE projects
 - [ ] **Step 10.4: Apply migrations against the local DB (if one is running)**
 
 Run (adjust credentials to your `.env`):
+
 ```bash
 mysql -h 127.0.0.1 -P 3306 -u root daems_db < database/migrations/014_create_auth_tokens.sql
 mysql -h 127.0.0.1 -P 3306 -u root daems_db < database/migrations/015_create_auth_login_attempts.sql
 mysql -h 127.0.0.1 -P 3306 -u root daems_db < database/migrations/016_add_owner_id_to_projects.sql
 ```
+
 Expected: no errors. If the DB is not running, skip — the Integration/E2E suites apply migrations programmatically (Task 30).
 
 - [ ] **Step 10.5: Commit**
@@ -1498,6 +1521,7 @@ git commit -m "Add migrations for auth_tokens, login attempts, project owner_id"
 ### Task 11: `SqlAuthTokenRepository` + in-memory fake
 
 **Files:**
+
 - Create: `src/Infrastructure/Adapter/Persistence/Sql/SqlAuthTokenRepository.php`
 - Create: `tests/Support/Fake/InMemoryAuthTokenRepository.php`
 - Create: `tests/Unit/Support/Fake/InMemoryAuthTokenRepositoryTest.php`
@@ -1743,6 +1767,7 @@ git commit -m "Add SqlAuthTokenRepository and in-memory test fake"
 ### Task 12: `SqlAuthLoginAttemptRepository` + fake
 
 **Files:**
+
 - Create: `src/Infrastructure/Adapter/Persistence/Sql/SqlAuthLoginAttemptRepository.php`
 - Create: `tests/Support/Fake/InMemoryAuthLoginAttemptRepository.php`
 - Create: `tests/Unit/Support/Fake/InMemoryAuthLoginAttemptRepositoryTest.php`
@@ -1881,6 +1906,7 @@ git commit -m "Add SqlAuthLoginAttemptRepository and in-memory test fake"
 ### Task 13: `CreateAuthToken` use case
 
 **Files:**
+
 - Create: `src/Application/Auth/CreateAuthToken/CreateAuthToken.php`
 - Create: `src/Application/Auth/CreateAuthToken/CreateAuthTokenInput.php`
 - Create: `src/Application/Auth/CreateAuthToken/CreateAuthTokenOutput.php`
@@ -2046,6 +2072,7 @@ git commit -m "Add CreateAuthToken use case"
 ### Task 14: `AuthenticateToken` use case
 
 **Files:**
+
 - Create: `src/Application/Auth/AuthenticateToken/{AuthenticateToken,AuthenticateTokenInput,AuthenticateTokenOutput}.php`
 - Create: `tests/Unit/Application/Auth/AuthenticateTokenTest.php`
 
@@ -2361,6 +2388,7 @@ git commit -m "Add AuthenticateToken use case with sliding expiry and hard cap"
 ### Task 15: `RevokeAuthToken` + `LogoutUser` use cases
 
 **Files:**
+
 - Create: `src/Application/Auth/RevokeAuthToken/{RevokeAuthToken,RevokeAuthTokenInput,RevokeAuthTokenOutput}.php`
 - Create: `src/Application/Auth/LogoutUser/{LogoutUser,LogoutUserInput,LogoutUserOutput}.php`
 - Create: `tests/Unit/Application/Auth/RevokeAuthTokenTest.php`
@@ -2585,6 +2613,7 @@ git commit -m "Add RevokeAuthToken and LogoutUser use cases"
 ### Task 16: `AuthMiddleware`
 
 **Files:**
+
 - Create: `src/Infrastructure/Framework/Http/Middleware/AuthMiddleware.php`
 - Create: `tests/Integration/Http/AuthMiddlewareTest.php`
 
@@ -2846,6 +2875,7 @@ Update `LogoutUserTest.php` to use raw token:
 ```bash
 ./vendor/bin/phpunit
 ```
+
 Expected: all pass.
 
 - [ ] **Step 16.6: Commit**
@@ -2867,6 +2897,7 @@ git commit -m "Add AuthMiddleware with token-hash-based logout path"
 ### Task 17: `RateLimitLoginMiddleware`
 
 **Files:**
+
 - Create: `src/Infrastructure/Framework/Http/Middleware/RateLimitLoginMiddleware.php`
 - Create: `tests/Integration/Http/RateLimitLoginMiddlewareTest.php`
 
@@ -3042,6 +3073,7 @@ git commit -m "Add RateLimitLoginMiddleware with configurable window and lockout
 ### Task 18: Kernel translates exceptions to HTTP responses
 
 **Files:**
+
 - Modify: `src/Infrastructure/Framework/Http/Kernel.php`
 - Modify: `bootstrap/app.php` (bind Logger + Kernel construction)
 - Create: `tests/Integration/Http/KernelErrorSanitisationTest.php`
@@ -3279,6 +3311,7 @@ $container->bind(RateLimitLoginMiddleware::class,
 ```
 
 Change the final return:
+
 ```php
 return new Kernel(
     $container,
@@ -3291,7 +3324,7 @@ return new Kernel(
 
 Append to `.env.example`:
 
-```
+```text
 APP_DEBUG=false
 
 AUTH_TOKEN_TTL_DAYS=7
@@ -3322,6 +3355,7 @@ git commit -m "Sanitise Kernel errors and map domain exceptions to HTTP codes"
 ### Task 19: Login returns token + records attempt; 72-byte password cap
 
 **Files:**
+
 - Modify: `src/Application/Auth/LoginUser/LoginUser.php`
 - Modify: `src/Application/Auth/LoginUser/LoginUserOutput.php` (check if token needed there — or return from use case)
 - Modify: `src/Application/Auth/RegisterUser/RegisterUser.php`
@@ -3623,6 +3657,7 @@ final class AuthController
 ```
 
 Also add a `null` overload to `Response::json`:
+
 - If `$data === null`, send empty body with the given status.
 
 Edit `Response::json`:
@@ -3677,6 +3712,7 @@ git commit -m "Login issues token, records attempts; logout endpoint; 72-byte ca
 ### Task 20 (TEMPLATE): `DeleteAccount` (F-001)
 
 **Files:**
+
 - Modify: `src/Application/User/DeleteAccount/DeleteAccount.php`
 - Modify: `src/Application/User/DeleteAccount/DeleteAccountInput.php`
 - Create: `tests/Unit/Application/User/DeleteAccountTest.php`
@@ -3861,6 +3897,7 @@ git commit -m "Enforce self-or-admin policy on DeleteAccount (F-001)"
 ### Task 21: `UpdateProfile` (F-002) + duplicate-email sanitisation (F-006 chain)
 
 **Files:**
+
 - Modify: `src/Application/User/UpdateProfile/UpdateProfile.php`
 - Modify: `src/Application/User/UpdateProfile/UpdateProfileInput.php`
 - Modify: `src/Infrastructure/Adapter/Persistence/Sql/SqlUserRepository.php`
@@ -3966,12 +4003,14 @@ final class UpdateProfileInput
 - [ ] **Step 21.3: Enforce policy in `UpdateProfile::execute`**
 
 Prepend:
+
 ```php
 use Daems\Domain\Auth\ForbiddenException;
 use Daems\Domain\User\UserId;
 ```
 
 Top of `execute`:
+
 ```php
 $target = UserId::fromString($input->userId);
 if (!$input->acting->owns($target) && !$input->acting->isAdmin()) {
@@ -4016,6 +4055,7 @@ Apply the same pattern to `SqlUserRepository::save` for register-time duplicates
 - [ ] **Step 21.5: Update controller to pass acting user**
 
 In `UserController::update`:
+
 ```php
 $acting = $request->actingUser();
 if ($acting === null) {
@@ -4206,6 +4246,7 @@ git commit -m "Enforce self/admin on GetUserActivity (F-008)"
 **Policy:** self only. Admin cannot reset passwords via this endpoint; that's a future "admin reset" feature.
 
 Guard:
+
 ```php
 if (!$input->acting->owns(UserId::fromString($input->userId))) {
     throw new ForbiddenException();
@@ -4213,6 +4254,7 @@ if (!$input->acting->owns(UserId::fromString($input->userId))) {
 ```
 
 Add tests for self-success / other-forbidden / admin-forbidden. Commit:
+
 ```bash
 git commit -m "Restrict ChangePassword to self"
 ```
@@ -4224,12 +4266,14 @@ git commit -m "Restrict ChangePassword to self"
 **Files:** `CreateProjectInput`, `CreateProject`, `ProjectController::create`, `Domain\Project\Project`, `SqlProjectRepository`, test.
 
 **Changes:**
+
 1. `Project` entity gains optional `?UserId $ownerId` constructor arg + accessor.
 2. `CreateProjectInput` prepends `ActingUser $acting` (first positional).
 3. `CreateProject::execute` passes `$input->acting->id` to the `Project` constructor.
 4. `SqlProjectRepository::save` inserts `owner_id` column.
 
 Test cases:
+
 - project is created with owner_id matching acting user
 - anonymous caller → N/A (middleware rejects before here)
 
@@ -4279,6 +4323,7 @@ if ($ownerId === null) {
 ```
 
 Test matrix per use case:
+
 - owner → 2xx
 - non-owner → Forbidden
 - admin non-owner → 2xx
@@ -4301,6 +4346,7 @@ git commit -m "Owner-or-admin policy on project mutations (F-004); derive author
 ### Task 27: `AddProjectComment`, `LikeProjectComment` (F-007 identity derivation)
 
 **DTO changes:**
+
 - `AddProjectCommentInput`: drop `userId`, `authorName`. Keep `avatarInitials`, `avatarColor`, `content`. Prepend `ActingUser $acting`.
 - `LikeProjectCommentInput`: prepend `ActingUser $acting` (no identity fields to drop).
 
@@ -4309,6 +4355,7 @@ git commit -m "Owner-or-admin policy on project mutations (F-004); derive author
 **Policy:** authenticated (handled by middleware). No per-object policy needed.
 
 Tests:
+
 - attacker-supplied `user_id` in request body is ignored (body only contains content + avatar); use-case saves with `acting.id`.
 - stored comment's `user_id` matches `acting.id` even when a different id is attempted client-side (not possible after DTO change — prove compile-time).
 
@@ -4327,10 +4374,12 @@ git commit -m "Derive user_id and author_name from acting user on project commen
 **Policy:** each endpoint derives participant id from `acting.id`. **Explicit rule:** `LeaveProject` removes only the acting user's participation, never another user's.
 
 Tests:
+
 - `JoinProject`: acting user added as participant
 - `LeaveProject`: only acting user is removed — attempting to pass another `userId` in body has no effect (compile-time impossible)
 
 Commit:
+
 ```bash
 git commit -m "Derive participant id from acting user on join/leave (F-007)"
 ```
@@ -4354,6 +4403,7 @@ git commit -m "Derive proposer identity from acting user (F-007)"
 **DTO change (both):** drop `userId`, `authorName`, `avatarInitials`, `avatarColor`, `role`, `roleClass`, `joinedText`. Prepend `ActingUser $acting`.
 
 Use case: fetch acting user's `role` from DB, derive:
+
 - `role` column = human role label (`$user->role() === 'admin' ? 'Administrator' : 'Member'`)
 - `role_class` = `'role-' . strtolower($user->role())`
 - `joined_text` = `'Joined ' . substr($user->createdAt(), 0, 10)`
@@ -4407,6 +4457,7 @@ git commit -m "Derive applicant identity from acting user"
 ### Task 34: Attach `AuthMiddleware` and `RateLimitLoginMiddleware` per policy matrix
 
 **Files:**
+
 - Modify: `routes/api.php`
 
 - [ ] **Step 34.1: Rewrite `routes/api.php` to pass middleware lists**
@@ -4490,6 +4541,7 @@ git commit -m "Attach auth and rate-limit middleware to protected routes"
 ### Task 35: E2E harness
 
 **Files:**
+
 - Create: `tests/Support/E2E/E2EHarness.php`
 - Create: `tests/Support/E2E/TestDatabase.php`
 - Create: `tests/E2E/SmokeTest.php` (proves harness works)
@@ -4734,6 +4786,7 @@ Commit: `git commit -m "E2E: F-001 unauth deletion regression test"`
 - [ ] **Task 37: F-002 — `tests/E2E/F002_UnauthUpdateTest.php`**
 
 Scenarios:
+
 - anonymous POST → 401
 - non-owner token → 403
 - self → 200
@@ -4744,6 +4797,7 @@ Commit: `git commit -m "E2E: F-002 unauth update + duplicate-email sanitisation"
 - [ ] **Task 38: F-003 — `tests/E2E/F003_UnauthPIIReadTest.php`**
 
 Scenarios:
+
 - anonymous → 401
 - other-user token → 200 but body only has `{id, name}` (no `dob`, `address_*`)
 - self → 200 with full profile
@@ -4754,6 +4808,7 @@ Commit: `git commit -m "E2E: F-003 PII read degrade"`
 - [ ] **Task 39: F-004 — `tests/E2E/F004_UnauthProjectMutationTest.php`**
 
 Create a project via an authenticated user. Then:
+
 - anonymous archive/update/addUpdate → 401
 - non-owner token → 403
 - owner token → 200
@@ -4773,6 +4828,7 @@ Commit: `git commit -m "E2E: F-005 forum role badge derived from users.role"`
 - [ ] **Task 41: F-006 — `tests/E2E/F006_ErrorSanitisationTest.php`**
 
 Register `a@example.com`. Then POST `/api/v1/users/{any-id}` with body `{"email":"a@example.com"}` while authenticated as admin (so we pass policy and actually reach the SQL). Assert:
+
 - status 400
 - body does NOT contain `SQLSTATE`
 - body does NOT contain `Duplicate entry`
@@ -4816,6 +4872,7 @@ Commit: `git commit -m "E2E: F-010 72-byte password cap"`
 ```bash
 ./vendor/bin/phpunit --testsuite E2E
 ```
+
 Expected: all 10 tests pass. (Or all skipped if `DB_TEST_HOST` unset — that's acceptable.)
 
 ---
@@ -4825,6 +4882,7 @@ Expected: all 10 tests pass. (Or all skipped if `DB_TEST_HOST` unset — that's 
 ### Task 46: Install and configure Infection
 
 **Files:**
+
 - Modify: `composer.json`
 - Create: `infection.json.dist`
 
@@ -4881,7 +4939,8 @@ In `composer.json`, update the `scripts` block:
 - [ ] **Step 46.4: Add `.gitignore` entry**
 
 Append to `.gitignore`:
-```
+
+```text
 /build/
 ```
 
@@ -4907,9 +4966,11 @@ git commit -m "Configure Infection mutation testing with 85% MSI threshold"
 ### Task 47: Update `docs/api.md` with auth flow
 
 **Files:**
+
 - Modify: `docs/api.md`
 
 Document:
+
 - `POST /api/v1/auth/register` — unchanged body, 72-byte password cap noted
 - `POST /api/v1/auth/login` — new response shape `{user, token, expires_at}`; rate-limit 5 fails / 15 min / (ip,email); 429 + `Retry-After`
 - `POST /api/v1/auth/logout` — `Authorization: Bearer <token>` required; 204
@@ -4923,6 +4984,7 @@ Commit: `git commit -m "Document auth flow in docs/api.md"`
 ### Task 48: Append ADR-006..ADR-013 to `docs/decisions.md`
 
 **Files:**
+
 - Modify: `docs/decisions.md`
 
 One ADR per AD in the spec:
@@ -4945,6 +5007,7 @@ Commit: `git commit -m "Record ADR-006..ADR-013 for auth layer decisions"`
 ### Task 49: Update `docs/database.md` with new tables
 
 **Files:**
+
 - Modify: `docs/database.md`
 
 Add schema documentation for `auth_tokens` and `auth_login_attempts`, and note the `projects.owner_id` column addition. Update any ASCII ERD if present.
@@ -4967,6 +5030,7 @@ composer analyse                        # PHPStan (new files only)
 ```
 
 All green. Expected counts:
+
 - Unit: ~150+ tests
 - Integration: ~20 tests
 - E2E: 10 tests (or all skipped)
@@ -4981,6 +5045,7 @@ composer validate --strict
 - [ ] **Step 50.3: Final review**
 
 Spot-check:
+
 - `grep -rn 'Authorization' src/` — confirm middleware + AuthController are the only touches
 - `grep -rn 'SQLSTATE' src/Infrastructure/Framework/Http/Kernel.php` — must return nothing
 - `grep -rn 'user_id' src/Application/Forum/` — must return nothing (F-005 / F-007)

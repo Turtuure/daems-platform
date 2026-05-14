@@ -71,6 +71,7 @@ Close every finding in the SAST report by adding a coherent authentication + aut
 ### New tables
 
 **`auth_tokens`** (migration `014_create_auth_tokens.sql`)
+
 ```sql
 CREATE TABLE auth_tokens (
     id              CHAR(36)     NOT NULL,            -- UUIDv7
@@ -90,6 +91,7 @@ CREATE TABLE auth_tokens (
 ```
 
 **`auth_login_attempts`** (migration `015_create_auth_login_attempts.sql`)
+
 ```sql
 CREATE TABLE auth_login_attempts (
     id            BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -105,6 +107,7 @@ CREATE TABLE auth_login_attempts (
 ### Schema change
 
 **`projects.owner_id`** (migration `016_add_owner_id_to_projects.sql`)
+
 ```sql
 ALTER TABLE projects
     ADD COLUMN owner_id CHAR(36) NULL AFTER id,
@@ -132,7 +135,7 @@ Drop these fields entirely (no deprecation shim):
 
 ### Domain layer
 
-```
+```text
 src/Domain/Auth/
     ActingUser.php                     (value object: UserId + role)
     AuthToken.php                      (entity: id, userId, issuedAt, lastUsedAt, expiresAt, revokedAt, meta)
@@ -150,7 +153,7 @@ src/Domain/Shared/
 
 ### Application layer
 
-```
+```text
 src/Application/Auth/
     CreateAuthToken/{CreateAuthToken, Input, Output}.php
     AuthenticateToken/{AuthenticateToken, Input, Output}.php
@@ -168,7 +171,7 @@ Every existing use case whose route becomes protected gains an `ActingUser $acti
 
 ### Infrastructure layer
 
-```
+```text
 src/Infrastructure/Framework/Http/
     MiddlewareInterface.php
     Router.php                         (extended to accept middleware list per route)
@@ -197,7 +200,7 @@ src/Infrastructure/Adapter/Api/Controller/
 
 ## Request flow (protected endpoint)
 
-```
+```text
 Request
   → Kernel::handle                                  (try/catch: 401/403/404/422/429/500 mapping)
       → Router::dispatch                            (matches route + middleware list)
@@ -220,7 +223,7 @@ Request
 
 ### Login (changed response shape)
 
-```
+```text
 POST /api/v1/auth/login
 Content-Type: application/json
 { "email": "...", "password": "..." }
@@ -242,7 +245,7 @@ Content-Type: application/json
 
 ### Logout (new)
 
-```
+```text
 POST /api/v1/auth/logout
 Authorization: Bearer <token>
 
@@ -300,7 +303,7 @@ All 500s are logged via `LoggerInterface` with the full exception.
 
 New env vars in `.env.example`:
 
-```
+```text
 APP_DEBUG=false
 AUTH_TOKEN_TTL_DAYS=7
 AUTH_TOKEN_HARD_CAP_DAYS=30

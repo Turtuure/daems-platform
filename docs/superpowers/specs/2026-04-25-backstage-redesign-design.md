@@ -8,6 +8,7 @@
 ## 1. Background
 
 The backstage admin panel (in `daem-society/public/pages/backstage/`) has accumulated nine pages with inconsistent visual treatments:
+
 - Dashboard uses modern `metric-card` + ApexCharts.
 - Events / Projects use card-wrapped tables with custom `evt-modal` / `project-modal` patterns.
 - Insights (shipped 2026-04-25) uses a raw Bootstrap `<table class="insight-table">` with no card wrap and a copy-paste of the events modal — this is the trigger for this redesign.
@@ -44,6 +45,7 @@ The public-facing site (`daem-society` non-`/backstage`) is **out of scope**.
 **Hybrid: Linear/Notion-style data explorer + Stripe-style KPI cards with sparklines.**
 
 Per page:
+
 - **Header strip:** title + subtitle + primary action button (`+ New …`).
 - **KPI strip (4-up):** small cards with category icon (top-right), uppercase label, large value, trend line, ApexCharts area sparkline that bleeds to the card edges. Optional `--clickable` variant: border-color shift on hover, **no transform**.
 - **Toolbar:** segmented filter (All / Draft / Published / Archived) + secondary selects + right-aligned search box. Sits on a hairline border separator.
@@ -55,6 +57,7 @@ Per page:
 ### Hard constraint on hover animations
 
 Per user feedback (2026-04-25 brainstorm), no hover effect on `.kpi-card`, `.data-explorer-row`, or any tile/list element may use `transform: translate*` or `transform: scale*`. Allowed hover affordances:
+
 - `border-color` change
 - `background-color` shift to subtle tint (e.g. `rgba(0,0,0,.02)` for rows)
 - `opacity` increase on revealed action buttons
@@ -70,7 +73,7 @@ All new CSS lives in a new file `daems-backstage-system.css`, loaded by `layout.
 
 Component for a single KPI in the 4-up strip.
 
-```
+```text
 ┌──────────────────────────┐
 │ UPCOMING            📅   │  ← uppercase label + icon (top-right)
 │ 12                       │  ← 24px bold value
@@ -88,6 +91,7 @@ Component for a single KPI in the 4-up strip.
 - ApexCharts native tooltip on sparkline hover shows `{date label} · {value} {unit}`.
 
 API contract per KPI:
+
 ```json
 {
   "value": 12,
@@ -107,7 +111,7 @@ PHP partial: `pages/backstage/shared/kpi-card.php`. Variables expected: `$kpi_id
 
 Page-level layout primitive with three slots:
 
-```
+```text
 .data-explorer
 ├── .data-explorer__header        page-header  (title + subtitle + primary action)
 ├── .data-explorer__kpis          .kpis-grid (4-up, optional)
@@ -117,6 +121,7 @@ Page-level layout primitive with three slots:
 ```
 
 CSS classes (added to `daems-backstage-system.css`):
+
 - `.kpis-grid` — `display:grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px;` — works for 1, 2, 3, or 4 cards across pages without per-page overrides; collapses to single column ≤640.
 - `.data-explorer__panel` — `background: var(--surface-dark); border: 1px solid var(--surface-border); border-radius: 10px; padding: 6px 18px 18px;`.
 - `.data-explorer__toolbar` — flex row, `padding: 12px 0; border-bottom: 1px solid var(--surface-border);`.
@@ -125,6 +130,7 @@ CSS classes (added to `daems-backstage-system.css`):
 ### 4.3 `.pill` status badges
 
 Single component, multiple variants. Phase 1 ships *all* variants up-front so subsequent phases (events, projects, forum, applications) can consume without redefining:
+
 - `.pill--published` — green subtle bg + `var(--status-success)` text
 - `.pill--scheduled` — blue subtle bg + `var(--brand-primary)` text *(future-dated content)*
 - `.pill--draft` — slate subtle bg + slate text *(events, projects)*
@@ -137,6 +143,7 @@ For insights specifically, only `--published`, `--scheduled`, and `--featured` a
 ### 4.3a `.btn` button variants
 
 To support all components above, Phase 1 ships canonical button variants in the new system CSS:
+
 - `.btn` — base: 6px radius, 600 weight, 13px font, 7px×14px padding, `var(--transition-fast)` for color transitions
 - `.btn--primary` — `var(--brand-primary)` bg, white text
 - `.btn--secondary` — `var(--surface-light)` bg, `var(--text-secondary)` text
@@ -150,6 +157,7 @@ The existing `.btn--primary` / `--secondary` rules in `daems-backstage.css` are 
 Right-edge slide-in panel for create/edit flows.
 
 Markup (built by `daems-backstage-system.js` panel-controller):
+
 ```html
 <div class="slide-panel" role="dialog" aria-modal="true" aria-labelledby="...">
   <div class="slide-panel__backdrop"></div>
@@ -168,6 +176,7 @@ Markup (built by `daems-backstage-system.js` panel-controller):
 ```
 
 Behavior:
+
 - Width: 56% on `≥1024px`, 100% on `<768px`. On `<1024px && ≥768px`, width 80%.
 - Animation: `transform: translateX(100% → 0)` on open, reverse on close, `250ms cubic-bezier(0.4, 0, 0.2, 1)`. Backdrop fades 0 → 0.45 opacity in same window.
 - Closes on: ESC key, click on backdrop, click on `__close`, programmatic `Panel.close()`.
@@ -196,6 +205,7 @@ Small centered modal for yes/no decisions.
 ```
 
 Behavior:
+
 - Width: 320px, centered with `transform: translate(-50%, -50%)`.
 - Animation: opacity + `scale(0.94 → 1)` on open, `200ms ease`. **No translateY.**
 - Closes on: ESC, click backdrop, click Cancel, click confirm action.
@@ -260,6 +270,7 @@ Inline error card shown when API load fails:
 ### 5.1 New files
 
 **Frontend (`daem-society`):**
+
 - `public/assets/css/daems-backstage-system.css` (~600 LOC)
 - `public/assets/js/daems-backstage-system.js` (~250 LOC) — panel controller, confirm-dialog controller, sparkline-init helpers
 - `public/pages/backstage/shared/kpi-card.php`
@@ -270,6 +281,7 @@ Inline error card shown when API load fails:
 - `public/pages/backstage/insights/empty-state.svg`
 
 **Backend (`daems-platform`):**
+
 - `src/Application/UseCase/Backstage/ListInsightStats.php` — returns 4 KPIs with sparklines for the active tenant
 - New method `BackstageInsightController::stats(Request, Response): Response`
 - New route `GET /api/v1/backstage/insights/stats` in `routes/api.php`
@@ -308,6 +320,7 @@ A future phase may add view tracking (separate scoped change) which would introd
 ## 7. Behavior — insights page flow
 
 Status pill rendering for an insight row:
+
 - `published_date <= CURDATE()` → `.pill.pill--published` ("Published")
 - `published_date > CURDATE()` → `.pill.pill--scheduled` ("Scheduled · {date}")
 
@@ -363,6 +376,7 @@ If `featured = 1`, render an additional small `.pill.pill--featured` next to the
 ## 11. Acceptance criteria
 
 Phase 1 is done when:
+
 1. `daem-society/public/pages/backstage/insights/` renders with the new `data-explorer` + `kpi-card` + `slide-panel` + `confirm-dialog` patterns end-to-end.
 2. The 3 insights KPIs (Published / Scheduled / Featured) render with live data + 30-day sparklines via `GET /api/v1/backstage/insights/stats`.
 3. New `daems-backstage-system.css` and `daems-backstage-system.js` are loaded by `layout.php` and used only by insights — they are inert for unmigrated pages.

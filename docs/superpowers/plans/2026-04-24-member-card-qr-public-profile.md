@@ -69,6 +69,7 @@
 ### Task 1: Migration 057 + apply
 
 **Files:**
+
 - Create: `database/migrations/057_add_member_number_prefix_to_tenants.sql`
 
 - [ ] **Step 1: Write the migration**
@@ -112,6 +113,7 @@ cd /c/laragon/www/daems-platform && \
 ### Task 2: Tenant domain + repo
 
 **Files:**
+
 - Modify: `src/Domain/Tenant/Tenant.php`
 - Modify: `src/Infrastructure/Adapter/Persistence/Sql/SqlTenantRepository.php`
 - Modify: `tests/Support/Fake/InMemoryTenantRepository.php`
@@ -185,6 +187,7 @@ cd /c/laragon/www/daems-platform && \
 ### Task 3: UpdateTenantSettings use case
 
 **Files:**
+
 - Create: `src/Application/Backstage/UpdateTenantSettings/UpdateTenantSettings.php`
 - Create: `src/Application/Backstage/UpdateTenantSettings/UpdateTenantSettingsInput.php`
 - Create: `src/Application/Backstage/UpdateTenantSettings/UpdateTenantSettingsOutput.php`
@@ -391,6 +394,7 @@ cd /c/laragon/www/daems-platform && \
 ### Task 4: Wire UpdateTenantSettings to BackstageController + route + DI
 
 **Files:**
+
 - Modify: `src/Infrastructure/Adapter/Api/Controller/BackstageController.php`
 - Modify: `routes/api.php`
 - Modify: `bootstrap/app.php`
@@ -475,6 +479,7 @@ cd /c/laragon/www/daems-platform && \
 ### Task 5: PublicMemberProfile VO + GetPublicMemberProfile use case + test
 
 **Files:**
+
 - Create: `src/Domain/Member/PublicMemberProfile.php`
 - Create: `src/Application/Member/GetPublicMemberProfile/GetPublicMemberProfile.php`
 - Create: `src/Application/Member/GetPublicMemberProfile/GetPublicMemberProfileInput.php`
@@ -721,6 +726,7 @@ cd /c/laragon/www/daems-platform && \
 ### Task 6: SqlPublicMemberRepository + Integration test
 
 **Files:**
+
 - Create: `src/Infrastructure/Adapter/Persistence/Sql/SqlPublicMemberRepository.php`
 - Create: `tests/Integration/Application/PublicMemberProfileIntegrationTest.php`
 
@@ -801,6 +807,7 @@ final class SqlPublicMemberRepository implements PublicMemberRepositoryInterface
 ```
 
 Caveats:
+
 - This relies on `users.first_name`, `users.last_name` existing. If the schema only has `users.name`, fall back to splitting on whitespace OR use the full name as initials seed (the code above already falls back).
 - The `avatarPublicUrl` returns a path on the daem-society host. The frontend prepends scheme+host when rendering.
 
@@ -918,6 +925,7 @@ cd /c/laragon/www/daems-platform && \
 ### Task 7: MemberController + route + DI
 
 **Files:**
+
 - Create: `src/Infrastructure/Adapter/Api/Controller/MemberController.php`
 - Modify: `routes/api.php`
 - Modify: `bootstrap/app.php`
@@ -1003,6 +1011,7 @@ cd /c/laragon/www/daems-platform && composer analyse 2>&1 | grep -E "OK|errors?"
 Expected: `[OK] No errors`.
 
 Smoke (after starting dev server or via apache):
+
 ```bash
 curl -i http://daems-platform.local/api/v1/members/000123 2>&1 | head -10
 ```
@@ -1025,6 +1034,7 @@ cd /c/laragon/www/daems-platform && \
 ### Task 8: Migration 058 + apply
 
 **Files:**
+
 - Create: `database/migrations/058_add_public_avatar_visible_to_users.sql`
 
 - [ ] **Step 1: Write the migration**
@@ -1064,6 +1074,7 @@ cd /c/laragon/www/daems-platform && \
 ### Task 9: User domain + repo + UpdateMyPublicProfilePrivacy use case
 
 **Files:**
+
 - Modify: `src/Domain/User/User.php` (add `bool $publicAvatarVisible` field + getter)
 - Modify: `src/Infrastructure/Adapter/Persistence/Sql/SqlUserRepository.php` (hydrate + add `updatePublicAvatarVisible(UserId, bool)` method)
 - Modify: `tests/Support/Fake/InMemoryUserRepository.php` (mirror)
@@ -1121,6 +1132,7 @@ cd /c/laragon/www/daems-platform && \
 ### Task 10: UserController::updateMyPrivacy + route + DI
 
 **Files:**
+
 - Modify: `src/Infrastructure/Adapter/Api/Controller/UserController.php`
 - Modify: `routes/api.php`
 - Modify: `bootstrap/app.php`
@@ -1170,6 +1182,7 @@ cd /c/laragon/www/daems-platform && composer analyse 2>&1 | grep -E "OK|errors?"
 ### Task 11: Extend GetAuthMe with prefix + privacy
 
 **Files:**
+
 - Modify: `src/Application/Auth/GetAuthMe/GetAuthMeOutput.php`
 - Modify: `src/Application/Auth/GetAuthMe/GetAuthMe.php` (UseCase) — read prefix from tenant, privacy from user
 - Modify: `tests/Unit/Application/Auth/GetAuthMeTest.php` if exists; otherwise smoke
@@ -1312,6 +1325,7 @@ cd /c/laragon/www/daems-platform && \
 ### Task 13: Branch + add qrcode-generator dep
 
 **Files:**
+
 - Modify: `package.json`, `package-lock.json`
 
 - [ ] **Step 1: Branch**
@@ -1350,6 +1364,7 @@ cd /c/laragon/www/sites/daem-society && \
 ### Task 14: PHP helper for formatMemberNumber
 
 **Files:**
+
 - Create: `src/MemberNumberFormatter.php` (or wherever utility helpers live in this repo)
 
 - [ ] **Step 1: Implement helper**
@@ -1398,7 +1413,8 @@ cd /c/laragon/www/sites/daem-society && \
 ```
 
 Expected:
-```
+
+```text
 string(9) "DAEMS-123"
 string(3) "123"
 string(3) "X-0"
@@ -1417,6 +1433,7 @@ cd /c/laragon/www/sites/daem-society && \
 ### Task 15: Update `/profile/overview.php` to format the number + render QR markup
 
 **Files:**
+
 - Modify: `public/pages/profile/overview.php`
 
 - [ ] **Step 1: Format member_number for display**
@@ -1476,6 +1493,7 @@ cd /c/laragon/www/sites/daem-society && \
 ### Task 16: QR rendering + canvas-PNG export integration
 
 **Files:**
+
 - Modify: `public/assets/js/daems.js`
 
 - [ ] **Step 1: Add QR render-on-page-load**
@@ -1594,6 +1612,7 @@ The variable name `ctx` and the export-canvas detection depend on the existing `
 - [ ] **Step 4: Manual smoke (browser)**
 
 Open `http://daems.local/profile` as a logged-in member. Verify:
+
 - QR is visible bottom-right on the card
 - Member № reads `DAEMS-123` (or whatever your prefix + number is)
 - (GSA only) Click "Download card" → resulting PNG includes the QR
@@ -1610,6 +1629,7 @@ cd /c/laragon/www/sites/daem-society && \
 ### Task 17: CSS — relocate logo to bottom-left + add `.member-card-qr` rule
 
 **Files:**
+
 - Modify: `public/assets/css/daems.css`
 
 - [ ] **Step 1: Find current `.member-card-logo` rule and relocate to bottom-left**
@@ -1649,6 +1669,7 @@ cd /c/laragon/www/sites/daem-society && \
 ### Task 18: Public profile page `/members/{n}`
 
 **Files:**
+
 - Modify: `public/index.php` (route)
 - Create: `public/pages/members/profile.php`
 
@@ -1813,6 +1834,7 @@ cd /c/laragon/www/sites/daem-society && \
 ### Task 19: Settings page — Membership card section
 
 **Files:**
+
 - Modify: `public/pages/backstage/settings/index.php`
 
 - [ ] **Step 1: Add section markup**
@@ -1898,6 +1920,7 @@ cd /c/laragon/www/sites/daem-society && \
 ### Task 20: Profile settings — privacy toggle
 
 **Files:**
+
 - Modify: `public/pages/profile/settings.php`
 
 - [ ] **Step 1: Add Privacy section**
@@ -1967,6 +1990,7 @@ cd /c/laragon/www/sites/daem-society && \
 ### Task 21: E2E spec — public member profile
 
 **Files:**
+
 - Create: `tests/e2e/public-member-profile.spec.ts`
 
 - [ ] **Step 1: Write the spec**
@@ -2094,6 +2118,7 @@ cd /c/laragon/www/sites/daem-society && \
 - [ ] **Step 5: Final report**
 
 Report to user:
+
 - Both PRs merged (with merge-commit SHAs)
 - Migrations 057 + 058 applied to dev DB
 - Manual verification: visit `/profile`, see QR, scan it, lands on `/members/{n}`. Visit `/backstage/settings`, set/clear prefix, observe re-format on `/profile`. Toggle privacy on `/profile/settings`, refresh public profile in incognito to confirm avatar swap.

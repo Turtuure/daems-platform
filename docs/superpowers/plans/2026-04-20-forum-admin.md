@@ -13,6 +13,7 @@
 **Commit identity (every commit):** `git -c user.name="Dev Team" -c user.email="dev@daems.org" commit -m "..."`. No `Co-Authored-By`. Never stage `.claude/`. Never auto-push.
 
 **Project conventions (critical — these bit us in previous PRs):**
+
 - PHPUnit testsuite names CAPITALISED: `Unit` / `Integration` / `E2E`. Lowercased silently returns "No tests executed!" — always verify the count.
 - InMemory fakes at `tests/Support/Fake/` with namespace `Daems\Tests\Support\Fake`.
 - DI bindings must exist in BOTH `bootstrap/app.php` AND `tests/Support/KernelHarness.php`. Missing bootstrap = live 500 while E2E stays green.
@@ -48,11 +49,13 @@
 ### Backend — new
 
 **Migrations:**
+
 - `database/migrations/047_add_locked_to_forum_topics.sql`
 - `database/migrations/048_create_forum_reports_audit_warnings_and_edited_at.sql`
 - `database/migrations/049_extend_dismissals_enum_forum_report.sql`
 
 **Domain:**
+
 - `src/Domain/Forum/ForumReport.php`
 - `src/Domain/Forum/ForumReportId.php`
 - `src/Domain/Forum/ForumReportRepositoryInterface.php`
@@ -66,6 +69,7 @@
 - `src/Domain/Forum/TopicLockedException.php`
 
 **Application (one directory per use case with `Input`/`Output`/handler siblings):**
+
 - `src/Application/Forum/ReportForumTarget/` (user-side)
 - `src/Application/Backstage/Forum/ListForumReportsForAdmin/`
 - `src/Application/Backstage/Forum/GetForumReportDetail/`
@@ -88,16 +92,19 @@
 - `src/Application/Backstage/Forum/ListForumModerationAuditForAdmin/`
 
 **Infrastructure:**
+
 - `src/Infrastructure/Adapter/Persistence/Sql/SqlForumReportRepository.php`
 - `src/Infrastructure/Adapter/Persistence/Sql/SqlForumModerationAuditRepository.php`
 - `src/Infrastructure/Adapter/Persistence/Sql/SqlForumUserWarningRepository.php`
 
 **Test fakes:**
+
 - `tests/Support/Fake/InMemoryForumReportRepository.php`
 - `tests/Support/Fake/InMemoryForumModerationAuditRepository.php`
 - `tests/Support/Fake/InMemoryForumUserWarningRepository.php`
 
 **Tests:** one unit test file per use case under `tests/Unit/Application/**/`, plus:
+
 - `tests/Integration/Migration/Migration047Test.php`, `Migration048Test.php`, `Migration049Test.php`
 - `tests/Integration/Application/ForumReportLifecycleIntegrationTest.php`
 - `tests/Integration/Application/ForumCategoryCrudIntegrationTest.php`
@@ -146,6 +153,7 @@
 ### Task 1: Migrations 047, 048, 049 + IsolationTestCase bump
 
 **Wave:** W0 (solo). **Files:**
+
 - Create: `database/migrations/047_add_locked_to_forum_topics.sql`
 - Create: `database/migrations/048_create_forum_reports_audit_warnings_and_edited_at.sql`
 - Create: `database/migrations/049_extend_dismissals_enum_forum_report.sql`
@@ -356,7 +364,7 @@ final class Migration049Test extends MigrationTestCase
 
 - [ ] **Step 12: Commit**
 
-```
+```text
 git add database/migrations/047_add_locked_to_forum_topics.sql database/migrations/048_create_forum_reports_audit_warnings_and_edited_at.sql database/migrations/049_extend_dismissals_enum_forum_report.sql tests/Integration/Migration/Migration047Test.php tests/Integration/Migration/Migration048Test.php tests/Integration/Migration/Migration049Test.php tests/Isolation/IsolationTestCase.php
 git -c user.name="Dev Team" -c user.email="dev@daems.org" commit -m "Feat(forum): migrations 047-049 — locked, reports, audit, warnings, edited_at, dismissals enum"
 ```
@@ -366,6 +374,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.org" commit -m "Feat(forum)
 ### Task 2: ForumTopic + ForumPost entities + ForumRepositoryInterface extensions + SQL + InMemory
 
 **Wave:** W1 (solo — touches shared files). **Files:**
+
 - Modify: `src/Domain/Forum/ForumTopic.php` — add `bool $locked` ctor arg + getter.
 - Modify: `src/Domain/Forum/ForumPost.php` — add `?string $editedAt` ctor arg + getter.
 - Modify: `src/Domain/Forum/ForumRepositoryInterface.php` — 12 new methods.
@@ -598,6 +607,7 @@ as the final constructor argument. Update `saveTopic` to insert `locked` column:
     last_activity_at = VALUES(last_activity_at),
     last_activity_by = VALUES(last_activity_by)',
 ```
+
 Append `$topic->locked() ? 1 : 0` to the bind array.
 
 - [ ] **Step 6: Update `hydratePost` + `savePost`** — include `edited_at`. In `hydratePost`, append:
@@ -669,7 +679,7 @@ final class ForumTopicLockedTest extends TestCase
 
 - [ ] **Step 11: Commit**
 
-```
+```text
 git add src/Domain/Forum/ForumTopic.php src/Domain/Forum/ForumPost.php src/Domain/Forum/ForumRepositoryInterface.php src/Infrastructure/Adapter/Persistence/Sql/SqlForumRepository.php tests/Support/Fake/InMemoryForumRepository.php tests/Unit/Domain/Forum/ForumTopicLockedTest.php
 git -c user.name="Dev Team" -c user.email="dev@daems.org" commit -m "Feat(forum): ForumTopic.locked + ForumPost.editedAt + 12 repo methods (pin/lock/delete/edit/list/category CRUD)"
 ```
@@ -679,6 +689,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.org" commit -m "Feat(forum)
 ### Task 3: `ForumReport` domain + repo + SQL + InMemory
 
 **Wave:** W2 (parallel with 4, 5). **Files:**
+
 - Create: `src/Domain/Forum/ForumReportId.php`, `ForumReport.php`, `AggregatedForumReport.php`, `ForumReportRepositoryInterface.php`
 - Create: `src/Infrastructure/Adapter/Persistence/Sql/SqlForumReportRepository.php`
 - Create: `tests/Support/Fake/InMemoryForumReportRepository.php`
@@ -1078,7 +1089,7 @@ final class ForumReportTest extends TestCase
 
 - [ ] **Step 9: Commit**
 
-```
+```text
 git add src/Domain/Forum/ForumReport*.php src/Domain/Forum/AggregatedForumReport.php src/Infrastructure/Adapter/Persistence/Sql/SqlForumReportRepository.php tests/Support/Fake/InMemoryForumReportRepository.php tests/Unit/Domain/Forum/ForumReportTest.php
 git -c user.name="Dev Team" -c user.email="dev@daems.org" commit -m "Feat(forum): ForumReport domain + repo (upsert, aggregated listing, resolve, dismiss)"
 ```
@@ -1088,6 +1099,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.org" commit -m "Feat(forum)
 ### Task 4: `ForumModerationAuditEntry` domain + repo + SQL + InMemory
 
 **Wave:** W2 (parallel with 3, 5). **Files:**
+
 - Create: `src/Domain/Forum/ForumModerationAuditId.php`, `ForumModerationAuditEntry.php`, `ForumModerationAuditRepositoryInterface.php`
 - Create: `src/Infrastructure/Adapter/Persistence/Sql/SqlForumModerationAuditRepository.php`
 - Create: `tests/Support/Fake/InMemoryForumModerationAuditRepository.php`
@@ -1263,7 +1275,7 @@ final class SqlForumModerationAuditRepository implements ForumModerationAuditRep
 
 - [ ] **Step 7: Commit**
 
-```
+```text
 git add src/Domain/Forum/ForumModerationAudit*.php src/Infrastructure/Adapter/Persistence/Sql/SqlForumModerationAuditRepository.php tests/Support/Fake/InMemoryForumModerationAuditRepository.php
 git -c user.name="Dev Team" -c user.email="dev@daems.org" commit -m "Feat(forum): ForumModerationAuditEntry domain + repo (record, listRecent with filters)"
 ```
@@ -1273,6 +1285,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.org" commit -m "Feat(forum)
 ### Task 5: `ForumUserWarning` domain + repo + SQL + InMemory
 
 **Wave:** W2 (parallel with 3, 4). **Files:**
+
 - Create: `src/Domain/Forum/ForumUserWarningId.php`, `ForumUserWarning.php`, `ForumUserWarningRepositoryInterface.php`
 - Create: `src/Infrastructure/Adapter/Persistence/Sql/SqlForumUserWarningRepository.php`
 - Create: `tests/Support/Fake/InMemoryForumUserWarningRepository.php`
@@ -1397,7 +1410,7 @@ final class TopicLockedException extends RuntimeException {}
 
 - [ ] **Step 8: Commit**
 
-```
+```text
 git add src/Domain/Forum/ForumUserWarning*.php src/Domain/Forum/TopicLockedException.php src/Infrastructure/Adapter/Persistence/Sql/SqlForumUserWarningRepository.php tests/Support/Fake/InMemoryForumUserWarningRepository.php
 git -c user.name="Dev Team" -c user.email="dev@daems.org" commit -m "Feat(forum): ForumUserWarning domain + repo + TopicLockedException"
 ```
@@ -1407,6 +1420,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.org" commit -m "Feat(forum)
 ### Task 6: `ReportForumTarget` use case (user-side, TDD)
 
 **Wave:** W3 (parallel with 7, 20). **Files:**
+
 - Create: `src/Application/Forum/ReportForumTarget/{ReportForumTarget,ReportForumTargetInput,ReportForumTargetOutput}.php`
 - Create: `tests/Unit/Application/Forum/ReportForumTargetTest.php`
 
@@ -1619,6 +1633,7 @@ public function clearForAppIdAnyAdmin(TenantId $tenantId, string $appType, strin
 ```
 
 SQL body:
+
 ```sql
 DELETE FROM admin_application_dismissals WHERE tenant_id = ? AND app_type = ? AND app_id = ?
 ```
@@ -1631,7 +1646,7 @@ DELETE FROM admin_application_dismissals WHERE tenant_id = ? AND app_type = ? AN
 
 - [ ] **Step 9: Commit**
 
-```
+```text
 git add src/Application/Forum/ReportForumTarget src/Domain/AdminInbox/AdminApplicationDismissalRepositoryInterface.php src/Infrastructure/Adapter/Persistence/Sql/Sql*AdminApplicationDismissal*.php tests/Support/Fake/InMemoryAdminApplicationDismissalRepository.php tests/Unit/Application/Forum/ReportForumTargetTest.php tests/Support/ForumSeed.php tests/Support/ActingUserFactory.php
 git -c user.name="Dev Team" -c user.email="dev@daems.org" commit -m "Feat(forum): ReportForumTarget user-side use case (dedup upsert + dismissal clear)"
 ```
@@ -1641,6 +1656,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.org" commit -m "Feat(forum)
 ### Task 7: `ListForumReportsForAdmin` + `GetForumReportDetail` (TDD, combined)
 
 **Wave:** W3 (parallel with 6, 20). **Files:**
+
 - Create: `src/Application/Backstage/Forum/ListForumReportsForAdmin/`
 - Create: `src/Application/Backstage/Forum/GetForumReportDetail/`
 - Create: `tests/Unit/Application/Backstage/Forum/ListForumReportsForAdminTest.php`
@@ -1890,7 +1906,7 @@ public function execute(GetForumReportDetailInput $in): GetForumReportDetailOutp
 
 - [ ] **Step 8: Commit**
 
-```
+```text
 git add src/Application/Backstage/Forum/ListForumReportsForAdmin src/Application/Backstage/Forum/GetForumReportDetail tests/Unit/Application/Backstage/Forum/ListForumReportsForAdminTest.php tests/Unit/Application/Backstage/Forum/GetForumReportDetailTest.php
 git -c user.name="Dev Team" -c user.email="dev@daems.org" commit -m "Feat(forum): ListForumReportsForAdmin + GetForumReportDetail use cases"
 ```
@@ -1900,6 +1916,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.org" commit -m "Feat(forum)
 ### Task 8: `ResolveForumReportByDelete` use case (TDD)
 
 **Wave:** W4. **Files:**
+
 - Create: `src/Application/Backstage/Forum/ResolveForumReportByDelete/{.,Input,Output}.php`
 - Create: `tests/Unit/Application/Backstage/Forum/ResolveForumReportByDeleteTest.php`
 
@@ -2098,7 +2115,7 @@ final class ResolveForumReportByDeleteInput
 
 - [ ] **Step 5: Commit**
 
-```
+```text
 git add src/Application/Backstage/Forum/ResolveForumReportByDelete tests/Unit/Application/Backstage/Forum/ResolveForumReportByDeleteTest.php
 git -c user.name="Dev Team" -c user.email="dev@daems.org" commit -m "Feat(forum): ResolveForumReportByDelete (hard-delete target + resolve + audit)"
 ```
@@ -2108,6 +2125,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.org" commit -m "Feat(forum)
 ### Task 9: `ResolveForumReportByLock` use case (TDD)
 
 **Wave:** W4. **Files:**
+
 - Create: `src/Application/Backstage/Forum/ResolveForumReportByLock/`
 - Create: `tests/Unit/Application/Backstage/Forum/ResolveForumReportByLockTest.php`
 
@@ -2159,7 +2177,7 @@ public function execute(ResolveForumReportByLockInput $in): void
 
 - [ ] **Step 4: Commit**
 
-```
+```text
 git add src/Application/Backstage/Forum/ResolveForumReportByLock tests/Unit/Application/Backstage/Forum/ResolveForumReportByLockTest.php
 git -c user.name="Dev Team" -c user.email="dev@daems.org" commit -m "Feat(forum): ResolveForumReportByLock (topic only; resolve + audit)"
 ```
@@ -2169,6 +2187,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.org" commit -m "Feat(forum)
 ### Task 10: `ResolveForumReportByWarn` use case (TDD)
 
 **Wave:** W4. **Files:**
+
 - Create: `src/Application/Backstage/Forum/ResolveForumReportByWarn/`
 - Create: `tests/Unit/Application/Backstage/Forum/ResolveForumReportByWarnTest.php`
 
@@ -2247,6 +2266,7 @@ Constructor takes `(ForumRepositoryInterface, ForumReportRepositoryInterface, Fo
 ### Task 11: `ResolveForumReportByEdit` use case (TDD)
 
 **Wave:** W5. **Files:**
+
 - Create: `src/Application/Backstage/Forum/ResolveForumReportByEdit/`
 - Create: `tests/Unit/Application/Backstage/Forum/ResolveForumReportByEditTest.php`
 
@@ -2308,6 +2328,7 @@ public function execute(ResolveForumReportByEditInput $in): void
 ### Task 12: `DismissForumReport` use case (TDD)
 
 **Wave:** W5. **Files:**
+
 - Create: `src/Application/Backstage/Forum/DismissForumReport/`
 - Create: `tests/Unit/Application/Backstage/Forum/DismissForumReportTest.php`
 
@@ -2346,6 +2367,7 @@ public function execute(DismissForumReportInput $in): void
 ### Task 13: Direct `Pin` / `Unpin` / `Lock` / `Unlock` topic use cases (TDD, combined)
 
 **Wave:** W5. **Files:**
+
 - Create: `src/Application/Backstage/Forum/PinForumTopic/`, `UnpinForumTopic/`, `LockForumTopic/`, `UnlockForumTopic/` (4 directories each with handler + Input + Output)
 - Create: 4 test classes under `tests/Unit/Application/Backstage/Forum/`
 
@@ -2394,7 +2416,7 @@ final class PinForumTopic
 
 - [ ] **Step 6: Commit**
 
-```
+```text
 git add src/Application/Backstage/Forum/PinForumTopic src/Application/Backstage/Forum/UnpinForumTopic src/Application/Backstage/Forum/LockForumTopic src/Application/Backstage/Forum/UnlockForumTopic tests/Unit/Application/Backstage/Forum/PinForumTopicTest.php tests/Unit/Application/Backstage/Forum/UnpinForumTopicTest.php tests/Unit/Application/Backstage/Forum/LockForumTopicTest.php tests/Unit/Application/Backstage/Forum/UnlockForumTopicTest.php
 git -c user.name="Dev Team" -c user.email="dev@daems.org" commit -m "Feat(forum): direct Pin/Unpin/Lock/Unlock topic use cases + audit"
 ```
@@ -2404,6 +2426,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.org" commit -m "Feat(forum)
 ### Task 14: `DeleteForumTopicAsAdmin` + `DeleteForumPostAsAdmin` (TDD, combined)
 
 **Wave:** W6. **Files:**
+
 - Create: `src/Application/Backstage/Forum/DeleteForumTopicAsAdmin/`, `DeleteForumPostAsAdmin/`
 - Create: 2 test classes.
 
@@ -2414,6 +2437,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.org" commit -m "Feat(forum)
 - [ ] **Step 2: Implement handlers** — same body as the matching branch of `ResolveForumReportByDelete` (Task 8) **minus** the `reports.resolveAllForTarget` call. Dependencies: `(ForumRepositoryInterface, ForumModerationAuditRepositoryInterface)`.
 
 Topic handler body:
+
 ```php
 public function execute(DeleteForumTopicAsAdminInput $in): void
 {
@@ -2433,6 +2457,7 @@ public function execute(DeleteForumTopicAsAdminInput $in): void
     ));
 }
 ```
+
 Post handler is analogous with `findPostByIdForTenant` + `deletePostForTenant` + `targetType='post'`.
 
 - [ ] **Step 3: Run tests — expect PASS (6 tests)**.
@@ -2444,6 +2469,7 @@ Post handler is analogous with `findPostByIdForTenant` + `deletePostForTenant` +
 ### Task 15: `EditForumPostAsAdmin` use case (TDD)
 
 **Wave:** W6. **Files:**
+
 - Create: `src/Application/Backstage/Forum/EditForumPostAsAdmin/`
 - Create: `tests/Unit/Application/Backstage/Forum/EditForumPostAsAdminTest.php`
 
@@ -2488,6 +2514,7 @@ public function execute(EditForumPostAsAdminInput $in): void
 ### Task 16: `WarnForumUser` use case (TDD)
 
 **Wave:** W6. **Files:**
+
 - Create: `src/Application/Backstage/Forum/WarnForumUser/`
 - Create: `tests/Unit/Application/Backstage/Forum/WarnForumUserTest.php`
 
@@ -2525,6 +2552,7 @@ public function execute(WarnForumUserInput $in): void
 ### Task 17: Category CRUD — `Create` + `Update` + `Delete` use cases (TDD, combined)
 
 **Wave:** W7. **Files:**
+
 - Create: `src/Application/Backstage/Forum/CreateForumCategoryAsAdmin/`, `UpdateForumCategoryAsAdmin/`, `DeleteForumCategoryAsAdmin/`
 - Create: 3 test classes.
 - Create: `src/Domain/Shared/ConflictException.php` (if not present).
@@ -2533,11 +2561,13 @@ public function execute(WarnForumUserInput $in): void
 - [ ] **Step 1: Add `findCategoryByIdForTenant` to interface + impls**:
 
 Interface:
+
 ```php
 public function findCategoryByIdForTenant(string $id, TenantId $tenantId): ?ForumCategory;
 ```
 
 SQL:
+
 ```php
 public function findCategoryByIdForTenant(string $id, TenantId $tenantId): ?ForumCategory
 {
@@ -2677,7 +2707,7 @@ public function execute(DeleteForumCategoryAsAdminInput $in): void
 
 - [ ] **Step 11: Commit**
 
-```
+```text
 git add src/Application/Backstage/Forum/CreateForumCategoryAsAdmin src/Application/Backstage/Forum/UpdateForumCategoryAsAdmin src/Application/Backstage/Forum/DeleteForumCategoryAsAdmin src/Domain/Shared/ConflictException.php src/Domain/Forum/ForumRepositoryInterface.php src/Infrastructure/Adapter/Persistence/Sql/SqlForumRepository.php tests/Support/Fake/InMemoryForumRepository.php tests/Unit/Application/Backstage/Forum/CreateForumCategoryAsAdminTest.php tests/Unit/Application/Backstage/Forum/UpdateForumCategoryAsAdminTest.php tests/Unit/Application/Backstage/Forum/DeleteForumCategoryAsAdminTest.php
 git -c user.name="Dev Team" -c user.email="dev@daems.org" commit -m "Feat(forum): category CRUD + topic-count guard + audit"
 ```
@@ -2687,6 +2717,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.org" commit -m "Feat(forum)
 ### Task 18: `ListForumModerationAuditForAdmin` use case (TDD)
 
 **Wave:** W7. **Files:**
+
 - Create: `src/Application/Backstage/Forum/ListForumModerationAuditForAdmin/`
 - Create: test class.
 
@@ -2716,6 +2747,7 @@ public function execute(ListForumModerationAuditForAdminInput $in): ListForumMod
 ### Task 19: `CreateForumPost` locked-topic guard
 
 **Wave:** W7. **Files:**
+
 - Modify: `src/Application/Forum/CreateForumPost/CreateForumPost.php`
 - Modify: `tests/Unit/Application/Forum/CreateForumPostTest.php` — add new test method.
 - Modify: `tests/Support/ForumSeed.php` — `seedTopic` gains `locked` param (default false).
@@ -2749,7 +2781,7 @@ if ($topic->locked()) {
 
 - [ ] **Step 5: Commit**
 
-```
+```text
 git add src/Application/Forum/CreateForumPost/CreateForumPost.php tests/Unit/Application/Forum/CreateForumPostTest.php tests/Support/ForumSeed.php
 git -c user.name="Dev Team" -c user.email="dev@daems.org" commit -m "Feat(forum): CreateForumPost rejects locked topics with TopicLockedException"
 ```
@@ -2759,6 +2791,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.org" commit -m "Feat(forum)
 ### Task 20: Extend `ListPendingApplicationsForAdmin` + `DismissApplication` for `forum_report`
 
 **Wave:** W3 (parallel with 6, 7). **Files:**
+
 - Modify: `src/Application/Backstage/ListPendingApplications/ListPendingApplicationsForAdmin.php`
 - Modify: `src/Application/Backstage/DismissApplication/DismissApplication.php`
 - Modify: corresponding tests.
@@ -2812,7 +2845,7 @@ if ($in->appType === 'forum_report' && !preg_match('/^(post|topic):[0-9a-f\-]{36
 
 - [ ] **Step 6: Commit**
 
-```
+```text
 git add src/Application/Backstage/ListPendingApplications/ListPendingApplicationsForAdmin.php src/Application/Backstage/DismissApplication tests/Unit/Application/Backstage/ListPendingApplications/ListPendingApplicationsForAdminTest.php tests/Unit/Application/Backstage/DismissApplication/DismissApplicationTest.php
 git -c user.name="Dev Team" -c user.email="dev@daems.org" commit -m "Feat(forum): LPAFA + DismissApplication support aggregated forum_report with compound id"
 ```
@@ -2822,10 +2855,12 @@ git -c user.name="Dev Team" -c user.email="dev@daems.org" commit -m "Feat(forum)
 ### Task 21: HTTP controllers — `ForumController::createReport` + ~22 `BackstageController` methods
 
 **Wave:** W8 (solo — modifies two controllers). **Files:**
+
 - Modify: `src/Infrastructure/Adapter/Api/Controller/ForumController.php` — add `createReport`.
 - Modify: `src/Infrastructure/Adapter/Api/Controller/BackstageController.php` — add ~22 admin methods.
 
 **General rule:** Each handler is thin — unwrap `Request`, call use case, catch domain exceptions → map to HTTP response. Use case throws:
+
 - `ForbiddenException` → 403
 - `NotFoundException` → 404
 - `ConflictException` → 409
@@ -2842,6 +2877,7 @@ private readonly ReportForumTarget $reportForumTarget,
 ```
 
 Add method:
+
 ```php
 public function createReport(Request $request): Response
 {
@@ -3002,7 +3038,7 @@ try {
 
 - [ ] **Step 8: Commit**
 
-```
+```text
 git add src/Infrastructure/Adapter/Api/Controller/ForumController.php src/Infrastructure/Adapter/Api/Controller/BackstageController.php src/Application/Backstage/Forum/ListForumTopicsForAdmin src/Application/Backstage/Forum/ListForumPostsForAdmin tests/Unit/Application/Backstage/Forum/ListForumTopicsForAdminTest.php tests/Unit/Application/Backstage/Forum/ListForumPostsForAdminTest.php
 git -c user.name="Dev Team" -c user.email="dev@daems.org" commit -m "Feat(forum): ForumController::createReport + 22 BackstageController admin methods"
 ```
@@ -3012,6 +3048,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.org" commit -m "Feat(forum)
 ### Task 22: Routes — register ~23 new entries
 
 **Wave:** W9 (solo — single routes file). **Files:**
+
 - Modify: `routes/api.php`
 
 - [ ] **Step 1: Register user-side route** after existing forum routes:
@@ -3068,7 +3105,7 @@ $router->get('/backstage/forum/audit', [TenantContextMiddleware::class, AuthMidd
 
 - [ ] **Step 4: Commit**
 
-```
+```text
 git add routes/api.php
 git -c user.name="Dev Team" -c user.email="dev@daems.org" commit -m "Feat(forum): register 19 backstage forum routes + 1 user-side /forum/reports"
 ```
@@ -3078,6 +3115,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.org" commit -m "Feat(forum)
 ### Task 23: DI wiring — BOTH containers + live smoke
 
 **Wave:** W10 (solo — shared files, must precede tests). **Files:**
+
 - Modify: `bootstrap/app.php`
 - Modify: `tests/Support/KernelHarness.php`
 
@@ -3278,7 +3316,7 @@ Every line must show both counts ≥ 1. If any is 0 → binding missing; add bef
 
 - [ ] **Step 8: Commit**
 
-```
+```text
 git add bootstrap/app.php tests/Support/KernelHarness.php
 git -c user.name="Dev Team" -c user.email="dev@daems.org" commit -m "Wire(forum): bind 22 forum admin use cases + 3 repos in BOTH containers"
 ```
@@ -3288,6 +3326,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.org" commit -m "Wire(forum)
 ### Task 24: Integration tests — 4 classes
 
 **Wave:** W11 (parallel with 25, 26). **Files (all create):**
+
 - `tests/Integration/Application/ForumReportLifecycleIntegrationTest.php`
 - `tests/Integration/Application/ForumCategoryCrudIntegrationTest.php`
 - `tests/Integration/Application/ForumLockedTopicRejectsPostsIntegrationTest.php`
@@ -3361,13 +3400,13 @@ final class ForumReportLifecycleIntegrationTest extends MigrationTestCase
 
 - [ ] **Step 5: Run Integration suite — PASS**
 
-```
+```text
 vendor/bin/phpunit --testsuite Integration
 ```
 
 - [ ] **Step 6: Commit**
 
-```
+```text
 git add tests/Integration/Application/ForumReportLifecycleIntegrationTest.php tests/Integration/Application/ForumCategoryCrudIntegrationTest.php tests/Integration/Application/ForumLockedTopicRejectsPostsIntegrationTest.php tests/Integration/Application/ForumReportDismissalToastIntegrationTest.php
 git -c user.name="Dev Team" -c user.email="dev@daems.org" commit -m "Test(forum): 4 integration classes — report lifecycle, category CRUD, locked rejection, dismissal re-surface"
 ```
@@ -3377,6 +3416,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.org" commit -m "Test(forum)
 ### Task 25: Isolation test — `ForumAdminTenantIsolationTest`
 
 **Wave:** W11. **Files:**
+
 - Create: `tests/Isolation/ForumAdminTenantIsolationTest.php`
 
 **Contract:** Every admin use case rejects cross-tenant access. Seed a report + topic + post + category in tenant A; make an admin of tenant B attempt all 20+ operations; each must throw `NotFoundException` or return empty listing.
@@ -3425,13 +3465,13 @@ Write one `test_*` method per use case for clarity; each sets up A data and tena
 
 - [ ] **Step 2: Run isolation suite — PASS**
 
-```
+```text
 vendor/bin/phpunit --testsuite Isolation --filter ForumAdminTenantIsolationTest
 ```
 
 - [ ] **Step 3: Commit**
 
-```
+```text
 git add tests/Isolation/ForumAdminTenantIsolationTest.php
 git -c user.name="Dev Team" -c user.email="dev@daems.org" commit -m "Test(isolation): ForumAdminTenantIsolationTest — 20+ cross-tenant checks"
 ```
@@ -3441,6 +3481,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.org" commit -m "Test(isolat
 ### Task 26: E2E tests — `ForumAdminEndpointsTest` + `AdminInboxIncludesForumReportsTest`
 
 **Wave:** W11. **Files:**
+
 - Create: `tests/E2E/Backstage/ForumAdminEndpointsTest.php`
 - Create: `tests/E2E/Backstage/AdminInboxIncludesForumReportsTest.php`
 
@@ -3494,13 +3535,13 @@ public function test_dismissed_forum_report_not_in_items(): void { /* … */ }
 
 - [ ] **Step 3: Run E2E suite — PASS**
 
-```
+```text
 vendor/bin/phpunit --testsuite E2E
 ```
 
 - [ ] **Step 4: Commit**
 
-```
+```text
 git add tests/E2E/Backstage/ForumAdminEndpointsTest.php tests/E2E/Backstage/AdminInboxIncludesForumReportsTest.php
 git -c user.name="Dev Team" -c user.email="dev@daems.org" commit -m "Test(forum): E2E endpoint coverage + admin inbox includes forum_report"
 ```
@@ -3510,6 +3551,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.org" commit -m "Test(forum)
 ### Task 27: Frontend admin page + proxies (daem-society)
 
 **Wave:** W12 (parallel with 28, 29). **Repo:** `C:\laragon\www\sites\daem-society`. **Files (create):**
+
 - `public/pages/backstage/forum/index.php`
 - `public/pages/backstage/forum/forum-admin.js`
 - `public/pages/backstage/forum/forum-admin.css`
@@ -3522,6 +3564,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.org" commit -m "Test(forum)
 Layout mirrors `public/pages/backstage/projects/index.php`. Four tabs (`reports | topics | categories | audit`) driven by `?tab=...` query param, defaulting to `reports` if `?.DAEMS_FORUM_OPEN_REPORTS > 0` else `topics`.
 
 Template outline:
+
 ```php
 <?php require __DIR__ . '/../layout-open.php'; ?>
 <div class="forum-admin" data-active-tab="<?= $activeTab ?>">
@@ -3661,7 +3704,7 @@ Grep first — if entry already exists, skip.
 
 - [ ] **Step 7: Commit** (in daem-society repo)
 
-```
+```text
 cd C:/laragon/www/sites/daem-society
 git add public/pages/backstage/forum public/api/backstage/forum.php public/pages/backstage/layout.php
 git -c user.name="Dev Team" -c user.email="dev@daems.org" commit -m "Feat(forum-admin): backstage admin page with 4 tabs + proxy + sidebar entry"
@@ -3672,6 +3715,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.org" commit -m "Feat(forum-
 ### Task 28: Public forum — report dialog + locked banner + moderator-edited caption
 
 **Wave:** W12 (parallel with 27, 29). **Repo:** `C:\laragon\www\sites\daem-society`. **Files (create + modify):**
+
 - Create: `public/pages/forum/_report-dialog.js`, `_report-dialog.css`, `public/api/forum/report.php`.
 - Modify: `public/pages/forum/_post.php` (or whichever partial renders a single post) — append Report link + "edited" caption.
 - Modify: `public/pages/forum/_thread-header.php` (or equivalent) — append "Raportoi aihe" link.
@@ -3796,7 +3840,7 @@ Ensure thread API output carries `edited_at` (backend already does after Task 2'
 
 - [ ] **Step 8: Commit**
 
-```
+```text
 cd C:/laragon/www/sites/daem-society
 git add public/pages/forum public/api/forum
 git -c user.name="Dev Team" -c user.email="dev@daems.org" commit -m "Feat(forum): public report dialog + locked banner + moderator-edited caption"
@@ -3835,7 +3879,7 @@ if (h) {
 
 - [ ] **Step 5: Commit**
 
-```
+```text
 cd C:/laragon/www/sites/daem-society
 git add public/pages/backstage/toasts.js public/pages/backstage/forum/forum-admin.js public/pages/backstage/layout.php
 git -c user.name="Dev Team" -c user.email="dev@daems.org" commit -m "Feat(forum): toast routing + highlight for forum_report"
@@ -3846,15 +3890,17 @@ git -c user.name="Dev Team" -c user.email="dev@daems.org" commit -m "Feat(forum)
 ### Task 30: Final verification checklist
 
 **Wave:** W13 (solo). **Files:**
+
 - Modify: `CLAUDE.md` (platform repo) — mark Forum moderation done; add follow-ups for category reporting / warning thresholds / rate limiting.
 
 - [ ] **Step 1: Run full platform test suite**
 
-```
+```text
 cd C:/laragon/www/daems-platform
 composer test:all
 composer analyse
 ```
+
 Expected: all green, 0 PHPStan errors.
 
 - [ ] **Step 2: Verify DI wiring script** — re-run the grep loop from Task 23 Step 7. Every class must have ≥ 1 occurrence in both files.
@@ -3895,7 +3941,7 @@ Deferred (track as future work):
 
 - [ ] **Step 5: Commit final**
 
-```
+```text
 git add CLAUDE.md
 git -c user.name="Dev Team" -c user.email="dev@daems.org" commit -m "Docs: CLAUDE.md — forum moderation done; track deferred forum work"
 ```
@@ -3912,4 +3958,3 @@ Collect the SHAs of every commit produced by this plan (expect ~28–30). Report
 - [x] No placeholders — every code step has full code or a precise reference to the exact file/method pattern already shown earlier in the plan.
 - [x] Type consistency — method names (`findPostByIdForTenant`, `setTopicLockedForTenant`, `listAggregatedForTenant`) match across tasks 2, 3, 8, 11, 21, 23.
 - [x] Wave dependencies respect the cap of 3 parallel agents and block on shared-file tasks (2, 21, 22, 23).
-

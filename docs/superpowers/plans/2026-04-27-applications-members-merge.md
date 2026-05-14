@@ -15,6 +15,7 @@
 All file paths in this plan are relative to `C:/laragon/www/sites/daem-society/` unless prefixed with `daems-platform/`. The plan document itself lives in the platform repo (`C:/laragon/www/daems-platform/docs/superpowers/plans/`) per project convention, but every code change happens in the `daem-society` working tree. Each task's commit step uses the `daem-society` repo. The platform repo gets one commit at the end recording the plan only — covered by Task 9.
 
 **Commit identity** (every commit, both repos):
+
 ```bash
 git -c user.name="Dev Team" -c user.email="dev@daems.fi" commit -m "..."
 ```
@@ -42,6 +43,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.fi" commit -m "..."
 ## Task 1: Add tab-bar CSS
 
 **Files:**
+
 - Modify: `public/assets/css/daems-backstage.css` (append after line ~1273, near other `.members-*` rules)
 
 - [ ] **Step 1: Append tab styles**
@@ -114,12 +116,14 @@ git -c user.name="Dev Team" -c user.email="dev@daems.fi" commit -m "Add(backstag
 ## Task 2: Copy applications-stats.js into members/
 
 **Files:**
+
 - Create: `public/pages/backstage/members/applications-stats.js` (byte-identical copy)
 - Keep (for now): `public/pages/backstage/applications/applications-stats.js` (deleted in Task 4)
 
 - [ ] **Step 1: Copy the file**
 
 PowerShell:
+
 ```powershell
 Copy-Item public/pages/backstage/applications/applications-stats.js public/pages/backstage/members/applications-stats.js
 ```
@@ -147,6 +151,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.fi" commit -m "Add(backstag
 ## Task 3: Rewrite members/index.php as tabbed page
 
 **Files:**
+
 - Modify (full rewrite): `public/pages/backstage/members/index.php`
 
 After this task `/backstage/members` shows a tab bar, defaults to Register tab (existing rekisteri behavior), and `?tab=pending` shows the imported Applications page body. The original `/backstage/applications` URL still works because we have not yet replaced its index.php (Task 4).
@@ -154,6 +159,7 @@ After this task `/backstage/members` shows a tab bar, defaults to Register tab (
 - [ ] **Step 1: Read current members/index.php to confirm structure**
 
 The file is 688 lines. Key sections to preserve:
+
 - Lines 1-54: bootstrap + status-change POST handler
 - Lines 65-72: members data fetch
 - Lines 74-127: CSV export branch
@@ -168,6 +174,7 @@ We wrap the Register UI in a tabpanel and append a Pending tabpanel. The Pending
 - [ ] **Step 2: Read applications/index.php to confirm what to port**
 
 Source: `public/pages/backstage/applications/index.php` (252 lines). Sections to port into Pending tabpanel:
+
 - Lines 27-63: POST handler for approve/reject (must run **only** when tab=pending)
 - Lines 65-72: pending fetch
 - Lines 89-99: KPI strip + applications-stats.js include (script src must change to `/pages/backstage/members/applications-stats.js`)
@@ -1129,6 +1136,7 @@ require __DIR__ . '/../layout.php';
 
 Visit `http://daem-society.local/backstage/members` (no `tab=` param).
 Expected:
+
 - Page title "Members Register"
 - Tab bar shows "Register" (active) + "Pending" with badge count
 - KPI strip = 4 cards (Total members, New, Supporters, Inactive)
@@ -1139,6 +1147,7 @@ Expected:
 
 Visit `http://daem-society.local/backstage/members?tab=pending`.
 Expected:
+
 - Tab bar shows "Pending" (active)
 - KPI strip = 4 cards (Pending, Approved 30d, Rejected 30d, Avg response)
 - Two cards: "Member Applications (N)" + "Supporter Applications (M)"
@@ -1148,6 +1157,7 @@ Expected:
 
 On Pending tab, approve a test application (or reject if no DB seed exists).
 Expected:
+
 - POST hits `/backstage/members?tab=pending`
 - Page reloads on Pending tab
 - Invite-link banner renders inline at top of pending content
@@ -1167,6 +1177,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.fi" commit -m "Refactor(bac
 ## Task 4: Replace applications/index.php with 302 redirect
 
 **Files:**
+
 - Modify (full rewrite): `public/pages/backstage/applications/index.php`
 - Delete: `public/pages/backstage/applications/applications-stats.js`
 
@@ -1216,6 +1227,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.fi" commit -m "Replace(back
 ## Task 5: Sidebar — drop Applications row, badge moves to Members
 
 **Files:**
+
 - Modify: `public/pages/backstage/layout.php` (sidebar block, lines ~165-200)
 
 After this task the sidebar shows only the Members entry, with the pending-count badge attached to it.
@@ -1227,6 +1239,7 @@ cd C:/laragon/www/sites/daem-society
 ```
 
 Read lines 160-205 of `public/pages/backstage/layout.php`. Two link rows are present:
+
 1. Applications row (`href="/backstage/applications"`, `applications-badge` element inside)
 2. Members row (`href="/backstage/members"`)
 
@@ -1297,6 +1310,7 @@ Replace each match. There may be one in a `<script>` block that does `document.g
 
 Visit `http://daem-society.local/backstage/members`.
 Expected:
+
 - Sidebar shows Members entry, no Applications entry
 - Pending count badge visible on Members row (if there are pending apps in DB)
 - Badge hidden if count is 0
@@ -1314,6 +1328,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.fi" commit -m "Update(backs
 ## Task 6: Bottom-nav and command palette cleanup
 
 **Files:**
+
 - Modify: `public/pages/backstage/layout.php` (bottom-nav block ~line 439, command-palette block ~line 476)
 
 - [ ] **Step 1: Remove Applications from bottom-nav**
@@ -1370,6 +1385,7 @@ git -c user.name="Dev Team" -c user.email="dev@daems.fi" commit -m "Update(backs
 ## Task 7: Update toasts.js + notifications page URL references
 
 **Files:**
+
 - Modify: `public/pages/backstage/toasts.js` (lines 93, 119)
 - Modify: `public/pages/backstage/notifications/index.php` (line 90)
 
@@ -1422,6 +1438,7 @@ grep -rn "/backstage/applications" public/pages/ public/api/
 ```
 
 Expected results:
+
 - `pages/backstage/applications/index.php` — the redirect stub (allowed)
 - `pages/backstage/notifications/index.php` (line 5, 26) — these reference the **API** path `/api/v1/backstage/applications/pending-count`, not the frontend page; allowed
 - `layout.php` (line 24) — same, references API path; allowed
@@ -1472,6 +1489,7 @@ Confirm pending count on the Members sidebar row matches the dashboard's pending
 - [ ] **Smoke 6: Approve flow inline**
 
 On Pending tab, approve an application (use a test record or seed if needed). Expected:
+
 - POST hits `/backstage/members?tab=pending`
 - Invite-link banner renders inline
 - Assigned member_number / supporter_number shows in the banner
@@ -1481,6 +1499,7 @@ On Pending tab, approve an application (use a test record or seed if needed). Ex
 - [ ] **Smoke 7: Status modals on Register tab**
 
 On Register tab, with a GSA login, open Activate / Suspend / Terminate modal for any member. Expected:
+
 - Modal opens with member name shown
 - Submit with reason → flash success banner appears
 - Audit log shows new entry on next visit
@@ -1511,6 +1530,7 @@ DevTools Network: KPI fetch requests succeed (200 from `/api/backstage/members.p
 ## Task 9: Commit the plan to platform repo
 
 **Files:**
+
 - Add: `daems-platform/docs/superpowers/plans/2026-04-27-applications-members-merge.md`
 
 The plan itself lives in the platform repo even though all code changes happen in daem-society. Commit the plan file before closing the task.
