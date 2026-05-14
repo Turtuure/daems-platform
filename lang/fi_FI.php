@@ -270,8 +270,6 @@ return [
     'membership.subtier.gold'            => 'Kulta',
     'membership.subtier.platinum'        => 'Platina',
 
-    'backstage.members.col.tier'         => 'Jäsenryhmä',
-
     'backstage.dashboard.widget.tenants_kpi.label'           => 'Tenantit',
     'backstage.dashboard.widget.tenants_kpi.description'     => 'Alustan aktiivisten tenanttien kokonaismäärä.',
     'backstage.dashboard.widget.users_kpi.label'             => 'Alustan käyttäjät',

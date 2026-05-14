@@ -270,8 +270,6 @@ return [
     'membership.subtier.gold'            => 'Dhahabu',
     'membership.subtier.platinum'        => 'Platinamu',
 
-    'backstage.members.col.tier'         => 'Kiwango',
-
     'backstage.dashboard.widget.tenants_kpi.label'           => 'Wateja',
     'backstage.dashboard.widget.tenants_kpi.description'     => 'Idadi ya wateja hai kwenye jukwaa.',
     'backstage.dashboard.widget.users_kpi.label'             => 'Watumiaji wa jukwaa',

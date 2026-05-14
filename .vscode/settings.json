@@ -1,0 +1,17 @@
+{
+  "intelephense.environment.includePaths": [
+    "../modules/communications/backend/src",
+    "../modules/communications/backend/tests",
+    "../modules/events/backend/src",
+    "../modules/events/backend/tests",
+    "../modules/forum/backend/src",
+    "../modules/forum/backend/tests",
+    "../modules/insights/backend/src",
+    "../modules/insights/backend/tests",
+    "../modules/members/backend/src",
+    "../modules/members/backend/tests",
+    "../modules/projects/backend/src",
+    "../modules/projects/backend/tests",
+    "../modules/shared/src"
+  ]
+}

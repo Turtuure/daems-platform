@@ -270,8 +270,6 @@ return [
     'membership.subtier.gold'            => 'Gold',
     'membership.subtier.platinum'        => 'Platinum',
 
-    'backstage.members.col.tier'         => 'Tier',
-
     'backstage.dashboard.widget.tenants_kpi.label'           => 'Tenants',
     'backstage.dashboard.widget.tenants_kpi.description'     => 'Total active tenants on the platform.',
     'backstage.dashboard.widget.users_kpi.label'             => 'Platform users',

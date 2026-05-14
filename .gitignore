@@ -5,7 +5,10 @@
 .phpunit.result.cache
 .phpunit.cache/
 .idea/
-.vscode/
+.vscode/*
+!.vscode/settings.json
+!.vscode/extensions.json
+!.vscode/launch.json
 .DS_Store
 Thumbs.db
 /.worktrees/
